@@ -1,4 +1,8 @@
 import { startRest } from 'expressREST';
+import { updateModels, models } from 'models';
+const ignoreUpdating = true;
 
-
-startRest();
+updateModels( ignoreUpdating ).then( async () => {
+  console.log('Database up to date, running server');
+  startRest();
+});

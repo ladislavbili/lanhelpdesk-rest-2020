@@ -1,12 +1,18 @@
-import * as fakeData from './fakeData';
+import task from './task';
+import tag from './tag';
 
-export const resolvers = {
+export default {
   Query: {
-    tasks: () => {
-      return fakeData.tasks.map( (task) => ({
-        ...task,
-        tags: fakeData.tags.filter( (tag) => task.tags.includes(tag.id) ) ,
-      }) )
-    }
+    ...task.querries,
+    ...tag.querries,
+
   },
+
+  Mutation: {
+    ...task.mutations,
+    ...tag.mutations,
+
+  },
+  ...task.attributes,
+  ...tag.attributes,
 };

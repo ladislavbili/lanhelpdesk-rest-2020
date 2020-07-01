@@ -1,19 +1,14 @@
 import { gql } from 'apollo-server-express';
+import Querries from './querries';
+import Mutations from './mutations';
 
-export const typeDefs = gql`
-  type Tasks {
-    id: Int,
-    title: String,
-    tags: [Tags]
-  }
+import Task from './entities/task';
+import Tag from './entities/tag';
 
-  type Tags {
-    id: Int,
-    title: String,
-    color: String
-  }
+export default gql`
+  ${Task}
+  ${Tag}
 
-  type Query {
-    tasks: [Tasks]
-  }
+  ${Querries}
+  ${Mutations}
 `;
