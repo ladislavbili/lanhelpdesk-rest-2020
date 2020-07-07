@@ -1,9 +1,18 @@
+import { InvalidTokenError, createDoesNoExistsError } from 'configs/errors';
+
+
 const querries = {
-  tasks: async ( root, { filter }, { models } ) => {
+  tasks: async ( root, { filter }, { models, userData } ) => {
+    if( userData === null ){
+      throw InvalidTokenError;
+    }
     if(filter) return models.Tag.findAll({ where: await JSON.parse(filter) })
     return models.Task.findAll()
   },
-  task: async ( root, { id }, { models } ) => {
+  task: async ( root, { id }, { models, userData } ) => {
+    if( userData === null ){
+      throw InvalidTokenError;
+    }
     return models.Task.findByPk(id);
   },
 }
@@ -19,7 +28,7 @@ const mutations = {
   updateTask: async ( root, { id, title, tags }, { models } ) => {
     const Task = await models.Task.findByPk(id);
     if( Task === null ){
-      return new Error(`Task with id ${id} does not exist.`);
+      return createDoesNoExistsError("Task", id);
     }
     if( tags ) await Task.setTags(tags);
     return Task.update( { title } );

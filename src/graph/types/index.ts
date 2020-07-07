@@ -1,14 +1,10 @@
 import { gql } from 'apollo-server-express';
 import Querries from './querries';
 import Mutations from './mutations';
-
-import Task from './entities/task';
-import Tag from './entities/tag';
+import DataTypes from "./dataTypes";
 
 export default gql`
-  ${Task}
-  ${Tag}
-
+  ${DataTypes}
   ${Querries}
   ${Mutations}
 `;

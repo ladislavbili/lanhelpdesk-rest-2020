@@ -1,9 +1,11 @@
+import { TagQuerries } from './entities/tag';
+import { TaskQuerries } from './entities/task';
+import { UserQuerries } from './entities/user';
+
 export default `
 type Query {
-  tasks(filter: String): [Task],
-  task(id: Int!): Task,
-
-  tags(filter: String): [Tag],
-  tag(id: Int!): Tag,
+  ${TagQuerries}
+  ${TaskQuerries}
+  ${UserQuerries}
 }
 `

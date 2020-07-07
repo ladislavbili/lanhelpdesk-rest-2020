@@ -1,3 +1,5 @@
+import { createDoesNoExistsError } from 'configs/errors';
+
 const querries = {
   tags: async ( root, { filter }, { models } ) => {
     if(filter) return models.Tag.findAll({ where: await JSON.parse(filter) })
@@ -9,15 +11,25 @@ const querries = {
 }
 
 const mutations = {
-  addTag: async ( root, { title, color }, { models } ) => {
-    return models.Tag.create({ title, color });
+
+  addTag: async ( root, args, { models } ) => {
+    return models.Tag.create( args );
   },
-  updateTag: async ( root, { id, title, color }, { models } ) => {
+
+  updateTag: async ( root, { id, ...args }, { models } ) => {
     const Tag = await models.Tag.findByPk(id);
     if( Tag === null ){
-      return new Error(`Tag with id ${id} does not exist.`);
+      throw createDoesNoExistsError('Tag', id);
     }
-    return Tag.update( { title, color } );
+    return Tag.update( args );
+  },
+
+  deleteTag: async ( root, { id }, { models } ) => {
+    const Tag = await models.Tag.findByPk(id);
+    if( Tag === null ){
+      throw createDoesNoExistsError('Tag', id);
+    }
+    return Tag.destroy();
   },
 }
 

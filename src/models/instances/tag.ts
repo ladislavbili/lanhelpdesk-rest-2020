@@ -4,6 +4,7 @@ import DefaultInstance from './defaultInstance';
 export interface TagInstance extends DefaultInstance {
   title: string;
   color: string;
+  order: number;
 }
 
 export default function defineTags( sequelize: Sequelize ){
@@ -18,6 +19,11 @@ export default function defineTags( sequelize: Sequelize ){
         type: DataTypes.TEXT({ length: "tiny" }),
         allowNull: false,
         defaultValue: "#f759f2"
+      },
+      order: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
       },
     },
     {
