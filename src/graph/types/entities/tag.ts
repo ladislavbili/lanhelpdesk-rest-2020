@@ -1,9 +1,9 @@
 import defaultAttributes from './defaultAttributes';
-
+// @AuthDirective @AccessDirective( access:["tags"] )
 export const Tag = `
 type Tag {
   ${defaultAttributes}
-  title: String!,
+  title: String,
   color: String!,
   order: Int!,
   tasks: [Task],
@@ -18,5 +18,5 @@ tag(id: Int!): Tag,
 export const TagMutations = `
 addTag( title: String!, color: String, order: Int ): Tag,
 updateTag( id: Int!, title: String, color: String, order: Int ): Tag,
-deleteTag( id: Int! ): Boolean,
+deleteTag( id: Int! ): Tag,
 `

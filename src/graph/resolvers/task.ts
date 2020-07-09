@@ -1,15 +1,12 @@
 import { InvalidTokenError, createDoesNoExistsError } from 'configs/errors';
-
+import { models } from 'models';
+import { TaskInstance } from 'models/interfaces';
 
 const querries = {
-  tasks: async ( root, { filter }, { models, userData } ) => {
-    if( userData === null ){
-      throw InvalidTokenError;
-    }
-    if(filter) return models.Tag.findAll({ where: await JSON.parse(filter) })
+  tasks: async ( root, args, { userData } ) => {
     return models.Task.findAll()
   },
-  task: async ( root, { id }, { models, userData } ) => {
+  task: async ( root, { id }, { userData } ) => {
     if( userData === null ){
       throw InvalidTokenError;
     }
@@ -18,15 +15,15 @@ const querries = {
 }
 
 const mutations = {
-  addTask: async ( root, { title, tags }, { models } ) => {
-    const Task = await models.Task.create({ title });
+  addTask: async ( root, { title, tags } ) => {
+    const Task = <TaskInstance> await models.Task.create({ title });
     if( tags ){
       await Task.setTags(tags);
     }
     return Task;
   },
-  updateTask: async ( root, { id, title, tags }, { models } ) => {
-    const Task = await models.Task.findByPk(id);
+  updateTask: async ( root, { id, title, tags } ) => {
+    const Task = <TaskInstance> await models.Task.findByPk(id);
     if( Task === null ){
       return createDoesNoExistsError("Task", id);
     }

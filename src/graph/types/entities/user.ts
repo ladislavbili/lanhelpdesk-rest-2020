@@ -11,6 +11,7 @@ type User {
   fullName: String!,
   receiveNotifications: Boolean!,
   signature: String,
+  role: Role,
 }
 
 type UserData {
@@ -24,12 +25,12 @@ user(id: Int!): User,
 `
 
 export const UserMutations = `
-registerUser( active: Boolean, username: String!, email: String!, name: String!, surname: String!, password: String!, receiveNotifications: Boolean, signature: String): User,
+registerUser( active: Boolean, username: String!, email: String!, name: String!, surname: String!, password: String!, receiveNotifications: Boolean, signature: String, role: Int!): User,
 loginUser( email: String!, password: String! ): UserData,
 logoutUser: Boolean,
 logoutAll: Boolean,
 setUserActive( id: Int!, active: Boolean! ): User,
-updateUser( id: Int!, active: Boolean, username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String ): User,
+updateUser( id: Int!, active: Boolean, username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String, role: Int ): User,
 updateProfile( active: Boolean, username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String ): User,
 deleteUser( id: Int! ): User,
 `

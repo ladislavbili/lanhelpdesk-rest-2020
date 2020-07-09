@@ -12,6 +12,9 @@ export interface UserInstance extends DefaultInstance {
   receiveNotifications: boolean;
   signature: string;
   tokenKey: string;
+  setTags?: any;
+  setRole?: any;
+  createToken?: any;
 }
 
 export default function defineUsers( sequelize: Sequelize ){
@@ -30,7 +33,6 @@ export default function defineUsers( sequelize: Sequelize ){
       email: {
         type: DataTypes.TEXT({ length: "tiny" }),
         allowNull: false,
-        unique: true,
         validate: {
           isEmail: true
         }
@@ -70,6 +72,12 @@ export default function defineUsers( sequelize: Sequelize ){
       },
     },
     {
+      indexes: [
+        {
+          unique: true,
+          fields: ['email']
+        }
+      ],
       //OPTIONS
       tableName: 'users',
       // freezeTableName: true,

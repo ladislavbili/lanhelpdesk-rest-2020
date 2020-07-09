@@ -1,10 +1,12 @@
 import express from 'express';
 import eGraphql from 'express-graphql';
-import { models } from 'models';
 import { ApolloServer } from 'apollo-server-express';
 import typeDefs from 'graph/types';
 import resolvers from 'graph/resolvers';
+import schemaDirectives from 'graph/directives';
+import { models } from 'models';
 import { verifyAccToken, verifyRefToken, createAccessToken, createRefreshToken } from 'configs/jwt';
+import jwt_decode from 'jwt-decode';
 import cookieParser from 'cookie-parser';
 import { randomString } from 'helperFunctions';
 
@@ -19,13 +21,13 @@ export const startRest = () => {
   const server = new ApolloServer({
     typeDefs,
     resolvers,
+    schemaDirectives,
     context: async ({ req, res }) => {
       let userData = null;
-      const authentification = req.headers.authentification as String;
-      if( authentification ){
+      const authorization = req.headers.authorization as String;
+      if( authorization ){
         try{
-          const token = authentification.split(" ")[1];
-          userData = await verifyAccToken( token, models.User );
+          userData = await jwt_decode( authorization.replace('Bearer ','') );
         }catch(error){
           //not authentificated
         }
@@ -33,7 +35,6 @@ export const startRest = () => {
       return ({
         req,
         res,
-        models,
         userData
       })
     },

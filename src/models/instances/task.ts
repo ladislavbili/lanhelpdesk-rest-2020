@@ -3,6 +3,7 @@ import DefaultInstance from './defaultInstance';
 
 export interface TaskInstance extends DefaultInstance {
   title: string;
+  setTags?: any;
 }
 
 export default function defineTasks( sequelize: Sequelize ){
