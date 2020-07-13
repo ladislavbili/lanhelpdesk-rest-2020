@@ -1,15 +1,15 @@
 import { InvalidTokenError, createDoesNoExistsError } from 'configs/errors';
 import { models } from 'models';
 import { TaskInstance } from 'models/interfaces';
+import checkResolver from './checkResolver';
 
 const querries = {
-  tasks: async ( root, args, { userData } ) => {
+  tasks: async ( root, args, { req } ) => {
+    await checkResolver( req );
     return models.Task.findAll()
   },
-  task: async ( root, { id }, { userData } ) => {
-    if( userData === null ){
-      throw InvalidTokenError;
-    }
+  task: async ( root, { id }, { req } ) => {
+    await checkResolver( req );
     return models.Task.findByPk(id);
   },
 }

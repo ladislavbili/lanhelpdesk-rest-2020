@@ -1,40 +1,83 @@
 import { hash, compare } from 'bcrypt';
 import { sign } from 'jsonwebtoken';
+import jwt_decode from 'jwt-decode';
 import { createAccessToken, createRefreshToken } from 'configs/jwt';
 import { randomString } from 'helperFunctions';
-import { InvalidTokenError, PasswordTooShort, FailedLoginError, UserDeactivatedError, createDoesNoExistsError } from 'configs/errors';
+import {
+  PasswordTooShort,
+  FailedLoginError,
+  UserDeactivatedError,
+  createDoesNoExistsError,
+  CantCreateUserLevelError,
+  DeactivateUserLevelTooLowError,
+  CantChangeYourRoleError,
+  UserRoleLevelTooLowError,
+  UserNewRoleLevelTooLowError,
+  OneAdminLeftError,
+  CantDeleteLowerLevelError
+} from 'configs/errors';
 import { models } from 'models';
-import { UserInstance } from 'models/interfaces';
+import { UserInstance, RoleInstance } from 'models/interfaces';
+import checkResolver from './checkResolver';
 
 const querries = {
-  users: async ( root, args ) => {
-    return models.User.findAll()
+  users: async ( root, args, { req } ) => {
+    await checkResolver( req, ['users'] );
+    return models.User.findAll({
+      order: [
+        ['name', 'ASC'],
+        ['surname', 'ASC'],
+        ['email', 'ASC'],
+      ]
+    })
   },
-  user: async ( root, { id } ) => {
+  user: async ( root, { id }, { req } ) => {
+    await checkResolver( req, ['users'] );
     return models.User.findByPk(id);
   },
+  basicUsers: async ( root, { id }, { req } ) => {
+    await checkResolver( req );
+    return models.User.findAll({
+      where: { active: true },
+      order: [
+        ['name', 'ASC'],
+        ['surname', 'ASC'],
+        ['email', 'ASC'],
+      ]
+    })
+  },
+  basicUser: async ( root, { id }, { req } ) => {
+    await checkResolver( req );
+    return models.User.findByPk(id);
+  },
+
 }
+
+//ACITVE
 
 const mutations = {
 
   //registerUser( active: Boolean, username: String!, email: String!, name: String!, surname: String!, password: String!, receiveNotifications: Boolean, signature: String, role: Int!): User,
-  registerUser: async ( root, { active, username, email, name, surname, password, receiveNotifications, signature, role } ) => {
+  //TODO TEST IT
+  registerUser: async ( root, { password, roleId, ...targetUserData }, { req } ) => {
+    const User = await checkResolver( req, ['users'] );
+    const TargetRole = await models.Role.findByPk(roleId);
+    if( TargetRole === null ){
+      throw createDoesNoExistsError('Role', roleId);
+    }
+    if( User.get('Role').get('level') > TargetRole.get('level') ){
+      throw CantCreateUserLevelError;
+    }
     if( password.length < 6 ){
       throw PasswordTooShort;
     }
     const hashedPassword = await hash( password, 12 );
     const user = <UserInstance> await models.User.create({
-      active,
-      username,
-      email,
-      name,
-      surname,
+      ...targetUserData,
       password: hashedPassword,
-      receiveNotifications,
-      signature,
-      tokenKey: randomString()
+      tokenKey: randomString(),
     })
-    return user.setRole(role);
+    return user.setRole(roleId);
   },
 
   //loginUser( email: String!, password: String! ): UserData,
@@ -43,63 +86,94 @@ const mutations = {
     if( password.length < 6 ){
       throw PasswordTooShort;
     }
-    const user = <UserInstance> await models.User.findOne({ where: { email } })
-    if( !user ){
+    const User = <UserInstance> await models.User.findOne({ where: { email } })
+    if( !User ){
       throw FailedLoginError;
     }
-    if( ! await compare( password, user.get('password') ) ){
+    if( ! await compare( password, User.get('password') ) ){
       throw FailedLoginError;
     }
-    if( ! await user.get('active') ){
+    if( ! await User.get('active') ){
       throw UserDeactivatedError;
     }
     let loginKey = randomString();
     let expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
-    user.createToken({ key: loginKey, expiresAt });
+    User.createToken({ key: loginKey, expiresAt });
 
     res.cookie(
       'jid',
-      await createRefreshToken(user, loginKey),
+      await createRefreshToken(User, loginKey),
       { httpOnly: true }
     );
     return {
-      user,
-      accessToken: await createAccessToken(user, loginKey)
+      user: User,
+      accessToken: await createAccessToken(User, loginKey)
     };
   },
 
   //logoutUser: Boolean,
-  logoutUser: async ( root, args, { userData } ) => {
-    if(userData === null){
-      throw InvalidTokenError;
-    }
-    models.Token.destroy({ where: { key: userData.loginKey } })
+  logoutUser: async ( root, args, { req } ) => {
+    const User = await checkResolver( req );
+    const token = req.headers.authorization as String;
+    const userData = jwt_decode(token.replace('Bearer ',''));
+    await models.Token.destroy({ where: { key: userData.loginKey } })
     return true
   },
 
   //logoutAll: Boolean,
-  logoutAll: async ( root, args, { userData } ) => {
-    if(userData === null){
-      throw InvalidTokenError;
-    }
-    models.Token.destroy({ where: { UserId: userData.id } })
-    const user = await models.User.findByPk(userData.id);
-    user.update({ tokenKey: randomString() })
-    return true
+  logoutAll: async ( root, args, { req, res } ) => {
+    const User = await checkResolver( req );
+    await models.Token.destroy({ where: { UserId: User.get('id') } })
+    let loginKey = randomString();
+    let expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    User.createToken({ key: loginKey, expiresAt });
+
+    res.cookie(
+      'jid',
+      await createRefreshToken(User, loginKey),
+      { httpOnly: true }
+    );
+    return createAccessToken(User, loginKey)
   },
 
   //setUserActive( id: Int!, active: Boolean! ): User,
-  setUserActive: async ( root, { id, active } ) => {
-    const User = await models.User.findByPk(id);
-    if( User === null ){
+  setUserActive: async ( root, { id, active }, { req } ) => {
+    const User = await checkResolver( req, ['users'] );
+    const TargetUser = <UserInstance> await models.User.findByPk(id, { include: [{ model: models.Role }] });
+    if( TargetUser === null ){
       throw createDoesNoExistsError('User');
     }
-    return User.update( { active } );
+
+    if( User.get('Role').get('level') > (await <RoleInstance> TargetUser.get('Role')).get('level') ){
+      throw DeactivateUserLevelTooLowError;
+    }
+
+    //if admin
+    if( TargetUser.get('Role').get('level') === 0 ){
+      if( ( await TargetUser.get('Role').getUsers() ).filter((user) => user.get('active') ).length <= 1 ){
+        throw OneAdminLeftError;
+      }
+    }
+
+    //destory tokens when deactivated
+    if( active === false){
+      await models.Token.destroy({ where: { UserId: TargetUser.get('id') } })
+    }
+
+    return TargetUser.update( { active } );
   },
 
+
   //updateUser( id: Int!, active: Boolean, username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String, role: Int ): User,
-  updateUser: async ( root, { id, role, ...args } ) => {
+  updateUser: async ( root, { id, roleId, ...args }, { req } ) => {
+    const User = await checkResolver( req, ['users'] );
+
+    const TargetUser = <UserInstance> await models.User.findByPk( id, { include: [{ model: models.Role }] } );
+    if( TargetUser === null ){
+      throw createDoesNoExistsError('User');
+    }
     let changes = { ...args };
     if(args.password !== undefined ){
       if( args.password.length < 6 ){
@@ -107,39 +181,84 @@ const mutations = {
       }
       changes.password = await hash( args.password, 12 );
     }
-    const User = <UserInstance> await models.User.findByPk(id);
-    if( User === null ){
-      throw createDoesNoExistsError('User');
+    if( roleId ){
+      const NewRole = <RoleInstance> await models.Role.findByPk(roleId);
+      if( NewRole === null ){
+        throw createDoesNoExistsError('Role', roleId);
+      }
+
+      //ak pouzivatel edituje sam seba nemoze menit rolu
+      if( TargetUser.get('id') === User.get('id') && roleId !== User.get('Role').get('id') ){
+        throw CantChangeYourRoleError;
+      }
+
+      //nesmie dat rolu s nizssim levelom, nesmie menit rolu s nizsim levelom
+      if( User.get('Role').get('level') > TargetUser.get('Role').get('level') ){
+        throw UserRoleLevelTooLowError;
+      }
+      if( User.get('Role').get('level') > NewRole.get('level') ){
+        throw UserNewRoleLevelTooLowError;
+      }
+
+      //ak je target user admin skontrolovat ci este nejaky existuje
+      if( TargetUser.get('Role').get('level') === 0 ){
+        if( ( await TargetUser.get('Role').getUsers() ).filter((user) => user.get('active') ).length <= 1 ){
+          throw OneAdminLeftError;
+        }
+      }
+
+      if( TargetUser.get('id') !== User.get('id') ){
+        await TargetUser.setRole(roleId);
+      }
     }
-    if( role ){
-      await User.setRole(role);
-    }
-    return User.update( changes );
+    return TargetUser.update( changes );
   },
 
   //updateProfile( active: Boolean, username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String ): User,
-  updateProfile: async ( root, args, { userData } ) => {
+  updateProfile: async ( root, args, { req, res } ) => {
+    const User = await checkResolver( req );
     let changes = { ...args };
     if(args.password !== undefined ){
       if( args.password.length < 6 ){
         throw PasswordTooShort;
       }
+      await models.Token.destroy({ where: { UserId: User.get('id') } })
       changes.password = await hash( args.password, 12 );
     }
-    if( userData === null ){
-      throw InvalidTokenError;
-    }
-    const User = await models.User.findByPk(userData.id );
-    return User.update( changes );
+    User.update( changes );
+    let loginKey = randomString();
+    let expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    User.createToken({ key: loginKey, expiresAt });
+
+    res.cookie(
+      'jid',
+      await createRefreshToken(User, loginKey),
+      { httpOnly: true }
+    );
+    return {
+      user: User,
+      accessToken: await createAccessToken(User, loginKey)
+    };
   },
 
   //deleteUser( id: Int! ): User,
-  deleteUser: async ( root, { id } ) => {
-    const User = await models.User.findByPk(id);
-    if( User === null ){
+  deleteUser: async ( root, { id }, { req } ) => {
+    const User = await checkResolver( req, ['users'] );
+    const TargetUser = <UserInstance> await models.User.findByPk(id, { include: [{ model: models.Role }] });
+    if( TargetUser === null ){
       throw createDoesNoExistsError('User');
     }
-    return User.destroy();
+    if( User.get('Role').get('level') >  (<RoleInstance> TargetUser.get('Role')).get('level') ){
+      throw CantDeleteLowerLevelError;
+    }
+    //if admin
+    if( TargetUser.get('Role').get('level') === 0 ){
+      if( ( await TargetUser.get('Role').getUsers() ).filter((user) => user.get('active') ).length <= 1 ){
+        throw OneAdminLeftError;
+      }
+    }
+    return TargetUser.destroy();
   },
 }
 
