@@ -6,6 +6,7 @@ import { sequelize } from 'models';
 
 export default async function checkResolver( req, access = [] ){
   const token = req.headers.authorization as String;
+
   if( !token ){
     throw NoAccTokenError;
   }
@@ -13,8 +14,6 @@ export default async function checkResolver( req, access = [] ){
   try{
     userData = await verifyAccToken( token.replace('Bearer ',''), models.User );
   }catch(error){
-    console.log('failed token');
-
     sequelize.query("DELETE FROM tokens WHERE expiresAt < NOW()");
     throw InvalidTokenError;
   }

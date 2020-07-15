@@ -20,6 +20,8 @@ import { models } from 'models';
 import { UserInstance, RoleInstance } from 'models/interfaces';
 import checkResolver from './checkResolver';
 
+const maxAge = 7 * 24 * 60 * 60 * 1000;
+
 const querries = {
   users: async ( root, args, { req } ) => {
     await checkResolver( req, ['users'] );
@@ -93,7 +95,7 @@ const mutations = {
     if( ! await compare( password, User.get('password') ) ){
       throw FailedLoginError;
     }
-    if( ! await User.get('active') ){
+    if( !User.get('active') ){
       throw UserDeactivatedError;
     }
     let loginKey = randomString();
@@ -104,11 +106,20 @@ const mutations = {
     res.cookie(
       'jid',
       await createRefreshToken(User, loginKey),
-      { httpOnly: true }
+      { httpOnly: true, maxAge }
     );
     return {
       user: User,
       accessToken: await createAccessToken(User, loginKey)
+    };
+  },
+
+  loginToken: async ( root, args, { req } ) => {
+    const User = await checkResolver( req );
+    const userData = jwt_decode(req.headers.authorization.replace('Bearer ',''));
+    return {
+      user: User,
+      accessToken: await createAccessToken(User, userData.loginKey)
     };
   },
 
@@ -133,7 +144,7 @@ const mutations = {
     res.cookie(
       'jid',
       await createRefreshToken(User, loginKey),
-      { httpOnly: true }
+      { httpOnly: true, maxAge }
     );
     return createAccessToken(User, loginKey)
   },
@@ -234,7 +245,7 @@ const mutations = {
     res.cookie(
       'jid',
       await createRefreshToken(User, loginKey),
-      { httpOnly: true }
+      { httpOnly: true, maxAge }
     );
     return {
       user: User,

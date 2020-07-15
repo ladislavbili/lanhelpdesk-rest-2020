@@ -38,6 +38,7 @@ basicUser(id: Int!): SimpleUser,
 export const UserMutations = `
 registerUser( active: Boolean, username: String!, email: String!, name: String!, surname: String!, password: String!, receiveNotifications: Boolean, signature: String, roleId: Int!): User,
 loginUser( email: String!, password: String! ): UserData,
+loginToken: UserData,
 logoutUser: Boolean,
 logoutAll: String,
 setUserActive( id: Int!, active: Boolean! ): User,
