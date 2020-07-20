@@ -40,3 +40,8 @@ export const UserRoleLevelTooLowError = new ApolloError("This user has lower rol
 export const UserNewRoleLevelTooLowError = new ApolloError("Can't set user role with lower level than yours!", "CANT_SET_ROLE_LOWER_THAN_YOURS");
 export const OneAdminLeftError = new ApolloError("There is only one admin left!", "ONE_ADMIN_LEFT");
 export const CantDeleteLowerLevelError = new ApolloError("Can't delete user with lower level than yours!", "CANT_DELETE_USER_HIS_LEVEL_LOWER");
+
+//pricelist
+
+export const DeletePricelistNeedsNewDefault = new ApolloError("When deleting default pricelist, you must select a new one and pass it in the newDefId attribute!", "NEEDS_NEW_DEFAULT_PRICELIST");
+export const DeletePricelistCompaniesNeedsNew = new ApolloError("When deleting default pricelist, you must select a new pricelist for the companies and pass it in the newId attribute!", "NEEDS_NEW_COMPANY_PRICELIST");

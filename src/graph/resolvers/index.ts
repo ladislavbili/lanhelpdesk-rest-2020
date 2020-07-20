@@ -1,27 +1,43 @@
-import task from './task';
-import tag from './tag';
-import user from './user';
+import company from './company';
+import pricelist from './pricelist';
 import role from './role';
+import tag from './tag';
+import task from './task';
+import taskType from './taskType';
+import tripType from './tripType';
+import user from './user';
 
 export default {
   Query: {
-    ...task.querries,
-    ...tag.querries,
-    ...user.querries,
+    ...company.querries,
+    ...pricelist.querries,
     ...role.querries,
+    ...tag.querries,
+    ...task.querries,
+    ...taskType.querries,
+    ...tripType.querries,
+    ...user.querries,
 
   },
 
   Mutation: {
-    ...task.mutations,
-    ...tag.mutations,
-    ...user.mutations,
+    ...company.mutations,
+    ...pricelist.mutations,
     ...role.mutations,
+    ...tag.mutations,
+    ...task.mutations,
+    ...taskType.mutations,
+    ...tripType.mutations,
+    ...user.mutations,
 
   },
-  ...task.attributes,
-  ...tag.attributes,
-  ...user.attributes,
+  ...company.attributes,
+  ...pricelist.attributes,
   ...role.attributes,
+  ...tag.attributes,
+  ...task.attributes,
+  ...taskType.attributes,
+  ...tripType.attributes,
+  ...user.attributes,
 
 };

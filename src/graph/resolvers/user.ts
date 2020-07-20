@@ -55,31 +55,34 @@ const querries = {
 
 }
 
-//ACITVE
-
 const mutations = {
 
   //registerUser( active: Boolean, username: String!, email: String!, name: String!, surname: String!, password: String!, receiveNotifications: Boolean, signature: String, role: Int!): User,
-  //TODO TEST IT
-  registerUser: async ( root, { password, roleId, ...targetUserData }, { req } ) => {
+  registerUser: async ( root, { password, roleId, companyId, ...targetUserData }, { req } ) => {
     const User = await checkResolver( req, ['users'] );
     const TargetRole = await models.Role.findByPk(roleId);
     if( TargetRole === null ){
       throw createDoesNoExistsError('Role', roleId);
     }
-    if( User.get('Role').get('level') > TargetRole.get('level') ){
+    const TargetCompany = await models.Company.findByPk(companyId);
+    if( TargetCompany === null ){
+      throw createDoesNoExistsError('Company', companyId);
+    }
+    //rola musi byt vacsia alebo admin
+    if( User.get('Role').get('level') > TargetRole.get('level') && User.get('Role').get('level') !== 0 ){
       throw CantCreateUserLevelError;
     }
     if( password.length < 6 ){
       throw PasswordTooShort;
     }
     const hashedPassword = await hash( password, 12 );
-    const user = <UserInstance> await models.User.create({
+    return models.User.create({
       ...targetUserData,
       password: hashedPassword,
       tokenKey: randomString(),
+      RoleId: roleId,
+      CompanyId: companyId,
     })
-    return user.setRole(roleId);
   },
 
   //loginUser( email: String!, password: String! ): UserData,
@@ -156,8 +159,8 @@ const mutations = {
     if( TargetUser === null ){
       throw createDoesNoExistsError('User');
     }
-
-    if( User.get('Role').get('level') > (await <RoleInstance> TargetUser.get('Role')).get('level') ){
+    //nesmie mat vacsi alebo rovny level ako ciel, ak nie je admin
+    if( User.get('Role').get('level') >= (<RoleInstance> TargetUser.get('Role')).get('level') && User.get('Role').get('level') !== 0 ){
       throw DeactivateUserLevelTooLowError;
     }
 
@@ -178,7 +181,7 @@ const mutations = {
 
 
   //updateUser( id: Int!, active: Boolean, username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String, role: Int ): User,
-  updateUser: async ( root, { id, roleId, ...args }, { req } ) => {
+  updateUser: async ( root, { id, roleId, companyId, ...args }, { req } ) => {
     const User = await checkResolver( req, ['users'] );
 
     const TargetUser = <UserInstance> await models.User.findByPk( id, { include: [{ model: models.Role }] } );
@@ -192,6 +195,20 @@ const mutations = {
       }
       changes.password = await hash( args.password, 12 );
     }
+
+    //nesmie menit rolu s nizsim alebo rovnym levelom ak nie je admin
+    if( User.get('Role').get('level') >= TargetUser.get('Role').get('level') && User.get('Role').get('level') !== 0 ){
+      throw UserRoleLevelTooLowError;
+    }
+
+    if( companyId ){
+      const NewCompany = await models.Company.findByPk(companyId);
+      if( NewCompany === null ){
+        throw createDoesNoExistsError('Company', companyId);
+      }
+      changes.CompanyId = companyId
+    }
+
     if( roleId ){
       const NewRole = <RoleInstance> await models.Role.findByPk(roleId);
       if( NewRole === null ){
@@ -203,11 +220,8 @@ const mutations = {
         throw CantChangeYourRoleError;
       }
 
-      //nesmie dat rolu s nizssim levelom, nesmie menit rolu s nizsim levelom
-      if( User.get('Role').get('level') > TargetUser.get('Role').get('level') ){
-        throw UserRoleLevelTooLowError;
-      }
-      if( User.get('Role').get('level') > NewRole.get('level') ){
+      //nesmie dat rolu s nizssim alebo rovnym levelom ak nie je admin
+      if( User.get('Role').get('level') >= NewRole.get('level') && User.get('Role').get('level') !== 0 ){
         throw UserNewRoleLevelTooLowError;
       }
 
@@ -219,14 +233,14 @@ const mutations = {
       }
 
       if( TargetUser.get('id') !== User.get('id') ){
-        await TargetUser.setRole(roleId);
+        changes.RoleId = roleId;
       }
     }
     return TargetUser.update( changes );
   },
 
   //updateProfile( active: Boolean, username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String ): User,
-  updateProfile: async ( root, args, { req, res } ) => {
+  updateProfile: async ( root, { companyId, ...args }, { req, res } ) => {
     const User = await checkResolver( req );
     let changes = { ...args };
     if(args.password !== undefined ){
@@ -260,7 +274,8 @@ const mutations = {
     if( TargetUser === null ){
       throw createDoesNoExistsError('User');
     }
-    if( User.get('Role').get('level') >  (<RoleInstance> TargetUser.get('Role')).get('level') ){
+    //nesmie mazat rolu s nizsim alebo rovnym levelom ak nie je admin
+    if( User.get('Role').get('level') >= (<RoleInstance> TargetUser.get('Role')).get('level') && User.get('Role').get('level') !== 0 ){
       throw CantDeleteLowerLevelError;
     }
     //if admin
@@ -277,7 +292,15 @@ const attributes = {
   User: {
     async role(user) {
       return user.getRole()
-    }
+    },
+    async company(user) {
+      return user.getCompany()
+    },
+  },
+  BasicUser: {
+    async company(user) {
+      return user.getCompany()
+    },
   },
 };
 

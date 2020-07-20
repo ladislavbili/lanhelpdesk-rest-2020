@@ -12,7 +12,7 @@ export async function createAccessToken( user, loginKey ){
   return sign(
     { id: userData.id, loginKey },
     createPass(process.env.JWT_ACC_PASS, userData, loginKey ),
-    { expiresIn: '1m' }
+    { expiresIn: '10d' }
   )
 }
 

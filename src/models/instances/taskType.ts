@@ -1,18 +1,14 @@
 import { Sequelize, DataTypes } from "sequelize";
 import DefaultInstance from './defaultInstance';
 
-export interface RoleInstance extends DefaultInstance {
+export interface TaskTypeInstance extends DefaultInstance {
   title: string;
   order: number;
-  level: number;
-
-  getAccessRights?: any;
-  setAccessRights?: any;
 }
 
-export default function defineRole( sequelize: Sequelize ){
-  sequelize.define<RoleInstance>(
-    "Role",
+export default function defineTaskTypes( sequelize: Sequelize ){
+  sequelize.define<TaskTypeInstance>(
+    "TaskType",
     {
       title: {
         type: DataTypes.TEXT,
@@ -23,15 +19,10 @@ export default function defineRole( sequelize: Sequelize ){
         allowNull: false,
         defaultValue: 0
       },
-      level: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 100
-      },
     },
     {
       //OPTIONS
-      tableName: 'roles',
+      tableName: 'task_types',
       // freezeTableName: true,
     }
   );

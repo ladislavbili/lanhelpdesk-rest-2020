@@ -4,7 +4,7 @@ import { verifyAccToken } from 'configs/jwt';
 import { UserInstance } from 'models/interfaces';
 import { sequelize } from 'models';
 
-export default async function checkResolver( req, access = [] ){
+export default async function checkResolver( req, access = [], useOR = false ){
   const token = req.headers.authorization as String;
 
   if( !token ){
@@ -24,8 +24,10 @@ export default async function checkResolver( req, access = [] ){
   }
 
   const rules = User.get('Role').get('AccessRight');
+  const oneRuleResult = useOR && access.some( (rule) => rules[rule] && typeof rules[rule] === "boolean" );
+  const allRulesResult = !useOR && [ ...access, 'login' ].every( (rule) => rules[rule] && typeof rules[rule] === "boolean" )
 
-  if( [ ...access, 'login' ].every( (rule) => rules[rule] && typeof rules[rule] === "boolean" ) ){
+  if( oneRuleResult || allRulesResult ){
     const Token = await models.Token.findOne({ where: { key: userData.loginKey, UserId: userData.id } })
     let expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);

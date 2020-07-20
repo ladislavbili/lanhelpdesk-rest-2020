@@ -1,4 +1,10 @@
 import defaultAttributes from './defaultAttributes';
+const createAccessRights = ( required ) => {
+  return [ 'login', 'testSections', 'mailViaComment', 'vykazy', 'publicFilters', 'addProjects', 'viewVykaz', 'viewRozpocet', 'viewErrors', 'viewInternal',
+  'users', 'companies', 'pausals', 'projects', 'statuses', 'units', 'prices', 'suppliers', 'tags', 'invoices', 'roles', 'types', 'tripTypes', 'imaps', 'smtps' ].reduce((acc, right) => {
+    return acc + `${right}: Boolean${( required ? '!' : '' )}\n`;
+  } ,'')
+}
 
 export const Role = `
 type Role {
@@ -12,32 +18,15 @@ type Role {
 }
 
 type AccessRights {
-  login: Boolean!,
-  testSections: Boolean!,
-  mailViaComment: Boolean!,
-  vykazy: Boolean!,
-  publicFilters: Boolean!,
-  addProjects: Boolean!,
-  viewVykaz: Boolean!,
-  viewRozpocet: Boolean!,
-  viewErrors: Boolean!,
-  viewInternal: Boolean!,
+  ${createAccessRights(true)}
+}
 
-  users: Boolean!,
-  companies: Boolean!,
-  pausals: Boolean!,
-  projects: Boolean!,
-  statuses: Boolean!,
-  units: Boolean!,
-  prices: Boolean!,
-  suppliers: Boolean!,
-  tags: Boolean!,
-  invoices: Boolean!,
-  roles: Boolean!,
-  types: Boolean!,
-  tripTypes: Boolean!,
-  imaps: Boolean!,
-  smtps: Boolean!,
+input AccessRightsCreateInput {
+  ${createAccessRights(true)}
+}
+
+input AccessRightsUpdateInput {
+  ${createAccessRights(false)}
 }
 `
 
@@ -48,7 +37,7 @@ accessRights: AccessRights
 `
 
 export const RoleMutations = `
-addRole( title: String!, order: Int, level: Int!, login: Boolean!, testSections: Boolean!, mailViaComment: Boolean!, vykazy: Boolean!, publicFilters: Boolean!, addProjects: Boolean!, viewVykaz: Boolean!, viewRozpocet: Boolean!, viewErrors: Boolean!, viewInternal: Boolean!, users: Boolean!, companies: Boolean!, pausals: Boolean!, projects: Boolean!, statuses: Boolean!, units: Boolean!, prices: Boolean!, suppliers: Boolean!, tags: Boolean!, invoices: Boolean!, roles: Boolean!, types: Boolean!, tripTypes: Boolean!, imaps: Boolean!, smtps: Boolean! ): Role,
-updateRole( id: Int!, title: String, order: Int, level: Int, login: Boolean, testSections: Boolean, mailViaComment: Boolean, vykazy: Boolean, publicFilters: Boolean, addProjects: Boolean, viewVykaz: Boolean, viewRozpocet: Boolean, viewErrors: Boolean, viewInternal: Boolean, users: Boolean, companies: Boolean, pausals: Boolean, projects: Boolean, statuses: Boolean, units: Boolean, prices: Boolean, suppliers: Boolean, tags: Boolean, invoices: Boolean, roles: Boolean, types: Boolean, tripTypes: Boolean, imaps: Boolean, smtps: Boolean ): Role,
+addRole( title: String!, order: Int, level: Int!, accessRights: AccessRightsCreateInput! ): Role,
+updateRole( id: Int!, title: String, order: Int, level: Int, accessRights: AccessRightsUpdateInput ): Role,
 deleteRole( id: Int!, newId: Int! ): Role,
 `

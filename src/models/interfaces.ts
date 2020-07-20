@@ -1,6 +1,11 @@
 export { AccessRightsInstance } from './accessRights';
+export { PriceInstance } from './price';
+export { PricelistInstance } from './pricelist';
 export { RoleInstance } from './role';
 export { TagInstance } from './tag';
 export { TaskInstance } from './task';
+export { TaskTypeInstance } from './taskType';
 export { TokenInstance } from './token';
+export { TripTypeInstance } from './tripType';
 export { UserInstance } from './user';
+export { CompanyInstance } from './company';

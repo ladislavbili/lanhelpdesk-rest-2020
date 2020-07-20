@@ -12,7 +12,7 @@ import checkResolver from './checkResolver';
 
 const querries = {
   roles: async ( root, args, { req } ) => {
-    await checkResolver( req, [ 'roles' ] );
+    await checkResolver( req, [ 'roles', 'users' ], true );
     return models.Role.findAll({
       order: [
         ['order', 'ASC'],
@@ -32,8 +32,8 @@ const querries = {
 
 const mutations = {
 
-  addRole: async ( root, { title, order, level, ...accessRights }, { req } ) => {
-    //kontrola prav a ziskanie pouzivatelovich prav
+  addRole: async ( root, { title, order, level, accessRights }, { req } ) => {
+    //kontrola prav a ziskanie pouzivatelovych prav
     const User = await checkResolver( req, [ 'roles' ] );
 
     //nemie byt nova rola mensieho alebo rovneho levelu
@@ -51,7 +51,7 @@ const mutations = {
     });
   },
 
-  updateRole: async ( root, { id, title, order, level, ...accessRights }, { req } ) => {
+  updateRole: async ( root, { id, title, order, level, accessRights }, { req } ) => {
     //kontrola prav a ziskanie prav pouzivatela a upravovanej role
     const User = await checkResolver( req, [ 'roles' ] );
     const TargetRole = <RoleInstance> await models.Role.findByPk(id, { include: [{ model: models.AccessRights }] });
@@ -60,7 +60,7 @@ const mutations = {
     }
     const TargetAccessRights = TargetRole.get('AccessRight');
 
-    //nemie byt upravovana rola mensieho alebo rovneho levelu, ani novy level nesmie byt mensi
+    //nemie byt upravovana rola mensieho alebo rovneho levelu, ani novy level nesmie byt mensi alebo rovny
     if( level !== undefined && User.get('Role').get('level') >= level ){
       throw EditRoleLevelTooLowError;
     }

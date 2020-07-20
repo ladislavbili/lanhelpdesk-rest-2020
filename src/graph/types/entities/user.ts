@@ -12,14 +12,16 @@ type User {
   receiveNotifications: Boolean!,
   signature: String,
   role: Role,
+  company: BasicCompany,
 }
 
-type SimpleUser {
+type BasicUser {
   email: String!,
   username: String!,
   name: String!,
   surname: String!,
   fullName: String!,
+  company: BasicCompany,
 }
 
 
@@ -31,18 +33,18 @@ type UserData {
 export const UserQuerries = `
 users: [User],
 user(id: Int!): User,
-basicUsers: [SimpleUser],
-basicUser(id: Int!): SimpleUser,
+basicUsers: [BasicUser],
+basicUser(id: Int!): BasicUser,
 `
 
 export const UserMutations = `
-registerUser( active: Boolean, username: String!, email: String!, name: String!, surname: String!, password: String!, receiveNotifications: Boolean, signature: String, roleId: Int!): User,
+registerUser( active: Boolean, username: String!, email: String!, name: String!, surname: String!, password: String!, receiveNotifications: Boolean, signature: String, roleId: Int!, companyId: Int!): User,
 loginUser( email: String!, password: String! ): UserData,
 loginToken: UserData,
 logoutUser: Boolean,
 logoutAll: String,
 setUserActive( id: Int!, active: Boolean! ): User,
-updateUser( id: Int!, username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String, roleId: Int ): User,
+updateUser( id: Int!, username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String, roleId: Int, companyId: Int ): User,
 updateProfile( username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String ): UserData,
 deleteUser( id: Int! ): User,
 `

@@ -1,5 +1,4 @@
 import defaultAttributes from './defaultAttributes';
-// @AuthDirective @AccessDirective( access:["tags"] )
 export const Tag = `
 type Tag {
   ${defaultAttributes}
@@ -11,7 +10,7 @@ type Tag {
 `
 
 export const TagQuerries = `
-tags(filter: String): [Tag],
+tags: [Tag],
 tag(id: Int!): Tag,
 `
 

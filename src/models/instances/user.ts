@@ -15,6 +15,7 @@ export interface UserInstance extends DefaultInstance {
   setTags?: any;
   setRole?: any;
   createToken?: any;
+  setPricelist?: any;
 }
 
 export default function defineUsers( sequelize: Sequelize ){
