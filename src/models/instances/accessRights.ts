@@ -26,7 +26,7 @@ export interface AccessRightsInstance extends DefaultInstance {
   tags: boolean;
   invoices: boolean;
   roles: boolean;
-  types: boolean;
+  taskTypes: boolean;
   tripTypes: boolean;
   imaps: boolean;
   smtps: boolean;
@@ -145,7 +145,7 @@ export default function defineAccessRights( sequelize: Sequelize ){
         allowNull: false,
         defaultValue: false,
       },
-      types: {
+      taskTypes: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,

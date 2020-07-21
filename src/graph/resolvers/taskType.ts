@@ -14,7 +14,7 @@ const querries = {
     })
   },
   taskType: async ( root, { id }, { req } ) => {
-    await checkResolver( req, ["types"] );
+    await checkResolver( req, ["taskTypes"] );
     return models.TaskType.findByPk(id);
   },
 }
@@ -22,7 +22,7 @@ const querries = {
 const mutations = {
 
   addTaskType: async ( root, args, { req } ) => {
-    await checkResolver( req, ["types"] );
+    await checkResolver( req, ["taskTypes"] );
     const TaskType = await models.TaskType.create( args );
     const pricelists = await models.Pricelist.findAll();
     await Promise.all( pricelists.map( ( Pricelist ) => (
@@ -35,7 +35,7 @@ const mutations = {
   },
 
   updateTaskType: async ( root, { id, ...args }, { req } ) => {
-    await checkResolver( req, ["types"] );
+    await checkResolver( req, ["taskTypes"] );
     const TaskType = await models.TaskType.findByPk(id);
     if( TaskType === null ){
       throw createDoesNoExistsError('Task type', id);
@@ -44,7 +44,7 @@ const mutations = {
   },
 
   deleteTaskType: async ( root, { id }, { req } ) => {
-    await checkResolver( req, ["types"] );
+    await checkResolver( req, ["taskTypes"] );
     const TaskType = await models.TaskType.findByPk(id);
     if( TaskType === null ){
       throw createDoesNoExistsError('Task type', id);

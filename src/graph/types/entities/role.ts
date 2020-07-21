@@ -1,7 +1,7 @@
 import defaultAttributes from './defaultAttributes';
 const createAccessRights = ( required ) => {
   return [ 'login', 'testSections', 'mailViaComment', 'vykazy', 'publicFilters', 'addProjects', 'viewVykaz', 'viewRozpocet', 'viewErrors', 'viewInternal',
-  'users', 'companies', 'pausals', 'projects', 'statuses', 'units', 'prices', 'suppliers', 'tags', 'invoices', 'roles', 'types', 'tripTypes', 'imaps', 'smtps' ].reduce((acc, right) => {
+  'users', 'companies', 'pausals', 'projects', 'statuses', 'units', 'prices', 'suppliers', 'tags', 'invoices', 'roles', 'taskTypes', 'tripTypes', 'imaps', 'smtps' ].reduce((acc, right) => {
     return acc + `${right}: Boolean${( required ? '!' : '' )}\n`;
   } ,'')
 }
@@ -14,7 +14,7 @@ type Role {
   level: Int!,
 
   accessRights: AccessRights,
-  currentUsers: [User],
+  currentUsers: [BasicUser],
 }
 
 type AccessRights {
