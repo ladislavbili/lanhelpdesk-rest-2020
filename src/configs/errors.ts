@@ -1,5 +1,10 @@
 import { ApolloError } from 'apollo-server-express';
 
+
+export const createCantBeNegativeError = ( name ):ApolloError => {
+  return new ApolloError(`${name} can't be negative!`, 'CANT_BE_NEGATIVE');
+}
+
 export const createDoesNoExistsError = ( item, id = undefined ):ApolloError => {
   if(id !== undefined){
     return new ApolloError(`${item} with id ${id} does not exists!`, 'DOESNT_EXISTS');
@@ -42,6 +47,11 @@ export const OneAdminLeftError = new ApolloError("There is only one admin left!"
 export const CantDeleteLowerLevelError = new ApolloError("Can't delete user with lower level than yours!", "CANT_DELETE_USER_HIS_LEVEL_LOWER");
 
 //pricelist
+export const DeletePricelistNeedsNewDefaultError = new ApolloError("When deleting default pricelist, you must select a new one and pass it in the newDefId attribute!", "NEEDS_NEW_DEFAULT_PRICELIST");
+export const DeletePricelistCompaniesNeedsNewError = new ApolloError("When deleting default pricelist, you must select a new pricelist for the companies and pass it in the newId attribute!", "NEEDS_NEW_COMPANY_PRICELIST");
 
-export const DeletePricelistNeedsNewDefault = new ApolloError("When deleting default pricelist, you must select a new one and pass it in the newDefId attribute!", "NEEDS_NEW_DEFAULT_PRICELIST");
-export const DeletePricelistCompaniesNeedsNew = new ApolloError("When deleting default pricelist, you must select a new pricelist for the companies and pass it in the newId attribute!", "NEEDS_NEW_COMPANY_PRICELIST");
+//company rent
+export const EditedRentNotOfCompanyError = new ApolloError("Some edited rent does not belong to the company!", "EDITED_RENT_NOT_OF_COMPANY");
+
+//
+export const PriceNotInPricelistError = new ApolloError("Some edited price does not belong to the pricelist!", "EDITED_PRICE_NOT_IN_PRICELIST");

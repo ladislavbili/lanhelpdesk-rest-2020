@@ -19,20 +19,20 @@ enum PriceAllowedType {
 
 type Price {
   ${defaultAttributes}
-  price: Int!,
+  price: Float!,
   type: PriceAllowedType!,
   taskType: TaskType,
   tripType: TripType,
 }
 
 input CreatePriceInput {
-  price: Int!,
+  price: Float!,
   type: PriceAllowedType!,
   typeId: Int!
 }
 
 input UpdatePriceInput {
-  id: Int!,
+  id: Float!,
   price: Int!
 }
 `

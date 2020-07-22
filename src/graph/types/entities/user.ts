@@ -16,6 +16,7 @@ type User {
 }
 
 type BasicUser {
+  id: Int!,
   email: String!,
   username: String!,
   name: String!,

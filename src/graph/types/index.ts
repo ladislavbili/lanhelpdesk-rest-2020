@@ -9,4 +9,3 @@ export default gql`
   ${Querries}
   ${Mutations}
 `;
-//TODO replace types in role to taskTypes

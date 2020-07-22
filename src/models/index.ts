@@ -10,6 +10,8 @@ import defineTripTypes from './instances/tripType';
 import definePricelists from './instances/pricelist';
 import definePrices from './instances/price';
 import defineCompanies from './instances/company';
+import defineCompanyRents from './instances/companyRent';
+import defineSmtps from './instances/smtp';
 /*
 const operatorsAliases = {
 
@@ -65,6 +67,12 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.Company.hasMany(models.User);
   models.User.belongsTo(models.Company, { foreignKey: { allowNull: false } });
 
+  defineCompanyRents(sequelize);
+
+  models.Company.hasMany(models.CompanyRent, { foreignKey: { allowNull: false } });
+  models.CompanyRent.belongsTo(models.Company, { foreignKey: { allowNull: false } });
+
+  defineSmtps(sequelize);
 
   if(ignoreUpdating){
     return new Promise( (resolve, reject) => resolve() );

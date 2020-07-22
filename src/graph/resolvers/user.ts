@@ -17,7 +17,7 @@ import {
   CantDeleteLowerLevelError
 } from 'configs/errors';
 import { models } from 'models';
-import { UserInstance, RoleInstance } from 'models/interfaces';
+import { UserInstance, RoleInstance } from 'models/instances';
 import checkResolver from './checkResolver';
 
 const maxAge = 7 * 24 * 60 * 60 * 1000;
@@ -27,8 +27,8 @@ const querries = {
     await checkResolver( req, ['users'] );
     return models.User.findAll({
       order: [
-        ['name', 'ASC'],
         ['surname', 'ASC'],
+        ['name', 'ASC'],
         ['email', 'ASC'],
       ]
     })
@@ -42,8 +42,8 @@ const querries = {
     return models.User.findAll({
       where: { active: true },
       order: [
-        ['name', 'ASC'],
         ['surname', 'ASC'],
+        ['name', 'ASC'],
         ['email', 'ASC'],
       ]
     })
@@ -69,7 +69,7 @@ const mutations = {
       throw createDoesNoExistsError('Company', companyId);
     }
     //rola musi byt vacsia alebo admin
-    if( User.get('Role').get('level') > TargetRole.get('level') && User.get('Role').get('level') !== 0 ){
+    if( (<RoleInstance> User.get('Role')).get('level') > TargetRole.get('level') && (<RoleInstance> User.get('Role')).get('level') !== 0 ){
       throw CantCreateUserLevelError;
     }
     if( password.length < 6 ){
@@ -160,13 +160,13 @@ const mutations = {
       throw createDoesNoExistsError('User');
     }
     //nesmie mat vacsi alebo rovny level ako ciel, ak nie je admin
-    if( User.get('Role').get('level') >= (<RoleInstance> TargetUser.get('Role')).get('level') && User.get('Role').get('level') !== 0 ){
+    if( (<RoleInstance> User.get('Role')).get('level') >= (<RoleInstance> TargetUser.get('Role')).get('level') && (<RoleInstance> User.get('Role')).get('level') !== 0 ){
       throw DeactivateUserLevelTooLowError;
     }
 
     //if admin
-    if( TargetUser.get('Role').get('level') === 0 ){
-      if( ( await TargetUser.get('Role').getUsers() ).filter((user) => user.get('active') ).length <= 1 ){
+    if( (<RoleInstance> TargetUser.get('Role')).get('level') === 0 ){
+      if( ( await (<RoleInstance> TargetUser.get('Role')).getUsers() ).filter((user) => user.get('active') ).length <= 1 ){
         throw OneAdminLeftError;
       }
     }
@@ -197,7 +197,7 @@ const mutations = {
     }
 
     //nesmie menit rolu s nizsim alebo rovnym levelom ak nie je admin
-    if( User.get('Role').get('level') >= TargetUser.get('Role').get('level') && User.get('Role').get('level') !== 0 ){
+    if( (<RoleInstance> User.get('Role')).get('level') >= (<RoleInstance> TargetUser.get('Role')).get('level') && (<RoleInstance> User.get('Role')).get('level') !== 0 ){
       throw UserRoleLevelTooLowError;
     }
 
@@ -216,18 +216,18 @@ const mutations = {
       }
 
       //ak pouzivatel edituje sam seba nemoze menit rolu
-      if( TargetUser.get('id') === User.get('id') && roleId !== User.get('Role').get('id') ){
+      if( TargetUser.get('id') === User.get('id') && roleId !== (<RoleInstance> User.get('Role')).get('id') ){
         throw CantChangeYourRoleError;
       }
 
       //nesmie dat rolu s nizssim alebo rovnym levelom ak nie je admin
-      if( User.get('Role').get('level') >= NewRole.get('level') && User.get('Role').get('level') !== 0 ){
+      if( (<RoleInstance> User.get('Role')).get('level') >= NewRole.get('level') && (<RoleInstance> User.get('Role')).get('level') !== 0 ){
         throw UserNewRoleLevelTooLowError;
       }
 
       //ak je target user admin skontrolovat ci este nejaky existuje
-      if( TargetUser.get('Role').get('level') === 0 ){
-        if( ( await TargetUser.get('Role').getUsers() ).filter((user) => user.get('active') ).length <= 1 ){
+      if( (<RoleInstance> TargetUser.get('Role')).get('level') === 0 ){
+        if( ( await (<RoleInstance> TargetUser.get('Role')).getUsers() ).filter((user) => user.get('active') ).length <= 1 ){
           throw OneAdminLeftError;
         }
       }
@@ -275,12 +275,12 @@ const mutations = {
       throw createDoesNoExistsError('User');
     }
     //nesmie mazat rolu s nizsim alebo rovnym levelom ak nie je admin
-    if( User.get('Role').get('level') >= (<RoleInstance> TargetUser.get('Role')).get('level') && User.get('Role').get('level') !== 0 ){
+    if( (<RoleInstance> User.get('Role')).get('level') >= (<RoleInstance> TargetUser.get('Role')).get('level') && (<RoleInstance> User.get('Role')).get('level') !== 0 ){
       throw CantDeleteLowerLevelError;
     }
     //if admin
-    if( TargetUser.get('Role').get('level') === 0 ){
-      if( ( await TargetUser.get('Role').getUsers() ).filter((user) => user.get('active') ).length <= 1 ){
+    if( (<RoleInstance> TargetUser.get('Role')).get('level') === 0 ){
+      if( ( await  (<RoleInstance> TargetUser.get('Role')).getUsers() ).filter((user) => user.get('active') ).length <= 1 ){
         throw OneAdminLeftError;
       }
     }

@@ -1,7 +1,7 @@
-import { createDoesNoExistsError, DeletePricelistNeedsNewDefault, DeletePricelistCompaniesNeedsNew } from 'configs/errors';
-import { models } from 'models';
+import { createDoesNoExistsError, DeletePricelistNeedsNewDefaultError, DeletePricelistCompaniesNeedsNewError, PriceNotInPricelistError, createCantBeNegativeError } from 'configs/errors';
+import { models, sequelize } from 'models';
 import checkResolver from './checkResolver';
-import { PriceInstance, PricelistInstance } from 'models/interfaces';
+import { PriceInstance, PricelistInstance } from 'models/instances';
 
 const querries = {
   pricelists: async ( root , args, { req } ) => {
@@ -39,6 +39,10 @@ const mutations = {
       }
     })
 
+    if(prices.some((price) => price.price < 0 )){
+      throw createCantBeNegativeError('Price');
+    }
+
     if(attributes.def){
       await models.Pricelist.update({ def: false },{ where: { def: true } })
     }
@@ -63,20 +67,26 @@ const mutations = {
       throw createDoesNoExistsError('Pricelist', id);
     }
 
-    const allPrices = <PriceInstance[]> Pricelist.get('Prices');
-    if(attributes.def && !Pricelist.get('def')){
-      await models.Pricelist.update({ def: false },{ where: { def: true } })
-    }
-    let promises = [Pricelist.update( attributes )];
-    if(prices){
-      prices.forEach( (price) => {
-        const Price = allPrices.find( (PriceModel) => PriceModel.get('id') === price.id );
-        if(Price){
-          promises.push( Price.update({ price: price.price }) )
+    //start of transaction
+    await sequelize.transaction(async (t) => {
+      const allPrices = <PriceInstance[]> Pricelist.get('Prices');
+      if(attributes.def && !Pricelist.get('def')){
+        await models.Pricelist.update({ def: false },{ where: { def: true }, transaction: t })
+      }
+      let promises = [Pricelist.update( attributes, { transaction: t } )];
+      if(prices){
+        if(prices.some((price) => price.price < 0 )){
+          throw createCantBeNegativeError('Price');
         }
-      })
-    }
-    await Promise.all(promises);
+        prices.forEach( (price) => {
+          const Price = allPrices.find( (PriceModel) => PriceModel.get('id') === price.id );
+          if(Price){
+            promises.push( Price.update({ price: price.price }, { transaction: t }) )
+          }
+        })
+      }
+      await Promise.all(promises);
+    })
     return Pricelist;
   },
 
@@ -86,11 +96,11 @@ const mutations = {
     if( Pricelist === null ){
       throw createDoesNoExistsError('Pricelist', id);
     }
-    const companies = Pricelist.get('Companies');
+    const companies = <any[]> Pricelist.get('Companies');
     //pick new pricelist for the companies
     if(companies.length !== 0 ){
       if( !newId ){
-        throw DeletePricelistCompaniesNeedsNew
+        throw DeletePricelistCompaniesNeedsNewError
       }
       const NewCompanyPricelist = <PricelistInstance> await models.Pricelist.findByPk(newId);
       if( NewCompanyPricelist === null ){
@@ -101,7 +111,7 @@ const mutations = {
     //there must be default pricelist
     if( Pricelist.get('def')){
       if( !newDefId ){
-        throw DeletePricelistNeedsNewDefault;
+        throw DeletePricelistNeedsNewDefaultError;
       }
       const NewDefaultPricelist = <PricelistInstance> await models.Pricelist.findByPk(newDefId);
       if( NewDefaultPricelist === null ){

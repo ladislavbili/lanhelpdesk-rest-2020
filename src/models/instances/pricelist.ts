@@ -8,6 +8,7 @@ export interface PricelistInstance extends DefaultInstance {
   def: boolean;
   materialMargin: number;
   materialMarginExtra: number;
+  createPrice?: any;
 }
 
 export default function definePricelists( sequelize: Sequelize ){

@@ -2,6 +2,7 @@ import company from './company';
 import pricelist from './pricelist';
 import role from './role';
 import tag from './tag';
+import smtp from './smtp';
 import task from './task';
 import taskType from './taskType';
 import tripType from './tripType';
@@ -13,6 +14,7 @@ export default {
     ...pricelist.querries,
     ...role.querries,
     ...tag.querries,
+    ...smtp.querries,
     ...task.querries,
     ...taskType.querries,
     ...tripType.querries,
@@ -25,6 +27,7 @@ export default {
     ...pricelist.mutations,
     ...role.mutations,
     ...tag.mutations,
+    ...smtp.mutations,
     ...task.mutations,
     ...taskType.mutations,
     ...tripType.mutations,
@@ -35,6 +38,7 @@ export default {
   ...pricelist.attributes,
   ...role.attributes,
   ...tag.attributes,
+  ...smtp.attributes,
   ...task.attributes,
   ...taskType.attributes,
   ...tripType.attributes,

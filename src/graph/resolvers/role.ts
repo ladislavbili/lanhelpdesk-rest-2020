@@ -7,7 +7,7 @@ import {
   SetRoleLevelTooLowError
 } from 'configs/errors';
 import { models } from 'models';
-import { UserInstance, RoleInstance, AccessRightsInstance } from 'models/interfaces';
+import { UserInstance, RoleInstance, AccessRightsInstance } from 'models/instances';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -37,11 +37,11 @@ const mutations = {
     const User = await checkResolver( req, [ 'roles' ] );
 
     //nemie byt nova rola mensieho alebo rovneho levelu
-    if( level !== undefined && User.get('Role').get('level') >= level ){
+    if( level !== undefined && (<RoleInstance> User.get('Role')).get('level') >= level ){
       throw EditRoleLevelTooLowError;
     }
     //nesmie pridat prava ktore sam nema
-    checkRights( User.get('Role').get('AccessRight').get(), {}, accessRights )
+    checkRights( (<AccessRightsInstance> (<RoleInstance>User.get('Role')).get('AccessRight')).get(), {}, accessRights )
 
     return models.Role.create({
       title, order, level,
@@ -58,17 +58,17 @@ const mutations = {
     if( TargetRole === null ){
       throw createDoesNoExistsError('Role', id);
     }
-    const TargetAccessRights = TargetRole.get('AccessRight');
+    const TargetAccessRights = <AccessRightsInstance> TargetRole.get('AccessRight');
 
     //nemie byt upravovana rola mensieho alebo rovneho levelu, ani novy level nesmie byt mensi alebo rovny
-    if( level !== undefined && User.get('Role').get('level') >= level ){
+    if( level !== undefined && (<RoleInstance>User.get('Role')).get('level') >= level ){
       throw EditRoleLevelTooLowError;
     }
-    if(User.get('Role').get('level') >= TargetRole.get('level')){
+    if((<RoleInstance> User.get('Role')).get('level') >= TargetRole.get('level')){
       throw EditRoleError;
     }
     //nesmie menit prava ktore sam nema
-    checkRights( User.get('Role').get('AccessRight').get(), TargetAccessRights.get(), accessRights )
+    checkRights( (<AccessRightsInstance> (<RoleInstance> User.get('Role')).get('AccessRight')).get(), TargetAccessRights.get(), accessRights )
 
     await TargetAccessRights.update(accessRights);
     return TargetRole.update( { title, order } );
@@ -86,11 +86,11 @@ const mutations = {
       throw createDoesNoExistsError('New role', id);
     }
     //mazana rola musi byt vacsieho levelu
-    if( User.get('Role').get('level') >= OldRole.get('level') ){
+    if( (<RoleInstance> User.get('Role')).get('level') >= OldRole.get('level') ){
       throw EditRoleLevelTooLowError;
     }
     //nahradna rola musi byt vacsieho levelu
-    if( User.get('Role').get('level') >= NewRole.get('level') ){
+    if( (<RoleInstance> User.get('Role')).get('level') >= NewRole.get('level') ){
       throw SetRoleLevelTooLowError;
     }
 

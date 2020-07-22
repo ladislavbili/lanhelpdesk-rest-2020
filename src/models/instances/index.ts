@@ -1,4 +1,6 @@
 export { AccessRightsInstance } from './accessRights';
+export { CompanyInstance } from './company';
+export { CompanyRentInstance } from './companyRent';
 export { PriceInstance } from './price';
 export { PricelistInstance } from './pricelist';
 export { RoleInstance } from './role';
@@ -8,4 +10,3 @@ export { TaskTypeInstance } from './taskType';
 export { TokenInstance } from './token';
 export { TripTypeInstance } from './tripType';
 export { UserInstance } from './user';
-export { CompanyInstance } from './company';

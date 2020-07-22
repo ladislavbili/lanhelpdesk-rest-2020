@@ -2,7 +2,7 @@ import { SchemaDirectiveVisitor } from 'apollo-server-express';
 import { verifyAccToken } from 'configs/jwt';
 import { InvalidTokenError, NoAccTokenError, createAttributeNoAccess } from 'configs/errors';
 import { defaultFieldResolver, GraphQLBoolean } from 'graphql';
-import { UserInstance } from 'models/interfaces';
+import { UserInstance } from 'models/instances';
 import { models } from 'models';
 
 class AuthDirective extends SchemaDirectiveVisitor {

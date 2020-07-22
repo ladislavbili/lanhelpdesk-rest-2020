@@ -14,6 +14,13 @@ export interface CompanyInstance extends DefaultInstance {
   email: string;
   phone: string;
   description: string;
+  monthly: boolean;
+  monthlyPausal: number;
+  taskWorkPausal: number;
+  taskTripPausal: number;
+
+  createCompanyRent?: any;
+  setPricelist?: any;
 }
 
 export default function defineCompanies( sequelize: Sequelize ){
@@ -67,7 +74,10 @@ export default function defineCompanies( sequelize: Sequelize ){
       email: {
         type: DataTypes.TEXT({ length: "tiny" }),
         allowNull: false,
-        defaultValue: ''
+        defaultValue: '',
+        validate: {
+          isEmail: true
+        }
       },
       phone: {
         type: DataTypes.TEXT({ length: "tiny" }),
@@ -78,8 +88,27 @@ export default function defineCompanies( sequelize: Sequelize ){
         type: DataTypes.TEXT,
         allowNull: false,
         defaultValue: ''
-      }
-
+      },
+      monthly: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      monthlyPausal: {
+        type: DataTypes.FLOAT(10,2),
+        allowNull: false,
+        defaultValue: 0
+      },
+      taskWorkPausal: {
+        type: DataTypes.FLOAT(10,2),
+        allowNull: false,
+        defaultValue: 0
+      },
+      taskTripPausal: {
+        type: DataTypes.FLOAT(10,2),
+        allowNull: false,
+        defaultValue: 0
+      },
     },
     {
       //OPTIONS

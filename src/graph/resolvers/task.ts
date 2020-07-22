@@ -1,6 +1,6 @@
 import { InvalidTokenError, createDoesNoExistsError } from 'configs/errors';
 import { models } from 'models';
-import { TaskInstance } from 'models/interfaces';
+import { TaskInstance } from 'models/instances';
 import checkResolver from './checkResolver';
 
 const querries = {

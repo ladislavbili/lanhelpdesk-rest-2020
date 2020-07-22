@@ -8,6 +8,7 @@ export interface RoleInstance extends DefaultInstance {
 
   getAccessRights?: any;
   setAccessRights?: any;
+  getUsers?: any;
 }
 
 export default function defineRole( sequelize: Sequelize ){
