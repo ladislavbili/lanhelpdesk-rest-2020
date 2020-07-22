@@ -26,6 +26,7 @@ type Company {
 }
 
 type BasicCompany {
+  id: Int!,
   title: String!,
   dph: Int!,
   pricelist: Pricelist!
