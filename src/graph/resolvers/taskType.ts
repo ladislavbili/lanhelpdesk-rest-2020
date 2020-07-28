@@ -1,7 +1,7 @@
 import { createDoesNoExistsError } from 'configs/errors';
 import { models } from 'models';
 import checkResolver from './checkResolver';
-import { PricelistInstance } from 'models/instances';
+import { PricelistInstance, ProjectInstance } from 'models/instances';
 
 const querries = {
   taskTypes: async ( root , args, { req } ) => {
@@ -43,14 +43,29 @@ const mutations = {
     return TaskType.update( args );
   },
 
-  deleteTaskType: async ( root, { id }, { req } ) => {
+  deleteTaskType: async ( root, { id, newId }, { req } ) => {
     await checkResolver( req, ["taskTypes"] );
-    const TaskType = await models.TaskType.findByPk(id);
-    if( TaskType === null ){
+    const OldTaskType = await models.TaskType.findByPk( id,
+      {
+        include: [
+          { model: models.Project, as: 'defTaskType' }
+        ]
+      }
+    )
+    if( OldTaskType === null ){
       throw createDoesNoExistsError('Task type', id);
     }
-    await models.Price.destroy({ where: { type: 'TaskType', TaskTypeId: id } })
-    return TaskType.destroy();
+    const NewTaskType = await models.TaskType.findByPk(newId);
+    if( NewTaskType === null ){
+      throw createDoesNoExistsError('Task type', newId);
+    }
+    Promise.all([
+      models.Price.destroy({ where: { type: 'TaskType', TaskTypeId: id } }),
+      ...(<ProjectInstance[]>OldTaskType.get('defTaskType')).map( (project) => {
+        return project.setDefTaskType(newId);
+      }),
+    ])
+    return OldTaskType.destroy();
   },
 }
 

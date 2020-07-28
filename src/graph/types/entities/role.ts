@@ -9,12 +9,12 @@ const createAccessRights = ( required ) => {
 export const Role = `
 type Role {
   ${defaultAttributes}
-  title: String!,
-  order: Int!,
-  level: Int!,
+  title: String!
+  order: Int!
+  level: Int!
 
-  accessRights: AccessRights,
-  currentUsers: [BasicUser],
+  accessRights: AccessRights!
+  currentUsers: [BasicUser]
 }
 
 type AccessRights {
@@ -31,13 +31,13 @@ input AccessRightsUpdateInput {
 `
 
 export const RoleQuerries = `
-roles: [Role],
-role(id: Int!): Role,
+roles: [Role]
+role(id: Int!): Role
 accessRights: AccessRights
 `
 
 export const RoleMutations = `
-addRole( title: String!, order: Int, level: Int!, accessRights: AccessRightsCreateInput! ): Role,
-updateRole( id: Int!, title: String, order: Int, level: Int, accessRights: AccessRightsUpdateInput ): Role,
-deleteRole( id: Int!, newId: Int! ): Role,
+addRole( title: String!, order: Int, level: Int!, accessRights: AccessRightsCreateInput! ): Role
+updateRole( id: Int!, title: String, order: Int, level: Int, accessRights: AccessRightsUpdateInput ): Role
+deleteRole( id: Int!, newId: Int! ): Role
 `

@@ -1,9 +1,13 @@
 import { Sequelize, Model, DataTypes, Op } from "sequelize";
+import { logFunctionsOfModel } from 'helperFunctions';
+
 import defineAccessRights from './instances/accessRights';
 import defineTags from './instances/tag';
 import defineTasks from './instances/task';
 import defineTokens from './instances/token';
 import defineUsers from './instances/user';
+import defineProjects from './instances/project';
+import defineProjectRights from './instances/projectRight';
 import defineRoles from './instances/role';
 import defineTaskTypes from './instances/taskType';
 import defineTripTypes from './instances/tripType';
@@ -12,6 +16,10 @@ import definePrices from './instances/price';
 import defineCompanies from './instances/company';
 import defineCompanyRents from './instances/companyRent';
 import defineSmtps from './instances/smtp';
+import defineImaps from './instances/imap';
+import defineStatuses from './instances/status';
+
+
 /*
 const operatorsAliases = {
 
@@ -73,7 +81,45 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.CompanyRent.belongsTo(models.Company, { foreignKey: { allowNull: false } });
 
   defineSmtps(sequelize);
+  defineImaps(sequelize);
+  defineStatuses(sequelize);
+  defineProjects(sequelize);
+  defineProjectRights(sequelize);
 
+  //PROJECT RIGHTS - USERS
+  models.User.hasMany(models.ProjectRight, { onDelete: 'CASCADE' });
+  models.ProjectRight.belongsTo(models.User, { foreignKey: { allowNull: false } });
+
+  //PROJECT - PROJECT RIGHTS
+  models.Project.hasMany(models.ProjectRight, { onDelete: 'CASCADE' });
+  models.ProjectRight.belongsTo(models.Project, { foreignKey: { allowNull: false } });
+
+  //PROJECT - ASSIGNED TO
+
+  models.Project.belongsToMany(models.User, { as: { singular: "defAssignedTo", plural: "defAssignedTos" }, through: 'project_def_assignedTos' });
+  models.User.belongsToMany(models.Project, { as: { singular: "defAssignedTo", plural: "defAssignedTos" }, through: 'project_def_assignedTos' });
+
+  //PROJECT - COMPANY
+  models.Project.belongsTo(models.Company, { as: 'defCompany' });
+  models.Company.hasMany(models.Project, { as: 'defCompany' });
+
+  //PROJECT - REQUESTER
+  models.Project.belongsTo(models.User, { as: 'defRequester' });
+  models.User.hasMany(models.Project, { as: 'defRequester' });
+
+  //PROJECT - STATUS
+  models.Project.belongsTo(models.Status, { as: 'defStatus' });
+  models.Status.hasMany(models.Project, { as: 'defStatus' });
+
+  //PROJECT - TAGS
+  models.Project.belongsToMany(models.Tag, { as: 'defTags', through: 'project_def_tags' });
+  models.Tag.belongsToMany(models.Project, { as: 'defTags', through: 'project_def_tags' });
+
+  //PROJECT - TASKTYPE
+  models.Project.belongsTo(models.TaskType, { as: 'defTaskType' });
+  models.TaskType.hasMany(models.Project, { as: 'defTaskType' });
+
+  //logFunctionsOfModel(models.Company)
   if(ignoreUpdating){
     return new Promise( (resolve, reject) => resolve() );
   }

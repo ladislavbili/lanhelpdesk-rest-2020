@@ -17,7 +17,7 @@ import {
   CantDeleteLowerLevelError
 } from 'configs/errors';
 import { models } from 'models';
-import { UserInstance, RoleInstance } from 'models/instances';
+import { UserInstance, RoleInstance, ProjectInstance } from 'models/instances';
 import checkResolver from './checkResolver';
 
 const maxAge = 7 * 24 * 60 * 60 * 1000;
@@ -270,7 +270,16 @@ const mutations = {
   //deleteUser( id: Int! ): User,
   deleteUser: async ( root, { id }, { req } ) => {
     const User = await checkResolver( req, ['users'] );
-    const TargetUser = <UserInstance> await models.User.findByPk(id, { include: [{ model: models.Role }] });
+    const TargetUser = <UserInstance> await models.User.findByPk(id,
+      {
+        include: [
+          { model: models.Role },
+          { model: models.Project, as: 'defAssignedTo', include: [{ model: models.User, as: 'defAssignedTo'  }] },
+          { model: models.Project, as: 'defRequester' },
+
+        ]
+      }
+    );
     if( TargetUser === null ){
       throw createDoesNoExistsError('User');
     }
@@ -284,6 +293,22 @@ const mutations = {
         throw OneAdminLeftError;
       }
     }
+
+    let promises = [
+      ...(<ProjectInstance[]>TargetUser.get('defAssignedTo')).map( (project) => {
+        if((<UserInstance[]>project.get('defAssignedTo')).length === 1 && project.get('defAssignedToFixed') ){
+          return Promise.all([project.removeDefAssignedTo(TargetUser.get('id')),project.update({ defAssignedToDef: false, defAssignedToFixed: false, defAssignedToShow:true })])
+        }
+        return project.removeDefAssignedTo(TargetUser.get('id'));
+      } ),
+      ...(<ProjectInstance[]>TargetUser.get('defRequester')).map( (project) => {
+        return project.setDefRequester(null);
+      })
+    ]
+
+
+
+    await Promise.all(promises);
     return TargetUser.destroy();
   },
 }

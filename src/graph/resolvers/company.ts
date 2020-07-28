@@ -1,6 +1,6 @@
 import { createDoesNoExistsError, createCantBeNegativeError, EditedRentNotOfCompanyError } from 'configs/errors';
 import { models, sequelize } from 'models';
-import { UserInstance, CompanyInstance, CompanyRentInstance } from 'models/instances';
+import { UserInstance, CompanyInstance, CompanyRentInstance, ProjectInstance } from 'models/instances';
 import { splitArrayByFilter } from 'helperFunctions';
 import checkResolver from './checkResolver';
 
@@ -137,7 +137,13 @@ const mutations = {
 
   deleteCompany: async ( root, { id, newId }, { req } ) => {
     await checkResolver( req, ["companies"] );
-    const OldCompany = await models.Company.findByPk(id);
+    const OldCompany = await models.Company.findByPk(id,
+      {
+        include: [
+          { model: models.Project, as: 'defCompany' }
+        ]
+      }
+    );
     const NewCompany = await models.Company.findByPk(newId);
 
     if( OldCompany === null ){
@@ -148,6 +154,16 @@ const mutations = {
     }
     const allUsers = await models.User.findAll({ where: { CompanyId: id } });
     await Promise.all( allUsers.map( user => (user as UserInstance ).setCompany(newId) ) );
+
+
+    await Promise.all(
+      (<ProjectInstance[]>OldCompany.get('defCompany')).map( (project) => {
+        return project.setDefCompany(newId);
+      })
+    )
+
+    //setDefCompany(null);
+
     return OldCompany.destroy();
   },
 }

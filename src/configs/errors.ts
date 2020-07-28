@@ -6,10 +6,13 @@ export const createCantBeNegativeError = ( name ):ApolloError => {
 }
 
 export const createDoesNoExistsError = ( item, id = undefined ):ApolloError => {
-  if(id !== undefined){
-    return new ApolloError(`${item} with id ${id} does not exists!`, 'DOESNT_EXISTS');
+  if(id === undefined){
+    return new ApolloError(`${item} does not exists!`, 'DOESNT_EXISTS');
   }
-  return new ApolloError(`${item} does not exists!`, 'DOESNT_EXISTS');
+  if( Array.isArray(id) ){
+    return new ApolloError(`${item} with ids ${id.toString()} do not exists!`, 'DOESNT_EXISTS');
+  }
+  return new ApolloError(`${item} with id ${id} does not exists!`, 'DOESNT_EXISTS');
 }
 
 export const createAttributeNoAccess = ( item ):ApolloError => {
@@ -49,9 +52,10 @@ export const CantDeleteLowerLevelError = new ApolloError("Can't delete user with
 //pricelist
 export const DeletePricelistNeedsNewDefaultError = new ApolloError("When deleting default pricelist, you must select a new one and pass it in the newDefId attribute!", "NEEDS_NEW_DEFAULT_PRICELIST");
 export const DeletePricelistCompaniesNeedsNewError = new ApolloError("When deleting default pricelist, you must select a new pricelist for the companies and pass it in the newId attribute!", "NEEDS_NEW_COMPANY_PRICELIST");
+export const PriceNotInPricelistError = new ApolloError("Some edited price does not belong to the pricelist!", "EDITED_PRICE_NOT_IN_PRICELIST");
 
 //company rent
 export const EditedRentNotOfCompanyError = new ApolloError("Some edited rent does not belong to the company!", "EDITED_RENT_NOT_OF_COMPANY");
 
-//
-export const PriceNotInPricelistError = new ApolloError("Some edited price does not belong to the pricelist!", "EDITED_PRICE_NOT_IN_PRICELIST");
+//project
+export const NotAdminOfProjectNorManagesProjects = new ApolloError("You can't edit this project! You are neither admin of project nor manager of all projects.", "NOT_PROJECT_ADMIN_NOR_MANAGES_PROJECTS");

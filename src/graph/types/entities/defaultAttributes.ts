@@ -1,5 +1,5 @@
 export default `
-  id: Int!,
-  createdAt: String!,
-  updatedAt: String!,
+  id: Int!
+  createdAt: String!
+  updatedAt: String!
 `

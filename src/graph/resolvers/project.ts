@@ -1,0 +1,279 @@
+import { createDoesNoExistsError, NotAdminOfProjectNorManagesProjects } from 'configs/errors';
+import { models, sequelize } from 'models';
+import checkResolver from './checkResolver';
+import { flattenObject, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter } from 'helperFunctions';
+import { ProjectInstance, ProjectRightInstance, RoleInstance, AccessRightsInstance } from 'models/instances';
+import { ApolloError } from 'apollo-server-express';
+
+const querries = {
+  projects: async ( root , args, { req } ) => {
+    await checkResolver( req, ["projects"] );
+    return models.Project.findAll({
+      order: [
+        ['title', 'ASC'],
+      ]
+    })
+  },
+  project: async ( root, { id }, { req } ) => {
+    await checkResolver( req );
+    return models.Project.findByPk(id);
+  },
+  myProjects: async ( root, args, { req } ) => {
+    const TestedUser = await checkResolver( req );
+    const User = await models.User.findByPk(
+      TestedUser.get('id'),
+      {
+        include: [{
+          model: models.ProjectRight,
+          include: [{
+            model: models.Project,
+          }]
+        }]
+      }
+    );
+
+    return (<ProjectRightInstance[]> User.get('ProjectRights')).map( (right) => ({ right, project: right.get('Project') }) )
+  },
+}
+
+const mutations = {
+
+  addProject: async ( root, { def, projectRights, ...attributes }, { req } ) => {
+    await checkResolver( req, ["projects"] );
+    checkDefIntegrity(def);
+    let assignedTos = def.assignedTo.value;
+    let company = def.company.value;
+    let requester = def.requester.value;
+    let status = def.status.value;
+    let tags = def.tag.value;
+    let taskType = def.taskType.value;
+
+    await idsDoExistsCheck( projectRights.map((right) => right.UserId ), models.User );
+    await idsDoExistsCheck( assignedTos, models.User );
+    await idsDoExistsCheck( tags, models.Tag );
+    await multipleIdDoesExistsCheck( [
+      { model: models.Company, id: company },
+      { model: models.User, id: requester },
+      { model: models.Status, id: status },
+      { model: models.TaskType, id: taskType }
+    ].filter( (pair) => pair.id !== null ) );
+
+    delete def.assignedTo['value'];
+    delete def.company['value'];
+    delete def.requester['value'];
+    delete def.status['value'];
+    delete def.tag['value'];
+    delete def.taskType['value'];
+    //def map to object
+    let newDef = flattenObject(def,'def');
+
+    const newProject = <ProjectInstance> await models.Project.create({
+      ...attributes,
+      defCompanyId: company,
+      defRequesterId: requester,
+      defStatusId: status,
+      defTaskTypeId: taskType,
+      ProjectRights: fixRights(projectRights)
+    }, {
+      include: [{ model: models.ProjectRight }]
+    });
+
+    await newProject.setDefAssignedTos(assignedTos === null ? [] : assignedTos);
+    await newProject.setDefTags(tags === null ? [] : tags);
+    return newProject;
+  },
+
+  updateProject: async ( root, { id, def: defInput, projectRights: projectRightsInput, ...attributes }, { req } ) => {
+    const User = await checkResolver( req );
+    const Project = <ProjectInstance> await models.Project.findByPk(id, { include: [{ model: models.ProjectRight }] } );
+    if( Project === null ){
+      throw createDoesNoExistsError('Project', id);
+    }
+
+    //Who can edit (admin in project, global admin or project manager)
+    const userRights = (<ProjectRightInstance[]> Project.get('ProjectRights')).find( (right) => right.get('UserId') === User.get('id') );
+    if(
+      (
+        userRights === undefined ||
+        !userRights.get('admin')
+      ) &&
+      !( (<AccessRightsInstance> (<RoleInstance> User.get('Role')).get('AccessRight')).get().projects )
+    ){
+      throw NotAdminOfProjectNorManagesProjects;
+    }
+
+    await sequelize.transaction(async (t) => {
+      let extraAttributes = {};
+      const promises = [];
+      //RIGHTS
+      const projectRights = fixRights(projectRightsInput);
+      //all users exists in rights
+      await idsDoExistsCheck( projectRights.map( (right) => right.UserId ), models.User );
+
+      if(projectRights !== null){
+        const [existingRights, deletedRights] = splitArrayByFilter(
+          <ProjectRightInstance[]> Project.get('ProjectRights'),
+          (right) => [...projectRights].some((newRight) => newRight.UserId === right.get('UserId'))
+        )
+        const newRights = projectRights.filter( (projectRight) => !existingRights.some( (right) => right.get('UserId') === projectRight.UserId ) )
+        //update rights
+        newRights.forEach( (right) => promises.push( Project.createProjectRight( right, { transaction: t } ) ) );
+        existingRights.forEach( (Right) => promises.push( Right.update( projectRights.find( (right) => right.UserId === Right.get('UserId') ), { transaction: t } ) ) );
+        deletedRights.forEach( (Right) => promises.push( Right.destroy( { transaction: t } ) ) );
+      }
+
+      //DEFS
+      if( defInput ){
+        checkDefIntegrity(defInput);
+        let assignedTos = defInput.assignedTo.value;
+        let company = defInput.company.value;
+        let requester = defInput.requester.value;
+        let status = defInput.status.value;
+        let tags = defInput.tag.value;
+        let taskType = defInput.taskType.value;
+
+        await idsDoExistsCheck( assignedTos, models.User );
+        await idsDoExistsCheck( tags, models.Tag );
+        await multipleIdDoesExistsCheck( [
+          { model: models.Company, id: company },
+          { model: models.User, id: requester },
+          { model: models.Status, id: status },
+          { model: models.TaskType, id: taskType }
+        ].filter( (pair) => pair.id !== null ) );
+
+        delete defInput.assignedTo['value'];
+        delete defInput.company['value'];
+        delete defInput.requester['value'];
+        delete defInput.status['value'];
+        delete defInput.tag['value'];
+        delete defInput.taskType['value'];
+        //def map to object
+        const def = flattenObject(defInput,'def');
+        extraAttributes = {
+          ...def,
+          defCompanyId: company,
+          defRequesterId: requester,
+          defStatusId: status,
+          defTaskTypeId: taskType,
+        }
+        promises.push(Project.setDefAssignedTos(assignedTos === null ? [] : assignedTos));
+        promises.push(Project.setDefTags(tags === null ? [] : tags));
+      }
+
+      promises.push(Project.update({ ...attributes, ...extraAttributes  }));
+      await Promise.all(promises);
+    })
+    return Project;
+  },
+
+  deleteProject: async ( root, { id, newId }, { req } ) => {
+    await checkResolver( req, ["projects"] );
+    const Project = await models.Project.findByPk(id);
+    if( Project === null ){
+      throw createDoesNoExistsError('Project', id);
+    }
+    return Project.destroy();
+  },
+
+}
+
+const attributes = {
+  Project: {
+    async projectRights(project) {
+      return project.getProjectRights()
+    },
+    async def(project) {
+      return project.get('def')
+    },
+  },
+  ProjectRight: {
+    async user(projectRight) {
+      return projectRight.getUser()
+    },
+  },
+};
+
+export default {
+  attributes,
+  mutations,
+  querries
+}
+
+function checkDefIntegrity(def) {
+  const { assignedTo, company, overtime, pausal, requester, status, tag, taskType } = def;
+  if( !assignedTo.show && ( !assignedTo.def || !assignedTo.fixed ) ){
+    throw new ApolloError('In default values, assigned to is set to be hidden, but is not set to fixed and default.','PROJECT_DEF_INTEGRITY');
+  }else if( assignedTo.fixed && !assignedTo.def ){
+    throw new ApolloError('In default values, assigned to is set to be fixed, but is not set to default value.','PROJECT_DEF_INTEGRITY');
+  }else if( assignedTo.fixed && ( assignedTo.value === null || assignedTo.value === [] ) ){
+    throw new ApolloError('In default values, assigned to is set to be fixed, but fixed value can\'t be empty.','PROJECT_DEF_INTEGRITY');
+  }
+
+  if( !company.show && ( !company.def || !company.fixed ) ){
+    throw new ApolloError('In default values, company is set to be hidden, but is not set to fixed and default.','PROJECT_DEF_INTEGRITY');
+  }else if( company.fixed && !company.def ){
+    throw new ApolloError('In default values, company is set to be fixed, but is not set to default value.','PROJECT_DEF_INTEGRITY');
+  }else if( company.fixed && ( company.value === null ) ){
+    throw new ApolloError('In default values, company is set to be fixed, but fixed value can\'t be null.','PROJECT_DEF_INTEGRITY');
+  }
+
+  if( !overtime.show && ( !overtime.def || !overtime.fixed ) ){
+    throw new ApolloError('In default values, overtime is set to be hidden, but is not set to fixed and default.','PROJECT_DEF_INTEGRITY');
+  }else if( overtime.fixed && !overtime.def ){
+    throw new ApolloError('In default values, overtime is set to be fixed, but is not set to default value.','PROJECT_DEF_INTEGRITY');
+  }else if( overtime.fixed && ( [true, false].includes(overtime.value) ) ){
+    throw new ApolloError('In default values, overtime is set to be fixed, but fixed value can be only true or false.','PROJECT_DEF_INTEGRITY');
+  }
+
+  if( !pausal.show && ( !pausal.def || !pausal.fixed ) ){
+    throw new ApolloError('In default values, pausal is set to be hidden, but is not set to fixed and default.','PROJECT_DEF_INTEGRITY');
+  }else if( pausal.fixed && !pausal.def ){
+    throw new ApolloError('In default values, pausal is set to be fixed, but is not set to default value.','PROJECT_DEF_INTEGRITY');
+  }else if( pausal.fixed && ( [true, false].includes(pausal.value) ) ){
+    throw new ApolloError('In default values, pausal is set to be fixed, but fixed value can be only true or false.','PROJECT_DEF_INTEGRITY');
+  }
+
+  if( requester.fixed && !requester.def ){
+    throw new ApolloError('In default values, requester is set to be fixed, but is not set to default value.','PROJECT_DEF_INTEGRITY');
+  }
+
+  if( !status.show && ( !status.def || !status.fixed ) ){
+    throw new ApolloError('In default values, status is set to be hidden, but is not set to fixed and default.','PROJECT_DEF_INTEGRITY');
+  }else if( status.fixed && !status.def ){
+    throw new ApolloError('In default values, status is set to be fixed, but is not set to default value.','PROJECT_DEF_INTEGRITY');
+  }else if( status.fixed && ( status.value === null ) ){
+    throw new ApolloError('In default values, status is set to be fixed, but fixed value can\'t be null.','PROJECT_DEF_INTEGRITY');
+  }
+
+  if( tag.fixed && !tag.def ){
+    throw new ApolloError('In default values, tag is set to be fixed, but is not set to default value.','PROJECT_DEF_INTEGRITY');
+  }
+
+  if( !taskType.show && ( !taskType.def || !taskType.fixed ) ){
+    throw new ApolloError('In default values, task type is set to be hidden, but is not set to fixed and default.','PROJECT_DEF_INTEGRITY');
+  }else if( taskType.fixed && !taskType.def ){
+    throw new ApolloError('In default values, taskType is set to be fixed, but is not set to default value.','PROJECT_DEF_INTEGRITY');
+  }else if( taskType.fixed && ( taskType.value === null ) ){
+    throw new ApolloError('In default values, taskType is set to be fixed, but fixed value can\'t be null.','PROJECT_DEF_INTEGRITY');
+  }
+
+}
+
+function fixRights( rights ) {
+  return rights.map( (right) => {
+    const { read, write, delete:deleteTasks, admin } = right;
+    if(admin){
+      return { ...right, read: true, write: true, delete: true, admin:true };
+    }
+    if(deleteTasks){
+      return { ...right, read: true, write: true, delete: true, admin:false };
+    }
+    if(write){
+      return { ...right, read: true, write: true, delete: false, admin:false };
+    }
+    if(read){
+      return { ...right, read: true, write: false, delete: false, admin:false };
+    }
+
+  } )
+}

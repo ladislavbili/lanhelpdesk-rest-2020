@@ -1,5 +1,6 @@
 import { createDoesNoExistsError } from 'configs/errors';
 import { models } from 'models';
+import { ProjectInstance } from 'models/instances';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -36,10 +37,21 @@ const mutations = {
 
   deleteTag: async ( root, { id }, { req } ) => {
     await checkResolver( req, ["tags"] );
-    const Tag = await models.Tag.findByPk(id);
+    const Tag = await models.Tag.findByPk(id,
+      {
+        include: [
+          { model: models.Project, as: 'defTags' },
+        ]
+      }
+    );
     if( Tag === null ){
       throw createDoesNoExistsError('Tag', id);
     }
+    await Promise.all([
+      ...(<ProjectInstance[]>Tag.get('defTags')).map( (project) => {
+        return project.removeDefTag(id);
+      } ),
+    ])
     return Tag.destroy();
   },
 }

@@ -1,8 +1,11 @@
 import company from './company';
+import imap from './imap';
 import pricelist from './pricelist';
+import project from './project';
 import role from './role';
 import tag from './tag';
 import smtp from './smtp';
+import status from './status';
 import task from './task';
 import taskType from './taskType';
 import tripType from './tripType';
@@ -11,10 +14,13 @@ import user from './user';
 export default {
   Query: {
     ...company.querries,
+    ...imap.querries,
     ...pricelist.querries,
+    ...project.querries,
     ...role.querries,
     ...tag.querries,
     ...smtp.querries,
+    ...status.querries,
     ...task.querries,
     ...taskType.querries,
     ...tripType.querries,
@@ -24,10 +30,13 @@ export default {
 
   Mutation: {
     ...company.mutations,
+    ...imap.mutations,
     ...pricelist.mutations,
+    ...project.mutations,
     ...role.mutations,
     ...tag.mutations,
     ...smtp.mutations,
+    ...status.mutations,
     ...task.mutations,
     ...taskType.mutations,
     ...tripType.mutations,
@@ -35,10 +44,13 @@ export default {
 
   },
   ...company.attributes,
+  ...imap.attributes,
   ...pricelist.attributes,
+  ...project.attributes,
   ...role.attributes,
   ...tag.attributes,
   ...smtp.attributes,
+  ...status.attributes,
   ...task.attributes,
   ...taskType.attributes,
   ...tripType.attributes,
