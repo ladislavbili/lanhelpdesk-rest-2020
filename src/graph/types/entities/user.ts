@@ -12,17 +12,10 @@ type User {
   receiveNotifications: Boolean!
   signature: String
   language: LanguageEnum!
-  tasklistLayout: TasklistLayoutEnum!
+  tasklistLayout: Int!
   role: Role!
   company: BasicCompany!
   statuses: [Status]!
-}
-
-TasklistLayoutEnum {
-  0
-  1
-  2
-  3
 }
 
 enum LanguageEnum {
@@ -64,7 +57,7 @@ loginToken: UserData
 logoutUser: Boolean
 logoutAll: String
 setUserStatuses( ids: [Int]! ): User
-setTasklistLayout( tasklistLayout: TasklistLayoutEnum! ): User
+setTasklistLayout( tasklistLayout: Int! ): User
 updateProfile( username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String, language: LanguageEnum ): UserData,
 deleteUser( id: Int! ): User
 `

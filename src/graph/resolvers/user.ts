@@ -2,7 +2,7 @@ import { hash, compare } from 'bcrypt';
 import { sign } from 'jsonwebtoken';
 import jwt_decode from 'jwt-decode';
 import { createAccessToken, createRefreshToken } from 'configs/jwt';
-import { randomString, addApolloError } from 'helperFunctions';
+import { randomString, addApolloError, idsDoExistsCheck } from 'helperFunctions';
 import {
   PasswordTooShort,
   FailedLoginError,
@@ -366,7 +366,7 @@ const mutations = {
   //setUserStatuses( ids: [Int]! ): User
   setUserStatuses: async ( root, { ids }, { req } ) => {
     const User = await checkResolver( req );
-    await idsDoExistsCheck( ids, model.User );
+    await idsDoExistsCheck( ids, models.User );
     return User.setStatuses( ids );
   },
 

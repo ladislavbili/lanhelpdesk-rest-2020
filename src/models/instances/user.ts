@@ -19,6 +19,7 @@ export interface UserInstance extends DefaultInstance {
   setTags?: any;
   setRole?: any;
   getRole?: any;
+  setStatuses?: any;
   setCompany?: any;
   createToken?: any;
   setPricelist?: any;
