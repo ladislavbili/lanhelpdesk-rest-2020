@@ -7,7 +7,7 @@ type Project {
   title: String!
   descrption: String!
   lockedRequester: Boolean!
-  projectRights: [ProjectRight]
+  projectRights: [ProjectRight]!
   def: ProjectDefaults!
 }
 

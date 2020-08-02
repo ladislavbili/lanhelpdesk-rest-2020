@@ -1,4 +1,5 @@
 import { Company } from './entities/company';
+import { ErrorMessage } from './entities/errorMessage';
 import { Imap } from './entities/imap';
 import { Pricelist } from './entities/pricelist';
 import { Project } from './entities/project';
@@ -13,6 +14,7 @@ import { User } from './entities/user';
 
 export default `
 ${Company}
+${ErrorMessage}
 ${Imap}
 ${Pricelist}
 ${Project}

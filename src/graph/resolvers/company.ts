@@ -1,7 +1,7 @@
 import { createDoesNoExistsError, createCantBeNegativeError, EditedRentNotOfCompanyError } from 'configs/errors';
 import { models, sequelize } from 'models';
 import { UserInstance, CompanyInstance, CompanyRentInstance, ProjectInstance } from 'models/instances';
-import { splitArrayByFilter } from 'helperFunctions';
+import { splitArrayByFilter, addApolloError } from 'helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -32,7 +32,7 @@ const querries = {
 }
 
 const mutations = {
-  addCompany: async ( root, { pricelistId, monthly, monthlyPausal, taskWorkPausal, taskTripPausal, rents, ...attributes }, { req } ) => {
+  addCompany: async ( root, { pricelistId, monthly, monthlyPausal, taskWorkPausal, taskTripPausal, rents, ...attributes }, { req, userID } ) => {
     await checkResolver( req, ["companies"] );
 
     const Pricelist = await models.Pricelist.findByPk(pricelistId);
@@ -42,7 +42,7 @@ const mutations = {
     //check pausals not negative
     const otherAttributes = { monthlyPausal, taskWorkPausal, taskTripPausal };
     if(monthly){
-      ['monthlyPausal', 'taskWorkPausal', 'taskTripPausal'].forEach( (att) =>{
+      ['monthlyPausal', 'taskWorkPausal', 'taskTripPausal'].forEach( (att) => {
         if(otherAttributes[att] < 0){
           throw createCantBeNegativeError(att);
         }
@@ -71,7 +71,7 @@ const mutations = {
     });
   },
 
-  updateCompany: async ( root, { id, pricelistId, monthly, rents, ...args }, { req } ) => {
+  updateCompany: async ( root, { id, pricelistId, monthly, rents, ...args }, { req, userID } ) => {
     await checkResolver( req, ["companies"] );
     const TargetCompany = <CompanyInstance> (await models.Company.findByPk(id, { include: [{ model: models.CompanyRent }] } ));
     if( TargetCompany === null ){
@@ -114,6 +114,12 @@ const mutations = {
         //must be rent of the company
         const [existingRents, newRents] = splitArrayByFilter( rents, (rent) => rent.id !== undefined );
         if( existingRents.some((rent) => !(<CompanyRentInstance[]> TargetCompany.get('CompanyRents')).some((compRent) => compRent.get('id') === rent.id ) )){
+          addApolloError(
+            'Company rent',
+            EditedRentNotOfCompanyError,
+            userID,
+            existingRents.find((rent) => !(<CompanyRentInstance[]> TargetCompany.get('CompanyRents')).some((compRent) => compRent.get('id') === rent.id ) ).id,
+          );
           throw EditedRentNotOfCompanyError;
         }
         //add new rents
@@ -150,7 +156,7 @@ const mutations = {
       throw createDoesNoExistsError('Company', id);
     }
     if( NewCompany === null ){
-      throw createDoesNoExistsError('New company', id);
+      throw createDoesNoExistsError('New company', newId);
     }
     const allUsers = await models.User.findAll({ where: { CompanyId: id } });
     await Promise.all( allUsers.map( user => (user as UserInstance ).setCompany(newId) ) );

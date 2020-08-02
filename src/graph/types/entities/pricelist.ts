@@ -32,8 +32,8 @@ input CreatePriceInput {
 }
 
 input UpdatePriceInput {
-  id: Float!
-  price: Int!
+  id: Int!
+  price: Float!
 }
 `
 

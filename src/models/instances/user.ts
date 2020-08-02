@@ -12,6 +12,10 @@ export interface UserInstance extends DefaultInstance {
   receiveNotifications: boolean;
   signature: string;
   tokenKey: string;
+
+  language: string;
+  tasklistLayout: number;
+
   setTags?: any;
   setRole?: any;
   getRole?: any;
@@ -72,6 +76,16 @@ export default function defineUsers( sequelize: Sequelize ){
         type: DataTypes.TEXT({ length: "tiny" }),
         allowNull: false,
         defaultValue:  randomString(),
+      },
+      language: {
+        type: DataTypes.TEXT({ length: "tiny" }),
+        allowNull: false,
+        defaultValue: 'sk',
+      },
+      tasklistLayout: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
       },
     },
     {

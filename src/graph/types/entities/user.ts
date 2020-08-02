@@ -11,8 +11,23 @@ type User {
   fullName: String!
   receiveNotifications: Boolean!
   signature: String
+  language: LanguageEnum!
+  tasklistLayout: TasklistLayoutEnum!
   role: Role!
   company: BasicCompany!
+  statuses: [Status]!
+}
+
+TasklistLayoutEnum {
+  0
+  1
+  2
+  3
+}
+
+enum LanguageEnum {
+  sk
+  en
 }
 
 type BasicUser {
@@ -23,6 +38,7 @@ type BasicUser {
   surname: String!
   fullName: String!
   company: BasicCompany!
+  language: LanguageEnum!
 }
 
 
@@ -36,16 +52,19 @@ users: [User]
 user(id: Int!): User
 basicUsers: [BasicUser]
 basicUser(id: Int!): BasicUser
+getMyData: User
 `
 
 export const UserMutations = `
-registerUser( active: Boolean, username: String!, email: String!, name: String!, surname: String!, password: String!, receiveNotifications: Boolean, signature: String, roleId: Int!, companyId: Int!): User
+registerUser( active: Boolean, username: String!, email: String!, name: String!, surname: String!, password: String!, receiveNotifications: Boolean, signature: String, roleId: Int!, companyId: Int!, language: LanguageEnum ): User
 loginUser( email: String!, password: String! ): UserData
+setUserActive( id: Int!, active: Boolean! ): User
+updateUser( id: Int!, username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String, roleId: Int, companyId: Int, language: LanguageEnum ): User
 loginToken: UserData
 logoutUser: Boolean
 logoutAll: String
-setUserActive( id: Int!, active: Boolean! ): User
-updateUser( id: Int!, username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String, roleId: Int, companyId: Int ): User
-updateProfile( username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String ): UserData,
+setUserStatuses( ids: [Int]! ): User
+setTasklistLayout( tasklistLayout: TasklistLayoutEnum! ): User
+updateProfile( username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String, language: LanguageEnum ): UserData,
 deleteUser( id: Int! ): User
 `

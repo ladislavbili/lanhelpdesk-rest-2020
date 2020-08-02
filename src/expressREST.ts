@@ -39,9 +39,19 @@ export const startRest = () => {
     resolvers,
     schemaDirectives,
     context: async ({ req, res }) => {
+      let userID = null;
+      const authorization = req.headers.authorization as String;
+      if( authorization ){
+        try{
+          userID = await jwt_decode( authorization.replace('Bearer ','') ).id;
+        }catch(error){
+          //not authentificated
+        }
+      }
       return ({
         req,
         res,
+        userID
       })
     },
     formatError: (err) => {

@@ -1,7 +1,7 @@
 import { createDoesNoExistsError, NotAdminOfProjectNorManagesProjects } from 'configs/errors';
 import { models, sequelize } from 'models';
 import checkResolver from './checkResolver';
-import { flattenObject, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter } from 'helperFunctions';
+import { flattenObject, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, addApolloError } from 'helperFunctions';
 import { ProjectInstance, ProjectRightInstance, RoleInstance, AccessRightsInstance } from 'models/instances';
 import { ApolloError } from 'apollo-server-express';
 
@@ -83,14 +83,14 @@ const mutations = {
     return newProject;
   },
 
-  updateProject: async ( root, { id, def: defInput, projectRights: projectRightsInput, ...attributes }, { req } ) => {
+  updateProject: async ( root, { id, def: defInput, projectRights: projectRightsInput, ...attributes }, { req, userID } ) => {
     const User = await checkResolver( req );
     const Project = <ProjectInstance> await models.Project.findByPk(id, { include: [{ model: models.ProjectRight }] } );
     if( Project === null ){
       throw createDoesNoExistsError('Project', id);
     }
 
-    //Who can edit (admin in project, global admin or project manager)
+    //Who can edit (admin in project project manager)
     const userRights = (<ProjectRightInstance[]> Project.get('ProjectRights')).find( (right) => right.get('UserId') === User.get('id') );
     if(
       (
@@ -99,6 +99,12 @@ const mutations = {
       ) &&
       !( (<AccessRightsInstance> (<RoleInstance> User.get('Role')).get('AccessRight')).get().projects )
     ){
+      addApolloError(
+        'Project',
+        NotAdminOfProjectNorManagesProjects,
+        userID,
+        id
+      );
       throw NotAdminOfProjectNorManagesProjects;
     }
 

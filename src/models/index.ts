@@ -18,7 +18,8 @@ import defineCompanyRents from './instances/companyRent';
 import defineSmtps from './instances/smtp';
 import defineImaps from './instances/imap';
 import defineStatuses from './instances/status';
-
+import defineErrorMessages from './instances/errorMessage';
+import defineUserNotifications from './instances/userNotification';
 
 /*
 const operatorsAliases = {
@@ -83,6 +84,10 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   defineSmtps(sequelize);
   defineImaps(sequelize);
   defineStatuses(sequelize);
+
+  models.Status.belongsToMany(models.User, { through: 'user_set_statuses' });
+  models.User.belongsToMany(models.Status, { through: 'user_set_statuses' });
+
   defineProjects(sequelize);
   defineProjectRights(sequelize);
 
@@ -119,7 +124,18 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.Project.belongsTo(models.TaskType, { as: 'defTaskType' });
   models.TaskType.hasMany(models.Project, { as: 'defTaskType' });
 
-  //logFunctionsOfModel(models.Company)
+  defineErrorMessages(sequelize);
+  models.ErrorMessage.belongsTo(models.User);
+  models.User.hasMany(models.ErrorMessage);
+
+  defineUserNotifications(sequelize);
+  models.UserNotification.belongsTo(models.User);
+  models.User.hasMany(models.UserNotification);
+
+  models.UserNotification.belongsTo(models.Task);
+  models.Task.hasMany(models.UserNotification);
+
+  //logFunctionsOfModel(models.User)
   if(ignoreUpdating){
     return new Promise( (resolve, reject) => resolve() );
   }

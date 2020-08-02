@@ -1,4 +1,5 @@
 import { CompanyQuerries } from './entities/company';
+import { ErrorMessageQuerries } from './entities/errorMessage';
 import { ImapQuerries } from './entities/imap';
 import { PricelistQuerries } from './entities/pricelist';
 import { ProjectQuerries } from './entities/project';
@@ -14,6 +15,7 @@ import { UserQuerries } from './entities/user';
 export default `
 type Query {
   ${CompanyQuerries}
+  ${ErrorMessageQuerries}
   ${ImapQuerries}
   ${PricelistQuerries}
   ${ProjectQuerries}

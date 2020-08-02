@@ -1,4 +1,5 @@
 import company from './company';
+import errorMessage from './errorMessage';
 import imap from './imap';
 import pricelist from './pricelist';
 import project from './project';
@@ -14,6 +15,7 @@ import user from './user';
 export default {
   Query: {
     ...company.querries,
+    ...errorMessage.querries,
     ...imap.querries,
     ...pricelist.querries,
     ...project.querries,
@@ -30,6 +32,7 @@ export default {
 
   Mutation: {
     ...company.mutations,
+    ...errorMessage.mutations,
     ...imap.mutations,
     ...pricelist.mutations,
     ...project.mutations,
@@ -44,6 +47,7 @@ export default {
 
   },
   ...company.attributes,
+  ...errorMessage.attributes,
   ...imap.attributes,
   ...pricelist.attributes,
   ...project.attributes,

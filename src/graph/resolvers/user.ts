@@ -2,7 +2,7 @@ import { hash, compare } from 'bcrypt';
 import { sign } from 'jsonwebtoken';
 import jwt_decode from 'jwt-decode';
 import { createAccessToken, createRefreshToken } from 'configs/jwt';
-import { randomString } from 'helperFunctions';
+import { randomString, addApolloError } from 'helperFunctions';
 import {
   PasswordTooShort,
   FailedLoginError,
@@ -52,13 +52,16 @@ const querries = {
     await checkResolver( req );
     return models.User.findByPk(id);
   },
+  getMyData: async ( root, { req } ) => {
+    return checkResolver( req );
+  },
 
 }
 
 const mutations = {
 
   //registerUser( active: Boolean, username: String!, email: String!, name: String!, surname: String!, password: String!, receiveNotifications: Boolean, signature: String, role: Int!): User,
-  registerUser: async ( root, { password, roleId, companyId, ...targetUserData }, { req } ) => {
+  registerUser: async ( root, { password, roleId, companyId, language, ...targetUserData }, { req, userID } ) => {
     const User = await checkResolver( req, ['users'] );
     const TargetRole = await models.Role.findByPk(roleId);
     if( TargetRole === null ){
@@ -70,6 +73,11 @@ const mutations = {
     }
     //rola musi byt vacsia alebo admin
     if( (<RoleInstance> User.get('Role')).get('level') > TargetRole.get('level') && (<RoleInstance> User.get('Role')).get('level') !== 0 ){
+      addApolloError(
+        'User registration',
+        CantCreateUserLevelError,
+        userID
+      );
       throw CantCreateUserLevelError;
     }
     if( password.length < 6 ){
@@ -82,6 +90,7 @@ const mutations = {
       tokenKey: randomString(),
       RoleId: roleId,
       CompanyId: companyId,
+      language: language ? language : 'sk',
     })
   },
 
@@ -99,6 +108,12 @@ const mutations = {
       throw FailedLoginError;
     }
     if( !User.get('active') ){
+      addApolloError(
+        'User registration',
+        UserDeactivatedError,
+        null,
+        User.get('id')
+      );
       throw UserDeactivatedError;
     }
     let loginKey = randomString();
@@ -153,7 +168,7 @@ const mutations = {
   },
 
   //setUserActive( id: Int!, active: Boolean! ): User,
-  setUserActive: async ( root, { id, active }, { req } ) => {
+  setUserActive: async ( root, { id, active }, { req, userID } ) => {
     const User = await checkResolver( req, ['users'] );
     const TargetUser = <UserInstance> await models.User.findByPk(id, { include: [{ model: models.Role }] });
     if( TargetUser === null ){
@@ -161,6 +176,12 @@ const mutations = {
     }
     //nesmie mat vacsi alebo rovny level ako ciel, ak nie je admin
     if( (<RoleInstance> User.get('Role')).get('level') >= (<RoleInstance> TargetUser.get('Role')).get('level') && (<RoleInstance> User.get('Role')).get('level') !== 0 ){
+      addApolloError(
+        'User activation/deactivation',
+        DeactivateUserLevelTooLowError,
+        userID,
+        id
+      );
       throw DeactivateUserLevelTooLowError;
     }
 
@@ -181,7 +202,7 @@ const mutations = {
 
 
   //updateUser( id: Int!, active: Boolean, username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String, role: Int ): User,
-  updateUser: async ( root, { id, roleId, companyId, ...args }, { req } ) => {
+  updateUser: async ( root, { id, roleId, companyId, language, ...args }, { req, userID } ) => {
     const User = await checkResolver( req, ['users'] );
 
     const TargetUser = <UserInstance> await models.User.findByPk( id, { include: [{ model: models.Role }] } );
@@ -189,6 +210,9 @@ const mutations = {
       throw createDoesNoExistsError('User');
     }
     let changes = { ...args };
+    if ( language ){
+      changes.language = language;
+    }
     if(args.password !== undefined ){
       if( args.password.length < 6 ){
         throw PasswordTooShort;
@@ -198,6 +222,12 @@ const mutations = {
 
     //nesmie menit rolu s nizsim alebo rovnym levelom ak nie je admin
     if( (<RoleInstance> User.get('Role')).get('level') >= (<RoleInstance> TargetUser.get('Role')).get('level') && (<RoleInstance> User.get('Role')).get('level') !== 0 ){
+      addApolloError(
+        'User',
+        UserRoleLevelTooLowError,
+        userID,
+        id
+      );
       throw UserRoleLevelTooLowError;
     }
 
@@ -217,11 +247,23 @@ const mutations = {
 
       //ak pouzivatel edituje sam seba nemoze menit rolu
       if( TargetUser.get('id') === User.get('id') && roleId !== (<RoleInstance> User.get('Role')).get('id') ){
+        addApolloError(
+          'User',
+          CantChangeYourRoleError,
+          userID,
+          id
+        );
         throw CantChangeYourRoleError;
       }
 
       //nesmie dat rolu s nizssim alebo rovnym levelom ak nie je admin
       if( (<RoleInstance> User.get('Role')).get('level') >= NewRole.get('level') && (<RoleInstance> User.get('Role')).get('level') !== 0 ){
+        addApolloError(
+          'User',
+          UserNewRoleLevelTooLowError,
+          userID,
+          id
+        );
         throw UserNewRoleLevelTooLowError;
       }
 
@@ -240,9 +282,12 @@ const mutations = {
   },
 
   //updateProfile( active: Boolean, username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String ): User,
-  updateProfile: async ( root, { companyId, ...args }, { req, res } ) => {
+  updateProfile: async ( root, { companyId, language, ...args }, { req, res } ) => {
     const User = await checkResolver( req );
     let changes = { ...args };
+    if ( language ){
+      changes.language = language;
+    }
     if(args.password !== undefined ){
       if( args.password.length < 6 ){
         throw PasswordTooShort;
@@ -268,7 +313,7 @@ const mutations = {
   },
 
   //deleteUser( id: Int! ): User,
-  deleteUser: async ( root, { id }, { req } ) => {
+  deleteUser: async ( root, { id }, { req, userID } ) => {
     const User = await checkResolver( req, ['users'] );
     const TargetUser = <UserInstance> await models.User.findByPk(id,
       {
@@ -285,6 +330,12 @@ const mutations = {
     }
     //nesmie mazat rolu s nizsim alebo rovnym levelom ak nie je admin
     if( (<RoleInstance> User.get('Role')).get('level') >= (<RoleInstance> TargetUser.get('Role')).get('level') && (<RoleInstance> User.get('Role')).get('level') !== 0 ){
+      addApolloError(
+        'User',
+        CantDeleteLowerLevelError,
+        userID,
+        id
+      );
       throw CantDeleteLowerLevelError;
     }
     //if admin
@@ -311,6 +362,19 @@ const mutations = {
     await Promise.all(promises);
     return TargetUser.destroy();
   },
+
+  //setUserStatuses( ids: [Int]! ): User
+  setUserStatuses: async ( root, { ids }, { req } ) => {
+    const User = await checkResolver( req );
+    await idsDoExistsCheck( ids, model.User );
+    return User.setStatuses( ids );
+  },
+
+  //setTasklistLayout( : TasklistLayoutEnum! ): User
+  setTasklistLayout: async ( root, { tasklistLayout }, { req } ) => {
+    const User = await checkResolver( req );
+    return User.update( { tasklistLayout: parseInt(tasklistLayout) } );
+  },
 }
 
 const attributes = {
@@ -320,6 +384,9 @@ const attributes = {
     },
     async company(user) {
       return user.getCompany()
+    },
+    async statuses(user) {
+      return user.getStatuses()
     },
   },
   BasicUser: {

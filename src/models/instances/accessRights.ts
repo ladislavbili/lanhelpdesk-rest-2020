@@ -168,7 +168,7 @@ export default function defineAccessRights( sequelize: Sequelize ){
     },
     {
       //OPTIONS
-      tableName: 'accessRights',
+      tableName: 'access_rights',
       // freezeTableName: true,
     }
   );

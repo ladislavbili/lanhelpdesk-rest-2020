@@ -1,4 +1,5 @@
 import { CompanyMutations } from './entities/company';
+import { ErrorMessageMutations } from './entities/errorMessage';
 import { ImapMutations } from './entities/imap';
 import { PricelistMutations } from './entities/pricelist';
 import { ProjectMutations } from './entities/project';
@@ -14,6 +15,7 @@ import { UserMutations } from './entities/user';
 export default `
 type Mutation {
   ${CompanyMutations}
+  ${ErrorMessageMutations}
   ${ImapMutations}
   ${PricelistMutations}
   ${ProjectMutations}

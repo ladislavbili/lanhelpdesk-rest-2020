@@ -1,5 +1,6 @@
 import  { Op } from 'sequelize';
 import { createDoesNoExistsError } from 'configs/errors';
+import { models } from 'models';
 
 export const randomString =  () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
@@ -70,4 +71,14 @@ export const idsDoExistsCheck = async (ids: number[], model) => {
     const failedIds = ids.filter( (id, index) => responses[index] === null );
     throw createDoesNoExistsError(model.name, failedIds);
   }
+}
+
+export const addApolloError = ( source, error, userId = null, sourceId = null ) => {
+  return models.ErrorMessage.create({
+    errorMessage: error.message,
+    source,
+    sourceId,
+    type: error.extensions.code,
+    userId
+  })
 }

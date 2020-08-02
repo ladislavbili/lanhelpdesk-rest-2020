@@ -3,6 +3,7 @@ import { InvalidTokenError, NoAccTokenError, MutationOrResolverAccessDeniedError
 import { verifyAccToken } from 'configs/jwt';
 import { UserInstance, RoleInstance } from 'models/instances';
 import { sequelize } from 'models';
+import { addApolloError } from 'helperFunctions';
 
 export default async function checkResolver( req, access = [], useOR = false ){
   const token = req.headers.authorization as String;
@@ -20,6 +21,11 @@ export default async function checkResolver( req, access = [], useOR = false ){
   const User = <UserInstance> await models.User.findByPk(userData.id, { include: [{ model: models.Role, include:[{ model: models.AccessRights }] }] });
 
   if( User.get('active') === false ){
+    addApolloError(
+      'Access verification',
+      UserDeactivatedError,
+      userData.id,
+    );
     throw UserDeactivatedError;
   }
 
@@ -34,5 +40,10 @@ export default async function checkResolver( req, access = [], useOR = false ){
     await Token.update({expiresAt});
     return User;
   }
+  addApolloError(
+    'Access verification',
+    MutationOrResolverAccessDeniedError,
+    userData.id,
+  );
   throw MutationOrResolverAccessDeniedError;
 }
