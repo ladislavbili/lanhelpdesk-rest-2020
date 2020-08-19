@@ -52,7 +52,7 @@ const querries = {
     await checkResolver( req );
     return models.User.findByPk(id);
   },
-  getMyData: async ( root, { req } ) => {
+  getMyData: async ( root, args, { req } ) => {
     return checkResolver( req );
   },
 
@@ -392,6 +392,9 @@ const attributes = {
   BasicUser: {
     async company(user) {
       return user.getCompany()
+    },
+    async role(user) {
+      return user.getRole()
     },
   },
 };

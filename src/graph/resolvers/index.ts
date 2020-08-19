@@ -1,6 +1,8 @@
 import company from './company';
 import errorMessage from './errorMessage';
+import filter from './filter';
 import imap from './imap';
+import milestone from './milestone';
 import pricelist from './pricelist';
 import project from './project';
 import role from './role';
@@ -16,7 +18,9 @@ export default {
   Query: {
     ...company.querries,
     ...errorMessage.querries,
+    ...filter.querries,
     ...imap.querries,
+    ...milestone.querries,
     ...pricelist.querries,
     ...project.querries,
     ...role.querries,
@@ -33,7 +37,9 @@ export default {
   Mutation: {
     ...company.mutations,
     ...errorMessage.mutations,
+    ...filter.mutations,
     ...imap.mutations,
+    ...milestone.mutations,
     ...pricelist.mutations,
     ...project.mutations,
     ...role.mutations,
@@ -48,7 +54,9 @@ export default {
   },
   ...company.attributes,
   ...errorMessage.attributes,
+  ...filter.attributes,
   ...imap.attributes,
+  ...milestone.attributes,
   ...pricelist.attributes,
   ...project.attributes,
   ...role.attributes,

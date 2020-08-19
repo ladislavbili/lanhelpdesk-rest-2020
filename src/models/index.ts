@@ -1,5 +1,6 @@
 import { Sequelize, Model, DataTypes, Op } from "sequelize";
 import { logFunctionsOfModel } from 'helperFunctions';
+import data from 'configs/database';
 
 import defineAccessRights from './instances/accessRights';
 import defineTags from './instances/tag';
@@ -20,14 +21,16 @@ import defineImaps from './instances/imap';
 import defineStatuses from './instances/status';
 import defineErrorMessages from './instances/errorMessage';
 import defineUserNotifications from './instances/userNotification';
-
+import defineFilter from './instances/filter';
+import defineFilterOneOf from './instances/filterOneOf';
+import defineMilestone from './instances/milestone';
 /*
 const operatorsAliases = {
 
 }
 */
-export const sequelize = new Sequelize('testdatabase', 'accessPoint', 'ap2020',{
-  host: 'localhost',
+export const sequelize = new Sequelize( data.database, data.username, data.pass,{
+  host: data.host,
   dialect: 'mysql',
   logging: false,
   //operatorsAliases
@@ -135,7 +138,39 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.UserNotification.belongsTo(models.Task);
   models.Task.hasMany(models.UserNotification);
 
-  //logFunctionsOfModel(models.User)
+  defineFilter(sequelize);
+  defineFilterOneOf(sequelize);
+  models.Filter.belongsTo(models.User, { as: 'filterCreatedBy' });
+  models.User.hasMany(models.Filter, { as: 'filterCreatedBy' });
+
+  models.Filter.hasMany(models.FilterOneOf, { onDelete: 'CASCADE' });
+  models.FilterOneOf.belongsTo(models.Filter, { foreignKey: { allowNull: false } });
+
+  models.Filter.belongsTo(models.User, { as: 'filterAssignedTo' });
+  models.User.hasMany(models.Filter, { as: 'filterAssignedTo' });
+
+  models.Filter.belongsTo(models.User, { as: 'filterRequester' });
+  models.User.hasMany(models.Filter, { as: 'filterRequester' });
+
+  models.Filter.belongsTo(models.Company, { as: 'filterCompany' });
+  models.Company.hasMany(models.Filter, { as: 'filterCompany' });
+
+  models.Filter.belongsTo(models.TaskType, { as: 'filterTaskType' });
+  models.TaskType.hasMany(models.Filter, { as: 'filterTaskType' });
+
+  models.Filter.belongsTo(models.Project, {as : 'filterOfProject' });
+  models.Project.hasMany(models.Filter, {as : { singular: "filterOfProject", plural: "filterOfProjects" } });
+
+  models.Filter.belongsToMany(models.Role, { through: 'filter_access_roles' });
+  models.Role.belongsToMany(models.Filter, { through: 'filter_access_roles' });
+
+  defineMilestone(sequelize);
+  models.Milestone.belongsTo(models.Project, { onDelete: 'CASCADE' });
+  models.Project.hasMany(models.Milestone, { foreignKey: { allowNull: false } });
+
+  //logFunctionsOfModel(models.Filter)
+
+
   if(ignoreUpdating){
     return new Promise( (resolve, reject) => resolve() );
   }

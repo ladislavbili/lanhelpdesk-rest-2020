@@ -71,13 +71,14 @@ const mutations = {
     });
   },
 
-  updateCompany: async ( root, { id, pricelistId, monthly, rents, ...args }, { req, userID } ) => {
+  updateCompany: async ( root, { id, pricelistId, rents, ...args }, { req, userID } ) => {
     await checkResolver( req, ["companies"] );
     const TargetCompany = <CompanyInstance> (await models.Company.findByPk(id, { include: [{ model: models.CompanyRent }] } ));
     if( TargetCompany === null ){
       throw createDoesNoExistsError('Company', id);
     }
     //pausals
+    const monthly = args.monthly;
     if(monthly === true || (monthly === undefined && TargetCompany.get('monthly') )){
       ['monthlyPausal', 'taskWorkPausal', 'taskTripPausal'].forEach( (att) =>{
         if(args[att]!== undefined && args[att] < 0){

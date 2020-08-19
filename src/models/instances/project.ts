@@ -42,7 +42,7 @@ export interface ProjectInstance extends DefaultInstance {
 
   createProjectRight? : any;
 
-  getDefAssignedTo?: any;
+  getDefAssignedTos?: any;
   getDefCompany?: any;
   getDefRequester?: any;
   getDefStatus?: any;
@@ -86,7 +86,7 @@ export default function defineProjects( sequelize: Sequelize ){
               def: this.get('defAssignedToDef'),
               fixed: this.get('defAssignedToFixed'),
               show: this.get('defAssignedToShow'),
-              value: await this.getDefAssignedTo()
+              value: await this.getDefAssignedTos()
             },
             company:{
               def: this.get('defCompanyDef'),

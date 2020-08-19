@@ -59,3 +59,7 @@ export const EditedRentNotOfCompanyError = new ApolloError("Some edited rent doe
 
 //project
 export const NotAdminOfProjectNorManagesProjects = new ApolloError("You can't edit this project! You are neither admin of project nor manager of all projects.", "NOT_PROJECT_ADMIN_NOR_MANAGES_PROJECTS");
+
+//filters
+export const NoAccessToThisProjectError = new ApolloError("You can't access this project.", "NO_ACCESS_TO_PROJECT");
+export const NoAccessToThisFilterError = new ApolloError("You can't access this filter.", "NO_ACCESS_TO_FILTER");

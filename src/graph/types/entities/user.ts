@@ -13,7 +13,7 @@ type User {
   signature: String
   language: LanguageEnum!
   tasklistLayout: Int!
-  role: Role!
+  role: BasicRole!
   company: BasicCompany!
   statuses: [Status]!
 }
@@ -32,6 +32,7 @@ type BasicUser {
   fullName: String!
   company: BasicCompany!
   language: LanguageEnum!
+  role: BasicRole!
 }
 
 

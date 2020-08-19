@@ -23,7 +23,7 @@ const mutations = {
   addSmtp: async ( root, args, { req } ) => {
     await checkResolver( req, ["smtps"] );
     if(args.def){
-      await models.Imap.update({ def: false },{ where: { def: true } })
+      await models.Smtp.update({ def: false },{ where: { def: true } })
     }
     return models.Smtp.create( args );
   },
@@ -35,7 +35,7 @@ const mutations = {
       throw createDoesNoExistsError('Smtp', id);
     }
     if(args.def){
-      await models.Imap.update({ def: false },{ where: { def: true } })
+      await models.Smtp.update({ def: false },{ where: { def: true } })
     }
     return Smtp.update( args );
   },

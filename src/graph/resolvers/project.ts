@@ -191,6 +191,20 @@ const attributes = {
     async def(project) {
       return project.get('def')
     },
+    async filters(project) {
+      return project.getFiltersOfProject()
+    },
+    async milestones(project) {
+      return project.getMilestones()
+    },
+  },
+  BasicProject: {
+    async filters(project) {
+      return project.getFiltersOfProject()
+    },
+    async milestones(project) {
+      return project.getMilestones()
+    },
   },
   ProjectRight: {
     async user(projectRight) {
@@ -227,7 +241,7 @@ function checkDefIntegrity(def) {
     throw new ApolloError('In default values, overtime is set to be hidden, but is not set to fixed and default.','PROJECT_DEF_INTEGRITY');
   }else if( overtime.fixed && !overtime.def ){
     throw new ApolloError('In default values, overtime is set to be fixed, but is not set to default value.','PROJECT_DEF_INTEGRITY');
-  }else if( overtime.fixed && ( [true, false].includes(overtime.value) ) ){
+  }else if( overtime.fixed && !( [true, false].includes(overtime.value) ) ){
     throw new ApolloError('In default values, overtime is set to be fixed, but fixed value can be only true or false.','PROJECT_DEF_INTEGRITY');
   }
 
@@ -235,7 +249,7 @@ function checkDefIntegrity(def) {
     throw new ApolloError('In default values, pausal is set to be hidden, but is not set to fixed and default.','PROJECT_DEF_INTEGRITY');
   }else if( pausal.fixed && !pausal.def ){
     throw new ApolloError('In default values, pausal is set to be fixed, but is not set to default value.','PROJECT_DEF_INTEGRITY');
-  }else if( pausal.fixed && ( [true, false].includes(pausal.value) ) ){
+  }else if( pausal.fixed && !( [true, false].includes(pausal.value) ) ){
     throw new ApolloError('In default values, pausal is set to be fixed, but fixed value can be only true or false.','PROJECT_DEF_INTEGRITY');
   }
 

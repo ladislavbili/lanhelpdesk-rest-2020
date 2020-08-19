@@ -9,6 +9,8 @@ type Project {
   lockedRequester: Boolean!
   projectRights: [ProjectRight]!
   def: ProjectDefaults!
+  filters: [BasicFilter]
+  milestones: [Milestone]!
 }
 
 type BasicProject {
@@ -16,6 +18,8 @@ type BasicProject {
   title: String!
   descrption: String!
   def: ProjectDefaults!
+  filters: [BasicFilter]
+  milestones: [Milestone]!
 }
 
 

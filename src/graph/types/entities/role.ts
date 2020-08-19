@@ -17,6 +17,15 @@ type Role {
   currentUsers: [BasicUser]
 }
 
+type BasicRole{
+  ${defaultAttributes}
+  title: String!
+  order: Int!
+  level: Int!
+
+  accessRights: AccessRights!
+}
+
 type AccessRights {
   ${createAccessRights(true)}
 }

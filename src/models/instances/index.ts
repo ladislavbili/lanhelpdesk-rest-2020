@@ -2,6 +2,8 @@ export { AccessRightsInstance } from './accessRights';
 export { CompanyInstance } from './company';
 export { CompanyRentInstance } from './companyRent';
 export { ImapInstance } from './imap';
+export { FilterInstance } from './filter';
+export { MilestoneInstance } from './milestone';
 export { PriceInstance } from './price';
 export { PricelistInstance } from './pricelist';
 export { ProjectInstance } from './project';

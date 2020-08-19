@@ -153,6 +153,11 @@ const attributes = {
       return role.getAccessRight()
     }
   },
+  BasicRole: {
+    async accessRights(role) {
+      return role.getAccessRight()
+    }
+  },
 };
 
 export default {

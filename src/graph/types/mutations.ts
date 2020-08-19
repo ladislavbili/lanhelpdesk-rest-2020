@@ -1,6 +1,8 @@
 import { CompanyMutations } from './entities/company';
 import { ErrorMessageMutations } from './entities/errorMessage';
+import { FilterMutations } from './entities/filter';
 import { ImapMutations } from './entities/imap';
+import { MilestoneMutations } from './entities/milestone';
 import { PricelistMutations } from './entities/pricelist';
 import { ProjectMutations } from './entities/project';
 import { RoleMutations } from './entities/role';
@@ -16,7 +18,9 @@ export default `
 type Mutation {
   ${CompanyMutations}
   ${ErrorMessageMutations}
+  ${FilterMutations}
   ${ImapMutations}
+  ${MilestoneMutations}
   ${PricelistMutations}
   ${ProjectMutations}
   ${RoleMutations}

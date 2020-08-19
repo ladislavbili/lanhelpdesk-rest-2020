@@ -1,5 +1,7 @@
 export default {
+  database: 'testdatabase',
   username: 'accessPoint',
-  password: 'ap2020',
-  url: 'localhost:3306'
+  pass: 'ap2020',
+  host: 'localhost',
+  dialect: 'mysql'
 }

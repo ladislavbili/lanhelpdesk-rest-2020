@@ -1,6 +1,8 @@
 import { CompanyQuerries } from './entities/company';
 import { ErrorMessageQuerries } from './entities/errorMessage';
+import { FilterQuerries } from './entities/filter';
 import { ImapQuerries } from './entities/imap';
+import { MilestoneQuerries } from './entities/milestone';
 import { PricelistQuerries } from './entities/pricelist';
 import { ProjectQuerries } from './entities/project';
 import { RoleQuerries } from './entities/role';
@@ -16,7 +18,9 @@ export default `
 type Query {
   ${CompanyQuerries}
   ${ErrorMessageQuerries}
+  ${FilterQuerries}
   ${ImapQuerries}
+  ${MilestoneQuerries}
   ${PricelistQuerries}
   ${ProjectQuerries}
   ${RoleQuerries}
