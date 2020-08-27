@@ -124,10 +124,10 @@ const querries = {
     const User = await checkResolver( req );
     const Task = <TaskInstance> await models.Task.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
     const Project = <ProjectInstance>Task.get('Project');
-    //must right edit of project
+    //must right write of project
     const ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights'))
     const ProjectRight = ProjectRights.find( (right) => right.get('UserId') === User.get('id') );
-    if( ProjectRight === undefined || !ProjectRight.get('read') ){
+    if( ProjectRight === null || !ProjectRight.get('read') ){
       throw InsufficientProjectAccessError;
     }
     return Task;
@@ -151,10 +151,10 @@ const mutations = {
         include: [{ model: models.ProjectRight }, { model: models.Milestone }]
       }
     );
-    //must right edit of project
+    //must right write of project
     const ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights'))
     const ProjectRight = ProjectRights.find( (right) => right.get('UserId') === User.get('id') );
-    if( ProjectRight === undefined || !ProjectRight.get('edit') ){
+    if( ProjectRight === null || !ProjectRight.get('write') ){
       throw InsufficientProjectAccessError;
     }
 
@@ -173,18 +173,35 @@ const mutations = {
     }
 
     //project def
-    ['assignedTo', 'company', 'overtime', 'pausal', 'requester', 'status', 'tag', 'taskType'].forEach( (attribute) => {
-      if(Project.get('def')[attribute].fixed){
-        let value = Project.get('def')[attribute].value;
+    const projectDef = await Project.get('def');
+    ['assignedTo', 'tag'].forEach( (attribute) => {
+      if(projectDef[attribute].fixed){
+        let values = projectDef[attribute].value.map( (value) => value.get('id') );
         //if is fixed, it must fit
-        if(Array.isArray(value)){
-          if(
-            value.length !== args[attribute].value.length ||
-            !value.every( (defValue) => args[attribute].value.some( (argValue) => argValue === defValue.get('id') ) )
-          ){
-            throw createProjectFixedAttributeError(attribute);
-          }
-        }else if( value.get('id') !== args[attribute].value ){
+        if(
+          values.length !== args[attribute].value.length ||
+          args[attribute].value.some( (argValue) => !values.includes(argValue) )
+        ){
+          throw createProjectFixedAttributeError(attribute);
+        }
+      }
+    })
+
+    [ 'overtime', 'pausal' ].forEach( (attribute) => {
+      if(projectDef[attribute].fixed){
+        let value = projectDef[attribute].value;
+        //if is fixed, it must fit
+        if( value !== args[attribute].value ){
+          throw createProjectFixedAttributeError(attribute);
+        }
+      }
+    })
+
+    ['company', 'requester', 'status', 'taskType'].forEach( (attribute) => {
+      if(projectDef[attribute].fixed){
+        let value = projectDef[attribute].value.get('id');
+        //if is fixed, it must fit
+        if( value !== args[attribute].value ){
           throw createProjectFixedAttributeError(attribute);
         }
       }
@@ -274,10 +291,10 @@ const mutations = {
     const Task = <TaskInstance> await models.Task.findByPk(id, { include: [{ model: models.Repeat }, { model: models.Status }, { model: models.Project, include: [{ model: models.ProjectRight }, { model: models.Milestone }] } ] });
 
     let Project = <ProjectInstance>Task.get('Project');
-    //must right edit of project
+    //must right write of project
     let ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights'))
     let ProjectRight = ProjectRights.find( (right) => right.get('UserId') === User.get('id') );
-    if( ProjectRight === undefined || !ProjectRight.get('edit') ){
+    if( ProjectRight === null || !ProjectRight.get('write') ){
       throw InsufficientProjectAccessError;
     }
 
@@ -291,10 +308,10 @@ const mutations = {
       if( Project === null ){
         throw createDoesNoExistsError('Project', project)
       }
-      //must right edit of project
+      //must right write of project
       ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights'))
       ProjectRight = ProjectRights.find( (right) => right.get('UserId') === User.get('id') );
-      if( ProjectRight === undefined || !ProjectRight.get('edit') ){
+      if( ProjectRight === null || !ProjectRight.get('write') ){
         throw InsufficientProjectAccessError
       }
     }
@@ -339,20 +356,35 @@ const mutations = {
       }
 
       //project def
-      ['assignedTo', 'company', 'overtime', 'pausal', 'requester', 'status', 'tag', 'taskType']
-      .filter( (attribute) => args[attribute] !== undefined )
-      .forEach( (attribute) => {
-        if(Project.get('def')[attribute].fixed){
-          let value = Project.get('def')[attribute].value;
+      const projectDef = await Project.get('def');
+      ['assignedTo', 'tag'].forEach( (attribute) => {
+        if(projectDef[attribute].fixed){
+          let values = projectDef[attribute].value.map( (value) => value.get('id') );
           //if is fixed, it must fit
-          if(Array.isArray(value)){
-            if(
-              value.length !== args[attribute].value.length ||
-              !value.every( (defValue) => args[attribute].value.some( (argValue) => argValue === defValue.get('id') ) )
-            ){
-              throw createProjectFixedAttributeError(attribute);
-            }
-          }else if( value.get('id') !== args[attribute].value ){
+          if(
+            values.length !== args[attribute].value.length ||
+            args[attribute].value.some( (argValue) => !values.includes(argValue) )
+          ){
+            throw createProjectFixedAttributeError(attribute);
+          }
+        }
+      })
+
+      [ 'overtime', 'pausal' ].forEach( (attribute) => {
+        if(projectDef[attribute].fixed){
+          let value = projectDef[attribute].value;
+          //if is fixed, it must fit
+          if( value !== args[attribute].value ){
+            throw createProjectFixedAttributeError(attribute);
+          }
+        }
+      })
+
+      ['company', 'requester', 'status', 'taskType'].forEach( (attribute) => {
+        if(projectDef[attribute].fixed){
+          let value = projectDef[attribute].value.get('id');
+          //if is fixed, it must fit
+          if( value !== args[attribute].value ){
             throw createProjectFixedAttributeError(attribute);
           }
         }
@@ -437,10 +469,10 @@ const mutations = {
     const User = await checkResolver( req );
     const Task = <TaskInstance> await models.Task.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
     const Project = <ProjectInstance>Task.get('Project');
-    //must right edit of project
+    //must right write of project
     const ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights'))
     const ProjectRight = ProjectRights.find( (right) => right.get('UserId') === User.get('id') );
-    if( ProjectRight === undefined || !ProjectRight.get('delete') ){
+    if( ProjectRight === null || !ProjectRight.get('delete') ){
       throw InsufficientProjectAccessError;
     }
     return Task.destroy();
