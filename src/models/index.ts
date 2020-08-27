@@ -4,7 +4,6 @@ import data from 'configs/database';
 
 import defineAccessRights from './instances/accessRights';
 import defineTags from './instances/tag';
-import defineTasks from './instances/task';
 import defineTokens from './instances/token';
 import defineUsers from './instances/user';
 import defineProjects from './instances/project';
@@ -24,6 +23,8 @@ import defineUserNotifications from './instances/userNotification';
 import defineFilter from './instances/filter';
 import defineFilterOneOf from './instances/filterOneOf';
 import defineMilestone from './instances/milestone';
+import defineRepeats from './instances/repeat';
+import defineTasks from './instances/task';
 /*
 const operatorsAliases = {
 
@@ -40,9 +41,6 @@ export const models = sequelize.models;
 export const updateModels = ( ignoreUpdating: Boolean ) => {
 
   defineTags(sequelize);
-  defineTasks(sequelize);
-  models.Tag.belongsToMany(models.Task, { through: 'task_has_tags' });
-  models.Task.belongsToMany(models.Tag, { through: 'task_has_tags' });
 
   defineRoles(sequelize);
   defineAccessRights(sequelize);
@@ -135,9 +133,6 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.UserNotification.belongsTo(models.User);
   models.User.hasMany(models.UserNotification);
 
-  models.UserNotification.belongsTo(models.Task);
-  models.Task.hasMany(models.UserNotification);
-
   defineFilter(sequelize);
   defineFilterOneOf(sequelize);
   models.Filter.belongsTo(models.User, { as: 'filterCreatedBy' });
@@ -165,10 +160,50 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.Role.belongsToMany(models.Filter, { through: 'filter_access_roles' });
 
   defineMilestone(sequelize);
-  models.Milestone.belongsTo(models.Project, { onDelete: 'CASCADE' });
-  models.Project.hasMany(models.Milestone, { foreignKey: { allowNull: false } });
+  models.Project.hasMany(models.Milestone, { onDelete: 'CASCADE' });
+  models.Milestone.belongsTo(models.Project, { foreignKey: { allowNull: false } });
 
-  //logFunctionsOfModel(models.Filter)
+  defineRepeats(sequelize);
+
+  defineTasks(sequelize);
+  models.UserNotification.belongsTo(models.Task);
+  models.Task.hasMany(models.UserNotification);
+
+  models.Task.belongsToMany(models.User, { as : { singular: "assignedTo", plural: "assignedTos" }, through: 'task_assignedTo' });
+  models.User.belongsToMany(models.Task, { as : { singular: "assignedTo", plural: "assignedTos" }, through: 'task_assignedTo' });
+
+  //TODO REPLACEMENT WHEN DELETED
+  models.Task.belongsTo(models.Company);
+  models.Company.hasMany(models.Task);
+
+  models.Task.belongsTo(models.User, { as: 'createdBy' });
+  models.User.hasMany(models.Task, { as: 'createdBy' });
+
+  //TODO REPLACEMENT WHEN DELETED
+  models.Task.belongsTo(models.Milestone);
+  models.Milestone.hasMany(models.Task);
+
+  models.Task.belongsTo(models.Project, { foreignKey: { allowNull: false } });
+  models.Project.hasMany(models.Task);
+
+  models.Task.belongsTo(models.User, { as: 'requester' });
+  models.User.hasMany(models.Task, { as: { singular: 'requester', plural: 'requester' } });
+
+  //TODO REPLACEMENT WHEN DELETED
+  models.Task.belongsTo(models.Status, { foreignKey: { allowNull: false } });
+  models.Status.hasMany(models.Task);
+
+  models.Tag.belongsToMany(models.Task, { through: 'task_has_tags' });
+  models.Task.belongsToMany(models.Tag, { through: 'task_has_tags' });
+
+  //TODO REPLACEMENT WHEN DELETED
+  models.Task.belongsTo(models.TaskType);
+  models.TaskType.hasMany(models.Task);
+
+  models.Task.hasOne(models.Repeat, { onDelete: 'CASCADE' });
+  models.Repeat.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+
+  //logFunctionsOfModel(models.User)
 
 
   if(ignoreUpdating){

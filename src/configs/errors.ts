@@ -63,3 +63,16 @@ export const NotAdminOfProjectNorManagesProjects = new ApolloError("You can't ed
 //filters
 export const NoAccessToThisProjectError = new ApolloError("You can't access this project.", "NO_ACCESS_TO_PROJECT");
 export const NoAccessToThisFilterError = new ApolloError("You can't access this filter.", "NO_ACCESS_TO_FILTER");
+
+//tasks
+export const InsufficientProjectAccessError = new ApolloError("You don't have sufficient access in this project.", "INSUFFICIENT_ACCESS_PROJECT");
+export const createUserNotPartOfProjectError = ( name ):ApolloError => {
+  return new ApolloError(`User passed in parameter ${name} is not part of the project, therefore can't be assigned to this parameter!`, 'USER_NOT_PART_OF_PROJECT');
+}
+export const MilestoneNotPartOfProject = new ApolloError("Milestone is not from this project.", "MILESTONE_NOT_FROM_PROJECT");
+export const createProjectFixedAttributeError = ( name ):ApolloError => {
+  return new ApolloError(`Parameter ${name} is fixed by the project and is not the same!`, 'FIXED_ATTRIBUTE_BY_PROJECT');
+}
+export const StatusPendingAttributesMissing = new ApolloError("If status is set to action pending, you must pass both, pendingDate and pendingChangable.", "INSUFFICIENT_PENDING_ATTRIBUTES");
+
+export const TaskNotNullAttributesPresent = new ApolloError("Task can't have null value for company, project, status and taskType.", "TASK_NOT_NULL_ATTRIBUTES");

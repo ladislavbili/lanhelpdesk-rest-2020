@@ -16,3 +16,4 @@ export { TaskTypeInstance } from './taskType';
 export { TokenInstance } from './token';
 export { TripTypeInstance } from './tripType';
 export { UserInstance } from './user';
+export { RepeatInstance } from './repeat';

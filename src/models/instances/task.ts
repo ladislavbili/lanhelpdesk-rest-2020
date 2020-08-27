@@ -3,6 +3,38 @@ import DefaultInstance from './defaultInstance';
 
 export interface TaskInstance extends DefaultInstance {
   title: string;
+
+  //assignedTo []
+  //tags
+  //company - X
+  //createdBy - X
+  deadline: number; // X
+  description: string; // X
+  //milestone - ? X
+  overtime: boolean; //X
+  pausal: boolean; //X
+  //project - // X
+  /*
+  //TODO CREATE REPEAT
+  repeatEvery
+  repeatInterval
+  startsAt
+  */
+  //requester - ? X
+  //status - X
+  pendingChangable: boolean; //X
+  pendingDate: number; //X
+  closeDate: number; //X
+  statusChange: number; //X
+  invoicedDate: number; //X
+  //taskType - X
+  setStatus?: any;
+  setCompany?: any;
+  setTaskType?: any;
+  setMilestone?: any;
+  setRequester?: any;
+  setAssignedTos?: any;
+  setProject?: any;
   setTags?: any;
 }
 
@@ -13,6 +45,41 @@ export default function defineTasks( sequelize: Sequelize ){
       title: {
         type: DataTypes.TEXT,
         allowNull: false,
+      },
+      closeDate: {
+        type: DataTypes.DATE,
+      },
+      deadline: {
+        type: DataTypes.DATE,
+      },
+      description: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        defaultValue: ""
+      },
+      overtime: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        defaultValue: false
+      },
+      pausal: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        defaultValue: false
+      },
+      pendingChangable: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        defaultValue: false
+      },
+      pendingDate: {
+        type: DataTypes.DATE,
+      },
+      statusChange: {
+        type: DataTypes.DATE,
+      },
+      invoicedDate: {
+        type: DataTypes.DATE,
       },
     },
     {
