@@ -48,9 +48,11 @@ export default function defineTasks( sequelize: Sequelize ){
       },
       closeDate: {
         type: DataTypes.DATE,
+        allowNull: true,
       },
       deadline: {
         type: DataTypes.DATE,
+        allowNull: true,
       },
       description: {
         type: DataTypes.TEXT,
@@ -74,12 +76,15 @@ export default function defineTasks( sequelize: Sequelize ){
       },
       pendingDate: {
         type: DataTypes.DATE,
+        allowNull: true,
       },
       statusChange: {
         type: DataTypes.DATE,
+        allowNull: false,
       },
       invoicedDate: {
         type: DataTypes.DATE,
+        allowNull: true,
       },
     },
     {

@@ -16,6 +16,7 @@ enum StatusAllowedType {
   CloseDate
   CloseInvalid
   PendingDate
+  Invoiced
 }
 `
 

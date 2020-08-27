@@ -139,8 +139,8 @@ const mutations = {
     const User = await checkResolver( req );
     //check all Ids if exists
     const pairsToCheck = [ { id: company, model: models.Company }, { id: project, model: models.Project }, { id: status, model: models.Status }, { id: taskType, model: models.TaskType } ];
-    (requester !== undefined || requester !== null) && pairsToCheck.push({ id: requester, model: models.User });
-    (milestone !== undefined || milestone !== null) && pairsToCheck.push({ id: milestone, model: models.Milestone });
+    (requester !== undefined && requester !== null) && pairsToCheck.push({ id: requester, model: models.User });
+    (milestone !== undefined && milestone !== null) && pairsToCheck.push({ id: milestone, model: models.Milestone });
     await idsDoExistsCheck( assignedTos, models.User );
     await idsDoExistsCheck( tags, models.Tag );
     await multipleIdDoesExistsCheck( pairsToCheck );
@@ -267,8 +267,8 @@ const mutations = {
     ( project !== undefined ) && pairsToCheck.push({ id: project, model: models.Project });
     ( status !== undefined ) && pairsToCheck.push({ id: status, model: models.Status });
     ( taskType !== undefined ) && pairsToCheck.push({ id: taskType, model: models.TaskType });
-    ( requester !== undefined || requester !== null ) && pairsToCheck.push({ id: requester, model: models.User });
-    ( milestone !== undefined || milestone !== null ) && pairsToCheck.push({ id: milestone, model: models.Milestone });
+    ( requester !== undefined && requester !== null ) && pairsToCheck.push({ id: requester, model: models.User });
+    ( milestone !== undefined && milestone !== null ) && pairsToCheck.push({ id: milestone, model: models.Milestone });
     await multipleIdDoesExistsCheck( pairsToCheck );
 
     const Task = <TaskInstance> await models.Task.findByPk(id, { include: [{ model: models.Repeat }, { model: models.Status }, { model: models.Project, include: [{ model: models.ProjectRight }, { model: models.Milestone }] } ] });
