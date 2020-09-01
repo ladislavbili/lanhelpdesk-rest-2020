@@ -1,24 +1,19 @@
 import { Sequelize, DataTypes } from "sequelize";
 import DefaultInstance from './defaultInstance';
 
-export interface SubtaskInstance extends DefaultInstance {
-
+export interface CustomItemInstance extends DefaultInstance {
   title: string;
   order: number;
   done: boolean;
   quantity: number;
-  discount: number;
-  //task
-  //type
-  //assignedTo
-
-  setTaskType?: any;
-  setUser?: any;
+  price: number;
 }
 
-export default function defineSubtasks( sequelize: Sequelize ){
-  sequelize.define<SubtaskInstance>(
-    "Subtask",
+
+
+export default function defineCustomItems( sequelize: Sequelize ){
+  sequelize.define<CustomItemInstance>(
+    "CustomItem",
     {
       title: {
         type: DataTypes.TEXT,
@@ -39,7 +34,7 @@ export default function defineSubtasks( sequelize: Sequelize ){
         allowNull: false,
         defaultValue: 0
       },
-      discount: {
+      price: {
         type: DataTypes.FLOAT(10,2),
         allowNull: false,
         defaultValue: 0
@@ -47,7 +42,7 @@ export default function defineSubtasks( sequelize: Sequelize ){
     },
     {
       //OPTIONS
-      tableName: 'subtasks',
+      tableName: 'custom_items',
       // freezeTableName: true,
     }
   );

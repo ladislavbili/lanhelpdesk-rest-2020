@@ -98,7 +98,6 @@ const mutations = {
 
     if(pub){
       await idsDoExistsCheck( roles, models.Role);
-      //toDO FINISH
       const newFilter = <FilterInstance> await models.Filter.create({
         ...args,
         order,
@@ -163,7 +162,6 @@ const mutations = {
     await multipleIdDoesExistsCheck(checkPairs);
 
     await idsDoExistsCheck( roles, models.Role);
-    //toDO FINISH
     const newFilter = <FilterInstance> await models.Filter.create({
       ...args,
       order,

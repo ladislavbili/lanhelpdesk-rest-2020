@@ -3,7 +3,7 @@ import DefaultInstance from './defaultInstance';
 
 export interface TaskInstance extends DefaultInstance {
   title: string;
-
+  important: boolean;
   //assignedTo []
   //tags
   //company - X
@@ -15,7 +15,6 @@ export interface TaskInstance extends DefaultInstance {
   pausal: boolean; //X
   //project - // X
   /*
-  //TODO CREATE REPEAT
   repeatEvery
   repeatInterval
   startsAt
@@ -36,6 +35,8 @@ export interface TaskInstance extends DefaultInstance {
   setAssignedTos?: any;
   setProject?: any;
   setTags?: any;
+
+  getAssignedTos?: any;
 }
 
 export default function defineTasks( sequelize: Sequelize ){
@@ -45,6 +46,11 @@ export default function defineTasks( sequelize: Sequelize ){
       title: {
         type: DataTypes.TEXT,
         allowNull: false,
+      },
+      important: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
       },
       closeDate: {
         type: DataTypes.DATE,

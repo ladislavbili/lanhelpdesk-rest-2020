@@ -29,7 +29,7 @@ const mutations = {
     if( ProjectRights === undefined || !ProjectRights.get('admin') ){
       throw NoAccessToThisProjectError;
     }
-    return models.Milestone.create( args );
+    return models.Milestone.create( {...args, ProjectId: projectId } );
   },
 
   //  updateMilestone( id: Int!, title: String, description: String, startsAt: Int, endsAt: Int ): Milestone
@@ -68,7 +68,10 @@ const attributes = {
   Milestone: {
     async project(milestone) {
       return milestone.getProject()
-    }
+    },
+    async tasks(milestone) {
+      return milestone.getTasks()
+    },
   },
 };
 

@@ -1,9 +1,8 @@
 import { Sequelize, DataTypes } from "sequelize";
 import DefaultInstance from './defaultInstance';
 
-export interface SubtaskInstance extends DefaultInstance {
+export interface WorkTripInstance extends DefaultInstance {
 
-  title: string;
   order: number;
   done: boolean;
   quantity: number;
@@ -11,19 +10,16 @@ export interface SubtaskInstance extends DefaultInstance {
   //task
   //type
   //assignedTo
-
-  setTaskType?: any;
+  setTripType?: any;
   setUser?: any;
+
+
 }
 
-export default function defineSubtasks( sequelize: Sequelize ){
-  sequelize.define<SubtaskInstance>(
-    "Subtask",
+export default function defineWorkTrips( sequelize: Sequelize ){
+  sequelize.define<WorkTripInstance>(
+    "WorkTrip",
     {
-      title: {
-        type: DataTypes.TEXT,
-        allowNull: false,
-      },
       order: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -47,7 +43,7 @@ export default function defineSubtasks( sequelize: Sequelize ){
     },
     {
       //OPTIONS
-      tableName: 'subtasks',
+      tableName: 'work_trips',
       // freezeTableName: true,
     }
   );

@@ -7,6 +7,7 @@ type Milestone {
   startsAt: String!
   endsAt: String!
   project: Project!
+  tasks: [Task]!
 }
 `
 

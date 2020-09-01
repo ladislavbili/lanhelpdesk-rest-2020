@@ -25,6 +25,13 @@ import defineFilterOneOf from './instances/filterOneOf';
 import defineMilestone from './instances/milestone';
 import defineRepeats from './instances/repeat';
 import defineTasks from './instances/task';
+import defineSubtasks from './instances/subtask';
+import defineWorkTrips from './instances/workTrip';
+import defineMaterials from './instances/material';
+import defineCustomItems from './instances/customItem';
+import defineComments from './instances/comment';
+import defineEmails from './instances/email';
+import defineEmailTargets from './instances/emailTarget';
 /*
 const operatorsAliases = {
 
@@ -203,8 +210,63 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.Task.hasOne(models.Repeat, { onDelete: 'CASCADE' });
   models.Repeat.belongsTo(models.Task, { foreignKey: { allowNull: false } });
 
-  //logFunctionsOfModel(models.User)
+  defineSubtasks(sequelize);
 
+  models.Task.hasMany(models.Subtask, { onDelete: 'CASCADE' });
+  models.Subtask.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+
+  //TODO REPLACEMENT WHEN DELETED
+  models.Subtask.belongsTo(models.TaskType);
+  models.TaskType.hasMany(models.Subtask);
+
+  //TODO REPLACEMENT WHEN DELETED
+  models.Subtask.belongsTo(models.User);
+  models.User.hasMany(models.Subtask);
+
+  defineWorkTrips(sequelize);
+  models.Task.hasMany(models.WorkTrip, { onDelete: 'CASCADE' });
+  models.WorkTrip.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+
+
+  //TODO REPLACEMENT WHEN DELETED
+  models.WorkTrip.belongsTo(models.TripType);
+  models.TripType.hasMany(models.WorkTrip);
+
+  //TODO REPLACEMENT WHEN DELETED
+  models.WorkTrip.belongsTo(models.User);
+  models.User.hasMany(models.WorkTrip);
+
+  defineMaterials(sequelize);
+  models.Task.hasMany(models.Material, { onDelete: 'CASCADE' });
+  models.Material.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+
+  defineCustomItems(sequelize);
+  models.Task.hasMany(models.CustomItem, { onDelete: 'CASCADE' });
+  models.CustomItem.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+
+  defineComments(sequelize);
+  models.User.hasMany(models.Comment, { onDelete: 'CASCADE' });
+  models.Comment.belongsTo(models.User, { foreignKey: { allowNull: false } });
+
+  models.Task.hasMany(models.Comment, { onDelete: 'CASCADE' });
+  models.Comment.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+
+  models.Comment.belongsTo( models.Comment, { as: 'commentOf' });
+  models.Comment.hasMany(models.Comment, { onDelete: 'CASCADE' });
+
+
+  defineEmails(sequelize);
+  models.User.hasMany(models.Email, { onDelete: 'CASCADE' });
+  models.Email.belongsTo(models.User);
+
+  models.Task.hasMany(models.Email, { onDelete: 'CASCADE' });
+  models.Email.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+
+  defineEmailTargets(sequelize);
+
+  models.Email.hasMany(models.EmailTarget, { onDelete: 'CASCADE' });
+  models.EmailTarget.belongsTo(models.Email, { foreignKey: { allowNull: false } });
+  //logFunctionsOfModel(models.Task)
 
   if(ignoreUpdating){
     return new Promise( (resolve, reject) => resolve() );
