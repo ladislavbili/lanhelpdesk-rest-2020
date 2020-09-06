@@ -1,6 +1,6 @@
 import { createDoesNoExistsError } from 'configs/errors';
 import { models } from 'models';
-import { ProjectInstance } from 'models/instances';
+import { ProjectInstance, TaskInstance, StatusInstance } from 'models/instances';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -38,7 +38,7 @@ const mutations = {
   deleteStatus: async ( root, { id, newId }, { req } ) => {
     await checkResolver( req, ["statuses"] );
     const NewStatus = await models.Status.findByPk(newId);
-    const OldStatus = await models.Status.findByPk(id,
+    const OldStatus = <StatusInstance> await models.Status.findByPk(id,
       {
         include: [
           { model: models.Project, as: 'defStatus' }
@@ -57,6 +57,8 @@ const mutations = {
       }),
 
     ])
+    const allTasks = <TaskInstance[]> await OldStatus.getTasks();
+    await Promise.all( allTasks.map( (task) => task.setStatus(newId) ) )
     return OldStatus.destroy();
   },
 }

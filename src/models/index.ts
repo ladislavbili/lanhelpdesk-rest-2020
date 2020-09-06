@@ -132,16 +132,20 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.Project.belongsTo(models.TaskType, { as: 'defTaskType' });
   models.TaskType.hasMany(models.Project, { as: 'defTaskType' });
 
+  //ERROR MESSAGES
   defineErrorMessages(sequelize);
   models.ErrorMessage.belongsTo(models.User);
   models.User.hasMany(models.ErrorMessage);
 
+  //NOTIFICATIONS
   defineUserNotifications(sequelize);
   models.UserNotification.belongsTo(models.User);
   models.User.hasMany(models.UserNotification);
 
+  //FILTER
   defineFilter(sequelize);
   defineFilterOneOf(sequelize);
+
   models.Filter.belongsTo(models.User, { as: 'filterCreatedBy' });
   models.User.hasMany(models.Filter, { as: 'filterCreatedBy' });
 
@@ -166,47 +170,56 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.Filter.belongsToMany(models.Role, { through: 'filter_access_roles' });
   models.Role.belongsToMany(models.Filter, { through: 'filter_access_roles' });
 
+  //MILESTONE
   defineMilestone(sequelize);
   models.Project.hasMany(models.Milestone, { onDelete: 'CASCADE' });
   models.Milestone.belongsTo(models.Project, { foreignKey: { allowNull: false } });
 
   defineRepeats(sequelize);
-
+  //TASKS
   defineTasks(sequelize);
-  models.UserNotification.belongsTo(models.Task);
-  models.Task.hasMany(models.UserNotification);
 
+  //TASKS - USER NOTIFICATION - DELETED
+  models.UserNotification.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+  models.Task.hasMany(models.UserNotification, { onDelete: 'CASCADE' });
+
+  //TASKS - ASSINGED TO - REMOVED
   models.Task.belongsToMany(models.User, { as : { singular: "assignedTo", plural: "assignedTos" }, through: 'task_assignedTo' });
-  models.User.belongsToMany(models.Task, { as : { singular: "assignedTo", plural: "assignedTos" }, through: 'task_assignedTo' });
+  models.User.belongsToMany(models.Task, { as : { singular: "assignedToTask", plural: "assignedToTasks" }, through: 'task_assignedTo' });
 
-  //TODO REPLACEMENT WHEN DELETED
-  models.Task.belongsTo(models.Company);
+  //TASKS - COMPANY - REPLACED
+  models.Task.belongsTo(models.Company, { foreignKey: { allowNull: false } });
   models.Company.hasMany(models.Task);
 
+  //TASKS - CREATED BY - SET NULL
   models.Task.belongsTo(models.User, { as: 'createdBy' });
-  models.User.hasMany(models.Task, { as: 'createdBy' });
+  models.User.hasMany(models.Task, { as: 'createdTask' });
 
-  //TODO REPLACEMENT WHEN DELETED
+  //TASKS - MILESTONE - SET NULL
   models.Task.belongsTo(models.Milestone);
   models.Milestone.hasMany(models.Task);
 
+  //TASKS - PROJECT - TASK DELETED
   models.Task.belongsTo(models.Project, { foreignKey: { allowNull: false } });
-  models.Project.hasMany(models.Task);
+  models.Project.hasMany(models.Task, { onDelete: 'CASCADE' } );
 
+  //TASKS - REQUESTER - REPLACED
   models.Task.belongsTo(models.User, { as: 'requester' });
-  models.User.hasMany(models.Task, { as: { singular: 'requester', plural: 'requester' } });
+  models.User.hasMany(models.Task, { as: { singular: 'requesterTask', plural: 'requesterTasks' } });
 
-  //TODO REPLACEMENT WHEN DELETED
+  //TASKS - STATUS - REPLACED
   models.Task.belongsTo(models.Status, { foreignKey: { allowNull: false } });
   models.Status.hasMany(models.Task);
 
+  //TASKS - TAGS - REMOVED
   models.Tag.belongsToMany(models.Task, { through: 'task_has_tags' });
   models.Task.belongsToMany(models.Tag, { through: 'task_has_tags' });
 
-  //TODO REPLACEMENT WHEN DELETED
+  //TASKS - TASK TYPE - REPLACED
   models.Task.belongsTo(models.TaskType);
   models.TaskType.hasMany(models.Task);
 
+  //TASKS - REPEAT - DELETED
   models.Task.hasOne(models.Repeat, { onDelete: 'CASCADE' });
   models.Repeat.belongsTo(models.Task, { foreignKey: { allowNull: false } });
 
@@ -215,11 +228,11 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.Task.hasMany(models.Subtask, { onDelete: 'CASCADE' });
   models.Subtask.belongsTo(models.Task, { foreignKey: { allowNull: false } });
 
-  //TODO REPLACEMENT WHEN DELETED
+  //SUBTASK - TASK TYPE - REPLACED
   models.Subtask.belongsTo(models.TaskType);
   models.TaskType.hasMany(models.Subtask);
 
-  //TODO REPLACEMENT WHEN DELETED
+  //SUBTASK - USER - REPLACED
   models.Subtask.belongsTo(models.User);
   models.User.hasMany(models.Subtask);
 
@@ -228,11 +241,11 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.WorkTrip.belongsTo(models.Task, { foreignKey: { allowNull: false } });
 
 
-  //TODO REPLACEMENT WHEN DELETED
+  //WORK TRIP - TRIP TYPE - REPLACED
   models.WorkTrip.belongsTo(models.TripType);
   models.TripType.hasMany(models.WorkTrip);
 
-  //TODO REPLACEMENT WHEN DELETED
+  //WORK TRIP - USER - REPLACED
   models.WorkTrip.belongsTo(models.User);
   models.User.hasMany(models.WorkTrip);
 
@@ -266,7 +279,9 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
 
   models.Email.hasMany(models.EmailTarget, { onDelete: 'CASCADE' });
   models.EmailTarget.belongsTo(models.Email, { foreignKey: { allowNull: false } });
-  //logFunctionsOfModel(models.Task)
+
+  //LOG FUNCTIONS
+  logFunctionsOfModel(models.Subtask);
 
   if(ignoreUpdating){
     return new Promise( (resolve, reject) => resolve() );

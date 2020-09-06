@@ -40,6 +40,21 @@ type UserData {
   user: User
   accessToken: String
 }
+
+input TaskPairInput {
+  taskId: Int!
+  requesterId: Int!
+}
+
+input SubtaskPairInput {
+  subtaskId: Int!
+  assignedId: Int!
+}
+
+input WorkTripPairInput {
+  workTripId: Int!
+  assignedId: Int!
+}
 `
 export const UserQuerries = `
 users: [User]
@@ -60,5 +75,5 @@ logoutAll: String
 setUserStatuses( ids: [Int]! ): User
 setTasklistLayout( tasklistLayout: Int! ): User
 updateProfile( username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String, language: LanguageEnum ): UserData,
-deleteUser( id: Int! ): User
+deleteUser( id: Int!, taskPairs: [TaskPairInput]!, subtaskPairs: [SubtaskPairInput]!, workTripPairs: [WorkTripPairInput]! ): User
 `

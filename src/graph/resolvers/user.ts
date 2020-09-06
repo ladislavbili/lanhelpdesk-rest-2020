@@ -14,7 +14,10 @@ import {
   UserRoleLevelTooLowError,
   UserNewRoleLevelTooLowError,
   OneAdminLeftError,
-  CantDeleteLowerLevelError
+  CantDeleteLowerLevelError,
+  NotEveryUsersTaskWasCoveredError,
+  NotEveryUsersSubtaskWasCoveredError,
+  NotEveryUsersWorkTripWasCoveredError
 } from 'configs/errors';
 import { models } from 'models';
 import { UserInstance, RoleInstance, ProjectInstance } from 'models/instances';
@@ -313,7 +316,7 @@ const mutations = {
   },
 
   //deleteUser( id: Int! ): User,
-  deleteUser: async ( root, { id }, { req, userID } ) => {
+  deleteUser: async ( root, { id, taskPairs, subtaskPairs, workTripPairs }, { req, userID } ) => {
     const User = await checkResolver( req, ['users'] );
     const TargetUser = <UserInstance> await models.User.findByPk(id,
       {
@@ -345,6 +348,42 @@ const mutations = {
       }
     }
 
+    // TASK SUBTASK AND WORK TRIP CHECKS
+    await idsDoExistsCheck(
+      [
+        ...taskPairs.map((pair) => pair.requesterId ),
+        ...subtaskPairs.map((pair) => pair.assignedId ),
+        ...workTripPairs.map((pair) => pair.assignedId )
+      ],
+      models.User
+    );
+    const [ tasks, subtasks, workTrips ] = await Promise.all([
+      TargetUser.getRequesterTasks({ include: [ { model: models.Project, include: [{ model: models.ProjectRight }] } ] }),
+      TargetUser.getSubtasks({ include: [ { model: models.Task, include: [{ model: models.User, as: 'assignedTos' }] } ] }),
+      TargetUser.getWorkTrips({ include: [ { model: models.Task, include: [{ model: models.User, as: 'assignedTos' }] } ] }),
+    ])
+    //Check is all pairs fit all tasks, subtasks and work trips, this also includes check that user IS the replaced person
+    const taskPairIds = taskPairs.map( (taskPair) => taskPair.taskId );
+    if(tasks.length !== taskPairIds.length || !tasks.every( (Task) => taskPairIds.includes(Task.get('id')) )){
+      throw NotEveryUsersTaskWasCoveredError;
+    }
+
+    const subtaskPairIds = subtaskPairs.map( (subtaskPair) => subtaskPair.subtaskId );
+    if(subtasks.length !== subtaskPairIds.length || !subtasks.every( (Subtask) => subtaskPairIds.includes(Subtask.get('id')) )){
+      throw NotEveryUsersSubtaskWasCoveredError;
+    }
+
+    const workTripPairIds = workTripPairs.map( (workTripPair) => workTripPair.workTripId );
+    if(workTrips.length !== workTripPairIds.length || !workTrips.every( (WorkTrip) => workTripPairIds.includes(WorkTrip.get('id')) )){
+      throw NotEveryUsersWorkTripWasCoveredError;
+    }
+
+    //Check if new user can be new value
+    await Promise.all( tasks.map( (Task) => checkIfPairFitsTask( Task, taskPairs.find( (taskPair) => taskPair.taskId === Task.get('id') ).requesterId ) ) );
+    await Promise.all( subtasks.map( (Subtask) => checkIfPairFitsSubtask( Subtask, subtaskPairs.find( (subtaskPair) => subtaskPair.subtaskId === Subtask.get('id') ).assignedId ) ) );
+    await Promise.all( workTrips.map( (WorkTrip) => checkIfPairFitsWorkTrip( WorkTrip, workTripPairs.find( (workTrip) => workTrip.workTripId === WorkTrip.get('id') ).assignedId ) ) );
+
+    // DELETING AND UPDATING
     let promises = [
       ...(<ProjectInstance[]>TargetUser.get('defAssignedTo')).map( (project) => {
         if((<UserInstance[]>project.get('defAssignedTo')).length === 1 && project.get('defAssignedToFixed') ){
@@ -354,10 +393,11 @@ const mutations = {
       } ),
       ...(<ProjectInstance[]>TargetUser.get('defRequester')).map( (project) => {
         return project.setDefRequester(null);
-      })
+      }),
+      ...taskPairs.map( (taskPair) => tasks.find( (Task) => Task.get('id') === taskPair.taskId ).setRequester(taskPair.requesterId) ),
+      ...subtaskPairs.map( (subtaskPair) => subtasks.find( (Subtask) => Subtask.get('id') === subtaskPair.subtaskId ).setUser(subtaskPair.assignedId) ),
+      ...workTripPairs.map( (workTripPair) => workTrips.find( (WorkTrip) => WorkTrip.get('id') === workTripPair.workTripId ).setUser(workTripPair.assignedId) )
     ]
-
-
 
     await Promise.all(promises);
     return TargetUser.destroy();
@@ -403,4 +443,22 @@ export default {
   attributes,
   mutations,
   querries
+}
+
+async function checkIfPairFitsTask(Task, requester){
+  const Project = await Task.get('Project');
+  const ProjectRights = await Project.get('ProjectRights');
+  return Project.get('lockedRequester') || ProjectRights.some((right) => right.get('UserId') === requester )
+}
+
+async function checkIfPairFitsSubtask(Subtask, assignedId){
+  const Task = await Subtask.get('Task');
+  const AssignedTos = await Task.get('assignedTos');
+  return AssignedTos.some((assignedTo) => assignedTo.get('id') === assignedId )
+}
+
+async function checkIfPairFitsWorkTrip(WorkTrip, assignedId){
+  const Task = await WorkTrip.get('Task');
+  const AssignedTos = await Task.get('assignedTos');
+  return AssignedTos.some((assignedTo) => assignedTo.get('id') === assignedId )
 }

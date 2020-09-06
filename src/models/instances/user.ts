@@ -23,6 +23,10 @@ export interface UserInstance extends DefaultInstance {
   setCompany?: any;
   createToken?: any;
   setPricelist?: any;
+
+  getRequesterTasks?: any;
+  getSubtasks?: any;
+  getWorkTrips?: any;
 }
 
 export default function defineUsers( sequelize: Sequelize ){

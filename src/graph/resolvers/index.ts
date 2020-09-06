@@ -18,6 +18,9 @@ import taskType from './taskType';
 import tripType from './tripType';
 import user from './user';
 import workTrip from './workTrip';
+const { PubSub } = require('apollo-server-express');
+export const pubsub = new PubSub();
+
 
 export default {
   Query: {
@@ -67,6 +70,10 @@ export default {
     ...user.mutations,
     ...workTrip.mutations,
   },
+  Subscription:{
+    ...task.subscriptions,
+  },
+
   ...comment.attributes,
   ...company.attributes,
   ...customItem.attributes,

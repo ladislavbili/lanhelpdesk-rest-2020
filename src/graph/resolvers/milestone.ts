@@ -49,7 +49,7 @@ const mutations = {
   },
 
   //  deleteMilestone( id: Int! ): Milestone
-  deleteTag: async ( root, { id }, { req } ) => {
+  deleteMilestone: async ( root, { id }, { req } ) => {
     const User = await checkResolver( req );
     const Milestone = await models.Milestone.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
     if( Milestone === null ){

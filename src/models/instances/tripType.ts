@@ -4,6 +4,7 @@ import DefaultInstance from './defaultInstance';
 export interface TripTypeInstance extends DefaultInstance {
   title: string;
   order: number;
+  getWorkTrips?: any;
 }
 
 export default function defineTripTypes( sequelize: Sequelize ){

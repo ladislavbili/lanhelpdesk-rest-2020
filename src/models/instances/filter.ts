@@ -21,10 +21,10 @@ export interface FilterInstance extends DefaultInstance {
   statusDateTo: number;
   statusDateToNow: boolean;
 
-  pedingDateFrom: number;
-  pedingDateFromNow: boolean;
-  pedingDateTo: number;
-  pedingDateToNow: boolean;
+  pendingDateFrom: number;
+  pendingDateFromNow: boolean;
+  pendingDateTo: number;
+  pendingDateToNow: boolean;
 
   closeDateFrom: number;
   closeDateFromNow: boolean;
@@ -107,10 +107,10 @@ export default function defineFilter( sequelize: Sequelize ){
             statusDateTo: this.get('statusDateTo'),
             statusDateToNow: this.get('statusDateToNow'),
 
-            pedingDateFrom: this.get('pedingDateFrom'),
-            pedingDateFromNow: this.get('pedingDateFromNow'),
-            pedingDateTo: this.get('pedingDateTo'),
-            pedingDateToNow: this.get('pedingDateToNow'),
+            pendingDateFrom: this.get('pendingDateFrom'),
+            pendingDateFromNow: this.get('pendingDateFromNow'),
+            pendingDateTo: this.get('pendingDateTo'),
+            pendingDateToNow: this.get('pendingDateToNow'),
 
             closeDateFrom: this.get('closeDateFrom'),
             closeDateFromNow: this.get('closeDateFromNow'),
@@ -160,20 +160,20 @@ export default function defineFilter( sequelize: Sequelize ){
         defaultValue: false,
       },
 
-      pedingDateFrom: {
+      pendingDateFrom: {
         type: DataTypes.DATE,
         allowNull: true,
       },
-      pedingDateFromNow: {
+      pendingDateFromNow: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      pedingDateTo: {
+      pendingDateTo: {
         type: DataTypes.DATE,
         allowNull: true,
       },
-      pedingDateToNow: {
+      pendingDateToNow: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,

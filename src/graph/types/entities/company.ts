@@ -37,25 +37,25 @@ type BasicCompany {
 type CompanyRent {
   ${defaultAttributes}
   title: String!
-  quantity: Int!
-  cost: Int!
-  price: Int!
-  total: Int!
+  quantity: Float!
+  cost: Float!
+  price: Float!
+  total: Float!
 }
 
 input CompanyRentCreateInput{
   title: String!
-  quantity: Int!
-  cost: Int!
-  price: Int!
+  quantity: Float!
+  cost: Float!
+  price: Float!
 }
 
 input CompanyRentUpdateInput{
   id: Int
   title: String!
-  quantity: Int!
-  cost: Int!
-  price: Int!
+  quantity: Float!
+  cost: Float!
+  price: Float!
 }
 
 `

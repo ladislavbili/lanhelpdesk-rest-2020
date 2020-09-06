@@ -46,10 +46,10 @@ type filter {
   statusDateFromNow: Boolean!
   statusDateTo: Int
   statusDateToNow: Boolean!
-  pedingDateFrom: Int
-  pedingDateFromNow: Boolean!
-  pedingDateTo: Int
-  pedingDateToNow: Boolean!
+  pendingDateFrom: Int
+  pendingDateFromNow: Boolean!
+  pendingDateTo: Int
+  pendingDateToNow: Boolean!
   closeDateFrom: Int
   closeDateFromNow: Boolean!
   closeDateTo: Int
@@ -74,10 +74,10 @@ input FilterInput {
   statusDateFromNow: Boolean!
   statusDateTo: Int
   statusDateToNow: Boolean!
-  pedingDateFrom: Int
-  pedingDateFromNow: Boolean!
-  pedingDateTo: Int
-  pedingDateToNow: Boolean!
+  pendingDateFrom: Int
+  pendingDateFromNow: Boolean!
+  pendingDateTo: Int
+  pendingDateToNow: Boolean!
   closeDateFrom: Int
   closeDateFromNow: Boolean!
   closeDateTo: Int

@@ -8,9 +8,11 @@ import { models } from 'models';
 import { verifyAccToken, verifyRefToken, createAccessToken, createRefreshToken } from 'configs/jwt';
 import jwt_decode from 'jwt-decode';
 import cookieParser from 'cookie-parser';
+import http from 'http';
 import { randomString } from 'helperFunctions';
 import cors from 'cors';
 import axios from 'axios';
+import checkResolver from 'graph/resolvers/checkResolver';
 
 const maxAge = 7 * 24 * 60 * 60 * 1000;
 
@@ -38,8 +40,28 @@ export const startRest = () => {
     typeDefs,
     resolvers,
     schemaDirectives,
-    context: async ({ req, res }) => {
+    subscriptions: {
+      onConnect: async (connectionParams, webSocket) => {
+        await checkResolver( { headers: connectionParams } );
+        return { headers: connectionParams };
+      },
+    },
+    context: async ({ req, res, connection }) => {
       let userID = null;
+      if( connection ){
+        try{
+          const authorization = connection.context.headers.authorization as String;
+          userID = await jwt_decode( authorization.replace('Bearer ','') ).id;
+        }catch(error){
+          //not authentificated
+        }
+
+        return {
+          req,
+          res,
+          userID
+        }
+      }
       const authorization = req.headers.authorization as String;
       if( authorization ){
         try{
@@ -105,8 +127,9 @@ export const startRest = () => {
     );
     res.send({ ok: true, accessToken: await createAccessToken(User, userData.loginKey) })
   })
-
-  app.listen({ port }, () =>{
+  const httpServer = http.createServer(app);
+  server.installSubscriptionHandlers(httpServer);
+  httpServer.listen({ port }, () =>{
     console.log(`Now browse to http://localhost:${port}${server.graphqlPath}`)
   });
 }

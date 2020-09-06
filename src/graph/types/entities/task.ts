@@ -90,11 +90,21 @@ enum EnumRepeatInterval{
   day
   month
 }
+
+type TaskChange{
+  type: EnumSubTaskChanged!
+  data: Task
+  ids: [Int]
+}
+enum EnumSubTaskChanged{
+  add
+  delete
+  update
+}
 `
 export const TaskQuerries = `
 allTasks: [Task]
-tasks( filterId: Int, projectId: Int ): [Task]
-filteredTasks( filter: FilterInput, projectId: Int ): [Task]
+tasks( filterId: Int, projectId: Int, filter: FilterInput ): [Task]
 task(id: Int!): Task
 `
 
@@ -102,4 +112,8 @@ export const TaskMutations = `
 addTask( title: String!, important: Boolean, closeDate: Int, assignedTo: [Int]!, company: Int!, deadline: Int, description: String!, milestone: Int, overtime: Boolean!, pausal: Boolean!, pendingChangable: Boolean, pendingDate: Int, project: Int!, requester: Int, status: Int!, tags: [Int]!, taskType: Int!, repeat: RepeatInput, comments: [CommentInput], subtasks: [SubtaskInput], workTrips: [WorkTripInput], materials: [MaterialInput], customItems: [CustomItemInput] ): Task
 updateTask( id: Int!, title: String, important: Boolean, closeDate: Int, assignedTo: [Int], company: Int, deadline: Int, description: String, milestone: Int, overtime: Boolean, pausal: Boolean, pendingChangable: Boolean, pendingDate: Int, project: Int, requester: Int, status: Int, tags: [Int], taskType: Int, repeat: RepeatInput ): Task
 deleteTask( id: Int! ): Task
+`
+
+export const TaskSubscriptions = `
+  taskChange( projectId: Int, filterId: Int, filter: FilterInput ): TaskChange
 `

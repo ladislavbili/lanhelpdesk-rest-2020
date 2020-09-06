@@ -1,7 +1,7 @@
 import  { Op } from 'sequelize';
 import { createDoesNoExistsError, InsufficientProjectAccessError } from 'configs/errors';
 import { ProjectRightInstance } from 'models/instances';
-
+import moment from 'moment';
 import { models } from 'models';
 
 export const randomString =  () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -100,3 +100,58 @@ export const checkIfHasProjectRights = async (userId, taskId, right = 'read') =>
 
   return { ProjectRight, Task, internal: ProjectRight.get('internal') };
 }
+
+export const filterObjectToFilter = (Filter) => ({
+  assignedToCur: Filter.assignedToCur,
+  assignedTo: Filter.assignedTo === null ? null : Filter.assignedTo.get('id'),
+  requesterCur: Filter.requesterCur,
+  requester: Filter.requester === null ? null : Filter.requester.get('id'),
+  companyCur: Filter.companyCur,
+  company: Filter.company === null ? null : Filter.company.get('id'),
+  taskType: Filter.taskType === null ? null : Filter.taskType.get('id'),
+  oneOf: Filter.oneOf,
+
+  statusDateFrom: Filter.statusDateFrom,
+  statusDateFromNow: Filter.statusDateFromNow,
+  statusDateTo: Filter.statusDateTo,
+  statusDateToNow: Filter.statusDateToNow,
+  pendingDateFrom: Filter.pendingDateFrom,
+  pendingDateFromNow: Filter.pendingDateFromNow,
+  pendingDateTo: Filter.pendingDateTo,
+  pendingDateToNow: Filter.pendingDateToNow,
+  closeDateFrom: Filter.closeDateFrom,
+  closeDateFromNow: Filter.closeDateFromNow,
+  closeDateTo: Filter.closeDateTo,
+  closeDateToNow: Filter.closeDateToNow,
+  deadlineFrom: Filter.deadlineFrom,
+  deadlineFromNow: Filter.deadlineFromNow,
+  deadlineTo: Filter.deadlineTo,
+  deadlineToNow: Filter.deadlineToNow,
+})
+
+export const firstDateSameOrAfter = (date1, date2) => {
+  let firstDate = null;
+  if(date1 === 'now'){
+    firstDate = moment();
+  }else{
+    firstDate = moment(date1);
+  }
+  let secondDate = null;
+  if(date2 === 'now'){
+    secondDate = moment();
+  }else{
+    secondDate = moment(date2);
+  }
+  return firstDate.unix() >= secondDate.unix();
+}
+
+export const taskCheckDate = ( fromNow, filterFromDate, toNow, filterToDate, taskDate ) => (
+  (
+    ( fromNow && firstDateSameOrAfter( 'now', taskDate ) ) ||
+    ( !fromNow && ( filterFromDate === null || firstDateSameOrAfter( taskDate, filterFromDate ) ) )
+  ) &&
+  (
+    ( toNow && firstDateSameOrAfter( taskDate, 'now' ) ) ||
+    ( !toNow && ( filterToDate === null || firstDateSameOrAfter( filterToDate, taskDate ) ) )
+  )
+)

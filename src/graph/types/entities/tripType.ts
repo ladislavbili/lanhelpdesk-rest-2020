@@ -16,5 +16,5 @@ tripType(id: Int!): TripType
 export const TripTypeMutations = `
 addTripType( title: String!, order: Int ): TripType
 updateTripType( id: Int!, title: String, order: Int ): TripType
-deleteTripType( id: Int! ): TripType
+deleteTripType( id: Int!, newId: Int! ): TripType
 `

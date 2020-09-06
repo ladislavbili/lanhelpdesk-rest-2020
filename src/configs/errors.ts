@@ -49,6 +49,11 @@ export const UserNewRoleLevelTooLowError = new ApolloError("Can't set user role 
 export const OneAdminLeftError = new ApolloError("There is only one admin left!", "ONE_ADMIN_LEFT");
 export const CantDeleteLowerLevelError = new ApolloError("Can't delete user with lower level than yours!", "CANT_DELETE_USER_HIS_LEVEL_LOWER");
 
+//user - task attributes
+export const NotEveryUsersTaskWasCoveredError = new ApolloError("Not every task with deleted user as requester was included!", "NOT_EVERY_USERS_REQUESTED_TASK_WAS_COVERED");
+export const NotEveryUsersSubtaskWasCoveredError = new ApolloError("Not every subtask with deleted user as assigned was included!", "NOT_EVERY_USERS_SUBTASK_WAS_COVERED");
+export const NotEveryUsersWorkTripWasCoveredError = new ApolloError("Not every work trip with deleted user as assigned was included!", "NOT_EVERY_USERS_WORK_TRIP_WAS_COVERED");
+
 //pricelist
 export const DeletePricelistNeedsNewDefaultError = new ApolloError("When deleting default pricelist, you must select a new one and pass it in the newDefId attribute!", "NEEDS_NEW_DEFAULT_PRICELIST");
 export const DeletePricelistCompaniesNeedsNewError = new ApolloError("When deleting default pricelist, you must select a new pricelist for the companies and pass it in the newId attribute!", "NEEDS_NEW_COMPANY_PRICELIST");
@@ -85,3 +90,5 @@ export const InternalMessagesNotAllowed = new ApolloError("You are not allowed t
 export const SubtaskNotNullAttributesPresent = new ApolloError("Subtask can't have null value for type and assignedTo.", "SUBTASK_NOT_NULL_ATTRIBUTES");
 
 export const WorkTripNotNullAttributesPresent = new ApolloError("Work trip can't have null value for type and assignedTo.", "WORK_TRIP_NOT_NULL_ATTRIBUTES");
+
+export const CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError = new ApolloError("Before you remove someone from assigned users to task, all subtasks and work trips can't use this user.", "CANT_UPDATE_TASKS_ASSIGNED_TO_OLD_USED_IN_SUBTASKS_OR_WORK_TRIPS");

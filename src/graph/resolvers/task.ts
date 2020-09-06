@@ -1,7 +1,10 @@
-import { createDoesNoExistsError, InsufficientProjectAccessError, createUserNotPartOfProjectError, MilestoneNotPartOfProject, createProjectFixedAttributeError, StatusPendingAttributesMissing, TaskNotNullAttributesPresent, InternalMessagesNotAllowed, TaskMustBeAssignedToAtLeastOneUser, AssignedToUserNotSolvingTheTask } from 'configs/errors';
+import { createDoesNoExistsError, InsufficientProjectAccessError, createUserNotPartOfProjectError, MilestoneNotPartOfProject, createProjectFixedAttributeError, StatusPendingAttributesMissing, TaskNotNullAttributesPresent, InternalMessagesNotAllowed, TaskMustBeAssignedToAtLeastOneUser, AssignedToUserNotSolvingTheTask, InvalidTokenError, CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError } from 'configs/errors';
 import { models, sequelize } from 'models';
-import { TaskInstance, ProjectRightInstance, MilestoneInstance, ProjectInstance, StatusInstance, RepeatInstance, UserInstance, CommentInstance, AccessRightsInstance, RoleInstance } from 'models/instances';
-import { idsDoExistsCheck, multipleIdDoesExistsCheck, checkIfHasProjectRights } from 'helperFunctions';
+import { TaskInstance, ProjectRightInstance, MilestoneInstance, ProjectInstance, StatusInstance, RepeatInstance, UserInstance, CommentInstance, AccessRightsInstance, RoleInstance, SubtaskInstance, WorkTripInstance } from 'models/instances';
+import { idsDoExistsCheck, multipleIdDoesExistsCheck, checkIfHasProjectRights, filterObjectToFilter, taskCheckDate } from 'helperFunctions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
+import { TASK_CHANGE } from 'configs/subscriptions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
 import { Op } from 'sequelize';
@@ -12,7 +15,7 @@ const querries = {
     await checkResolver( req );
     return models.Task.findAll();
   },
-  tasks: async ( root, { projectId, filterId }, { req } ) => {
+  tasks: async ( root, { projectId, filterId, filter }, { req } ) => {
     const SourceUser = await checkResolver( req );
     let projectWhere = {};
     let taskWhere = {};
@@ -23,66 +26,16 @@ const querries = {
       }
       projectWhere = { id: projectId }
     }
-    let Filter = null;
     if(filterId){
-      Filter = await models.Filter.findByPk(filterId);
+      const Filter = await models.Filter.findByPk(filterId);
       if(Filter === null){
         throw createDoesNoExistsError('Filter', filterId);
       }
-      taskWhere = filterToWhere( await Filter.get('filter'), SourceUser.get('id') )
-    }
-
-    const User = <UserInstance> await models.User.findByPk(SourceUser.get('id'), {
-      include: [
-        {
-          model: models.ProjectRight,
-          include: [
-            {
-              model: models.Project,
-              where: projectWhere,
-              required: true,
-              include: [
-                {
-                  model: models.Task,
-                  where: taskWhere,
-                  required: true,
-                  include: [
-                    {
-                      model: models.User,
-                      as: 'assignedTos'
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    });
-
-    const tasks = (<ProjectRightInstance[]>User.get('ProjectRights')).map((ProjectRight) => <ProjectInstance>ProjectRight.get('Project') ).reduce((acc, proj) => [...acc, ...<TaskInstance[]>proj.get('Tasks') ],[])
-    if(filterId){
-      return filterByOneOf(await Filter.get('filter'), SourceUser.get('id'), SourceUser.get('CompanyId'), tasks );
-    }
-    return tasks;
-  },
-
-  filteredTasks: async ( root, { projectId, filter }, { req } ) => {
-
-    const SourceUser = await checkResolver( req );
-    let projectWhere = {};
-    let taskWhere = {};
-    if(projectId){
-      const Project = await models.Project.findByPk(projectId);
-      if(Project === null){
-        throw createDoesNoExistsError('Project', projectId);
-      }
-      projectWhere = { id: projectId }
+      filter = filterObjectToFilter(await Filter.get('filter'));
     }
     if(filter){
       taskWhere = filterToWhere( filter, SourceUser.get('id') )
     }
-
     const User = <UserInstance> await models.User.findByPk(SourceUser.get('id'), {
       include: [
         {
@@ -117,7 +70,6 @@ const querries = {
     }
     return tasks;
   },
-
 
   task: async ( root, { id }, { req } ) => {
     const User = await checkResolver( req );
@@ -154,7 +106,6 @@ const mutations = {
     const ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights'))
     const ProjectRight = ProjectRights.find( (right) => right.get('UserId') === User.get('id') );
     if( ProjectRight === undefined || !ProjectRight.get('write') ){
-      console.log('failed');
 
       throw InsufficientProjectAccessError;
     }
@@ -323,6 +274,7 @@ const mutations = {
       NewTask.setAssignedTos(assignedTos),
       NewTask.setTags(tags),
     ])
+    pubsub.publish(TASK_CHANGE, {taskChange:{ type: 'add', data: NewTask, ids: [] }});
     return NewTask;
   },
   updateTask: async ( root, args, { req } ) => {
@@ -346,7 +298,7 @@ const mutations = {
     ( milestone !== undefined && milestone !== null ) && pairsToCheck.push({ id: milestone, model: models.Milestone });
     await multipleIdDoesExistsCheck( pairsToCheck );
 
-    const Task = <TaskInstance> await models.Task.findByPk(id, { include: [{ model: models.Repeat }, { model: models.Status }, { model: models.Project, include: [{ model: models.ProjectRight }, { model: models.Milestone }] } ] });
+    const Task = <TaskInstance> await models.Task.findByPk(id, { include: [{ model: models.Repeat }, { model: models.Status }, { model: models.Subtask }, { model: models.WorkTrip }, { model: models.Project, include: [{ model: models.ProjectRight }, { model: models.Milestone }] } ] });
 
     let Project = <ProjectInstance>Task.get('Project');
     //must right write of project
@@ -389,6 +341,17 @@ const mutations = {
         }
         //assignedTo must be in project
         assignedTos = assignedTos.filter( (assignedTo) => ProjectRights.some((right) => right.get('UserId') === assignedTo ));
+        //all subtasks and worktrips must be assigned
+        const Subtasks = <SubtaskInstance[]> await Task.get('Subtasks');
+        const WorkTrips = <WorkTripInstance[]> await Task.get('WorkTrips');
+        const allAssignedIds = [
+          ...Subtasks.map( (Subtask) => Subtask.get('UserId') ),
+          ...WorkTrips.map( (WorkTrip) => WorkTrip.get('UserId') ),
+        ];
+        if( !allAssignedIds.every(( id ) => assignedTos.includes(id) ) ){
+          throw CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError;
+        }
+
         promises.push(Task.setAssignedTos(assignedTos,{ transaction: t }))
       }
       if( tags ){
@@ -525,7 +488,9 @@ const mutations = {
       promises.push(Task.update(params, { transaction: t }));
       await promises;
     })
-    return Task.reload()
+    await Task.reload()
+    pubsub.publish(TASK_CHANGE, {taskChange:{ type: 'update', data: Task, ids: [] }});
+    return Task;
   },
   deleteTask: async ( root, { id }, { req } ) => {
     const User = await checkResolver( req );
@@ -537,7 +502,92 @@ const mutations = {
     if( ProjectRight === undefined || !ProjectRight.get('delete') ){
       throw InsufficientProjectAccessError;
     }
+    pubsub.publish(TASK_CHANGE, {taskChange:{ type: 'delete', data: Task, ids: [ id ] }});
     return Task.destroy();
+  }
+}
+
+const subscriptions = {
+  taskChange: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(TASK_CHANGE),
+      async ( {taskChange}, { projectId, filterId, filter }, { userID } ) => {
+        const User = <UserInstance> await models.User.findByPk(userID);
+        if(User === null){
+          throw InvalidTokenError;
+        }
+        if(projectId){
+          const Project = await models.Project.findByPk(projectId);
+          if(Project === null){
+            throw createDoesNoExistsError('Project', projectId);
+          }
+        }
+        if(filterId){
+          const Filter = await models.Filter.findByPk(filterId);
+          if(Filter === null){
+            throw createDoesNoExistsError('Filter', filterId);
+          }
+          filter = filterObjectToFilter(await Filter.get('filter'));
+        }
+        const { type, data, ids } = taskChange;
+        if(type === 'delete'){
+          return true;
+        }
+        if(projectId && data.get('ProjectId') !== projectId ){
+          return false;
+        }
+
+        if( filter ){
+          const assignedToCorrect = (
+            ( filter.assignedToCur && (await data.getAssignedTos()).some((AssignedUser) => AssignedUser.get('id') === User.get('id') ) ) ||
+            ( !filter.assignedToCur && ( filter.assignedTo === null || (await data.getAssignedTos()).some((AssignedUser) => AssignedUser.get('id') === filter.assignedTo) ) )
+          );
+          const requesterCorrect = (
+            ( filter.requesterCur && data.get('requesterId') === User.get('id') ) ||
+            ( !filter.requesterCur && ( filter.requester === null || filter.requester === data.get('requesterId')) )
+          );
+          const companyCorrect = (
+            ( filter.companyCur && data.get('CompanyId') === User.get('CompanyId') ) ||
+            ( !filter.companyCur && ( filter.company === null || filter.company === data.get('CompanyId')) )
+          );
+
+          let oneOfCheck = [];
+          let allCheck = [];
+          if(filter.oneOf.includes('assigned')){
+            oneOfCheck.push(assignedToCorrect)
+          }else{
+            allCheck.push(assignedToCorrect)
+          }
+
+          if(filter.oneOf.includes('requester')){
+            oneOfCheck.push(requesterCorrect)
+          }else{
+            allCheck.push(requesterCorrect)
+          }
+
+          if(filter.oneOf.includes('company')){
+            oneOfCheck.push(companyCorrect)
+          }else{
+            allCheck.push(companyCorrect)
+          }
+          const oneOfCorrect = allCheck.every( (bool) => bool ) && ( oneOfCheck.length === 0 || oneOfCheck.some( (bool) => bool ) )
+
+          if(
+            !(
+              oneOfCorrect &&
+              ( filter.taskType === null || filter.taskType === data.get('TaskTypeId') ) &&
+              taskCheckDate( filter.statusDateFromNow, filter.statusDateFrom, filter.statusDateToNow, filter.statusDateTo, data.get('statusChange') ) &&
+              taskCheckDate( filter.pendingDateFromNow, filter.pendingDateFrom, filter.pendingDateToNow, filter.pendingDateTo, data.get('pendingDate') ) &&
+              taskCheckDate( filter.closeDateFromNow, filter.closeDateFrom, filter.closeDateToNow, filter.closeDateTo, data.get('closeDate') ) &&
+              taskCheckDate( filter.deadlineFromNow, filter.deadlineFrom, filter.deadlineToNow, filter.deadlineTo, data.get('deadline') )
+            )
+          ){
+            return false;
+          }
+        }
+        return true;
+      },
+    ),
   }
 }
 
@@ -600,7 +650,8 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  querries,
+  subscriptions
 }
 
 function filterToWhere(filter, userId) {

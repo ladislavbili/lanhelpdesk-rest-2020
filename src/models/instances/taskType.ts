@@ -4,6 +4,8 @@ import DefaultInstance from './defaultInstance';
 export interface TaskTypeInstance extends DefaultInstance {
   title: string;
   order: number;
+  getTasks?: any;
+  getSubtasks?: any;
 }
 
 export default function defineTaskTypes( sequelize: Sequelize ){

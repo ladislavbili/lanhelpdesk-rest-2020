@@ -1,6 +1,6 @@
 import { createDoesNoExistsError, createCantBeNegativeError, EditedRentNotOfCompanyError } from 'configs/errors';
 import { models, sequelize } from 'models';
-import { UserInstance, CompanyInstance, CompanyRentInstance, ProjectInstance } from 'models/instances';
+import { UserInstance, CompanyInstance, CompanyRentInstance, ProjectInstance, TaskInstance } from 'models/instances';
 import { splitArrayByFilter, addApolloError } from 'helperFunctions';
 import checkResolver from './checkResolver';
 
@@ -162,6 +162,8 @@ const mutations = {
     const allUsers = await models.User.findAll({ where: { CompanyId: id } });
     await Promise.all( allUsers.map( user => (user as UserInstance ).setCompany(newId) ) );
 
+    const allTasks = await models.Task.findAll({ where: { CompanyId: id } });
+    await Promise.all( allTasks.map( task => (task as TaskInstance ).setCompany(newId) ) );
 
     await Promise.all(
       (<ProjectInstance[]>OldCompany.get('defCompany')).map( (project) => {

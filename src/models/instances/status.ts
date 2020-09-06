@@ -7,6 +7,7 @@ export interface StatusInstance extends DefaultInstance {
   color: string;
   icon: string;
   action: string;
+  getTasks?: any;
 }
 
 export default function defineStatuses( sequelize: Sequelize ){

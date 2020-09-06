@@ -2,7 +2,9 @@ import { createDoesNoExistsError, NotAdminOfProjectNorManagesProjects } from 'co
 import { models, sequelize } from 'models';
 import checkResolver from './checkResolver';
 import { flattenObject, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, addApolloError } from 'helperFunctions';
-import { ProjectInstance, ProjectRightInstance, RoleInstance, AccessRightsInstance } from 'models/instances';
+import { ProjectInstance, ProjectRightInstance, RoleInstance, AccessRightsInstance, TaskInstance } from 'models/instances';
+import { pubsub } from './index';
+import { TASK_CHANGE } from 'configs/subscriptions';
 import { ApolloError } from 'apollo-server-express';
 
 const querries = {
@@ -174,10 +176,12 @@ const mutations = {
 
   deleteProject: async ( root, { id, newId }, { req } ) => {
     await checkResolver( req, ["projects"] );
-    const Project = await models.Project.findByPk(id);
+    const Project = await models.Project.findByPk(id, { include:[ { model: models.Task } ] });
     if( Project === null ){
       throw createDoesNoExistsError('Project', id);
     }
+    const Tasks = <TaskInstance[]> await Project.get('Tasks');
+    pubsub.publish(TASK_CHANGE, {taskChange:{ type: 'delete', data: null, ids: Tasks.forEach( (Task) => Task.get('id') ) }});
     return Project.destroy();
   },
 
