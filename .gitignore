@@ -5,4 +5,4 @@ package-lock.json
 .env
 # production
 /build
-/config/database.ts
+/src/configs/database.ts
