@@ -1,5 +1,6 @@
 export { AccessRightsInstance } from './accessRights';
 export { CompanyInstance } from './company';
+export { CalendarEventInstance } from './calendarEvent';
 export { CompanyRentInstance } from './companyRent';
 export { ImapInstance } from './imap';
 export { FilterInstance } from './filter';
@@ -12,6 +13,8 @@ export { RoleInstance } from './role';
 export { StatusInstance } from './status';
 export { TagInstance } from './tag';
 export { TaskInstance } from './task';
+export { TaskChange } from './taskChange';
+export { TaskChangeMessage } from './taskChangeMessage';
 export { TaskTypeInstance } from './taskType';
 export { TokenInstance } from './token';
 export { TripTypeInstance } from './tripType';

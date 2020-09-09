@@ -5,22 +5,22 @@ type Task {
   ${defaultAttributes}
   title: String!
   important: Boolean!,
-  closeDate: Int
+  closeDate: String
   assignedTo: [BasicUser]!
   company: Company!
   createdBy: BasicUser
-  deadline: Int
-  invoicedDate: Int
+  deadline: String
+  invoicedDate: String
   description: String!
   milestone: Milestone
   overtime: Boolean!
   pausal: Boolean!
   pendingChangable: Boolean!
-  pendingDate: Int
+  pendingDate: String
   project: Project!
   requester: BasicUser
   status: Status!
-  statusChange: Int!
+  statusChange: String!
   tags: [Tag]!
   taskType: TaskType!
 
@@ -30,6 +30,8 @@ type Task {
   workTrips: [WorkTrip]!
   materials: [Material]!
   customItems: [CustomItem]!
+  calendarEvents: [CalendarEvent]!
+  taskChanges: [TaskChange]!
 }
 
 type Repeat{
@@ -91,7 +93,7 @@ enum EnumRepeatInterval{
   month
 }
 
-type TaskChange{
+type TasksDifference{
   type: EnumSubTaskChanged!
   data: Task
   ids: [Int]
@@ -109,11 +111,11 @@ task(id: Int!): Task
 `
 
 export const TaskMutations = `
-addTask( title: String!, important: Boolean, closeDate: Int, assignedTo: [Int]!, company: Int!, deadline: Int, description: String!, milestone: Int, overtime: Boolean!, pausal: Boolean!, pendingChangable: Boolean, pendingDate: Int, project: Int!, requester: Int, status: Int!, tags: [Int]!, taskType: Int!, repeat: RepeatInput, comments: [CommentInput], subtasks: [SubtaskInput], workTrips: [WorkTripInput], materials: [MaterialInput], customItems: [CustomItemInput] ): Task
-updateTask( id: Int!, title: String, important: Boolean, closeDate: Int, assignedTo: [Int], company: Int, deadline: Int, description: String, milestone: Int, overtime: Boolean, pausal: Boolean, pendingChangable: Boolean, pendingDate: Int, project: Int, requester: Int, status: Int, tags: [Int], taskType: Int, repeat: RepeatInput ): Task
+addTask( title: String!, important: Boolean, closeDate: String, assignedTo: [Int]!, company: Int!, deadline: String, description: String!, milestone: Int, overtime: Boolean!, pausal: Boolean!, pendingChangable: Boolean, pendingDate: String, project: Int!, requester: Int, status: Int!, tags: [Int]!, taskType: Int!, repeat: RepeatInput, comments: [CommentInput], subtasks: [SubtaskInput], workTrips: [WorkTripInput], materials: [MaterialInput], customItems: [CustomItemInput] ): Task
+updateTask( id: Int!, title: String, important: Boolean, closeDate: String, assignedTo: [Int], company: Int, deadline: String, description: String, milestone: Int, overtime: Boolean, pausal: Boolean, pendingChangable: Boolean, pendingDate: String, project: Int, requester: Int, status: Int, tags: [Int], taskType: Int, repeat: RepeatInput ): Task
 deleteTask( id: Int! ): Task
 `
 
 export const TaskSubscriptions = `
-  taskChange( projectId: Int, filterId: Int, filter: FilterInput ): TaskChange
+  taskSubscription( projectId: Int, filterId: Int, filter: FilterInput ): TasksDifference
 `

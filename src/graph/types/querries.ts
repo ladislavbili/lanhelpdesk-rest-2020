@@ -1,3 +1,4 @@
+import { CalendarEventQuerries } from './entities/calendarEvent';
 import { CommentQuerries } from './entities/comment';
 import { CompanyQuerries } from './entities/company';
 import { CustomItemQuerries } from './entities/customItem';
@@ -15,6 +16,7 @@ import { StatusQuerries } from './entities/status';
 import { SubtaskQuerries } from './entities/subtask';
 import { TagQuerries } from './entities/tag';
 import { TaskQuerries } from './entities/task';
+import { TaskChangeQuerries } from './entities/taskChange';
 import { TaskTypeQuerries } from './entities/taskType';
 import { TripTypeQuerries } from './entities/tripType';
 import { UserQuerries } from './entities/user';
@@ -22,6 +24,7 @@ import { WorkTripQuerries } from './entities/workTrip';
 
 export default `
 type Query {
+  ${CalendarEventQuerries}
   ${CommentQuerries}
   ${CompanyQuerries}
   ${CustomItemQuerries}
@@ -39,6 +42,7 @@ type Query {
   ${SubtaskQuerries}
   ${TagQuerries}
   ${TaskQuerries}
+  ${TaskChangeQuerries}
   ${TaskTypeQuerries}
   ${TripTypeQuerries}
   ${UserQuerries}

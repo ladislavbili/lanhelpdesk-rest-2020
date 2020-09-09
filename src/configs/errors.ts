@@ -1,10 +1,11 @@
 import { ApolloError } from 'apollo-server-express';
 
-
+//NEGATIVE ERROR
 export const createCantBeNegativeError = ( name ):ApolloError => {
   return new ApolloError(`${name} can't be negative!`, 'CANT_BE_NEGATIVE');
 }
 
+//DOES NOT EXISTS
 export const createDoesNoExistsError = ( item, id = undefined ):ApolloError => {
   if(id === undefined){
     return new ApolloError(`${item} does not exists!`, 'DOESNT_EXISTS');
@@ -13,6 +14,11 @@ export const createDoesNoExistsError = ( item, id = undefined ):ApolloError => {
     return new ApolloError(`${item} with ids ${id.toString()} do not exists!`, 'DOESNT_EXISTS');
   }
   return new ApolloError(`${item} with id ${id} does not exists!`, 'DOESNT_EXISTS');
+}
+
+//DATE ERROR
+export const createIncorrectDateError = ( name, originalValue, parsedValue ):ApolloError => {
+  return new ApolloError(`A presumed date '${name}' with original value '${originalValue}' was parsed into invalid date '${parsedValue}'!`, 'INCORRECT_DATE');
 }
 
 export const createAttributeNoAccess = ( item ):ApolloError => {
@@ -92,3 +98,6 @@ export const SubtaskNotNullAttributesPresent = new ApolloError("Subtask can't ha
 export const WorkTripNotNullAttributesPresent = new ApolloError("Work trip can't have null value for type and assignedTo.", "WORK_TRIP_NOT_NULL_ATTRIBUTES");
 
 export const CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError = new ApolloError("Before you remove someone from assigned users to task, all subtasks and work trips can't use this user.", "CANT_UPDATE_TASKS_ASSIGNED_TO_OLD_USED_IN_SUBTASKS_OR_WORK_TRIPS");
+
+//calendar events
+export const CalendarEventCantEndBeforeStartingError = new ApolloError("Start date of the task event is after its end.", "EVENT_CANT_END_BEFORE_STARTING");

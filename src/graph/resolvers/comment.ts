@@ -1,7 +1,7 @@
 import { createDoesNoExistsError, AssignedToUserNotSolvingTheTask, InternalMessagesNotAllowed } from 'configs/errors';
 import { models } from 'models';
 import { checkIfHasProjectRights } from "helperFunctions";
-import { RoleInstance, AccessRightsInstance } from 'models/instances';
+import { RoleInstance, AccessRightsInstance, TaskInstance } from 'models/instances';
 import { Op } from 'sequelize';
 import checkResolver from './checkResolver';
 
@@ -9,7 +9,7 @@ const querries = {
   comments: async ( root , { taskId }, { req } ) => {
     const SourceUser = await checkResolver( req );
     const AccessRights = <AccessRightsInstance>(<RoleInstance> SourceUser.get('Role')).get('AccessRight');
-    const {internal} = await checkIfHasProjectRights( SourceUser.get('id'), taskId );
+    const { internal } = await checkIfHasProjectRights( SourceUser.get('id'), taskId );
     return models.Comment.findAll({
       order: [
         ['createdAt', 'ASC'],
@@ -29,7 +29,7 @@ const mutations = {
   addComment: async ( root, { task, parentCommentId, internal, ...params}, { req } ) => {
     const SourceUser = await checkResolver( req );
     const internalRight = (<AccessRightsInstance>(<RoleInstance>SourceUser.get('Role')).get('AccessRight')).get('internal');
-    const { internal: allowedInternal } = await checkIfHasProjectRights( SourceUser.get('id'), task );
+    const { internal: allowedInternal, Task } = await checkIfHasProjectRights( SourceUser.get('id'), task );
     if(internal && !allowedInternal && !internalRight ){
       throw InternalMessagesNotAllowed;
     }
@@ -43,7 +43,7 @@ const mutations = {
       }
     }
 
-    return models.Comment.create({
+    const NewComment = await models.Comment.create({
       internal,
       TaskId: task,
       commentOfId: parentCommentId || null,
@@ -51,6 +51,18 @@ const mutations = {
       UserId: SourceUser.get('id'),
       ...params,
     });
+    if(!internal){
+      (<TaskInstance>Task).createTaskChange({
+        UserId: SourceUser.get('id'),
+        TaskChangeMessages: [{
+          type: 'comment',
+          originalValue: null,
+          newValue: null,
+          message: `${SourceUser.get('fullName')} has commented the task.`,
+        }]
+      }, { include: [ { model: models.TaskChangeMessage } ] });
+    }
+    return NewComment;
   },
 }
 

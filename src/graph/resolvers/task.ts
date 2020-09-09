@@ -1,14 +1,14 @@
 import { createDoesNoExistsError, InsufficientProjectAccessError, createUserNotPartOfProjectError, MilestoneNotPartOfProject, createProjectFixedAttributeError, StatusPendingAttributesMissing, TaskNotNullAttributesPresent, InternalMessagesNotAllowed, TaskMustBeAssignedToAtLeastOneUser, AssignedToUserNotSolvingTheTask, InvalidTokenError, CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError } from 'configs/errors';
 import { models, sequelize } from 'models';
 import { TaskInstance, ProjectRightInstance, MilestoneInstance, ProjectInstance, StatusInstance, RepeatInstance, UserInstance, CommentInstance, AccessRightsInstance, RoleInstance, SubtaskInstance, WorkTripInstance } from 'models/instances';
-import { idsDoExistsCheck, multipleIdDoesExistsCheck, checkIfHasProjectRights, filterObjectToFilter, taskCheckDate } from 'helperFunctions';
+import { idsDoExistsCheck, multipleIdDoesExistsCheck, checkIfHasProjectRights, filterObjectToFilter, taskCheckDate, extractDatesFromObject } from 'helperFunctions';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 import { TASK_CHANGE } from 'configs/subscriptions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
 import { Op } from 'sequelize';
-
+const dateNames = [ 'deadline' ,'pendingDate' ];
 
 const querries = {
   allTasks: async ( root, args, { req } ) => {
@@ -161,11 +161,21 @@ const mutations = {
         }
       }
     });
-
+    const dates = extractDatesFromObject(params, dateNames);
     //status corresponds to data - closedate, pendingDate
     //createdby
     params = {
       ...params,
+      ...dates,
+      TaskChanges: [{
+        UserId: User.get('id'),
+        TaskChangeMessages: [{
+          type: 'task',
+          originalValue: null,
+        	newValue: null,
+          message: `Task was created by ${User.get('fullName')}`,
+        }]
+      }],
       createdById: User.get('id'),
       CompanyId: company,
       ProjectId: project,
@@ -199,10 +209,10 @@ const mutations = {
         break;
       }
       case 'PendingDate':{
-        if(args.pendingDate === undefined || args.pendingChangable === undefined ){
+        if(dates.pendingDate === undefined || args.pendingChangable === undefined ){
           throw StatusPendingAttributesMissing;
         }else{
-          params.pendingDate = args.pendingDate;
+          params.pendingDate = dates.pendingDate;
           params.pendingChangable = args.pendingChangable;
         }
         break;
@@ -268,18 +278,20 @@ const mutations = {
     }
 
     const NewTask = <TaskInstance> await models.Task.create(params, {
-      include: [{ model: models.Repeat },{ model: models.Comment },{ model: models.Subtask },{ model: models.WorkTrip },{ model: models.Material },{ model: models.CustomItem }]
+      include: [{ model: models.Repeat },{ model: models.Comment },{ model: models.Subtask },{ model: models.WorkTrip },{ model: models.Material },{ model: models.CustomItem }, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] } ]
     });
     await Promise.all([
       NewTask.setAssignedTos(assignedTos),
       NewTask.setTags(tags),
     ])
-    pubsub.publish(TASK_CHANGE, {taskChange:{ type: 'add', data: NewTask, ids: [] }});
+    pubsub.publish(TASK_CHANGE, {taskSubscription:{ type: 'add', data: NewTask, ids: [] }});
     return NewTask;
   },
   updateTask: async ( root, args, { req } ) => {
     let { id, assignedTo: assignedTos, company, milestone, project, requester, status, tags, taskType, repeat, ...params } = args;
+    const dates = extractDatesFromObject(params, dateNames);
     const User = await checkResolver( req );
+    //if you send something it cant be null in this attributes, if undefined its ok
     if(
       company === null ||
       project === null ||
@@ -325,10 +337,17 @@ const mutations = {
         throw InsufficientProjectAccessError
       }
     }
+    let taskChangeMessages = [];
 
     await sequelize.transaction(async (t) => {
       let promises = [];
       if(project && project !== (<ProjectInstance>Task.get('Project')).get('id')){
+        taskChangeMessages.push({
+          type: 'project',
+          originalValue: Task.get('ProjectId'),
+        	newValue: project,
+          message: `Project was changed from ${(<ProjectInstance>Task.get('Project')).get('title')} to ${Project.get('title')}`,
+        });
         promises.push(Task.setProject( project, { transaction: t }));
         if(milestone === undefined || milestone  === null ){
           promises.push(Task.setMilestone( null, { transaction: t } ));
@@ -358,11 +377,18 @@ const mutations = {
         await idsDoExistsCheck( tags, models.Tag );
         promises.push(Task.setTags(tags,{ transaction: t }))
       }
-      if( requester ){
+      if( requester && requester !== Task.get('requesterId') ){
         //requester must be in project or project is open
         if( Project.get('lockedRequester') && !ProjectRights.some((right) => right.get('UserId') === requester ) ){
           throw createUserNotPartOfProjectError('requester');
         }
+        taskChangeMessages.push({
+          type: 'requester',
+          originalValue: Task.get('RequesterId'),
+          newValue: requester,
+          message: `Requester was changed from ${(<UserInstance> await Task.getRequester()).get('fullName')} to ${(await models.User.findByPk(requester)).get('fullName')}`,
+        });
+
         promises.push(Task.setRequester(requester,{ transaction: t }))
       }
       if( milestone ){
@@ -382,7 +408,7 @@ const mutations = {
       //project def
       const projectDef = await Project.get('def');
       (['assignedTo', 'tag']).forEach( (attribute) => {
-        if(projectDef[attribute].fixed){
+        if(projectDef[attribute].fixed && args[attribute] !== undefined){
           let values = projectDef[attribute].value.map( (value) => value.get('id') );
           //if is fixed, it must fit
           if(
@@ -395,7 +421,7 @@ const mutations = {
       });
 
       ([ 'overtime', 'pausal' ]).forEach( (attribute) => {
-        if(projectDef[attribute].fixed){
+        if(projectDef[attribute].fixed && args[attribute] !== undefined){
           let value = projectDef[attribute].value;
           //if is fixed, it must fit
           if( value !== args[attribute] ){
@@ -405,7 +431,7 @@ const mutations = {
       });
 
       (['company', 'requester', 'status', 'taskType']).forEach( (attribute) => {
-        if(projectDef[attribute].fixed){
+        if(projectDef[attribute].fixed && args[attribute] !== undefined ){
           let value = projectDef[attribute].value.get('id');
           //if is fixed, it must fit
           if( value !== args[attribute] ){
@@ -419,6 +445,7 @@ const mutations = {
       if(status){
         params = {
           ...params,
+          ...dates,
           closeDate: null,
           pendingDate: null,
           pendingChangable: false,
@@ -428,6 +455,12 @@ const mutations = {
         const TaskStatus = <StatusInstance> Task.get('Status');
         const Status = await models.Status.findByPk(status);
         if( status !== TaskStatus.get('id') ){
+          taskChangeMessages.push({
+            type: 'status',
+            originalValue: TaskStatus.get('id'),
+            newValue: status,
+            message: `Status was changed from ${TaskStatus.get('title')} to ${Status.get('title')}`,
+          });
           promises.push(Task.setStatus(status,{ transaction: t }))
         }
         switch (Status.get('action')) {
@@ -458,15 +491,15 @@ const mutations = {
             break;
           }
           case 'PendingDate':{
-            if(TaskStatus.get('action') === 'PendingDate' && !args.pendingDate ){
+            if(TaskStatus.get('action') === 'PendingDate' && !dates.pendingDate ){
               params.pendingDate = Task.get('pendingDate');
               params.pendingChangable = Task.get('pendingChangable');
               break;
             }
-            if(args.pendingDate === undefined || args.pendingChangable === undefined ){
+            if(dates.pendingDate === undefined || args.pendingChangable === undefined ){
               throw StatusPendingAttributesMissing;
             }else{
-              params.pendingDate = args.pendingDate;
+              params.pendingDate = dates.pendingDate;
               params.pendingChangable = args.pendingChangable;
             }
             params.statusChange = moment().unix()*1000
@@ -479,19 +512,29 @@ const mutations = {
         promises.push(Task.setStatus(status,{ transaction: t }))
       }
       //repeat processing
-      if( repeat === null ){
-        //promises.push(Task.deleteRepeat({ transaction: t }));
+      if( repeat === null && (<RepeatInstance>Task.get('Repeat')) !== null ){
+        promises.push((<RepeatInstance>Task.get('Repeat')).destroy({ transaction: t }));
       }
-      if( repeat !== undefined ){
-        promises.push((<RepeatInstance>Task.get('Repeat')).update(repeat, { transaction: t }));
+      else if( repeat !== undefined && repeat !== null ){
+        if( (<RepeatInstance>Task.get('Repeat')) !== null ){
+          promises.push((<RepeatInstance>Task.get('Repeat')).update(repeat, { transaction: t }));
+        }else{
+          promises.push(Task.createRepeat(repeat, { transaction: t }));
+        }
       }
+
+      promises.push(Task.createTaskChange({
+          UserId: User.get('id'),
+          TaskChangeMessages: taskChangeMessages,
+      }, { transaction: t, include: [ { model: models.TaskChangeMessage } ] }));
       promises.push(Task.update(params, { transaction: t }));
       await promises;
     })
     await Task.reload()
-    pubsub.publish(TASK_CHANGE, {taskChange:{ type: 'update', data: Task, ids: [] }});
+    pubsub.publish(TASK_CHANGE, {taskSubscription:{ type: 'update', data: Task, ids: [] }});
     return Task;
   },
+
   deleteTask: async ( root, { id }, { req } ) => {
     const User = await checkResolver( req );
     const Task = <TaskInstance> await models.Task.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
@@ -502,16 +545,16 @@ const mutations = {
     if( ProjectRight === undefined || !ProjectRight.get('delete') ){
       throw InsufficientProjectAccessError;
     }
-    pubsub.publish(TASK_CHANGE, {taskChange:{ type: 'delete', data: Task, ids: [ id ] }});
+    pubsub.publish(TASK_CHANGE, {taskSubscription:{ type: 'delete', data: Task, ids: [ id ] }});
     return Task.destroy();
   }
 }
 
 const subscriptions = {
-  taskChange: {
+  taskSubscription: {
     subscribe: withFilter(
       () => pubsub.asyncIterator(TASK_CHANGE),
-      async ( {taskChange}, { projectId, filterId, filter }, { userID } ) => {
+      async ( {taskSubscription}, { projectId, filterId, filter }, { userID } ) => {
         const User = <UserInstance> await models.User.findByPk(userID);
         if(User === null){
           throw InvalidTokenError;
@@ -529,7 +572,7 @@ const subscriptions = {
           }
           filter = filterObjectToFilter(await Filter.get('filter'));
         }
-        const { type, data, ids } = taskChange;
+        const { type, data, ids } = taskSubscription;
         if(type === 'delete'){
           return true;
         }
@@ -629,7 +672,7 @@ const attributes = {
       const AccessRights = <AccessRightsInstance>(<RoleInstance> SourceUser.get('Role')).get('AccessRight');
       const {internal} = await checkIfHasProjectRights( SourceUser.get('id'), task.get('id') );
 
-      let Comments = <CommentInstance[]> await task.getComments({ order: [ ['createdAt', 'ASC'] ] })
+      let Comments = <CommentInstance[]> await task.getComments({ order: [ ['createdAt', 'DESC'] ] })
       return Comments.filter((Comment) => Comment.get('isParent') && (!Comment.get('internal') || internal || AccessRights.get('internal') ))
     },
     async subtasks(task) {
@@ -643,7 +686,13 @@ const attributes = {
     },
     async customItems(task) {
       return task.getCustomItems()
-    }
+    },
+    async calendarEvents(task) {
+      return task.getCalendarEvents()
+    },
+    async taskChanges(task) {
+      return task.getTaskChanges({ order: [ ['createdAt', 'DESC'] ] })
+    },
   }
 };
 
@@ -654,7 +703,7 @@ export default {
   subscriptions
 }
 
-function filterToWhere(filter, userId) {
+export function filterToWhere(filter, userId) {
   let {
     taskType,
 
@@ -789,7 +838,7 @@ function filterToWhere(filter, userId) {
   return where;
 }
 
-function filterByOneOf(filter, userId, companyId, tasks ) {
+export function filterByOneOf(filter, userId, companyId, tasks ) {
   let {
     assignedTo,
     assignedToCur,

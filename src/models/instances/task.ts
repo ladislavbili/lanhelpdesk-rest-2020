@@ -37,6 +37,10 @@ export interface TaskInstance extends DefaultInstance {
   setTags?: any;
 
   getAssignedTos?: any;
+  getRequester?: any;
+  createTaskChange?: any;
+  createRepeat?: any;
+  setRepeat?: any;
 }
 
 export default function defineTasks( sequelize: Sequelize ){
@@ -66,17 +70,17 @@ export default function defineTasks( sequelize: Sequelize ){
         defaultValue: ""
       },
       overtime: {
-        type: DataTypes.TEXT,
+        type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false
       },
       pausal: {
-        type: DataTypes.TEXT,
+        type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false
       },
       pendingChangable: {
-        type: DataTypes.TEXT,
+        type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false
       },

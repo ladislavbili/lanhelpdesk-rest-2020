@@ -1,3 +1,4 @@
+import { CalendarEvent } from './entities/calendarEvent';
 import { Comment } from './entities/comment';
 import { Company } from './entities/company';
 import { CustomItem } from './entities/customItem';
@@ -15,12 +16,14 @@ import { Status } from './entities/status';
 import { Subtask } from './entities/subtask';
 import { Tag } from './entities/tag';
 import { Task } from './entities/task';
+import { TaskChange } from './entities/taskChange';
 import { TaskType } from './entities/taskType';
 import { TripType } from './entities/tripType';
 import { User } from './entities/user';
 import { WorkTrip } from './entities/workTrip';
 
 export default `
+${CalendarEvent}
 ${Comment}
 ${Company}
 ${CustomItem}
@@ -38,6 +41,7 @@ ${Status}
 ${Subtask}
 ${Tag}
 ${Task}
+${TaskChange}
 ${TaskType}
 ${TripType}
 ${User}

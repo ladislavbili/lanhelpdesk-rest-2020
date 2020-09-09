@@ -42,21 +42,21 @@ type filter {
   taskType: TaskType
   oneOf: [OneOfEnum]!
 
-  statusDateFrom: Int
+  statusDateFrom: String
   statusDateFromNow: Boolean!
-  statusDateTo: Int
+  statusDateTo: String
   statusDateToNow: Boolean!
-  pendingDateFrom: Int
+  pendingDateFrom: String
   pendingDateFromNow: Boolean!
-  pendingDateTo: Int
+  pendingDateTo: String
   pendingDateToNow: Boolean!
-  closeDateFrom: Int
+  closeDateFrom: String
   closeDateFromNow: Boolean!
-  closeDateTo: Int
+  closeDateTo: String
   closeDateToNow: Boolean!
-  deadlineFrom: Int
+  deadlineFrom: String
   deadlineFromNow: Boolean!
-  deadlineTo: Int
+  deadlineTo: String
   deadlineToNow: Boolean!
 }
 
@@ -70,21 +70,21 @@ input FilterInput {
   taskType: Int
   oneOf: [OneOfEnum]!
 
-  statusDateFrom: Int
+  statusDateFrom: String
   statusDateFromNow: Boolean!
-  statusDateTo: Int
+  statusDateTo: String
   statusDateToNow: Boolean!
-  pendingDateFrom: Int
+  pendingDateFrom: String
   pendingDateFromNow: Boolean!
-  pendingDateTo: Int
+  pendingDateTo: String
   pendingDateToNow: Boolean!
-  closeDateFrom: Int
+  closeDateFrom: String
   closeDateFromNow: Boolean!
-  closeDateTo: Int
+  closeDateTo: String
   closeDateToNow: Boolean!
-  deadlineFrom: Int
+  deadlineFrom: String
   deadlineFromNow: Boolean!
-  deadlineTo: Int
+  deadlineTo: String
   deadlineToNow: Boolean!
 }
 `

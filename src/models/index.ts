@@ -32,6 +32,9 @@ import defineCustomItems from './instances/customItem';
 import defineComments from './instances/comment';
 import defineEmails from './instances/email';
 import defineEmailTargets from './instances/emailTarget';
+import defineCalendarEvents from './instances/calendarEvent';
+import defineTaskChanges from './instances/taskChange';
+import defineTaskChangeMessages from './instances/taskChangeMessage';
 /*
 const operatorsAliases = {
 
@@ -280,8 +283,30 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.Email.hasMany(models.EmailTarget, { onDelete: 'CASCADE' });
   models.EmailTarget.belongsTo(models.Email, { foreignKey: { allowNull: false } });
 
+  defineCalendarEvents(sequelize);
+  models.Task.hasMany(models.CalendarEvent, { onDelete: 'CASCADE' });
+  models.CalendarEvent.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+
+  defineTaskChanges(sequelize);
+  defineTaskChangeMessages(sequelize);
+
+  models.TaskChange.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+  models.Task.hasMany(models.TaskChange, { onDelete: 'CASCADE' });
+
+  models.TaskChange.belongsTo(models.User);
+  models.User.hasMany(models.TaskChange);
+
+  models.TaskChange.hasMany(models.TaskChangeMessage, { onDelete: 'CASCADE' });
+  models.TaskChangeMessage.belongsTo(models.TaskChange, { foreignKey: { allowNull: false } });
+
   //LOG FUNCTIONS
-  logFunctionsOfModel(models.Subtask);
+  //logFunctionsOfModel(models.Task);
+  /*
+  Todo list
+    -calendar events (start end task) - only when can edit task
+    -task history/notifications - log task edit - start with status, comment
+    invoices
+  */
 
   if(ignoreUpdating){
     return new Promise( (resolve, reject) => resolve() );

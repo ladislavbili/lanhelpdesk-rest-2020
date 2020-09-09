@@ -16,7 +16,7 @@ milestone(id: Int!): Milestone
 `
 
 export const MilestoneMutations = `
-addMilestone( title: String!, description: String!, startsAt: Int, endsAt: Int, projectId: Int! ): Milestone
-updateMilestone( id: Int!, title: String, description: String, startsAt: Int, endsAt: Int ): Milestone
+addMilestone( title: String!, description: String!, startsAt: String, endsAt: String, projectId: Int! ): Milestone
+updateMilestone( id: Int!, title: String, description: String, startsAt: String, endsAt: String ): Milestone
 deleteMilestone( id: Int! ): Milestone
 `

@@ -181,7 +181,7 @@ const mutations = {
       throw createDoesNoExistsError('Project', id);
     }
     const Tasks = <TaskInstance[]> await Project.get('Tasks');
-    pubsub.publish(TASK_CHANGE, {taskChange:{ type: 'delete', data: null, ids: Tasks.forEach( (Task) => Task.get('id') ) }});
+    pubsub.publish(TASK_CHANGE, {taskSubscription:{ type: 'delete', data: null, ids: Tasks.forEach( (Task) => Task.get('id') ) }});
     return Project.destroy();
   },
 

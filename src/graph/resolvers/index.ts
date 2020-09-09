@@ -1,3 +1,4 @@
+import calendarEvent from './calendarEvent';
 import comment from './comment';
 import company from './company';
 import customItem from './customItem';
@@ -14,6 +15,7 @@ import status from './status';
 import subtask from './subtask';
 import tag from './tag';
 import task from './task';
+import taskChange from './taskChange';
 import taskType from './taskType';
 import tripType from './tripType';
 import user from './user';
@@ -24,6 +26,7 @@ export const pubsub = new PubSub();
 
 export default {
   Query: {
+    ...calendarEvent.querries,
     ...comment.querries,
     ...company.querries,
     ...customItem.querries,
@@ -41,6 +44,7 @@ export default {
     ...subtask.querries,
     ...tag.querries,
     ...task.querries,
+    ...taskChange.querries,
     ...taskType.querries,
     ...tripType.querries,
     ...user.querries,
@@ -48,6 +52,7 @@ export default {
   },
 
   Mutation: {
+    ...calendarEvent.mutations,
     ...comment.mutations,
     ...company.mutations,
     ...customItem.mutations,
@@ -65,6 +70,7 @@ export default {
     ...subtask.mutations,
     ...tag.mutations,
     ...task.mutations,
+    ...taskChange.mutations,
     ...taskType.mutations,
     ...tripType.mutations,
     ...user.mutations,
@@ -74,6 +80,7 @@ export default {
     ...task.subscriptions,
   },
 
+  ...calendarEvent.attributes,
   ...comment.attributes,
   ...company.attributes,
   ...customItem.attributes,
@@ -92,6 +99,7 @@ export default {
   ...tag.attributes,
   ...task.attributes,
   ...taskType.attributes,
+  ...taskChange.attributes,
   ...tripType.attributes,
   ...user.attributes,
   ...workTrip.attributes,

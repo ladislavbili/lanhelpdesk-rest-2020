@@ -1,5 +1,5 @@
 import  { Op } from 'sequelize';
-import { createDoesNoExistsError, InsufficientProjectAccessError } from 'configs/errors';
+import { createDoesNoExistsError, InsufficientProjectAccessError, createIncorrectDateError } from 'configs/errors';
 import { ProjectRightInstance } from 'models/instances';
 import moment from 'moment';
 import { models } from 'models';
@@ -155,3 +155,24 @@ export const taskCheckDate = ( fromNow, filterFromDate, toNow, filterToDate, tas
     ( !toNow && ( filterToDate === null || firstDateSameOrAfter( filterToDate, taskDate ) ) )
   )
 )
+
+export const extractDatesFromObject = (data, dates, controlDates = true, ignoreUndefined = true): any => {
+  let result = {};
+  dates.forEach((date) => {
+    let newDate = data[date];
+    if( newDate === undefined || newDate === null){
+      if(!ignoreUndefined && newDate === undefined ){
+        result[date] = newDate;
+      }else if(newDate === null){
+        result[date] = newDate;
+      }
+    }else{
+      newDate = parseInt(newDate);
+      if( controlDates && ( isNaN(newDate) || newDate < 0 ) ){
+        throw createIncorrectDateError(date, data[date], newDate);
+      }
+      result[date] = newDate;
+    }
+  })
+  return result;
+}

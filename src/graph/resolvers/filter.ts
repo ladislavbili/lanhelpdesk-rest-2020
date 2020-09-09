@@ -2,8 +2,9 @@ import { createDoesNoExistsError, NoAccessToThisProjectError, NoAccessToThisFilt
 import { models } from 'models';
 import { FilterInstance, RoleInstance, ProjectRightInstance } from 'models/instances';
 import checkResolver from './checkResolver';
-import { idDoesExistsCheck, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter } from 'helperFunctions';
+import { idDoesExistsCheck, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, extractDatesFromObject } from 'helperFunctions';
 import { Op } from 'sequelize';
+const dateNames = ['statusDateFrom', 'statusDateTo', 'pendingDateFrom', 'pendingDateTo', 'closeDateFrom', 'closeDateTo', 'deadlineFrom', 'deadlineTo'];
 
 const querries = {
   myFilters: async ( root , args, { req } ) => {
@@ -54,6 +55,8 @@ const querries = {
 const mutations = {
   //( title: String!, pub: Boolean!, global: Boolean!, dashboard: Boolean!, filter: FilterInput!, order: Int, roles: [Int], projectId: Int )
   addFilter: async ( root, { roles, filter, order, pub, projectId, ...args }, { req } ) => {
+    const dates = extractDatesFromObject(filter, dateNames);
+
     let User = null;
     //if pub must have order,roles and user must have access
     if(pub){
@@ -108,6 +111,7 @@ const mutations = {
         filterCompanyId: company ? company : null,
         filterTaskTypeId: taskType ? taskType : null,
         ...directFilterParams,
+        ...dates,
         pub: true,
         FilterOneOfs: oneOf.map((item) => ({ input: item }) ),
       }, {
@@ -133,6 +137,7 @@ const mutations = {
 
   addPublicFilter: async ( root, { roles, filter, order, projectId, ...args }, { req } ) => {
     const User = await checkResolver( req, ["publicFilters"] );
+    const dates = extractDatesFromObject(filter, dateNames);
 
     //if project, must be at least read and exists
     if(projectId){
@@ -172,6 +177,7 @@ const mutations = {
       filterCompanyId: company ? company : null,
       filterTaskTypeId: taskType ? taskType : null,
       ...directFilterParams,
+      ...dates,
       pub: false,
       FilterOneOfs: oneOf.map((item) => ({ input: item }) ),
     }, {
@@ -188,6 +194,7 @@ const mutations = {
       throw createDoesNoExistsError('Filter', id);
     }
     //if pub must have order,roles and user must have access
+
     if(pub || Filter.get('pub')){
       User = await checkResolver( req, ["publicFilters"] );
       if(roles){
@@ -223,9 +230,10 @@ const mutations = {
     if(filter){
       //Filter
       const { assignedTo, requester, company, taskType, oneOf: oneOfs, ...directFilterParams } = filter;
+      const dates = extractDatesFromObject(filter, dateNames);
       const checkPairs = [ { model: models.User ,id: assignedTo }, { model: models.User ,id: requester }, { model: models.Company ,id: company }, { model: models.TaskType ,id: taskType } ].filter((pair) => pair.id !== undefined && pair.id !== null );
       await multipleIdDoesExistsCheck(checkPairs);
-      changes = {...directFilterParams};
+      changes = {...directFilterParams, ...dates};
       assignedTo !== undefined && promises.push(Filter.setFilterAssignedTo(assignedTo));
       requester !== undefined && promises.push(Filter.setFilterRequester(requester));
       company !== undefined && promises.push(Filter.setFilterCompany(company));
@@ -289,9 +297,10 @@ const mutations = {
     if(filter){
       //Filter
       const { assignedTo, requester, company, taskType, oneOf: oneOfs, ...directFilterParams } = filter;
+      const dates = extractDatesFromObject(filter, dateNames);
       const checkPairs = [ { model: models.User ,id: assignedTo }, { model: models.User ,id: requester }, { model: models.Company ,id: company }, { model: models.TaskType ,id: taskType } ].filter((pair) => pair.id !== undefined && pair.id !== null );
       await multipleIdDoesExistsCheck(checkPairs);
-      changes = {...directFilterParams};
+      changes = {...directFilterParams, ...dates};
       assignedTo !== undefined && promises.push(Filter.setFilterAssignedTo(assignedTo));
       requester !== undefined && promises.push(Filter.setFilterRequester(requester));
       company !== undefined && promises.push(Filter.setFilterCompany(company));

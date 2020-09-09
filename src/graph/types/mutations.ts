@@ -1,3 +1,4 @@
+import { CalendarEventMutations } from './entities/calendarEvent';
 import { CommentMutations } from './entities/comment';
 import { CompanyMutations } from './entities/company';
 import { CustomItemMutations } from './entities/customItem';
@@ -15,6 +16,7 @@ import { StatusMutations } from './entities/status';
 import { SubtaskMutations } from './entities/subtask';
 import { TagMutations } from './entities/tag';
 import { TaskMutations } from './entities/task';
+import { TaskChangeMutations } from './entities/taskChange';
 import { TaskTypeMutations } from './entities/taskType';
 import { TripTypeMutations } from './entities/tripType';
 import { UserMutations } from './entities/user';
@@ -22,8 +24,9 @@ import { WorkTripMutations } from './entities/workTrip';
 
 export default `
 type Mutation {
-  ${CommentMutations}
+  ${CalendarEventMutations}
   ${CompanyMutations}
+  ${CommentMutations}
   ${CustomItemMutations}
   ${ErrorMessageMutations}
   ${EmailMutations}
@@ -39,6 +42,7 @@ type Mutation {
   ${SubtaskMutations}
   ${TagMutations}
   ${TaskMutations}
+  ${TaskChangeMutations}
   ${TaskTypeMutations}
   ${TripTypeMutations}
   ${UserMutations}
