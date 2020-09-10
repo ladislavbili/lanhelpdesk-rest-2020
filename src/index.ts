@@ -1,5 +1,6 @@
 import { startRest } from 'expressREST';
 import { updateModels, models } from 'models';
+//import addDefaultData from 'configs/addDefaultData';
 import dotenv from 'dotenv';
 dotenv.config();
 const ignoreUpdating = true;

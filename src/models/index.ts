@@ -54,7 +54,7 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
 
   defineRoles(sequelize);
   defineAccessRights(sequelize);
-  models.Role.hasOne(models.AccessRights, { foreignKey: { allowNull: false } });
+  models.Role.hasOne(models.AccessRights, { foreignKey: { allowNull: false }, onDelete: 'CASCADE' });
   models.AccessRights.belongsTo(models.Role, { foreignKey: { allowNull: false } });
 
   defineUsers(sequelize);

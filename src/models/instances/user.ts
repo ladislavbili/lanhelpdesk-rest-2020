@@ -43,7 +43,7 @@ export default function defineUsers( sequelize: Sequelize ){
         allowNull: false,
       },
       email: {
-        type: DataTypes.TEXT({ length: "tiny" }),
+        type: DataTypes.STRING({length: 200}),
         allowNull: false,
         validate: {
           isEmail: true
