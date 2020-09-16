@@ -23,7 +23,7 @@ export interface CompanyInstance extends DefaultInstance {
   setPricelist?: any;
 }
 
-export default function defineCompanies( sequelize: Sequelize ){
+export default function defineCompanies(sequelize: Sequelize) {
   sequelize.define<CompanyInstance>(
     "Company",
     {
@@ -95,17 +95,17 @@ export default function defineCompanies( sequelize: Sequelize ){
         defaultValue: false,
       },
       monthlyPausal: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },
       taskWorkPausal: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },
       taskTripPausal: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },

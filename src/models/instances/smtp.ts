@@ -16,7 +16,7 @@ export interface SmtpInstance extends DefaultInstance {
   working: boolean;
 }
 
-export default function defineSmtps( sequelize: Sequelize ){
+export default function defineSmtps(sequelize: Sequelize) {
   sequelize.define<SmtpInstance>(
     "Smtp",
     {

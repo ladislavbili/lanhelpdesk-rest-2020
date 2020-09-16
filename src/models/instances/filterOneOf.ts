@@ -5,7 +5,7 @@ export interface FilterOneOfInstance extends DefaultInstance {
   input: string;
 }
 
-export default function defineFilterOneOf( sequelize: Sequelize ){
+export default function defineFilterOneOf(sequelize: Sequelize) {
   sequelize.define<FilterOneOfInstance>(
     "FilterOneOf",
     {

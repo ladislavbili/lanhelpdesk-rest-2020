@@ -10,7 +10,7 @@ export interface StatusInstance extends DefaultInstance {
   getTasks?: any;
 }
 
-export default function defineStatuses( sequelize: Sequelize ){
+export default function defineStatuses(sequelize: Sequelize) {
   sequelize.define<StatusInstance>(
     "Status",
     {

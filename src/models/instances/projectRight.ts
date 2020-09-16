@@ -9,7 +9,7 @@ export interface ProjectRightInstance extends DefaultInstance {
   admin: boolean;
 }
 
-export default function defineProjectRights( sequelize: Sequelize ){
+export default function defineProjectRights(sequelize: Sequelize) {
   sequelize.define<ProjectRightInstance>(
     "ProjectRight",
     {

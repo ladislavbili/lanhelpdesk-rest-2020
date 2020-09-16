@@ -4,8 +4,8 @@ import { ProjectInstance } from 'models/instances';
 import checkResolver from './checkResolver';
 
 const querries = {
-  tags: async ( root , args, { req } ) => {
-    await checkResolver( req );
+  tags: async (root, args, { req }) => {
+    await checkResolver(req);
     return models.Tag.findAll({
       order: [
         ['order', 'ASC'],
@@ -13,30 +13,30 @@ const querries = {
       ]
     })
   },
-  tag: async ( root, { id }, { req } ) => {
-    await checkResolver( req, ["tags"] );
+  tag: async (root, { id }, { req }) => {
+    await checkResolver(req, ["tags"]);
     return models.Tag.findByPk(id);
   },
 }
 
 const mutations = {
 
-  addTag: async ( root, args, { req } ) => {
-    await checkResolver( req, ["tags"] );
-    return models.Tag.create( args );
+  addTag: async (root, args, { req }) => {
+    await checkResolver(req, ["tags"]);
+    return models.Tag.create(args);
   },
 
-  updateTag: async ( root, { id, ...args }, { req } ) => {
-    await checkResolver( req, ["tags"] );
+  updateTag: async (root, { id, ...args }, { req }) => {
+    await checkResolver(req, ["tags"]);
     const Tag = await models.Tag.findByPk(id);
-    if( Tag === null ){
+    if (Tag === null) {
       throw createDoesNoExistsError('Tag', id);
     }
-    return Tag.update( args );
+    return Tag.update(args);
   },
 
-  deleteTag: async ( root, { id }, { req } ) => {
-    await checkResolver( req, ["tags"] );
+  deleteTag: async (root, { id }, { req }) => {
+    await checkResolver(req, ["tags"]);
     const Tag = await models.Tag.findByPk(id,
       {
         include: [
@@ -44,13 +44,13 @@ const mutations = {
         ]
       }
     );
-    if( Tag === null ){
+    if (Tag === null) {
       throw createDoesNoExistsError('Tag', id);
     }
     await Promise.all([
-      ...(<ProjectInstance[]>Tag.get('defTags')).map( (project) => {
+      ...(<ProjectInstance[]>Tag.get('defTags')).map((project) => {
         return project.removeDefTag(id);
-      } ),
+      }),
     ])
     return Tag.destroy();
   },

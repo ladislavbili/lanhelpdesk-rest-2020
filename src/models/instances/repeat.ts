@@ -20,7 +20,7 @@ export default function defineRepeats( sequelize: Sequelize ){
         allowNull: false,
       },
       startsAt: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.DATE,
         allowNull: false,
       },
     },

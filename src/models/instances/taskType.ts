@@ -8,7 +8,7 @@ export interface TaskTypeInstance extends DefaultInstance {
   getSubtasks?: any;
 }
 
-export default function defineTaskTypes( sequelize: Sequelize ){
+export default function defineTaskTypes(sequelize: Sequelize) {
   sequelize.define<TaskTypeInstance>(
     "TaskType",
     {

@@ -5,15 +5,15 @@ import { TaskInstance, UserInstance, SubtaskInstance } from 'models/instances';
 import checkResolver from './checkResolver';
 
 const querries = {
-  subtasks: async ( root , { taskId }, { req } ) => {
-    const SourceUser = await checkResolver( req );
-    await checkIfHasProjectRights( SourceUser.get('id'), taskId );
+  subtasks: async (root, { taskId }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    await checkIfHasProjectRights(SourceUser.get('id'), taskId);
     return models.Subtask.findAll({
       order: [
         ['order', 'ASC'],
         ['title', 'ASC'],
       ],
-      where:{
+      where: {
         TaskId: taskId
       }
     })
@@ -21,11 +21,11 @@ const querries = {
 }
 
 const mutations = {
-  addSubtask: async ( root, { task, type, assignedTo, ...params}, { req } ) => {
-    const SourceUser = await checkResolver( req );
-    const Task = <TaskInstance> (await checkIfHasProjectRights( SourceUser.get('id'), task, 'write' )).Task;
-    const AssignedTos = <UserInstance[]> await Task.getAssignedTos();
-    if(!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo )){
+  addSubtask: async (root, { task, type, assignedTo, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const Task = <TaskInstance>(await checkIfHasProjectRights(SourceUser.get('id'), task, 'write')).Task;
+    const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
+    if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
       throw AssignedToUserNotSolvingTheTask;
     }
     await idDoesExistsCheck(type, models.TaskType);
@@ -37,38 +37,38 @@ const mutations = {
     });
   },
 
-  updateSubtask: async ( root, { id, type, assignedTo, ...params}, { req } ) => {
-    const SourceUser = await checkResolver( req );
+  updateSubtask: async (root, { id, type, assignedTo, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
     const Subtask = <SubtaskInstance>await models.Subtask.findByPk(id);
-    if( Subtask === null ){
+    if (Subtask === null) {
       throw createDoesNoExistsError('Subtask', id);
     }
-    const Task = <TaskInstance> (await checkIfHasProjectRights( SourceUser.get('id'), Subtask.get('TaskId'), 'write' )).Task;
-    if(assignedTo !== undefined){
-        const AssignedTos = <UserInstance[]> await Task.getAssignedTos();
-      if(!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo )){
+    const Task = <TaskInstance>(await checkIfHasProjectRights(SourceUser.get('id'), Subtask.get('TaskId'), 'write')).Task;
+    if (assignedTo !== undefined) {
+      const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
+      if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
         throw AssignedToUserNotSolvingTheTask;
       }
     }
-    if( type === null || assignedTo === null ){
+    if (type === null || assignedTo === null) {
       throw SubtaskNotNullAttributesPresent;
     }
     let pairs = [];
-    if( type !== undefined){
+    if (type !== undefined) {
       pairs.push({ id: type, model: models.TaskType })
     }
-    if( assignedTo !== undefined){
+    if (assignedTo !== undefined) {
       pairs.push({ id: assignedTo, model: models.User })
     }
     await multipleIdDoesExistsCheck(pairs);
     await sequelize.transaction(async (t) => {
       let promises = [];
-      if( type !== undefined){
+      if (type !== undefined) {
         await idDoesExistsCheck(type, models.TaskType);
-        promises.push( Subtask.setTaskType(type, { transaction: t }) );
+        promises.push(Subtask.setTaskType(type, { transaction: t }));
       }
-      if( assignedTo !== undefined){
-        promises.push( Subtask.setUser(assignedTo, { transaction: t }) );
+      if (assignedTo !== undefined) {
+        promises.push(Subtask.setUser(assignedTo, { transaction: t }));
       }
       promises.push(Subtask.update(params, { transaction: t }));
       await Promise.all(promises);
@@ -76,13 +76,13 @@ const mutations = {
     return Subtask.reload();
   },
 
-  deleteSubtask: async ( root, { id }, { req } ) => {
-    const SourceUser = await checkResolver( req );
+  deleteSubtask: async (root, { id }, { req }) => {
+    const SourceUser = await checkResolver(req);
     const Subtask = await models.Subtask.findByPk(id);
-    if( Subtask === null ){
+    if (Subtask === null) {
       throw createDoesNoExistsError('Subtask', id);
     }
-    await checkIfHasProjectRights( SourceUser.get('id'), Subtask.get('TaskId'), 'write' );
+    await checkIfHasProjectRights(SourceUser.get('id'), Subtask.get('TaskId'), 'write');
     return Subtask.destroy();
   },
 }

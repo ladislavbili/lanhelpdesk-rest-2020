@@ -16,7 +16,7 @@ export interface SubtaskInstance extends DefaultInstance {
   setUser?: any;
 }
 
-export default function defineSubtasks( sequelize: Sequelize ){
+export default function defineSubtasks(sequelize: Sequelize) {
   sequelize.define<SubtaskInstance>(
     "Subtask",
     {
@@ -35,12 +35,12 @@ export default function defineSubtasks( sequelize: Sequelize ){
         defaultValue: false,
       },
       quantity: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },
       discount: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },

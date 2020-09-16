@@ -38,12 +38,13 @@ export interface TaskInstance extends DefaultInstance {
 
   getAssignedTos?: any;
   getRequester?: any;
+  getRepeat?: any;
   createTaskChange?: any;
   createRepeat?: any;
   setRepeat?: any;
 }
 
-export default function defineTasks( sequelize: Sequelize ){
+export default function defineTasks(sequelize: Sequelize) {
   sequelize.define<TaskInstance>(
     "Task",
     {

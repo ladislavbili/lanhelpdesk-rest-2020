@@ -9,7 +9,7 @@ export interface ErrorMessageInstance extends DefaultInstance {
   type: string;
 }
 
-export default function defineErrorMessages( sequelize: Sequelize ){
+export default function defineErrorMessages(sequelize: Sequelize) {
   sequelize.define<ErrorMessageInstance>(
     "ErrorMessage",
     {

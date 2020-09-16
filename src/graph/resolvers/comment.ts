@@ -6,15 +6,15 @@ import { Op } from 'sequelize';
 import checkResolver from './checkResolver';
 
 const querries = {
-  comments: async ( root , { taskId }, { req } ) => {
-    const SourceUser = await checkResolver( req );
-    const AccessRights = <AccessRightsInstance>(<RoleInstance> SourceUser.get('Role')).get('AccessRight');
-    const { internal } = await checkIfHasProjectRights( SourceUser.get('id'), taskId );
+  comments: async (root, { taskId }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const AccessRights = <AccessRightsInstance>(<RoleInstance>SourceUser.get('Role')).get('AccessRight');
+    const { internal } = await checkIfHasProjectRights(SourceUser.get('id'), taskId);
     return models.Comment.findAll({
       order: [
         ['createdAt', 'ASC'],
       ],
-      where:{
+      where: {
         TaskId: taskId,
         internal: {
           [Op.or]: [false, (internal || AccessRights.get('internal'))]
@@ -26,19 +26,19 @@ const querries = {
 }
 
 const mutations = {
-  addComment: async ( root, { task, parentCommentId, internal, ...params}, { req } ) => {
-    const SourceUser = await checkResolver( req );
+  addComment: async (root, { task, parentCommentId, internal, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
     const internalRight = (<AccessRightsInstance>(<RoleInstance>SourceUser.get('Role')).get('AccessRight')).get('internal');
-    const { internal: allowedInternal, Task } = await checkIfHasProjectRights( SourceUser.get('id'), task );
-    if(internal && !allowedInternal && !internalRight ){
+    const { internal: allowedInternal, Task } = await checkIfHasProjectRights(SourceUser.get('id'), task);
+    if (internal && !allowedInternal && !internalRight) {
       throw InternalMessagesNotAllowed;
     }
-    if(parentCommentId){
+    if (parentCommentId) {
       const ParentComment = await models.Comment.findByPk(parentCommentId);
-      if( ParentComment === null || ParentComment.get('TaskId') !== task ){
+      if (ParentComment === null || ParentComment.get('TaskId') !== task) {
         throw createDoesNoExistsError('Parent comment', parentCommentId);
       }
-      if(ParentComment.get('internal') && !allowedInternal && !internalRight ){
+      if (ParentComment.get('internal') && !allowedInternal && !internalRight) {
         throw InternalMessagesNotAllowed;
       }
     }
@@ -51,7 +51,7 @@ const mutations = {
       UserId: SourceUser.get('id'),
       ...params,
     });
-    if(!internal){
+    if (!internal) {
       (<TaskInstance>Task).createTaskChange({
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -60,7 +60,7 @@ const mutations = {
           newValue: null,
           message: `${SourceUser.get('fullName')} has commented the task.`,
         }]
-      }, { include: [ { model: models.TaskChangeMessage } ] });
+      }, { include: [{ model: models.TaskChangeMessage }] });
     }
     return NewComment;
   },
@@ -74,7 +74,7 @@ const attributes = {
     async task(comment) {
       return comment.getTask()
     },
-    async childComments(comment){
+    async childComments(comment) {
       return comment.getComments()
     },
     async parentComment(comment) {

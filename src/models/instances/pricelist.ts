@@ -11,7 +11,7 @@ export interface PricelistInstance extends DefaultInstance {
   createPrice?: any;
 }
 
-export default function definePricelists( sequelize: Sequelize ){
+export default function definePricelists(sequelize: Sequelize) {
   sequelize.define<PricelistInstance>(
     "Pricelist",
     {

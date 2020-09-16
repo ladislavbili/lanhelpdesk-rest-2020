@@ -29,7 +29,7 @@ export interface UserInstance extends DefaultInstance {
   getWorkTrips?: any;
 }
 
-export default function defineUsers( sequelize: Sequelize ){
+export default function defineUsers(sequelize: Sequelize) {
   sequelize.define<UserInstance>(
     "User",
     {
@@ -43,7 +43,7 @@ export default function defineUsers( sequelize: Sequelize ){
         allowNull: false,
       },
       email: {
-        type: DataTypes.STRING({length: 200}),
+        type: DataTypes.STRING({ length: 200 }),
         allowNull: false,
         validate: {
           isEmail: true
@@ -80,7 +80,7 @@ export default function defineUsers( sequelize: Sequelize ){
       tokenKey: {
         type: DataTypes.TEXT({ length: "tiny" }),
         allowNull: false,
-        defaultValue:  randomString(),
+        defaultValue: randomString(),
       },
       language: {
         type: DataTypes.TEXT({ length: "tiny" }),

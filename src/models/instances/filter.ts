@@ -54,7 +54,7 @@ export interface FilterInstance extends DefaultInstance {
   createFilterOneOf?: any;
 }
 
-export default function defineFilter( sequelize: Sequelize ){
+export default function defineFilter(sequelize: Sequelize) {
   sequelize.define<FilterInstance>(
     "Filter",
     {

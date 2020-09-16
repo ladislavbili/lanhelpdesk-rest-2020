@@ -6,12 +6,12 @@ export interface PriceInstance extends DefaultInstance {
   type: string;
 }
 
-export default function definePrices( sequelize: Sequelize ){
+export default function definePrices(sequelize: Sequelize) {
   sequelize.define<PriceInstance>(
     "Price",
     {
       price: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },

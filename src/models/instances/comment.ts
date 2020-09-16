@@ -10,7 +10,7 @@ export interface CommentInstance extends DefaultInstance {
   isParent: boolean;
 }
 
-export default function definecomments( sequelize: Sequelize ){
+export default function definecomments(sequelize: Sequelize) {
   sequelize.define<CommentInstance>(
     "Comment",
     {

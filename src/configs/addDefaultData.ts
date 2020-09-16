@@ -10,7 +10,7 @@ export default async function addDefaultData() {
   */
   const Role = await createRole();
   const Company = await createCompany();
-  defaultUsers(Role.get('id'), Company.get('id')).forEach((user) => addUser(user) );
+  defaultUsers(Role.get('id'), Company.get('id')).forEach((user) => addUser(user));
 }
 
 async function createRole() {
@@ -20,8 +20,8 @@ async function createRole() {
     level: 0,
     AccessRight: createFullRights()
   }, {
-    include: [{ model: models.AccessRights }]
-  });
+      include: [{ model: models.AccessRights }]
+    });
 }
 
 async function createCompany() {
@@ -36,7 +36,7 @@ async function createCompany() {
 }
 
 async function addUser({ password, roleId, companyId, language, ...targetUserData }) {
-  const hashedPassword = await hash( password, 12 );
+  const hashedPassword = await hash(password, 12);
   return models.User.create({
     ...targetUserData,
     password: hashedPassword,
@@ -63,7 +63,7 @@ function defaultUsers(roleId, companyId) {
 
 function createFullRights() {
   let rights = {};
-  [ 'login', 'testSections', 'mailViaComment', 'vykazy', 'publicFilters', 'addProjects', 'viewVykaz', 'viewRozpocet', 'viewErrors', 'viewInternal',
-  'users', 'companies', 'pausals', 'projects', 'statuses', 'units', 'prices', 'suppliers', 'tags', 'invoices', 'roles', 'taskTypes', 'tripTypes', 'imaps', 'smtps' ].forEach((right) => rights[right] = true )
+  ['login', 'testSections', 'mailViaComment', 'vykazy', 'publicFilters', 'addProjects', 'viewVykaz', 'viewRozpocet', 'viewErrors', 'viewInternal',
+    'users', 'companies', 'pausals', 'projects', 'statuses', 'units', 'prices', 'suppliers', 'tags', 'invoices', 'roles', 'taskTypes', 'tripTypes', 'imaps', 'smtps'].forEach((right) => rights[right] = true)
   return rights;
 }

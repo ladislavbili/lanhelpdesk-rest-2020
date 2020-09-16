@@ -12,8 +12,8 @@ import { addApolloError } from 'helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {
-  roles: async ( root, args, { req } ) => {
-    await checkResolver( req, [ 'roles', 'users' ], true );
+  roles: async (root, args, { req }) => {
+    await checkResolver(req, ['roles', 'users'], true);
     return models.Role.findAll({
       order: [
         ['order', 'ASC'],
@@ -21,24 +21,24 @@ const querries = {
       ]
     })
   },
-  role: async ( root, { id }, { req } ) => {
-    await checkResolver( req, [ 'roles' ] );
+  role: async (root, { id }, { req }) => {
+    await checkResolver(req, ['roles']);
     return models.Role.findByPk(id);
   },
-  accessRights: async ( root, args, { req } ) => {
-    const User = await checkResolver( req );
+  accessRights: async (root, args, { req }) => {
+    const User = await checkResolver(req);
     return User.get('AccessRight');
   },
 }
 
 const mutations = {
 
-  addRole: async ( root, { title, order, level, accessRights }, { req, userID } ) => {
+  addRole: async (root, { title, order, level, accessRights }, { req, userID }) => {
     //kontrola prav a ziskanie pouzivatelovych prav
-    const User = await checkResolver( req, [ 'roles' ] );
+    const User = await checkResolver(req, ['roles']);
 
     //nemie byt nova rola mensieho alebo rovneho levelu
-    if( level !== undefined && (<RoleInstance> User.get('Role')).get('level') >= level ){
+    if (level !== undefined && (<RoleInstance>User.get('Role')).get('level') >= level) {
       addApolloError(
         'Role',
         EditRoleLevelTooLowError,
@@ -47,27 +47,27 @@ const mutations = {
       throw EditRoleLevelTooLowError;
     }
     //nesmie pridat prava ktore sam nema
-    checkRights( (<AccessRightsInstance> (<RoleInstance>User.get('Role')).get('AccessRight')).get(), {}, accessRights, userID, null )
+    checkRights((<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get(), {}, accessRights, userID, null)
 
     return models.Role.create({
       title, order, level,
       AccessRight: accessRights
     }, {
-      include: [{ model: models.AccessRights }]
-    });
+        include: [{ model: models.AccessRights }]
+      });
   },
 
-  updateRole: async ( root, { id, title, order, level, accessRights }, { req, userID } ) => {
+  updateRole: async (root, { id, title, order, level, accessRights }, { req, userID }) => {
     //kontrola prav a ziskanie prav pouzivatela a upravovanej role
-    const User = await checkResolver( req, [ 'roles' ] );
-    const TargetRole = <RoleInstance> await models.Role.findByPk(id, { include: [{ model: models.AccessRights }] });
-    if( TargetRole === null ){
+    const User = await checkResolver(req, ['roles']);
+    const TargetRole = <RoleInstance>await models.Role.findByPk(id, { include: [{ model: models.AccessRights }] });
+    if (TargetRole === null) {
       throw createDoesNoExistsError('Role', id);
     }
-    const TargetAccessRights = <AccessRightsInstance> TargetRole.get('AccessRight');
+    const TargetAccessRights = <AccessRightsInstance>TargetRole.get('AccessRight');
 
     //nemie byt upravovana rola mensieho alebo rovneho levelu, ani novy level nesmie byt mensi alebo rovny
-    if( level !== undefined && (<RoleInstance>User.get('Role')).get('level') >= level ){
+    if (level !== undefined && (<RoleInstance>User.get('Role')).get('level') >= level) {
       addApolloError(
         'Role',
         EditRoleLevelTooLowError,
@@ -76,7 +76,7 @@ const mutations = {
       );
       throw EditRoleLevelTooLowError;
     }
-    if((<RoleInstance> User.get('Role')).get('level') >= TargetRole.get('level')){
+    if ((<RoleInstance>User.get('Role')).get('level') >= TargetRole.get('level')) {
       addApolloError(
         'Role',
         EditRoleError,
@@ -86,25 +86,25 @@ const mutations = {
       throw EditRoleError;
     }
     //nesmie menit prava ktore sam nema
-    checkRights( (<AccessRightsInstance> (<RoleInstance> User.get('Role')).get('AccessRight')).get(), TargetAccessRights.get(), accessRights, userID, id )
+    checkRights((<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get(), TargetAccessRights.get(), accessRights, userID, id)
 
     await TargetAccessRights.update(accessRights);
-    return TargetRole.update( { title, order } );
+    return TargetRole.update({ title, order });
   },
 
-  deleteRole: async ( root, { id, newId }, { req, userID } ) => {
+  deleteRole: async (root, { id, newId }, { req, userID }) => {
     //kontrola prav a ziskanie prav pouzivatela, upravovanej role, a nahradnej role
-    const User = await checkResolver( req, [ 'roles' ] );
+    const User = await checkResolver(req, ['roles']);
     const OldRole = await models.Role.findByPk(id);
     const NewRole = await models.Role.findByPk(newId);
-    if( OldRole === null ){
+    if (OldRole === null) {
       throw createDoesNoExistsError('Role', id);
     }
-    if( NewRole === null ){
+    if (NewRole === null) {
       throw createDoesNoExistsError('New role', id);
     }
     //mazana rola musi byt vacsieho levelu
-    if( (<RoleInstance> User.get('Role')).get('level') >= OldRole.get('level') ){
+    if ((<RoleInstance>User.get('Role')).get('level') >= OldRole.get('level')) {
       addApolloError(
         'Role',
         EditRoleLevelTooLowError,
@@ -114,7 +114,7 @@ const mutations = {
       throw EditRoleLevelTooLowError;
     }
     //nahradna rola musi byt vacsieho levelu
-    if( (<RoleInstance> User.get('Role')).get('level') >= NewRole.get('level') ){
+    if ((<RoleInstance>User.get('Role')).get('level') >= NewRole.get('level')) {
       addApolloError(
         'Role',
         SetRoleLevelTooLowError,
@@ -125,15 +125,15 @@ const mutations = {
     }
 
     const allUsers = await models.User.findAll({ where: { RoleId: id } });
-    await Promise.all( allUsers.map( user => (user as UserInstance ).setRole(newId) ) );
+    await Promise.all(allUsers.map(user => (user as UserInstance).setRole(newId)));
     return OldRole.destroy();
   },
 }
 
 //porovna ci bud uz pouzivatel prava mal alebo ci my ich mame aby sme mu ich dali
-function checkRights( myRights, targetRights, newRights, userID, targetId ){
-  if( !Object.keys(newRights).every( (key) => ( newRights[key] === targetRights[key] || myRights[key] ) ) ){
-    const error = createCantChangeRightsError( Object.keys(newRights).filter( (key) => !( newRights[key] === targetRights[key] || myRights[key] ) ) );
+function checkRights(myRights, targetRights, newRights, userID, targetId) {
+  if (!Object.keys(newRights).every((key) => (newRights[key] === targetRights[key] || myRights[key]))) {
+    const error = createCantChangeRightsError(Object.keys(newRights).filter((key) => !(newRights[key] === targetRights[key] || myRights[key])));
     addApolloError(
       'Role rights',
       error,

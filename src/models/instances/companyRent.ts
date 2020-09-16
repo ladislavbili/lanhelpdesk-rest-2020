@@ -9,7 +9,7 @@ export interface CompanyRentInstance extends DefaultInstance {
   total: number;
 }
 
-export default function defineCompanyRents( sequelize: Sequelize ){
+export default function defineCompanyRents(sequelize: Sequelize) {
   sequelize.define<CompanyRentInstance>(
     "CompanyRent",
     {
@@ -18,17 +18,17 @@ export default function defineCompanyRents( sequelize: Sequelize ){
         allowNull: false,
       },
       quantity: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },
       cost: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },
       price: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },

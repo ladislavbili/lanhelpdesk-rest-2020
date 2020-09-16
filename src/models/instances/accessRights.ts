@@ -32,7 +32,7 @@ export interface AccessRightsInstance extends DefaultInstance {
   smtps: boolean;
 }
 
-export default function defineAccessRights( sequelize: Sequelize ){
+export default function defineAccessRights(sequelize: Sequelize) {
   sequelize.define<AccessRightsInstance>(
     "AccessRights",
     {

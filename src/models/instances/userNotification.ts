@@ -6,7 +6,7 @@ export interface UserNotificationInstance extends DefaultInstance {
   read: boolean;
 }
 
-export default function defineUserNotifications( sequelize: Sequelize ){
+export default function defineUserNotifications(sequelize: Sequelize) {
   sequelize.define<UserNotificationInstance>(
     "UserNotification",
     {

@@ -11,7 +11,7 @@ export interface RoleInstance extends DefaultInstance {
   getUsers?: any;
 }
 
-export default function defineRole( sequelize: Sequelize ){
+export default function defineRole(sequelize: Sequelize) {
   sequelize.define<RoleInstance>(
     "Role",
     {

@@ -16,7 +16,7 @@ export interface WorkTripInstance extends DefaultInstance {
 
 }
 
-export default function defineWorkTrips( sequelize: Sequelize ){
+export default function defineWorkTrips(sequelize: Sequelize) {
   sequelize.define<WorkTripInstance>(
     "WorkTrip",
     {
@@ -31,12 +31,12 @@ export default function defineWorkTrips( sequelize: Sequelize ){
         defaultValue: false,
       },
       quantity: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },
       discount: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },

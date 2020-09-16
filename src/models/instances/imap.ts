@@ -16,7 +16,7 @@ export interface ImapInstance extends DefaultInstance {
   working: boolean;
 }
 
-export default function defineImaps( sequelize: Sequelize ){
+export default function defineImaps(sequelize: Sequelize) {
   sequelize.define<ImapInstance>(
     "Imap",
     {

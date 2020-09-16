@@ -1,31 +1,31 @@
 import { ApolloError } from 'apollo-server-express';
 
 //NEGATIVE ERROR
-export const createCantBeNegativeError = ( name ):ApolloError => {
+export const createCantBeNegativeError = (name): ApolloError => {
   return new ApolloError(`${name} can't be negative!`, 'CANT_BE_NEGATIVE');
 }
 
 //DOES NOT EXISTS
-export const createDoesNoExistsError = ( item, id = undefined ):ApolloError => {
-  if(id === undefined){
+export const createDoesNoExistsError = (item, id = undefined): ApolloError => {
+  if (id === undefined) {
     return new ApolloError(`${item} does not exists!`, 'DOESNT_EXISTS');
   }
-  if( Array.isArray(id) ){
+  if (Array.isArray(id)) {
     return new ApolloError(`${item} with ids ${id.toString()} do not exists!`, 'DOESNT_EXISTS');
   }
   return new ApolloError(`${item} with id ${id} does not exists!`, 'DOESNT_EXISTS');
 }
 
 //DATE ERROR
-export const createIncorrectDateError = ( name, originalValue, parsedValue ):ApolloError => {
+export const createIncorrectDateError = (name, originalValue, parsedValue): ApolloError => {
   return new ApolloError(`A presumed date '${name}' with original value '${originalValue}' was parsed into invalid date '${parsedValue}'!`, 'INCORRECT_DATE');
 }
 
-export const createAttributeNoAccess = ( item ):ApolloError => {
+export const createAttributeNoAccess = (item): ApolloError => {
   return new ApolloError(`Your role doesn't have the access for the attribute ${item}!`, 'DOESNT_EXISTS');
 }
 
-export const createCantChangeRightsError = ( rights ):ApolloError => {
+export const createCantChangeRightsError = (rights): ApolloError => {
   return new ApolloError(`Your role can't cange these rights: ${rights.toString()}!`, 'CANT_CHANGE_SOME_RIGHTS');
 }
 
@@ -77,11 +77,11 @@ export const NoAccessToThisFilterError = new ApolloError("You can't access this 
 
 //tasks
 export const InsufficientProjectAccessError = new ApolloError("You don't have sufficient access in this project.", "INSUFFICIENT_ACCESS_PROJECT");
-export const createUserNotPartOfProjectError = ( name ):ApolloError => {
+export const createUserNotPartOfProjectError = (name): ApolloError => {
   return new ApolloError(`User passed in parameter ${name} is not part of the project, therefore can't be assigned to this parameter!`, 'USER_NOT_PART_OF_PROJECT');
 }
 export const MilestoneNotPartOfProject = new ApolloError("Milestone is not from this project.", "MILESTONE_NOT_FROM_PROJECT");
-export const createProjectFixedAttributeError = ( name ):ApolloError => {
+export const createProjectFixedAttributeError = (name): ApolloError => {
   return new ApolloError(`Parameter ${name} is fixed by the project and is not the same!`, 'FIXED_ATTRIBUTE_BY_PROJECT');
 }
 export const StatusPendingAttributesMissing = new ApolloError("If status is set to action pending, you must pass both, pendingDate and pendingChangable.", "INSUFFICIENT_PENDING_ATTRIBUTES");

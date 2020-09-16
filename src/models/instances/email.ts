@@ -9,7 +9,7 @@ export interface EmailInstance extends DefaultInstance {
   message: string;
 }
 
-export default function defineEmails( sequelize: Sequelize ){
+export default function defineEmails(sequelize: Sequelize) {
   sequelize.define<EmailInstance>(
     "Email",
     {

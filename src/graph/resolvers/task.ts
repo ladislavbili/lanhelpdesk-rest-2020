@@ -2,41 +2,42 @@ import { createDoesNoExistsError, InsufficientProjectAccessError, createUserNotP
 import { models, sequelize } from 'models';
 import { TaskInstance, ProjectRightInstance, MilestoneInstance, ProjectInstance, StatusInstance, RepeatInstance, UserInstance, CommentInstance, AccessRightsInstance, RoleInstance, SubtaskInstance, WorkTripInstance } from 'models/instances';
 import { idsDoExistsCheck, multipleIdDoesExistsCheck, checkIfHasProjectRights, filterObjectToFilter, taskCheckDate, extractDatesFromObject } from 'helperFunctions';
+import { repeatEvent } from 'services/repeatTasks';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 import { TASK_CHANGE } from 'configs/subscriptions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
 import { Op } from 'sequelize';
-const dateNames = [ 'deadline' ,'pendingDate' ];
+const dateNames = ['deadline', 'pendingDate'];
 
 const querries = {
-  allTasks: async ( root, args, { req } ) => {
-    await checkResolver( req );
+  allTasks: async (root, args, { req }) => {
+    await checkResolver(req);
     return models.Task.findAll();
   },
-  tasks: async ( root, { projectId, filterId, filter }, { req } ) => {
-    const SourceUser = await checkResolver( req );
+  tasks: async (root, { projectId, filterId, filter }, { req }) => {
+    const SourceUser = await checkResolver(req);
     let projectWhere = {};
     let taskWhere = {};
-    if(projectId){
+    if (projectId) {
       const Project = await models.Project.findByPk(projectId);
-      if(Project === null){
+      if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
       projectWhere = { id: projectId }
     }
-    if(filterId){
+    if (filterId) {
       const Filter = await models.Filter.findByPk(filterId);
-      if(Filter === null){
+      if (Filter === null) {
         throw createDoesNoExistsError('Filter', filterId);
       }
       filter = filterObjectToFilter(await Filter.get('filter'));
     }
-    if(filter){
-      taskWhere = filterToWhere( filter, SourceUser.get('id') )
+    if (filter) {
+      taskWhere = filterToWhere(filter, SourceUser.get('id'))
     }
-    const User = <UserInstance> await models.User.findByPk(SourceUser.get('id'), {
+    const User = <UserInstance>await models.User.findByPk(SourceUser.get('id'), {
       include: [
         {
           model: models.ProjectRight,
@@ -64,37 +65,37 @@ const querries = {
       ]
     });
 
-    const tasks = (<ProjectRightInstance[]>User.get('ProjectRights')).map((ProjectRight) => <ProjectInstance>ProjectRight.get('Project') ).reduce((acc, proj) => [...acc, ...<TaskInstance[]>proj.get('Tasks') ],[])
-    if(filter){
-      return filterByOneOf(filter, SourceUser.get('id'), SourceUser.get('CompanyId'), tasks );
+    const tasks = (<ProjectRightInstance[]>User.get('ProjectRights')).map((ProjectRight) => <ProjectInstance>ProjectRight.get('Project')).reduce((acc, proj) => [...acc, ...<TaskInstance[]>proj.get('Tasks')], [])
+    if (filter) {
+      return filterByOneOf(filter, SourceUser.get('id'), SourceUser.get('CompanyId'), tasks);
     }
     return tasks;
   },
 
-  task: async ( root, { id }, { req } ) => {
-    const User = await checkResolver( req );
-    const Task = <TaskInstance> await models.Task.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
+  task: async (root, { id }, { req }) => {
+    const User = await checkResolver(req);
+    const Task = <TaskInstance>await models.Task.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
     const Project = <ProjectInstance>Task.get('Project');
     //must right write of project
-    const ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights'))
-    const ProjectRight = ProjectRights.find( (right) => right.get('UserId') === User.get('id') );
-    if( ProjectRight === undefined || !ProjectRight.get('read') ){
+    const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
+    const ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
+    if (ProjectRight === undefined || !ProjectRight.get('read')) {
       throw InsufficientProjectAccessError;
     }
     return Task;
   },
 }
 const mutations = {
-  addTask: async ( root, args, { req } ) => {
+  addTask: async (root, args, { req }) => {
     let { assignedTo: assignedTos, company, milestone, project, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, ...params } = args;
-    const User = await checkResolver( req );
+    const User = await checkResolver(req);
     //check all Ids if exists
-    const pairsToCheck = [ { id: company, model: models.Company }, { id: project, model: models.Project }, { id: status, model: models.Status }, { id: taskType, model: models.TaskType } ];
+    const pairsToCheck = [{ id: company, model: models.Company }, { id: project, model: models.Project }, { id: status, model: models.Status }, { id: taskType, model: models.TaskType }];
     (requester !== undefined && requester !== null) && pairsToCheck.push({ id: requester, model: models.User });
     (milestone !== undefined && milestone !== null) && pairsToCheck.push({ id: milestone, model: models.Milestone });
-    await idsDoExistsCheck( assignedTos, models.User );
-    await idsDoExistsCheck( tags, models.Tag );
-    await multipleIdDoesExistsCheck( pairsToCheck );
+    await idsDoExistsCheck(assignedTos, models.User);
+    await idsDoExistsCheck(tags, models.Tag);
+    await multipleIdDoesExistsCheck(pairsToCheck);
 
     const Project = await models.Project.findByPk(
       project,
@@ -103,60 +104,60 @@ const mutations = {
       }
     );
     //must right write of project
-    const ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights'))
-    const ProjectRight = ProjectRights.find( (right) => right.get('UserId') === User.get('id') );
-    if( ProjectRight === undefined || !ProjectRight.get('write') ){
+    const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
+    const ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
+    if (ProjectRight === undefined || !ProjectRight.get('write')) {
 
       throw InsufficientProjectAccessError;
     }
 
     //assignedTo must be in project
-    if( assignedTos.some( (assignedTo) => !ProjectRights.some((right) => right.get('UserId') === assignedTo ) ) ){
+    if (assignedTos.some((assignedTo) => !ProjectRights.some((right) => right.get('UserId') === assignedTo))) {
       throw createUserNotPartOfProjectError('assignedTo');
     }
-    if(assignedTos.length === 0 ){
+    if (assignedTos.length === 0) {
       throw TaskMustBeAssignedToAtLeastOneUser;
     }
     //requester must be in project or project is open
-    if( requester && Project.get('lockedRequester') && !ProjectRights.some((right) => right.get('UserId') === requester ) ){
+    if (requester && Project.get('lockedRequester') && !ProjectRights.some((right) => right.get('UserId') === requester)) {
       throw createUserNotPartOfProjectError('requester');
     }
 
     //milestone must be of project
-    if( milestone && !(<MilestoneInstance[]> Project.get('Milestones')).some( (projectMilestone) => projectMilestone.get('id') === milestone )){
+    if (milestone && !(<MilestoneInstance[]>Project.get('Milestones')).some((projectMilestone) => projectMilestone.get('id') === milestone)) {
       throw MilestoneNotPartOfProject;
     }
 
     //project def
     const projectDef = await Project.get('def');
-    (['assignedTo', 'tag']).forEach( (attribute) => {
-      if(projectDef[attribute].fixed){
-        let values = projectDef[attribute].value.map( (value) => value.get('id') );
+    (['assignedTo', 'tag']).forEach((attribute) => {
+      if (projectDef[attribute].fixed) {
+        let values = projectDef[attribute].value.map((value) => value.get('id'));
         //if is fixed, it must fit
-        if(
+        if (
           values.length !== args[attribute].length ||
-          args[attribute].some( (argValue) => !values.includes(argValue) )
-        ){
+          args[attribute].some((argValue) => !values.includes(argValue))
+        ) {
           throw createProjectFixedAttributeError(attribute);
         }
       }
     });
 
-    ([ 'overtime', 'pausal' ]).forEach( (attribute) => {
-      if(projectDef[attribute].fixed){
+    (['overtime', 'pausal']).forEach((attribute) => {
+      if (projectDef[attribute].fixed) {
         let value = projectDef[attribute].value;
         //if is fixed, it must fit
-        if( value !== args[attribute] ){
+        if (value !== args[attribute]) {
           throw createProjectFixedAttributeError(attribute);
         }
       }
     });
 
-    (['company', 'requester', 'status', 'taskType']).forEach( (attribute) => {
-      if(projectDef[attribute].fixed){
+    (['company', 'requester', 'status', 'taskType']).forEach((attribute) => {
+      if (projectDef[attribute].fixed) {
         let value = projectDef[attribute].value.get('id');
         //if is fixed, it must fit
-        if( value !== args[attribute] ){
+        if (value !== args[attribute]) {
           throw createProjectFixedAttributeError(attribute);
         }
       }
@@ -172,7 +173,7 @@ const mutations = {
         TaskChangeMessages: [{
           type: 'task',
           originalValue: null,
-        	newValue: null,
+          newValue: null,
           message: `Task was created by ${User.get('fullName')}`,
         }]
       }],
@@ -187,365 +188,392 @@ const mutations = {
       closeDate: null,
       pendingDate: null,
       pendingChangable: false,
-      statusChange: moment().unix()*1000,
+      statusChange: moment().unix() * 1000,
       invoicedDate: null,
     }
     const Status = await models.Status.findByPk(status);
     switch (Status.get('action')) {
-      case 'CloseDate':{
-        if(args.closeDate === undefined){
-          params.closeDate = moment().unix()*1000;
-        }else{
+      case 'CloseDate': {
+        if (args.closeDate === undefined) {
+          params.closeDate = moment().unix() * 1000;
+        } else {
           params.closeDate = args.closeDate;
         }
         break;
       }
-      case 'CloseInvalid':{
-        if(args.closeDate === undefined){
-          params.closeDate = moment().unix()*1000;
-        }else{
+      case 'CloseInvalid': {
+        if (args.closeDate === undefined) {
+          params.closeDate = moment().unix() * 1000;
+        } else {
           params.closeDate = args.closeDate;
         }
         break;
       }
-      case 'PendingDate':{
-        if(dates.pendingDate === undefined || args.pendingChangable === undefined ){
+      case 'PendingDate': {
+        if (dates.pendingDate === undefined || args.pendingChangable === undefined) {
           throw StatusPendingAttributesMissing;
-        }else{
+        } else {
           params.pendingDate = dates.pendingDate;
           params.pendingChangable = args.pendingChangable;
         }
         break;
       }
       default:
-      break;
+        break;
     }
     //repeat processing
-    if( repeat !== null && repeat !== undefined ){
+    if (repeat !== null && repeat !== undefined) {
       params = {
         ...params,
-        Repeat: repeat
+        Repeat: { ...repeat, startsAt: parseInt(repeat.startsAt) }
       }
     }
     //comments processing
     const allowedInternal = (<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('internal');
-    if( comments ){
+    if (comments) {
       comments.forEach((comment) => {
-        if(comment.internal && !ProjectRight.get('internal') && !allowedInternal){
+        if (comment.internal && !ProjectRight.get('internal') && !allowedInternal) {
           throw InternalMessagesNotAllowed;
         }
       })
       params = {
         ...params,
-        Comments: comments.map((comment) => ({...comment, isParent: true, UserId: User.get('id') }) )
+        Comments: comments.map((comment) => ({ ...comment, isParent: true, UserId: User.get('id') }))
       }
     }
     //Subtask
-    if( subtasks ){
-      if( subtasks.some((subtask) => !assignedTos.includes(subtask.assignedTo) ) ){
+    if (subtasks) {
+      if (subtasks.some((subtask) => !assignedTos.includes(subtask.assignedTo))) {
         throw AssignedToUserNotSolvingTheTask;
       }
-      await idsDoExistsCheck(subtasks.map((subtask) => subtask.type ), models.TaskType);
+      await idsDoExistsCheck(subtasks.map((subtask) => subtask.type), models.TaskType);
       params = {
         ...params,
-        Subtasks: subtasks.map((subtask) => ({...subtask, UserId: subtask.assignedTo, TaskTypeId: subtask.type }) )
+        Subtasks: subtasks.map((subtask) => ({ ...subtask, UserId: subtask.assignedTo, TaskTypeId: subtask.type }))
       }
     }
     //WorkTrip
-    if( workTrips ){
-      if( workTrips.some((workTrip) => !assignedTos.includes(workTrip.assignedTo) ) ){
+    if (workTrips) {
+      if (workTrips.some((workTrip) => !assignedTos.includes(workTrip.assignedTo))) {
         throw AssignedToUserNotSolvingTheTask;
       }
-      await idsDoExistsCheck(workTrips.map((workTrip) => workTrip.type ), models.TripType);
+      await idsDoExistsCheck(workTrips.map((workTrip) => workTrip.type), models.TripType);
       params = {
         ...params,
-        WorkTrips: workTrips.map((workTrip) => ({...workTrip, UserId: workTrip.assignedTo, TripTypeId: workTrip.type }) )
+        WorkTrips: workTrips.map((workTrip) => ({ ...workTrip, UserId: workTrip.assignedTo, TripTypeId: workTrip.type }))
       }
     }
     //Material
-    if(materials){
+    if (materials) {
       params = {
         ...params,
         Materials: materials
       }
     }
     //CustomItem
-    if(customItems){
+    if (customItems) {
       params = {
         ...params,
         CustomItems: customItems
       }
     }
 
-    const NewTask = <TaskInstance> await models.Task.create(params, {
-      include: [{ model: models.Repeat },{ model: models.Comment },{ model: models.Subtask },{ model: models.WorkTrip },{ model: models.Material },{ model: models.CustomItem }, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] } ]
+    const NewTask = <TaskInstance>await models.Task.create(params, {
+      include: [{ model: models.Repeat }, { model: models.Comment }, { model: models.Subtask }, { model: models.WorkTrip }, { model: models.Material }, { model: models.CustomItem }, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
     });
     await Promise.all([
       NewTask.setAssignedTos(assignedTos),
       NewTask.setTags(tags),
     ])
-    pubsub.publish(TASK_CHANGE, {taskSubscription:{ type: 'add', data: NewTask, ids: [] }});
+    repeatEvent.emit('add', await NewTask.get('Repeat'));
+    pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'add', data: NewTask, ids: [] } });
     return NewTask;
   },
-  updateTask: async ( root, args, { req } ) => {
+
+  updateTask: async (root, args, { req }) => {
     let { id, assignedTo: assignedTos, company, milestone, project, requester, status, tags, taskType, repeat, ...params } = args;
+    let repeatAction = { action: null, id: null };
     const dates = extractDatesFromObject(params, dateNames);
-    const User = await checkResolver( req );
+    const User = await checkResolver(req);
     //if you send something it cant be null in this attributes, if undefined its ok
-    if(
+    if (
       company === null ||
       project === null ||
       status === null ||
       taskType === null
-    ){
+    ) {
       throw TaskNotNullAttributesPresent;
     }
     //check all Ids if exists
     const pairsToCheck = [{ id, model: models.Task }];
-    ( company !== undefined ) && pairsToCheck.push({ id: company, model: models.Company });
-    ( project !== undefined ) && pairsToCheck.push({ id: project, model: models.Project });
-    ( status !== undefined ) && pairsToCheck.push({ id: status, model: models.Status });
-    ( taskType !== undefined ) && pairsToCheck.push({ id: taskType, model: models.TaskType });
-    ( requester !== undefined && requester !== null ) && pairsToCheck.push({ id: requester, model: models.User });
-    ( milestone !== undefined && milestone !== null ) && pairsToCheck.push({ id: milestone, model: models.Milestone });
-    await multipleIdDoesExistsCheck( pairsToCheck );
+    (company !== undefined) && pairsToCheck.push({ id: company, model: models.Company });
+    (project !== undefined) && pairsToCheck.push({ id: project, model: models.Project });
+    (status !== undefined) && pairsToCheck.push({ id: status, model: models.Status });
+    (taskType !== undefined) && pairsToCheck.push({ id: taskType, model: models.TaskType });
+    (requester !== undefined && requester !== null) && pairsToCheck.push({ id: requester, model: models.User });
+    (milestone !== undefined && milestone !== null) && pairsToCheck.push({ id: milestone, model: models.Milestone });
+    await multipleIdDoesExistsCheck(pairsToCheck);
 
-    const Task = <TaskInstance> await models.Task.findByPk(id, { include: [{ model: models.Repeat }, { model: models.Status }, { model: models.Subtask }, { model: models.WorkTrip }, { model: models.Project, include: [{ model: models.ProjectRight }, { model: models.Milestone }] } ] });
+    const Task = <TaskInstance>await models.Task.findByPk(id, { include: [{ model: models.Repeat }, { model: models.Status }, { model: models.Subtask }, { model: models.WorkTrip }, { model: models.Project, include: [{ model: models.ProjectRight }, { model: models.Milestone }] }] });
 
     let Project = <ProjectInstance>Task.get('Project');
     //must right write of project
-    let ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights'))
-    let ProjectRight = ProjectRights.find( (right) => right.get('UserId') === User.get('id') );
-    if( ProjectRight === undefined || !ProjectRight.get('write') ){
+    let ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
+    let ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
+    if (ProjectRight === undefined || !ProjectRight.get('write')) {
       throw InsufficientProjectAccessError;
     }
 
-    if(project && project !== Project.get('id')){
-      Project = <ProjectInstance> await models.Project.findByPk(
+    if (project && project !== Project.get('id')) {
+      Project = <ProjectInstance>await models.Project.findByPk(
         project,
         {
           include: [{ model: models.ProjectRight }, { model: models.Milestone }]
         }
       );
-      if( Project === null ){
+      if (Project === null) {
         throw createDoesNoExistsError('Project', project)
       }
       //must right write of project
-      ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights'))
-      ProjectRight = ProjectRights.find( (right) => right.get('UserId') === User.get('id') );
-      if( ProjectRight === undefined || !ProjectRight.get('write') ){
+      ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
+      ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
+      if (ProjectRight === undefined || !ProjectRight.get('write')) {
         throw InsufficientProjectAccessError
       }
     }
     let taskChangeMessages = [];
-
-    await sequelize.transaction(async (t) => {
-      let promises = [];
-      if(project && project !== (<ProjectInstance>Task.get('Project')).get('id')){
-        taskChangeMessages.push({
-          type: 'project',
-          originalValue: Task.get('ProjectId'),
-        	newValue: project,
-          message: `Project was changed from ${(<ProjectInstance>Task.get('Project')).get('title')} to ${Project.get('title')}`,
-        });
-        promises.push(Task.setProject( project, { transaction: t }));
-        if(milestone === undefined || milestone  === null ){
-          promises.push(Task.setMilestone( null, { transaction: t } ));
-        }
-      }
-      if( assignedTos ){
-        await idsDoExistsCheck( assignedTos, models.User );
-        if(assignedTos.length === 0 ){
-          throw TaskMustBeAssignedToAtLeastOneUser;
-        }
-        //assignedTo must be in project
-        assignedTos = assignedTos.filter( (assignedTo) => ProjectRights.some((right) => right.get('UserId') === assignedTo ));
-        //all subtasks and worktrips must be assigned
-        const Subtasks = <SubtaskInstance[]> await Task.get('Subtasks');
-        const WorkTrips = <WorkTripInstance[]> await Task.get('WorkTrips');
-        const allAssignedIds = [
-          ...Subtasks.map( (Subtask) => Subtask.get('UserId') ),
-          ...WorkTrips.map( (WorkTrip) => WorkTrip.get('UserId') ),
-        ];
-        if( !allAssignedIds.every(( id ) => assignedTos.includes(id) ) ){
-          throw CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError;
-        }
-
-        promises.push(Task.setAssignedTos(assignedTos,{ transaction: t }))
-      }
-      if( tags ){
-        await idsDoExistsCheck( tags, models.Tag );
-        promises.push(Task.setTags(tags,{ transaction: t }))
-      }
-      if( requester && requester !== Task.get('requesterId') ){
-        //requester must be in project or project is open
-        if( Project.get('lockedRequester') && !ProjectRights.some((right) => right.get('UserId') === requester ) ){
-          throw createUserNotPartOfProjectError('requester');
-        }
-        taskChangeMessages.push({
-          type: 'requester',
-          originalValue: Task.get('RequesterId'),
-          newValue: requester,
-          message: `Requester was changed from ${(<UserInstance> await Task.getRequester()).get('fullName')} to ${(await models.User.findByPk(requester)).get('fullName')}`,
-        });
-
-        promises.push(Task.setRequester(requester,{ transaction: t }))
-      }
-      if( milestone ){
-        //milestone must be of project
-        if(!(<MilestoneInstance[]> Project.get('Milestones')).some( (projectMilestone) => projectMilestone.get('id') === milestone )){
-          throw MilestoneNotPartOfProject;
-        }
-        promises.push(Task.setMilestone(milestone,{ transaction: t }))
-      }
-      if( taskType ){
-        promises.push(Task.setTaskType(taskType,{ transaction: t }))
-      }
-      if( company ){
-        promises.push(Task.setCompany(company,{ transaction: t }))
-      }
-
-      //project def
-      const projectDef = await Project.get('def');
-      (['assignedTo', 'tag']).forEach( (attribute) => {
-        if(projectDef[attribute].fixed && args[attribute] !== undefined){
-          let values = projectDef[attribute].value.map( (value) => value.get('id') );
-          //if is fixed, it must fit
-          if(
-            values.length !== args[attribute].length ||
-            args[attribute].some( (argValue) => !values.includes(argValue) )
-          ){
-            throw createProjectFixedAttributeError(attribute);
-          }
-        }
-      });
-
-      ([ 'overtime', 'pausal' ]).forEach( (attribute) => {
-        if(projectDef[attribute].fixed && args[attribute] !== undefined){
-          let value = projectDef[attribute].value;
-          //if is fixed, it must fit
-          if( value !== args[attribute] ){
-            throw createProjectFixedAttributeError(attribute);
-          }
-        }
-      });
-
-      (['company', 'requester', 'status', 'taskType']).forEach( (attribute) => {
-        if(projectDef[attribute].fixed && args[attribute] !== undefined ){
-          let value = projectDef[attribute].value.get('id');
-          //if is fixed, it must fit
-          if( value !== args[attribute] ){
-            throw createProjectFixedAttributeError(attribute);
-          }
-        }
-      });
-
-      //status corresponds to data - closedate, pendingDate
-      //createdby
-      if(status){
-        params = {
-          ...params,
-          ...dates,
-          closeDate: null,
-          pendingDate: null,
-          pendingChangable: false,
-          statusChange: Task.get('statusChange'),
-          invoicedDate: Task.get('invoicedDate'),
-        }
-        const TaskStatus = <StatusInstance> Task.get('Status');
-        const Status = await models.Status.findByPk(status);
-        if( status !== TaskStatus.get('id') ){
+    let promises = [];
+    try {
+      await sequelize.transaction(async (transaction) => {
+        if (project && project !== (<ProjectInstance>Task.get('Project')).get('id')) {
           taskChangeMessages.push({
-            type: 'status',
-            originalValue: TaskStatus.get('id'),
-            newValue: status,
-            message: `Status was changed from ${TaskStatus.get('title')} to ${Status.get('title')}`,
+            type: 'project',
+            originalValue: Task.get('ProjectId'),
+            newValue: project,
+            message: `Project was changed from ${(<ProjectInstance>Task.get('Project')).get('title')} to ${Project.get('title')}`,
           });
-          promises.push(Task.setStatus(status,{ transaction: t }))
+          promises.push(Task.setProject(project, { transaction }));
+          if (milestone === undefined || milestone === null) {
+            promises.push(Task.setMilestone(null, { transaction }));
+          }
         }
-        switch (Status.get('action')) {
-          case 'CloseDate':{
-            if(TaskStatus.get('action') === 'CloseDate' && !args.closeDate ){
-              params.closeDate = Task.get('closeDate');
-              break;
-            }
-            if(args.closeDate === undefined){
-              params.closeDate = moment().unix()*1000;
-            }else{
-              params.closeDate = args.closeDate;
-            }
-            params.statusChange = moment().unix()*1000
-            break;
+        if (assignedTos) {
+          await idsDoExistsCheck(assignedTos, models.User);
+          if (assignedTos.length === 0) {
+            throw TaskMustBeAssignedToAtLeastOneUser;
           }
-          case 'CloseInvalid':{
-            if(TaskStatus.get('action') === 'CloseInvalid' && !args.closeDate ){
-              params.closeDate = Task.get('closeDate');
-              break;
-            }
-            if(args.closeDate === undefined){
-              params.closeDate = moment().unix()*1000;
-            }else{
-              params.closeDate = args.closeDate;
-            }
-            params.statusChange = moment().unix()*1000
-            break;
+          //assignedTo must be in project
+          assignedTos = assignedTos.filter((assignedTo) => ProjectRights.some((right) => right.get('UserId') === assignedTo));
+          //all subtasks and worktrips must be assigned
+          const Subtasks = <SubtaskInstance[]>await Task.get('Subtasks');
+          const WorkTrips = <WorkTripInstance[]>await Task.get('WorkTrips');
+          const allAssignedIds = [
+            ...Subtasks.map((Subtask) => Subtask.get('UserId')),
+            ...WorkTrips.map((WorkTrip) => WorkTrip.get('UserId')),
+          ];
+          if (!allAssignedIds.every((id) => assignedTos.includes(id))) {
+            throw CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError;
           }
-          case 'PendingDate':{
-            if(TaskStatus.get('action') === 'PendingDate' && !dates.pendingDate ){
-              params.pendingDate = Task.get('pendingDate');
-              params.pendingChangable = Task.get('pendingChangable');
-              break;
-            }
-            if(dates.pendingDate === undefined || args.pendingChangable === undefined ){
-              throw StatusPendingAttributesMissing;
-            }else{
-              params.pendingDate = dates.pendingDate;
-              params.pendingChangable = args.pendingChangable;
-            }
-            params.statusChange = moment().unix()*1000
-            break;
+
+          promises.push(Task.setAssignedTos(assignedTos, { transaction }))
+        }
+        if (tags) {
+          await idsDoExistsCheck(tags, models.Tag);
+          promises.push(Task.setTags(tags, { transaction }))
+        }
+        if (requester && requester !== Task.get('requesterId')) {
+          //requester must be in project or project is open
+          if (Project.get('lockedRequester') && !ProjectRights.some((right) => right.get('UserId') === requester)) {
+            throw createUserNotPartOfProjectError('requester');
           }
-          default:
-          break;
+          taskChangeMessages.push({
+            type: 'requester',
+            originalValue: Task.get('RequesterId'),
+            newValue: requester,
+            message: `Requester was changed from ${(<UserInstance>await Task.getRequester()).get('fullName')} to ${(await models.User.findByPk(requester)).get('fullName')}`,
+          });
+
+          promises.push(Task.setRequester(requester, { transaction }))
+        }
+        if (milestone) {
+          //milestone must be of project
+          if (!(<MilestoneInstance[]>Project.get('Milestones')).some((projectMilestone) => projectMilestone.get('id') === milestone)) {
+            throw MilestoneNotPartOfProject;
+          }
+          promises.push(Task.setMilestone(milestone, { transaction }))
+        }
+        if (taskType) {
+          promises.push(Task.setTaskType(taskType, { transaction }))
+        }
+        if (company) {
+          promises.push(Task.setCompany(company, { transaction }))
         }
 
-        promises.push(Task.setStatus(status,{ transaction: t }))
-      }
-      //repeat processing
-      if( repeat === null && (<RepeatInstance>Task.get('Repeat')) !== null ){
-        promises.push((<RepeatInstance>Task.get('Repeat')).destroy({ transaction: t }));
-      }
-      else if( repeat !== undefined && repeat !== null ){
-        if( (<RepeatInstance>Task.get('Repeat')) !== null ){
-          promises.push((<RepeatInstance>Task.get('Repeat')).update(repeat, { transaction: t }));
-        }else{
-          promises.push(Task.createRepeat(repeat, { transaction: t }));
-        }
-      }
+        //project def
+        const projectDef = await Project.get('def');
+        (['assignedTo', 'tag']).forEach((attribute) => {
+          if (projectDef[attribute].fixed && args[attribute] !== undefined) {
+            let values = projectDef[attribute].value.map((value) => value.get('id'));
+            //if is fixed, it must fit
+            if (
+              values.length !== args[attribute].length ||
+              args[attribute].some((argValue) => !values.includes(argValue))
+            ) {
+              throw createProjectFixedAttributeError(attribute);
+            }
+          }
+        });
 
-      promises.push(Task.createTaskChange({
-          UserId: User.get('id'),
-          TaskChangeMessages: taskChangeMessages,
-      }, { transaction: t, include: [ { model: models.TaskChangeMessage } ] }));
-      promises.push(Task.update(params, { transaction: t }));
-      await promises;
-    })
+        (['overtime', 'pausal']).forEach((attribute) => {
+          if (projectDef[attribute].fixed && args[attribute] !== undefined) {
+            let value = projectDef[attribute].value;
+            //if is fixed, it must fit
+            if (value !== args[attribute]) {
+              throw createProjectFixedAttributeError(attribute);
+            }
+          }
+        });
+
+        (['company', 'requester', 'status', 'taskType']).forEach((attribute) => {
+          if (projectDef[attribute].fixed && args[attribute] !== undefined) {
+            let value = projectDef[attribute].value.get('id');
+            //if is fixed, it must fit
+            if (value !== args[attribute]) {
+              throw createProjectFixedAttributeError(attribute);
+            }
+          }
+        });
+
+        //status corresponds to data - closedate, pendingDate
+        //createdby
+        if (status) {
+          params = {
+            ...params,
+            ...dates,
+            closeDate: null,
+            pendingDate: null,
+            pendingChangable: false,
+            statusChange: Task.get('statusChange'),
+            invoicedDate: Task.get('invoicedDate'),
+          }
+          const TaskStatus = <StatusInstance>Task.get('Status');
+          const Status = await models.Status.findByPk(status);
+          if (status !== TaskStatus.get('id')) {
+            taskChangeMessages.push({
+              type: 'status',
+              originalValue: TaskStatus.get('id'),
+              newValue: status,
+              message: `Status was changed from ${TaskStatus.get('title')} to ${Status.get('title')}`,
+            });
+            promises.push(Task.setStatus(status, { transaction }))
+          }
+          switch (Status.get('action')) {
+            case 'CloseDate': {
+              if (TaskStatus.get('action') === 'CloseDate' && !args.closeDate) {
+                params.closeDate = Task.get('closeDate');
+                break;
+              }
+              if (args.closeDate === undefined) {
+                params.closeDate = moment().unix() * 1000;
+              } else {
+                params.closeDate = args.closeDate;
+              }
+              params.statusChange = moment().unix() * 1000
+              break;
+            }
+            case 'CloseInvalid': {
+              if (TaskStatus.get('action') === 'CloseInvalid' && !args.closeDate) {
+                params.closeDate = Task.get('closeDate');
+                break;
+              }
+              if (args.closeDate === undefined) {
+                params.closeDate = moment().unix() * 1000;
+              } else {
+                params.closeDate = args.closeDate;
+              }
+              params.statusChange = moment().unix() * 1000
+              break;
+            }
+            case 'PendingDate': {
+              if (TaskStatus.get('action') === 'PendingDate' && !dates.pendingDate) {
+                params.pendingDate = Task.get('pendingDate');
+                params.pendingChangable = Task.get('pendingChangable');
+                break;
+              }
+              if (dates.pendingDate === undefined || args.pendingChangable === undefined) {
+                throw StatusPendingAttributesMissing;
+              } else {
+                params.pendingDate = dates.pendingDate;
+                params.pendingChangable = args.pendingChangable;
+              }
+              params.statusChange = moment().unix() * 1000
+              break;
+            }
+            default:
+              break;
+          }
+
+          promises.push(Task.setStatus(status, { transaction }))
+        }
+        //repeat processing
+        if (repeat === null && (<RepeatInstance>Task.get('Repeat')) !== null) {
+          promises.push((<RepeatInstance>Task.get('Repeat')).destroy({ transaction }));
+          repeatAction = { action: 'delete', id: (<RepeatInstance>Task.get('Repeat')).get('id') };
+        }
+        else if (repeat !== undefined && repeat !== null) {
+          if ((<RepeatInstance>Task.get('Repeat')) !== null) {
+            promises.push((<RepeatInstance>Task.get('Repeat')).update({ ...repeat, startsAt: parseInt(repeat.startsAt) }, { transaction }));
+            repeatAction = { action: 'update', id: null };
+          } else {
+            promises.push(Task.createRepeat({ ...repeat, startsAt: parseInt(repeat.startsAt) }, { transaction }));
+            repeatAction = { action: 'add', id: null };
+          }
+        }
+        promises.push(
+          Task.createTaskChange({
+            UserId: User.get('id'),
+            TaskChangeMessages: taskChangeMessages,
+          }, { transaction, include: [{ model: models.TaskChangeMessage }] })
+        );
+        promises.push(Task.update(params, { transaction }));
+        await Promise.all(promises);
+      })
+    } catch (error) {
+      console.log(error);
+    }
     await Task.reload()
-    pubsub.publish(TASK_CHANGE, {taskSubscription:{ type: 'update', data: Task, ids: [] }});
+    switch (repeatAction.action) {
+      case 'add': {
+        repeatEvent.emit('add', await Task.get('Repeat'));
+        break;
+      }
+      case 'update': {
+        repeatEvent.emit('update', await Task.get('Repeat'));
+        break;
+      }
+      case 'delete': {
+        repeatEvent.emit('delete', repeatAction.id);
+        break;
+      }
+      default:
+        break;
+    }
+    pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'update', data: Task, ids: [] } });
     return Task;
   },
 
-  deleteTask: async ( root, { id }, { req } ) => {
-    const User = await checkResolver( req );
-    const Task = <TaskInstance> await models.Task.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
+  deleteTask: async (root, { id }, { req }) => {
+    const User = await checkResolver(req);
+    const Task = <TaskInstance>await models.Task.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
     const Project = <ProjectInstance>Task.get('Project');
     //must right write of project
-    const ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights'))
-    const ProjectRight = ProjectRights.find( (right) => right.get('UserId') === User.get('id') );
-    if( ProjectRight === undefined || !ProjectRight.get('delete') ){
+    const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
+    const ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
+    if (ProjectRight === undefined || !ProjectRight.get('delete')) {
       throw InsufficientProjectAccessError;
     }
-    pubsub.publish(TASK_CHANGE, {taskSubscription:{ type: 'delete', data: Task, ids: [ id ] }});
+    repeatEvent.emit('delete', id);
+    pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'delete', data: Task, ids: [id] } });
     return Task.destroy();
   }
 }
@@ -554,77 +582,77 @@ const subscriptions = {
   taskSubscription: {
     subscribe: withFilter(
       () => pubsub.asyncIterator(TASK_CHANGE),
-      async ( {taskSubscription}, { projectId, filterId, filter }, { userID } ) => {
-        const User = <UserInstance> await models.User.findByPk(userID);
-        if(User === null){
+      async ({ taskSubscription }, { projectId, filterId, filter }, { userID }) => {
+        const User = <UserInstance>await models.User.findByPk(userID);
+        if (User === null) {
           throw InvalidTokenError;
         }
-        if(projectId){
+        if (projectId) {
           const Project = await models.Project.findByPk(projectId);
-          if(Project === null){
+          if (Project === null) {
             throw createDoesNoExistsError('Project', projectId);
           }
         }
-        if(filterId){
+        if (filterId) {
           const Filter = await models.Filter.findByPk(filterId);
-          if(Filter === null){
+          if (Filter === null) {
             throw createDoesNoExistsError('Filter', filterId);
           }
           filter = filterObjectToFilter(await Filter.get('filter'));
         }
         const { type, data, ids } = taskSubscription;
-        if(type === 'delete'){
+        if (type === 'delete') {
           return true;
         }
-        if(projectId && data.get('ProjectId') !== projectId ){
+        if (projectId && data.get('ProjectId') !== projectId) {
           return false;
         }
 
-        if( filter ){
+        if (filter) {
           const assignedToCorrect = (
-            ( filter.assignedToCur && (await data.getAssignedTos()).some((AssignedUser) => AssignedUser.get('id') === User.get('id') ) ) ||
-            ( !filter.assignedToCur && ( filter.assignedTo === null || (await data.getAssignedTos()).some((AssignedUser) => AssignedUser.get('id') === filter.assignedTo) ) )
+            (filter.assignedToCur && (await data.getAssignedTos()).some((AssignedUser) => AssignedUser.get('id') === User.get('id'))) ||
+            (!filter.assignedToCur && (filter.assignedTo === null || (await data.getAssignedTos()).some((AssignedUser) => AssignedUser.get('id') === filter.assignedTo)))
           );
           const requesterCorrect = (
-            ( filter.requesterCur && data.get('requesterId') === User.get('id') ) ||
-            ( !filter.requesterCur && ( filter.requester === null || filter.requester === data.get('requesterId')) )
+            (filter.requesterCur && data.get('requesterId') === User.get('id')) ||
+            (!filter.requesterCur && (filter.requester === null || filter.requester === data.get('requesterId')))
           );
           const companyCorrect = (
-            ( filter.companyCur && data.get('CompanyId') === User.get('CompanyId') ) ||
-            ( !filter.companyCur && ( filter.company === null || filter.company === data.get('CompanyId')) )
+            (filter.companyCur && data.get('CompanyId') === User.get('CompanyId')) ||
+            (!filter.companyCur && (filter.company === null || filter.company === data.get('CompanyId')))
           );
 
           let oneOfCheck = [];
           let allCheck = [];
-          if(filter.oneOf.includes('assigned')){
+          if (filter.oneOf.includes('assigned')) {
             oneOfCheck.push(assignedToCorrect)
-          }else{
+          } else {
             allCheck.push(assignedToCorrect)
           }
 
-          if(filter.oneOf.includes('requester')){
+          if (filter.oneOf.includes('requester')) {
             oneOfCheck.push(requesterCorrect)
-          }else{
+          } else {
             allCheck.push(requesterCorrect)
           }
 
-          if(filter.oneOf.includes('company')){
+          if (filter.oneOf.includes('company')) {
             oneOfCheck.push(companyCorrect)
-          }else{
+          } else {
             allCheck.push(companyCorrect)
           }
-          const oneOfCorrect = allCheck.every( (bool) => bool ) && ( oneOfCheck.length === 0 || oneOfCheck.some( (bool) => bool ) )
+          const oneOfCorrect = allCheck.every((bool) => bool) && (oneOfCheck.length === 0 || oneOfCheck.some((bool) => bool))
 
-          if(
+          if (
             !(
               oneOfCorrect &&
-              ( filter.taskType === null || filter.taskType === data.get('TaskTypeId') ) &&
-              taskCheckDate( filter.statusDateFromNow, filter.statusDateFrom, filter.statusDateToNow, filter.statusDateTo, data.get('statusChange') ) &&
-              taskCheckDate( filter.pendingDateFromNow, filter.pendingDateFrom, filter.pendingDateToNow, filter.pendingDateTo, data.get('pendingDate') ) &&
-              taskCheckDate( filter.closeDateFromNow, filter.closeDateFrom, filter.closeDateToNow, filter.closeDateTo, data.get('closeDate') ) &&
-              taskCheckDate( filter.deadlineFromNow, filter.deadlineFrom, filter.deadlineToNow, filter.deadlineTo, data.get('deadline') )
+              (filter.taskType === null || filter.taskType === data.get('TaskTypeId')) &&
+              taskCheckDate(filter.statusDateFromNow, filter.statusDateFrom, filter.statusDateToNow, filter.statusDateTo, data.get('statusChange')) &&
+              taskCheckDate(filter.pendingDateFromNow, filter.pendingDateFrom, filter.pendingDateToNow, filter.pendingDateTo, data.get('pendingDate')) &&
+              taskCheckDate(filter.closeDateFromNow, filter.closeDateFrom, filter.closeDateToNow, filter.closeDateTo, data.get('closeDate')) &&
+              taskCheckDate(filter.deadlineFromNow, filter.deadlineFrom, filter.deadlineToNow, filter.deadlineTo, data.get('deadline'))
             )
-          ){
+          ) {
             return false;
           }
         }
@@ -668,12 +696,12 @@ const attributes = {
     },
 
     async comments(task, body, { req }) {
-      const SourceUser = await checkResolver( req );
-      const AccessRights = <AccessRightsInstance>(<RoleInstance> SourceUser.get('Role')).get('AccessRight');
-      const {internal} = await checkIfHasProjectRights( SourceUser.get('id'), task.get('id') );
+      const SourceUser = await checkResolver(req);
+      const AccessRights = <AccessRightsInstance>(<RoleInstance>SourceUser.get('Role')).get('AccessRight');
+      const { internal } = await checkIfHasProjectRights(SourceUser.get('id'), task.get('id'));
 
-      let Comments = <CommentInstance[]> await task.getComments({ order: [ ['createdAt', 'DESC'] ] })
-      return Comments.filter((Comment) => Comment.get('isParent') && (!Comment.get('internal') || internal || AccessRights.get('internal') ))
+      let Comments = <CommentInstance[]>await task.getComments({ order: [['createdAt', 'DESC']] })
+      return Comments.filter((Comment) => Comment.get('isParent') && (!Comment.get('internal') || internal || AccessRights.get('internal')))
     },
     async subtasks(task) {
       return task.getSubtasks()
@@ -691,7 +719,7 @@ const attributes = {
       return task.getCalendarEvents()
     },
     async taskChanges(task) {
-      return task.getTaskChanges({ order: [ ['createdAt', 'DESC'] ] })
+      return task.getTaskChanges({ order: [['createdAt', 'DESC']] })
     },
   }
 };
@@ -727,9 +755,9 @@ export function filterToWhere(filter, userId) {
     deadlineTo,
     deadlineToNow,
   } = filter;
-  let where = { };
+  let where = {};
 
-  if(taskType){
+  if (taskType) {
     where = {
       ...where,
       taskType
@@ -740,20 +768,20 @@ export function filterToWhere(filter, userId) {
 
   //STATUS DATE
   let statusDateConditions = {};
-  if(statusDateFromNow){
+  if (statusDateFromNow) {
     statusDateFrom = moment().toDate();
   }
-  if(statusDateToNow){
+  if (statusDateToNow) {
     statusDateTo = moment().toDate();
   }
 
-  if(statusDateFrom){
+  if (statusDateFrom) {
     statusDateConditions = { ...statusDateConditions, [Op.gte]: statusDateFrom }
   }
-  if(statusDateTo){
+  if (statusDateTo) {
     statusDateConditions = { ...statusDateConditions, [Op.lte]: statusDateTo }
   }
-  if( statusDateFrom || statusDateTo ){
+  if (statusDateFrom || statusDateTo) {
     where = {
       ...where,
       statusChange: {
@@ -764,20 +792,20 @@ export function filterToWhere(filter, userId) {
 
   //PENDING DATE
   let pendingDateConditions = {};
-  if(pendingDateFromNow){
+  if (pendingDateFromNow) {
     pendingDateFrom = moment().toDate();
   }
-  if(pendingDateToNow){
+  if (pendingDateToNow) {
     pendingDateTo = moment().toDate();
   }
 
-  if(pendingDateFrom){
+  if (pendingDateFrom) {
     pendingDateConditions = { ...pendingDateConditions, [Op.gte]: pendingDateFrom }
   }
-  if(pendingDateTo){
+  if (pendingDateTo) {
     pendingDateConditions = { ...pendingDateConditions, [Op.lte]: pendingDateTo }
   }
-  if( pendingDateFrom || pendingDateTo ){
+  if (pendingDateFrom || pendingDateTo) {
     where = {
       ...where,
       pendingDate: {
@@ -788,20 +816,20 @@ export function filterToWhere(filter, userId) {
 
   //CLOSE DATE
   let closeDateConditions = {};
-  if(closeDateFromNow){
+  if (closeDateFromNow) {
     closeDateFrom = moment().toDate();
   }
-  if(closeDateToNow){
+  if (closeDateToNow) {
     closeDateTo = moment().toDate();
   }
 
-  if(closeDateFrom){
+  if (closeDateFrom) {
     closeDateConditions = { ...closeDateConditions, [Op.gte]: closeDateFrom }
   }
-  if(closeDateTo){
+  if (closeDateTo) {
     closeDateConditions = { ...closeDateConditions, [Op.lte]: closeDateTo }
   }
-  if( closeDateFrom || closeDateTo ){
+  if (closeDateFrom || closeDateTo) {
     where = {
       ...where,
       closeDate: {
@@ -813,20 +841,20 @@ export function filterToWhere(filter, userId) {
 
   //DEADLINE
   let deadlineConditions = {};
-  if(deadlineFromNow){
+  if (deadlineFromNow) {
     deadlineFrom = moment().toDate();
   }
-  if(deadlineToNow){
+  if (deadlineToNow) {
     deadlineTo = moment().toDate();
   }
 
-  if(deadlineFrom){
+  if (deadlineFrom) {
     deadlineConditions = { ...deadlineConditions, [Op.gte]: deadlineFrom }
   }
-  if(deadlineTo){
+  if (deadlineTo) {
     deadlineConditions = { ...deadlineConditions, [Op.lte]: deadlineTo }
   }
-  if( deadlineFrom || deadlineTo ){
+  if (deadlineFrom || deadlineTo) {
     where = {
       ...where,
       deadline: {
@@ -838,7 +866,7 @@ export function filterToWhere(filter, userId) {
   return where;
 }
 
-export function filterByOneOf(filter, userId, companyId, tasks ) {
+export function filterByOneOf(filter, userId, companyId, tasks) {
   let {
     assignedTo,
     assignedToCur,
@@ -849,39 +877,39 @@ export function filterByOneOf(filter, userId, companyId, tasks ) {
     oneOf
   } = filter;
 
-  if(assignedToCur){
+  if (assignedToCur) {
     assignedTo = userId;
   }
-  if(requesterCur){
+  if (requesterCur) {
     requester = userId;
   }
-  if(companyCur){
+  if (companyCur) {
     company = companyId;
   }
-  return tasks.filter( (task) => {
+  return tasks.filter((task) => {
     let oneOfConditions = [];
-    if(assignedTo){
-      if(oneOf.includes('assigned')){
-        oneOfConditions.push(task.get('assignedTos').some((user) => user.get('id') === assignedTo ))
-      }else if( !task.get('assignedTos').some((user) => user.get('id') === assignedTo ) ){
+    if (assignedTo) {
+      if (oneOf.includes('assigned')) {
+        oneOfConditions.push(task.get('assignedTos').some((user) => user.get('id') === assignedTo))
+      } else if (!task.get('assignedTos').some((user) => user.get('id') === assignedTo)) {
         return false;
       }
     }
-    if(requester){
-      if(oneOf.includes('requester')){
-        oneOfConditions.push( task.get('requesterId') === requester )
-      }else if( task.get('requesterId') !== requester ){
+    if (requester) {
+      if (oneOf.includes('requester')) {
+        oneOfConditions.push(task.get('requesterId') === requester)
+      } else if (task.get('requesterId') !== requester) {
         return false;
       }
     }
-    if(company){
-      if(oneOf.includes('company')){
-        oneOfConditions.push( task.get('CompanyId') === company )
-      }else if( task.get('CompanyId') !== company ){
+    if (company) {
+      if (oneOf.includes('company')) {
+        oneOfConditions.push(task.get('CompanyId') === company)
+      } else if (task.get('CompanyId') !== company) {
         return false;
       }
     }
-    return oneOfConditions.length === 0 || oneOfConditions.every((cond) => cond );
-  } )
+    return oneOfConditions.length === 0 || oneOfConditions.every((cond) => cond);
+  })
 
 }

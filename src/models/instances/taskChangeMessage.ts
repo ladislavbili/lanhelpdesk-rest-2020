@@ -8,7 +8,7 @@ export interface TaskChangeMessageInstance extends DefaultInstance {
   message: string;
 }
 
-export default function defineTaskChangeMessages( sequelize: Sequelize ){
+export default function defineTaskChangeMessages(sequelize: Sequelize) {
   sequelize.define<TaskChangeMessageInstance>(
     "TaskChangeMessage",
     {

@@ -6,7 +6,7 @@ export interface TokenInstance extends DefaultInstance {
   expiresAt: number;
 }
 
-export default function defineTokens( sequelize: Sequelize ){
+export default function defineTokens(sequelize: Sequelize) {
   sequelize.define<TokenInstance>(
     "Token",
     {

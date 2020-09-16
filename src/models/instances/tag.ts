@@ -7,7 +7,7 @@ export interface TagInstance extends DefaultInstance {
   order: number;
 }
 
-export default function defineTags( sequelize: Sequelize ){
+export default function defineTags(sequelize: Sequelize) {
   sequelize.define<TagInstance>(
     "Tag",
     {

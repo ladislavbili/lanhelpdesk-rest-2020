@@ -7,7 +7,7 @@ export interface TripTypeInstance extends DefaultInstance {
   getWorkTrips?: any;
 }
 
-export default function defineTripTypes( sequelize: Sequelize ){
+export default function defineTripTypes(sequelize: Sequelize) {
   sequelize.define<TripTypeInstance>(
     "TripType",
     {

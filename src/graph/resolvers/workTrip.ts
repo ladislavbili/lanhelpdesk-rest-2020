@@ -5,15 +5,15 @@ import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights }
 import checkResolver from './checkResolver';
 
 const querries = {
-  workTrips: async ( root , { taskId }, { req } ) => {
-    const SourceUser = await checkResolver( req );
-    await checkIfHasProjectRights( SourceUser.get('id'), taskId );
+  workTrips: async (root, { taskId }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    await checkIfHasProjectRights(SourceUser.get('id'), taskId);
     return models.WorkTrip.findAll({
       order: [
         ['order', 'ASC'],
         ['title', 'ASC'],
       ],
-      where:{
+      where: {
         TaskId: taskId
       }
     })
@@ -21,11 +21,11 @@ const querries = {
 }
 
 const mutations = {
-  addWorkTrip: async ( root, { task, type, assignedTo, ...params}, { req } ) => {
-    const SourceUser = await checkResolver( req );
-    const Task = <TaskInstance> (await checkIfHasProjectRights( SourceUser.get('id'), task, 'write' )).Task;
-    const AssignedTos = <UserInstance[]> await Task.getAssignedTos();
-    if(!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo )){
+  addWorkTrip: async (root, { task, type, assignedTo, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const Task = <TaskInstance>(await checkIfHasProjectRights(SourceUser.get('id'), task, 'write')).Task;
+    const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
+    if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
       throw AssignedToUserNotSolvingTheTask;
     }
     await idDoesExistsCheck(type, models.TripType);
@@ -37,38 +37,38 @@ const mutations = {
     });
   },
 
-  updateWorkTrip: async ( root, { id, type, assignedTo, ...params}, { req } ) => {
-    const SourceUser = await checkResolver( req );
-    const WorkTrip = <WorkTripInstance> await models.WorkTrip.findByPk(id);
-    if( WorkTrip === null ){
+  updateWorkTrip: async (root, { id, type, assignedTo, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const WorkTrip = <WorkTripInstance>await models.WorkTrip.findByPk(id);
+    if (WorkTrip === null) {
       throw createDoesNoExistsError('WorkTrip', id);
     }
-    const Task = <TaskInstance> (await checkIfHasProjectRights( SourceUser.get('id'), WorkTrip.get('TaskId'), 'write' )).Task;
-    if(assignedTo !== undefined){
-        const AssignedTos = <UserInstance[]> await Task.getAssignedTos();
-      if(!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo )){
+    const Task = <TaskInstance>(await checkIfHasProjectRights(SourceUser.get('id'), WorkTrip.get('TaskId'), 'write')).Task;
+    if (assignedTo !== undefined) {
+      const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
+      if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
         throw AssignedToUserNotSolvingTheTask;
       }
     }
-    if( type === null || assignedTo === null ){
+    if (type === null || assignedTo === null) {
       throw WorkTripNotNullAttributesPresent;
     }
     let pairs = [];
-    if( type !== undefined){
+    if (type !== undefined) {
       pairs.push({ id: type, model: models.TripType })
     }
-    if( assignedTo !== undefined){
+    if (assignedTo !== undefined) {
       pairs.push({ id: assignedTo, model: models.User })
     }
     await multipleIdDoesExistsCheck(pairs);
     await sequelize.transaction(async (t) => {
       let promises = [];
-      if( type !== undefined){
+      if (type !== undefined) {
         await idDoesExistsCheck(type, models.TripType);
-        promises.push( WorkTrip.setTripType(type, { transaction: t }) );
+        promises.push(WorkTrip.setTripType(type, { transaction: t }));
       }
-      if( assignedTo !== undefined){
-        promises.push( WorkTrip.setUser(assignedTo, { transaction: t }) );
+      if (assignedTo !== undefined) {
+        promises.push(WorkTrip.setUser(assignedTo, { transaction: t }));
       }
       promises.push(WorkTrip.update(params, { transaction: t }));
       await Promise.all(promises);
@@ -76,13 +76,13 @@ const mutations = {
     return WorkTrip.reload();
   },
 
-  deleteWorkTrip: async ( root, { id }, { req } ) => {
-    const SourceUser = await checkResolver( req );
+  deleteWorkTrip: async (root, { id }, { req }) => {
+    const SourceUser = await checkResolver(req);
     const WorkTrip = await models.WorkTrip.findByPk(id);
-    if( WorkTrip === null ){
+    if (WorkTrip === null) {
       throw createDoesNoExistsError('WorkTrip', id);
     }
-    await checkIfHasProjectRights( SourceUser.get('id'), WorkTrip.get('TaskId'), 'write' );
+    await checkIfHasProjectRights(SourceUser.get('id'), WorkTrip.get('TaskId'), 'write');
     return WorkTrip.destroy();
   },
 }

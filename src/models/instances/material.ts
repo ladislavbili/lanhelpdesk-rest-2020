@@ -10,7 +10,7 @@ export interface MaterialInstance extends DefaultInstance {
   price: number;
 }
 
-export default function defineMaterials( sequelize: Sequelize ){
+export default function defineMaterials(sequelize: Sequelize) {
   sequelize.define<MaterialInstance>(
     "Material",
     {
@@ -29,17 +29,17 @@ export default function defineMaterials( sequelize: Sequelize ){
         defaultValue: false,
       },
       quantity: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },
       margin: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },
       price: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },

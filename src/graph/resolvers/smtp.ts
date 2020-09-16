@@ -3,8 +3,8 @@ import { models } from 'models';
 import checkResolver from './checkResolver';
 
 const querries = {
-  smtps: async ( root , args, { req } ) => {
-    await checkResolver( req, ['smtps'] );
+  smtps: async (root, args, { req }) => {
+    await checkResolver(req, ['smtps']);
     return models.Smtp.findAll({
       order: [
         ['order', 'ASC'],
@@ -12,38 +12,38 @@ const querries = {
       ]
     })
   },
-  smtp: async ( root, { id }, { req } ) => {
-    await checkResolver( req, ['smtps'] );
+  smtp: async (root, { id }, { req }) => {
+    await checkResolver(req, ['smtps']);
     return models.Smtp.findByPk(id);
   },
 }
 
 const mutations = {
 
-  addSmtp: async ( root, args, { req } ) => {
-    await checkResolver( req, ["smtps"] );
-    if(args.def){
-      await models.Smtp.update({ def: false },{ where: { def: true } })
+  addSmtp: async (root, args, { req }) => {
+    await checkResolver(req, ["smtps"]);
+    if (args.def) {
+      await models.Smtp.update({ def: false }, { where: { def: true } })
     }
-    return models.Smtp.create( args );
+    return models.Smtp.create(args);
   },
 
-  updateSmtp: async ( root, { id, ...args }, { req } ) => {
-    await checkResolver( req, ["smtps"] );
+  updateSmtp: async (root, { id, ...args }, { req }) => {
+    await checkResolver(req, ["smtps"]);
     const Smtp = await models.Smtp.findByPk(id);
-    if( Smtp === null ){
+    if (Smtp === null) {
       throw createDoesNoExistsError('Smtp', id);
     }
-    if(args.def){
-      await models.Smtp.update({ def: false },{ where: { def: true } })
+    if (args.def) {
+      await models.Smtp.update({ def: false }, { where: { def: true } })
     }
-    return Smtp.update( args );
+    return Smtp.update(args);
   },
 
-  deleteSmtp: async ( root, { id }, { req } ) => {
-    await checkResolver( req, ["smtps"] );
+  deleteSmtp: async (root, { id }, { req }) => {
+    await checkResolver(req, ["smtps"]);
     const Smtp = await models.Smtp.findByPk(id);
-    if( Smtp === null ){
+    if (Smtp === null) {
       throw createDoesNoExistsError('Smtp', id);
     }
     return Smtp.destroy();

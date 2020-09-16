@@ -40,7 +40,7 @@ const operatorsAliases = {
 
 }
 */
-export const sequelize = new Sequelize( data.database, data.username, data.pass,{
+export const sequelize = new Sequelize(data.database, data.username, data.pass, {
   host: data.host,
   dialect: 'mysql',
   logging: false,
@@ -48,7 +48,7 @@ export const sequelize = new Sequelize( data.database, data.username, data.pass,
 });
 export const models = sequelize.models;
 
-export const updateModels = ( ignoreUpdating: Boolean ) => {
+export const updateModels = (ignoreUpdating: Boolean) => {
 
   defineTags(sequelize);
 
@@ -167,8 +167,8 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.Filter.belongsTo(models.TaskType, { as: 'filterTaskType' });
   models.TaskType.hasMany(models.Filter, { as: 'filterTaskType' });
 
-  models.Filter.belongsTo(models.Project, {as : 'filterOfProject' });
-  models.Project.hasMany(models.Filter, {as : { singular: "filterOfProject", plural: "filterOfProjects" } });
+  models.Filter.belongsTo(models.Project, { as: 'filterOfProject' });
+  models.Project.hasMany(models.Filter, { as: { singular: "filterOfProject", plural: "filterOfProjects" } });
 
   models.Filter.belongsToMany(models.Role, { through: 'filter_access_roles' });
   models.Role.belongsToMany(models.Filter, { through: 'filter_access_roles' });
@@ -187,8 +187,8 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.Task.hasMany(models.UserNotification, { onDelete: 'CASCADE' });
 
   //TASKS - ASSINGED TO - REMOVED
-  models.Task.belongsToMany(models.User, { as : { singular: "assignedTo", plural: "assignedTos" }, through: 'task_assignedTo' });
-  models.User.belongsToMany(models.Task, { as : { singular: "assignedToTask", plural: "assignedToTasks" }, through: 'task_assignedTo' });
+  models.Task.belongsToMany(models.User, { as: { singular: "assignedTo", plural: "assignedTos" }, through: 'task_assignedTo' });
+  models.User.belongsToMany(models.Task, { as: { singular: "assignedToTask", plural: "assignedToTasks" }, through: 'task_assignedTo' });
 
   //TASKS - COMPANY - REPLACED
   models.Task.belongsTo(models.Company, { foreignKey: { allowNull: false } });
@@ -204,7 +204,7 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
 
   //TASKS - PROJECT - TASK DELETED
   models.Task.belongsTo(models.Project, { foreignKey: { allowNull: false } });
-  models.Project.hasMany(models.Task, { onDelete: 'CASCADE' } );
+  models.Project.hasMany(models.Task, { onDelete: 'CASCADE' });
 
   //TASKS - REQUESTER - REPLACED
   models.Task.belongsTo(models.User, { as: 'requester' });
@@ -267,7 +267,7 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
   models.Task.hasMany(models.Comment, { onDelete: 'CASCADE' });
   models.Comment.belongsTo(models.Task, { foreignKey: { allowNull: false } });
 
-  models.Comment.belongsTo( models.Comment, { as: 'commentOf' });
+  models.Comment.belongsTo(models.Comment, { as: 'commentOf' });
   models.Comment.hasMany(models.Comment, { onDelete: 'CASCADE' });
 
 
@@ -308,8 +308,8 @@ export const updateModels = ( ignoreUpdating: Boolean ) => {
     invoices
   */
 
-  if(ignoreUpdating){
-    return new Promise( (resolve, reject) => resolve() );
+  if (ignoreUpdating) {
+    return new Promise((resolve, reject) => resolve());
   }
   return sequelize.sync({ alter: true })
 }

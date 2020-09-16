@@ -5,15 +5,15 @@ import { extractDatesFromObject } from 'helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {
-  milestone: async ( root, { id }, { req } ) => {
-    const User = await checkResolver( req );
+  milestone: async (root, { id }, { req }) => {
+    const User = await checkResolver(req);
     const Milestone = await models.Milestone.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
-    if( Milestone === null ){
+    if (Milestone === null) {
       return null;
     }
-    const Project = <ProjectInstance> Milestone.get('Project');
-    const ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights')).find( (right) => right.get('UserId') === User.get('id') );
-    if( ProjectRights === undefined || !ProjectRights.get('read') ){
+    const Project = <ProjectInstance>Milestone.get('Project');
+    const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
+    if (ProjectRights === undefined || !ProjectRights.get('read')) {
       return null;
     }
     return Milestone;
@@ -21,48 +21,48 @@ const querries = {
 }
 
 const mutations = {
-//  addMilestone( title: String!, description: String!, startsAt: Int, endsAt: Int ): Milestone
+  //  addMilestone( title: String!, description: String!, startsAt: Int, endsAt: Int ): Milestone
 
-  addMilestone: async ( root, { projectId, ...args }, { req } ) => {
-    const User = await checkResolver( req );
+  addMilestone: async (root, { projectId, ...args }, { req }) => {
+    const User = await checkResolver(req);
     const dates = extractDatesFromObject(args, ['startsAt', 'endsAt']);
 
-    const Project = <ProjectInstance> await models.Project.findByPk( projectId, { include: [{ model: models.ProjectRight }] });
-    const ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights')).find( (right) => right.get('UserId') === User.get('id') );
-    if( ProjectRights === undefined || !ProjectRights.get('admin') ){
+    const Project = <ProjectInstance>await models.Project.findByPk(projectId, { include: [{ model: models.ProjectRight }] });
+    const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
+    if (ProjectRights === undefined || !ProjectRights.get('admin')) {
       throw NoAccessToThisProjectError;
     }
-    return models.Milestone.create( {...args, ...dates, ProjectId: projectId } );
+    return models.Milestone.create({ ...args, ...dates, ProjectId: projectId });
   },
 
   //  updateMilestone( id: Int!, title: String, description: String, startsAt: Int, endsAt: Int ): Milestone
-  updateMilestone: async ( root, { id, ...args }, { req } ) => {
-    const User = await checkResolver( req );
+  updateMilestone: async (root, { id, ...args }, { req }) => {
+    const User = await checkResolver(req);
     const Milestone = await models.Milestone.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
-    if( Milestone === null ){
+    if (Milestone === null) {
       throw createDoesNoExistsError('Milestone', id);
     }
     const dates = extractDatesFromObject(args, ['startsAt', 'endsAt']);
 
-    const Project = <ProjectInstance> Milestone.get('Project');
-    const ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights')).find( (right) => right.get('UserId') === User.get('id') );
-    if( ProjectRights === undefined || !ProjectRights.get('admin') ){
+    const Project = <ProjectInstance>Milestone.get('Project');
+    const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
+    if (ProjectRights === undefined || !ProjectRights.get('admin')) {
       throw NoAccessToThisProjectError;
     }
 
-    return Milestone.update( { ...args, ...dates } );
+    return Milestone.update({ ...args, ...dates });
   },
 
   //  deleteMilestone( id: Int! ): Milestone
-  deleteMilestone: async ( root, { id }, { req } ) => {
-    const User = await checkResolver( req );
+  deleteMilestone: async (root, { id }, { req }) => {
+    const User = await checkResolver(req);
     const Milestone = await models.Milestone.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
-    if( Milestone === null ){
+    if (Milestone === null) {
       throw createDoesNoExistsError('Milestone', id);
     }
-    const Project = <ProjectInstance> Milestone.get('Project');
-    const ProjectRights = (<ProjectRightInstance[]> Project.get('ProjectRights')).find( (right) => right.get('UserId') === User.get('id') );
-    if( ProjectRights === undefined || !ProjectRights.get('admin') ){
+    const Project = <ProjectInstance>Milestone.get('Project');
+    const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
+    if (ProjectRights === undefined || !ProjectRights.get('admin')) {
       throw NoAccessToThisProjectError;
     }
     return Milestone.destroy();

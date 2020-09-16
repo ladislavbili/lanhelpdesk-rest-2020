@@ -5,15 +5,15 @@ import { multipleIdDoesExistsCheck } from 'helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {
-  customItems: async ( root , { taskId }, { req } ) => {
-    const SourceUser = await checkResolver( req );
-    await checkIfHasProjectRights( SourceUser.get('id'), taskId );
+  customItems: async (root, { taskId }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    await checkIfHasProjectRights(SourceUser.get('id'), taskId);
     return models.CustomItem.findAll({
       order: [
         ['order', 'ASC'],
         ['title', 'ASC'],
       ],
-      where:{
+      where: {
         TaskId: taskId
       }
     })
@@ -21,32 +21,32 @@ const querries = {
 }
 
 const mutations = {
-  addCustomItem: async ( root, { task, ...params }, { req } ) => {
-    const SourceUser = await checkResolver( req );
-    await checkIfHasProjectRights( SourceUser.get('id'), task, 'write' );
+  addCustomItem: async (root, { task, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    await checkIfHasProjectRights(SourceUser.get('id'), task, 'write');
     return models.CustomItem.create({
       TaskId: task,
       ...params,
     });
   },
 
-  updateCustomItem: async ( root, { id, ...params}, { req } ) => {
-    const SourceUser = await checkResolver( req );
+  updateCustomItem: async (root, { id, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
     const CustomItem = await models.CustomItem.findByPk(id);
-    if( CustomItem === null ){
+    if (CustomItem === null) {
       throw createDoesNoExistsError('CustomItem', id);
     }
-    await checkIfHasProjectRights( SourceUser.get('id'), CustomItem.get('TaskId'), 'write' );
+    await checkIfHasProjectRights(SourceUser.get('id'), CustomItem.get('TaskId'), 'write');
     return CustomItem.update(params);
   },
 
-  deleteCustomItem: async ( root, { id }, { req } ) => {
-    const SourceUser = await checkResolver( req );
+  deleteCustomItem: async (root, { id }, { req }) => {
+    const SourceUser = await checkResolver(req);
     const CustomItem = await models.CustomItem.findByPk(id);
-    if( CustomItem === null ){
+    if (CustomItem === null) {
       throw createDoesNoExistsError('CustomItem', id);
     }
-    await checkIfHasProjectRights( SourceUser.get('id'), CustomItem.get('TaskId'), 'write' );
+    await checkIfHasProjectRights(SourceUser.get('id'), CustomItem.get('TaskId'), 'write');
     return CustomItem.destroy();
   },
 }

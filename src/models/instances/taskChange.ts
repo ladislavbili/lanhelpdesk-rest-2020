@@ -7,7 +7,7 @@ export interface TaskChangeInstance extends DefaultInstance {
   //taskChangeMessages
 }
 
-export default function defineTaskChanges( sequelize: Sequelize ){
+export default function defineTaskChanges(sequelize: Sequelize) {
   sequelize.define<TaskChangeInstance>(
     "TaskChange",
     {

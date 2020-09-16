@@ -40,7 +40,7 @@ export interface ProjectInstance extends DefaultInstance {
   defTaskTypeFixed: boolean;
   defTaskTypeShow: boolean;
 
-  createProjectRight? : any;
+  createProjectRight?: any;
 
   getDefAssignedTos?: any;
   getDefCompany?: any;
@@ -60,7 +60,7 @@ export interface ProjectInstance extends DefaultInstance {
   removeDefTag?: any;
 }
 
-export default function defineProjects( sequelize: Sequelize ){
+export default function defineProjects(sequelize: Sequelize) {
   sequelize.define<ProjectInstance>(
     "Project",
     {
@@ -82,49 +82,49 @@ export default function defineProjects( sequelize: Sequelize ){
         type: DataTypes.VIRTUAL,
         async get() {
           return {
-            assignedTo:{
+            assignedTo: {
               def: this.get('defAssignedToDef'),
               fixed: this.get('defAssignedToFixed'),
               show: this.get('defAssignedToShow'),
               value: await this.getDefAssignedTos()
             },
-            company:{
+            company: {
               def: this.get('defCompanyDef'),
               fixed: this.get('defCompanyFixed'),
               show: this.get('defCompanyShow'),
               value: await this.getDefCompany()
             },
-            overtime:{
+            overtime: {
               def: this.get('defOvertimeDef'),
               fixed: this.get('defOvertimeFixed'),
               show: this.get('defOvertimeShow'),
               value: this.get('defOvertimeValue'),
             },
-            pausal:{
+            pausal: {
               def: this.get('defPausalDef'),
               fixed: this.get('defPausalFixed'),
               show: this.get('defPausalShow'),
               value: this.get('defPausalValue'),
             },
-            requester:{
+            requester: {
               def: this.get('defRequesterDef'),
               fixed: this.get('defRequesterFixed'),
               show: this.get('defRequesterShow'),
               value: await this.getDefRequester()
             },
-            status:{
+            status: {
               def: this.get('defStatusDef'),
               fixed: this.get('defStatusFixed'),
               show: this.get('defStatusShow'),
               value: await this.getDefStatus()
             },
-            tag:{
+            tag: {
               def: this.get('defTagDef'),
               fixed: this.get('defTagFixed'),
               show: this.get('defTagShow'),
               value: await this.getDefTags()
             },
-            taskType:{
+            taskType: {
               def: this.get('defTaskTypeDef'),
               fixed: this.get('defTaskTypeFixed'),
               show: this.get('defTaskTypeShow'),

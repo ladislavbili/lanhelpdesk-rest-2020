@@ -7,7 +7,7 @@ export interface CalendarEventInstance extends DefaultInstance {
   endsAt: number;
 }
 
-export default function defineCalendarEvents( sequelize: Sequelize ){
+export default function defineCalendarEvents(sequelize: Sequelize) {
   sequelize.define<CalendarEventInstance>(
     "CalendarEvent",
     {

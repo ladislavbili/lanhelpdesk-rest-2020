@@ -8,28 +8,28 @@ import checkResolver from './checkResolver';
 import moment from 'moment';
 
 const querries = {
-  calendarEvents: async ( root , { projectId, filterId, filter }, { req } ) => {
-    const SourceUser = await checkResolver( req );
+  calendarEvents: async (root, { projectId, filterId, filter }, { req }) => {
+    const SourceUser = await checkResolver(req);
     let projectWhere = {};
     let taskWhere = {};
-    if(projectId){
+    if (projectId) {
       const Project = await models.Project.findByPk(projectId);
-      if(Project === null){
+      if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
       projectWhere = { id: projectId }
     }
-    if(filterId){
+    if (filterId) {
       const Filter = await models.Filter.findByPk(filterId);
-      if(Filter === null){
+      if (Filter === null) {
         throw createDoesNoExistsError('Filter', filterId);
       }
       filter = filterObjectToFilter(await Filter.get('filter'));
     }
-    if(filter){
-      taskWhere = filterToWhere( filter, SourceUser.get('id') )
+    if (filter) {
+      taskWhere = filterToWhere(filter, SourceUser.get('id'))
     }
-    const User = <UserInstance> await models.User.findByPk(SourceUser.get('id'), {
+    const User = <UserInstance>await models.User.findByPk(SourceUser.get('id'), {
       include: [
         {
           model: models.ProjectRight,
@@ -60,20 +60,20 @@ const querries = {
       ]
     });
 
-    const tasks = (<ProjectRightInstance[]>User.get('ProjectRights')).map((ProjectRight) => <ProjectInstance>ProjectRight.get('Project') ).reduce((acc, proj) => [...acc, ...<TaskInstance[]>proj.get('Tasks') ],[])
-    if(filter){
-      return filterByOneOf(filter, SourceUser.get('id'), SourceUser.get('CompanyId'), tasks ).reduce((acc, task) => [...acc, ...<CalendarEventInstance[]>task.get('CalendarEvents') ],[]);
+    const tasks = (<ProjectRightInstance[]>User.get('ProjectRights')).map((ProjectRight) => <ProjectInstance>ProjectRight.get('Project')).reduce((acc, proj) => [...acc, ...<TaskInstance[]>proj.get('Tasks')], [])
+    if (filter) {
+      return filterByOneOf(filter, SourceUser.get('id'), SourceUser.get('CompanyId'), tasks).reduce((acc, task) => [...acc, ...<CalendarEventInstance[]>task.get('CalendarEvents')], []);
     }
-    return tasks.reduce((acc, task) => [...acc, ...<CalendarEventInstance[]>task.get('CalendarEvents') ],[]);
+    return tasks.reduce((acc, task) => [...acc, ...<CalendarEventInstance[]>task.get('CalendarEvents')], []);
   },
 }
 
 const mutations = {
-  addCalendarEvent: async ( root, { task, ...params }, { req } ) => {
-    const SourceUser = await checkResolver( req );
+  addCalendarEvent: async (root, { task, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
     const { startsAt, endsAt } = extractDatesFromObject(params, ['startsAt', 'endsAt']);
-    await checkIfHasProjectRights( SourceUser.get('id'), task, 'write' );
-    if( startsAt > endsAt ){
+    await checkIfHasProjectRights(SourceUser.get('id'), task, 'write');
+    if (startsAt > endsAt) {
       throw CalendarEventCantEndBeforeStartingError;
     }
     return models.CalendarEvent.create({
@@ -83,36 +83,36 @@ const mutations = {
     });
   },
 
-  updateCalendarEvent: async ( root, { id, ...params }, { req } ) => {
+  updateCalendarEvent: async (root, { id, ...params }, { req }) => {
     const changes = extractDatesFromObject(params, ['startsAt', 'endsAt']);
     const { startsAt, endsAt } = changes;
-    const SourceUser = await checkResolver( req );
+    const SourceUser = await checkResolver(req);
     const CalendarEvent = await models.CalendarEvent.findByPk(id);
-    if( CalendarEvent === null ){
+    if (CalendarEvent === null) {
       throw createDoesNoExistsError('Calendar Event', id);
     }
     //dates check
     const oldStartsAt = moment(CalendarEvent.get('startsAt')).valueOf();
     const oldEndsAt = moment(CalendarEvent.get('endsAt')).valueOf();
 
-    if(
-      ( startsAt && endsAt && startsAt > endsAt ) ||
-      ( !startsAt && endsAt && oldStartsAt > endsAt ) ||
-      ( startsAt && !endsAt && startsAt > oldEndsAt )
-    ){
+    if (
+      (startsAt && endsAt && startsAt > endsAt) ||
+      (!startsAt && endsAt && oldStartsAt > endsAt) ||
+      (startsAt && !endsAt && startsAt > oldEndsAt)
+    ) {
       throw CalendarEventCantEndBeforeStartingError;
     }
-    await checkIfHasProjectRights( SourceUser.get('id'), CalendarEvent.get('TaskId'), 'write' );
+    await checkIfHasProjectRights(SourceUser.get('id'), CalendarEvent.get('TaskId'), 'write');
     return CalendarEvent.update(changes);
   },
 
-  deleteCalendarEvent: async ( root, { id }, { req } ) => {
-    const SourceUser = await checkResolver( req );
+  deleteCalendarEvent: async (root, { id }, { req }) => {
+    const SourceUser = await checkResolver(req);
     const CalendarEvent = await models.CalendarEvent.findByPk(id);
-    if( CalendarEvent === null ){
+    if (CalendarEvent === null) {
       throw createDoesNoExistsError('CalendarEvent', id);
     }
-    await checkIfHasProjectRights( SourceUser.get('id'), CalendarEvent.get('TaskId'), 'write' );
+    await checkIfHasProjectRights(SourceUser.get('id'), CalendarEvent.get('TaskId'), 'write');
     return CalendarEvent.destroy();
   },
 }

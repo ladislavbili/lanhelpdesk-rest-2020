@@ -6,7 +6,7 @@ export interface EmailTargetInstance extends DefaultInstance {
   address: string;
 }
 
-export default function defineEmailTargets( sequelize: Sequelize ){
+export default function defineEmailTargets(sequelize: Sequelize) {
   sequelize.define<EmailTargetInstance>(
     "EmailTarget",
     {

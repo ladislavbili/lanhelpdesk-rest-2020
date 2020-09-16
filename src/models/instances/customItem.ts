@@ -11,7 +11,7 @@ export interface CustomItemInstance extends DefaultInstance {
 
 
 
-export default function defineCustomItems( sequelize: Sequelize ){
+export default function defineCustomItems(sequelize: Sequelize) {
   sequelize.define<CustomItemInstance>(
     "CustomItem",
     {
@@ -30,12 +30,12 @@ export default function defineCustomItems( sequelize: Sequelize ){
         defaultValue: false,
       },
       quantity: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },
       price: {
-        type: DataTypes.FLOAT(10,2),
+        type: DataTypes.FLOAT(10, 2),
         allowNull: false,
         defaultValue: 0
       },

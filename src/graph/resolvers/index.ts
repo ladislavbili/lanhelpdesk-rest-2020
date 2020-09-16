@@ -76,7 +76,7 @@ export default {
     ...user.mutations,
     ...workTrip.mutations,
   },
-  Subscription:{
+  Subscription: {
     ...task.subscriptions,
   },
 

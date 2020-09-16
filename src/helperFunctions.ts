@@ -1,10 +1,10 @@
-import  { Op } from 'sequelize';
+import { Op } from 'sequelize';
 import { createDoesNoExistsError, InsufficientProjectAccessError, createIncorrectDateError } from 'configs/errors';
 import { ProjectRightInstance } from 'models/instances';
 import moment from 'moment';
 import { models } from 'models';
 
-export const randomString =  () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+export const randomString = () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
 export const flattenObject = (object, prefix = '') => {
   let newObject = {};
@@ -25,22 +25,22 @@ export const capitalizeFirstLetter = (s) => {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-export const logFunctionsOfModel = ( model ) => {
-  Object.keys(model.associations).forEach( ( assoc ) => {
-    Object.keys(model.associations[assoc].accessors).forEach( ( accessor ) => {
-      console.log(model.name + '.' + model.associations[assoc].accessors[accessor]+'()');
-    } )
-  } )
+export const logFunctionsOfModel = (model) => {
+  Object.keys(model.associations).forEach((assoc) => {
+    Object.keys(model.associations[assoc].accessors).forEach((accessor) => {
+      console.log(model.name + '.' + model.associations[assoc].accessors[accessor] + '()');
+    })
+  })
 }
 
 export const idDoesExists = async (id: number, model) => {
   return (await model.findByPk(id) !== null);
 }
 
-export const multipleIdDoesExists = async ( pairs ) => {
-  let promises = pairs.map( (pair) => pair.model.findByPk(pair.id) );
+export const multipleIdDoesExists = async (pairs) => {
+  let promises = pairs.map((pair) => pair.model.findByPk(pair.id));
   let responses = await Promise.all(promises);
-  return responses.some( (response) => response === null );
+  return responses.some((response) => response === null);
 }
 
 export const idsDoExists = async (ids: number[], model) => {
@@ -53,29 +53,29 @@ export const idsDoExists = async (ids: number[], model) => {
 }
 
 export const idDoesExistsCheck = async (id: number, model) => {
-  if(await model.findByPk(id) === null){
+  if (await model.findByPk(id) === null) {
     throw createDoesNoExistsError(model.name, id);
   }
 }
 
-export const multipleIdDoesExistsCheck = async ( pairs ) => {
-  const promises = pairs.map( (pair) => pair.model.findByPk(pair.id) );
+export const multipleIdDoesExistsCheck = async (pairs) => {
+  const promises = pairs.map((pair) => pair.model.findByPk(pair.id));
   const responses = await Promise.all(promises);
-  if(responses.some( (response) => response === null )){
-    const failedPairs = pairs.filter( (pair, index) => responses[index] === null );
-    throw createDoesNoExistsError( failedPairs.map( (pair) => `${pair.model.name} - id:${pair.id}` ).toString() );
+  if (responses.some((response) => response === null)) {
+    const failedPairs = pairs.filter((pair, index) => responses[index] === null);
+    throw createDoesNoExistsError(failedPairs.map((pair) => `${pair.model.name} - id:${pair.id}`).toString());
   }
 }
 
 export const idsDoExistsCheck = async (ids: number[], model) => {
-  const responses = await Promise.all( ids.map( (id) => model.findByPk(id) ) )
-  if( responses.some( (response) => response === null ) ){
-    const failedIds = ids.filter( (id, index) => responses[index] === null );
+  const responses = await Promise.all(ids.map((id) => model.findByPk(id)))
+  if (responses.some((response) => response === null)) {
+    const failedIds = ids.filter((id, index) => responses[index] === null);
     throw createDoesNoExistsError(model.name, failedIds);
   }
 }
 
-export const addApolloError = ( source, error, userId = null, sourceId = null ) => {
+export const addApolloError = (source, error, userId = null, sourceId = null) => {
   return models.ErrorMessage.create({
     errorMessage: error.message,
     source,
@@ -86,15 +86,15 @@ export const addApolloError = ( source, error, userId = null, sourceId = null ) 
 }
 
 export const checkIfHasProjectRights = async (userId, taskId, right = 'read') => {
-  const User = await models.User.findByPk(userId,{ include: [{ model: models.ProjectRight }] })
+  const User = await models.User.findByPk(userId, { include: [{ model: models.ProjectRight }] })
   const Task = await models.Task.findByPk(taskId);
-  if(Task === null){
+  if (Task === null) {
     throw createDoesNoExistsError('Task', taskId);
   }
-  const ProjectRight = (<ProjectRightInstance[]>User.get('ProjectRights')).find( (ProjectRight) => ProjectRight.get('ProjectId') === Task.get('ProjectId') );
-  if(ProjectRight !== undefined){
+  const ProjectRight = (<ProjectRightInstance[]>User.get('ProjectRights')).find((ProjectRight) => ProjectRight.get('ProjectId') === Task.get('ProjectId'));
+  if (ProjectRight !== undefined) {
   }
-  if(ProjectRight === undefined || !ProjectRight.get(right)){
+  if (ProjectRight === undefined || !ProjectRight.get(right)) {
     throw InsufficientProjectAccessError;
   }
 
@@ -131,28 +131,28 @@ export const filterObjectToFilter = (Filter) => ({
 
 export const firstDateSameOrAfter = (date1, date2) => {
   let firstDate = null;
-  if(date1 === 'now'){
+  if (date1 === 'now') {
     firstDate = moment();
-  }else{
+  } else {
     firstDate = moment(date1);
   }
   let secondDate = null;
-  if(date2 === 'now'){
+  if (date2 === 'now') {
     secondDate = moment();
-  }else{
+  } else {
     secondDate = moment(date2);
   }
   return firstDate.unix() >= secondDate.unix();
 }
 
-export const taskCheckDate = ( fromNow, filterFromDate, toNow, filterToDate, taskDate ) => (
+export const taskCheckDate = (fromNow, filterFromDate, toNow, filterToDate, taskDate) => (
   (
-    ( fromNow && firstDateSameOrAfter( 'now', taskDate ) ) ||
-    ( !fromNow && ( filterFromDate === null || firstDateSameOrAfter( taskDate, filterFromDate ) ) )
+    (fromNow && firstDateSameOrAfter('now', taskDate)) ||
+    (!fromNow && (filterFromDate === null || firstDateSameOrAfter(taskDate, filterFromDate)))
   ) &&
   (
-    ( toNow && firstDateSameOrAfter( taskDate, 'now' ) ) ||
-    ( !toNow && ( filterToDate === null || firstDateSameOrAfter( filterToDate, taskDate ) ) )
+    (toNow && firstDateSameOrAfter(taskDate, 'now')) ||
+    (!toNow && (filterToDate === null || firstDateSameOrAfter(filterToDate, taskDate)))
   )
 )
 
@@ -160,15 +160,15 @@ export const extractDatesFromObject = (data, dates, controlDates = true, ignoreU
   let result = {};
   dates.forEach((date) => {
     let newDate = data[date];
-    if( newDate === undefined || newDate === null){
-      if(!ignoreUndefined && newDate === undefined ){
+    if (newDate === undefined || newDate === null) {
+      if (!ignoreUndefined && newDate === undefined) {
         result[date] = newDate;
-      }else if(newDate === null){
+      } else if (newDate === null) {
         result[date] = newDate;
       }
-    }else{
+    } else {
       newDate = parseInt(newDate);
-      if( controlDates && ( isNaN(newDate) || newDate < 0 ) ){
+      if (controlDates && (isNaN(newDate) || newDate < 0)) {
         throw createIncorrectDateError(date, data[date], newDate);
       }
       result[date] = newDate;
