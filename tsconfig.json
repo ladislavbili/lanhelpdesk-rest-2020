@@ -1,19 +1,21 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
     "moduleResolution": "node",
     "removeComments": true,
     "sourceMap": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "target": "es6",
+    "target": "es5",
     "outDir": "./build",
-    "rootDir": "./src",
-    "baseUrl": "./src",
+    "rootDir": "src",
+    "baseUrl": "src",
+    "paths": {
+      "@/*": ["*"]
+    },
     "strict": false
   },
   "include": [
-    "src/**/*"
+    "src/**/*.ts"
   ],
   "exclude": [
     "node_modules",

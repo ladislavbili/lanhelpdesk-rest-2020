@@ -1,7 +1,7 @@
-import { createDoesNoExistsError, createCantBeNegativeError, EditedRentNotOfCompanyError } from 'configs/errors';
-import { models, sequelize } from 'models';
-import { UserInstance, CompanyInstance, CompanyRentInstance, ProjectInstance, TaskInstance } from 'models/instances';
-import { splitArrayByFilter, addApolloError } from 'helperFunctions';
+import { createDoesNoExistsError, createCantBeNegativeError, EditedRentNotOfCompanyError } from '@/configs/errors';
+import { models, sequelize } from '@/models';
+import { UserInstance, CompanyInstance, CompanyRentInstance, ProjectInstance, TaskInstance } from '@/models/instances';
+import { splitArrayByFilter, addApolloError } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {

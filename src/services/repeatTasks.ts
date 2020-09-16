@@ -1,10 +1,10 @@
-import TriggerableTimer from 'services/components/triggerableTimer';
-import { models } from 'models';
+import TriggerableTimer from '@/services/components/triggerableTimer';
+import { models } from '@/models';
 import moment from 'moment';
 import events from 'events';
-import { TaskInstance } from 'models/instances';
-import { pubsub } from 'graph/resolvers';
-import { TASK_CHANGE } from 'configs/subscriptions';
+import { TaskInstance } from '@/models/instances';
+import { pubsub } from '@/graph/resolvers';
+import { TASK_CHANGE } from '@/configs/subscriptions';
 
 export const repeatEvent = new events.EventEmitter();
 

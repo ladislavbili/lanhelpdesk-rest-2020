@@ -1,8 +1,9 @@
 import events from 'events';
 
 export default class EventfulStorage {
+  emitter: any;
   constructor() {
-    this.emmiter = new events.EventEmitter()
+    this.emitter = new events.EventEmitter()
   }
 
 }

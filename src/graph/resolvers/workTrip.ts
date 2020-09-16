@@ -1,7 +1,7 @@
-import { createDoesNoExistsError, WorkTripNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from 'configs/errors';
-import { models, sequelize } from 'models';
-import { TaskInstance, UserInstance, WorkTripInstance } from 'models/instances';
-import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights } from 'helperFunctions';
+import { createDoesNoExistsError, WorkTripNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
+import { models, sequelize } from '@/models';
+import { TaskInstance, UserInstance, WorkTripInstance } from '@/models/instances';
+import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {

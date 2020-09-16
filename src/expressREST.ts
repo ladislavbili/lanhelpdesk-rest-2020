@@ -1,24 +1,24 @@
 import express from 'express';
 import eGraphql from 'express-graphql';
 import { ApolloServer } from 'apollo-server-express';
-import typeDefs from 'graph/types';
-import resolvers from 'graph/resolvers';
-import schemaDirectives from 'graph/directives';
-import { models } from 'models';
-import { verifyAccToken, verifyRefToken, createAccessToken, createRefreshToken } from 'configs/jwt';
+import typeDefs from '@/graph/types';
+import resolvers from '@/graph/resolvers';
+import schemaDirectives from '@/graph/directives';
+import { models } from '@/models';
+import { verifyAccToken, verifyRefToken, createAccessToken, createRefreshToken } from '@/configs/jwt';
 import jwt_decode from 'jwt-decode';
 import cookieParser from 'cookie-parser';
 import http from 'http';
-import { randomString } from 'helperFunctions';
+import { randomString } from '@/helperFunctions';
 import cors from 'cors';
 import axios from 'axios';
-import checkResolver from 'graph/resolvers/checkResolver';
+import checkResolver from '@/graph/resolvers/checkResolver';
 
 const maxAge = 7 * 24 * 60 * 60 * 1000;
 
 var running: boolean = false;
 const port = 4000;
-var whitelist = ['https://lanhelpdesk2019.lansystems.sk', 'http://lanhelpdesk2019.lansystems.sk', 'http://localhost:3000']
+var whitelist = ['https://lanhelpdesk2019.lansystems.sk', 'http://lanhelpdesk2019.lansystems.sk', 'http://localhost:3000', 'http://test2020.lanhelpdesk.com']
 var corsOptions = {
   origin: function(origin, callback) {
     callback(null, true)
@@ -87,6 +87,9 @@ export const startRest = () => {
   app.use(cors(corsOptions));
   server.applyMiddleware({ app, cors: false });
 
+  app.get('/', function(req, res) {
+    res.end(JSON.stringify({ message: 'Teeest.' }));
+  });
 
   app.post('/refresh_token', async (req, res) => {
 

@@ -1,7 +1,7 @@
-import { createDoesNoExistsError } from 'configs/errors';
-import { models } from 'models';
+import { createDoesNoExistsError } from '@/configs/errors';
+import { models } from '@/models';
 import checkResolver from './checkResolver';
-import { PricelistInstance, TripTypeInstance } from 'models/instances';
+import { PricelistInstance, TripTypeInstance } from '@/models/instances';
 
 const querries = {
   tripTypes: async (root, args, { req }) => {

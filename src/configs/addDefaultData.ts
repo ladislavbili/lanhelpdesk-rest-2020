@@ -1,6 +1,6 @@
 import { hash } from 'bcrypt';
-import { models } from 'models';
-import { randomString } from 'helperFunctions';
+import { models } from '@/models';
+import { randomString } from '@/helperFunctions';
 
 export default async function addDefaultData() {
   /*

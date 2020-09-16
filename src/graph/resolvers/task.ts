@@ -1,11 +1,11 @@
-import { createDoesNoExistsError, InsufficientProjectAccessError, createUserNotPartOfProjectError, MilestoneNotPartOfProject, createProjectFixedAttributeError, StatusPendingAttributesMissing, TaskNotNullAttributesPresent, InternalMessagesNotAllowed, TaskMustBeAssignedToAtLeastOneUser, AssignedToUserNotSolvingTheTask, InvalidTokenError, CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError } from 'configs/errors';
-import { models, sequelize } from 'models';
-import { TaskInstance, ProjectRightInstance, MilestoneInstance, ProjectInstance, StatusInstance, RepeatInstance, UserInstance, CommentInstance, AccessRightsInstance, RoleInstance, SubtaskInstance, WorkTripInstance } from 'models/instances';
-import { idsDoExistsCheck, multipleIdDoesExistsCheck, checkIfHasProjectRights, filterObjectToFilter, taskCheckDate, extractDatesFromObject } from 'helperFunctions';
-import { repeatEvent } from 'services/repeatTasks';
+import { createDoesNoExistsError, InsufficientProjectAccessError, createUserNotPartOfProjectError, MilestoneNotPartOfProject, createProjectFixedAttributeError, StatusPendingAttributesMissing, TaskNotNullAttributesPresent, InternalMessagesNotAllowed, TaskMustBeAssignedToAtLeastOneUser, AssignedToUserNotSolvingTheTask, InvalidTokenError, CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError } from '@/configs/errors';
+import { models, sequelize } from '@/models';
+import { TaskInstance, ProjectRightInstance, MilestoneInstance, ProjectInstance, StatusInstance, RepeatInstance, UserInstance, CommentInstance, AccessRightsInstance, RoleInstance, SubtaskInstance, WorkTripInstance } from '@/models/instances';
+import { idsDoExistsCheck, multipleIdDoesExistsCheck, checkIfHasProjectRights, filterObjectToFilter, taskCheckDate, extractDatesFromObject } from '@/helperFunctions';
+import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
-import { TASK_CHANGE } from 'configs/subscriptions';
+import { TASK_CHANGE } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
 import { Op } from 'sequelize';

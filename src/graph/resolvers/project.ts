@@ -1,10 +1,10 @@
-import { createDoesNoExistsError, NotAdminOfProjectNorManagesProjects } from 'configs/errors';
-import { models, sequelize } from 'models';
+import { createDoesNoExistsError, NotAdminOfProjectNorManagesProjects } from '@/configs/errors';
+import { models, sequelize } from '@/models';
 import checkResolver from './checkResolver';
-import { flattenObject, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, addApolloError } from 'helperFunctions';
-import { ProjectInstance, ProjectRightInstance, RoleInstance, AccessRightsInstance, TaskInstance } from 'models/instances';
+import { flattenObject, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, addApolloError } from '@/helperFunctions';
+import { ProjectInstance, ProjectRightInstance, RoleInstance, AccessRightsInstance, TaskInstance } from '@/models/instances';
 import { pubsub } from './index';
-import { TASK_CHANGE } from 'configs/subscriptions';
+import { TASK_CHANGE } from '@/configs/subscriptions';
 import { ApolloError } from 'apollo-server-express';
 
 const querries = {

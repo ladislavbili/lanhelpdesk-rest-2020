@@ -1,9 +1,8 @@
-import { createDoesNoExistsError, CalendarEventCantEndBeforeStartingError } from 'configs/errors';
-import { models } from 'models';
-import { UserInstance, ProjectRightInstance, ProjectInstance, TaskInstance, CalendarEventInstance } from 'models/instances';
-import { checkIfHasProjectRights, filterObjectToFilter, extractDatesFromObject } from "helperFunctions";
+import { createDoesNoExistsError, CalendarEventCantEndBeforeStartingError } from '@/configs/errors';
+import { models } from '@/models';
+import { UserInstance, ProjectRightInstance, ProjectInstance, TaskInstance, CalendarEventInstance } from '@/models/instances';
+import { checkIfHasProjectRights, filterObjectToFilter, extractDatesFromObject, multipleIdDoesExistsCheck } from '@/helperFunctions';
 import { filterToWhere, filterByOneOf } from './task';
-import { multipleIdDoesExistsCheck } from 'helperFunctions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
 

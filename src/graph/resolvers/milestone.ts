@@ -1,7 +1,7 @@
-import { createDoesNoExistsError, NoAccessToThisProjectError } from 'configs/errors';
-import { models } from 'models';
-import { ProjectInstance, ProjectRightInstance } from 'models/instances';
-import { extractDatesFromObject } from 'helperFunctions';
+import { createDoesNoExistsError, NoAccessToThisProjectError } from '@/configs/errors';
+import { models } from '@/models';
+import { ProjectInstance, ProjectRightInstance } from '@/models/instances';
+import { extractDatesFromObject } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {

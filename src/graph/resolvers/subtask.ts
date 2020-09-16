@@ -1,7 +1,7 @@
-import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from 'configs/errors';
-import { models, sequelize } from 'models';
-import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights } from 'helperFunctions';
-import { TaskInstance, UserInstance, SubtaskInstance } from 'models/instances';
+import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
+import { models, sequelize } from '@/models';
+import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights } from '@/helperFunctions';
+import { TaskInstance, UserInstance, SubtaskInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 
 const querries = {

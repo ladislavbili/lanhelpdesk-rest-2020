@@ -1,5 +1,5 @@
-import { createDoesNoExistsError } from 'configs/errors';
-import { models } from 'models';
+import { createDoesNoExistsError } from '@/configs/errors';
+import { models } from '@/models';
 import checkResolver from './checkResolver';
 
 const querries = {

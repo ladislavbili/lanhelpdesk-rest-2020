@@ -1,6 +1,6 @@
 import { Sequelize, DataTypes } from "sequelize";
 import DefaultInstance from './defaultInstance';
-import { randomString } from 'helperFunctions';
+import { randomString } from '@/helperFunctions';
 
 export interface UserInstance extends DefaultInstance {
   active: boolean;

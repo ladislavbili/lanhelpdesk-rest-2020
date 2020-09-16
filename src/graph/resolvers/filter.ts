@@ -1,8 +1,8 @@
-import { createDoesNoExistsError, NoAccessToThisProjectError, NoAccessToThisFilterError } from 'configs/errors';
-import { models } from 'models';
-import { FilterInstance, RoleInstance, ProjectRightInstance } from 'models/instances';
+import { createDoesNoExistsError, NoAccessToThisProjectError, NoAccessToThisFilterError } from '@/configs/errors';
+import { models } from '@/models';
+import { FilterInstance, RoleInstance, ProjectRightInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
-import { idDoesExistsCheck, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, extractDatesFromObject } from 'helperFunctions';
+import { idDoesExistsCheck, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, extractDatesFromObject } from '@/helperFunctions';
 import { Op } from 'sequelize';
 const dateNames = ['statusDateFrom', 'statusDateTo', 'pendingDateFrom', 'pendingDateTo', 'closeDateFrom', 'closeDateTo', 'deadlineFrom', 'deadlineTo'];
 

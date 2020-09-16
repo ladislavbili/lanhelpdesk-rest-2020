@@ -1,9 +1,9 @@
 import { SchemaDirectiveVisitor } from 'apollo-server-express';
-import { verifyAccToken } from 'configs/jwt';
-import { InvalidTokenError, NoAccTokenError, createAttributeNoAccess } from 'configs/errors';
 import { defaultFieldResolver, GraphQLBoolean } from 'graphql';
-import { UserInstance } from 'models/instances';
-import { models } from 'models';
+import { verifyAccToken } from '@/configs/jwt';
+import { InvalidTokenError, NoAccTokenError, createAttributeNoAccess } from '@/configs/errors';
+import { UserInstance } from '@/models/instances';
+import { models } from '@/models';
 
 class AuthDirective extends SchemaDirectiveVisitor {
   visitObject(type) {
@@ -22,18 +22,18 @@ class AuthDirective extends SchemaDirectiveVisitor {
     this.processField(field);
   }
 
-  processField(field){
+  processField(field) {
     const { resolve = defaultFieldResolver } = field;
-    field.resolve = async function ( ...args ) {
+    field.resolve = async function(...args) {
 
       const { req } = args[2];
       const token = req.headers.authorization as String;
-      if( !token ){
+      if (!token) {
         throw NoAccTokenError;
       }
-      try{
-        await verifyAccToken( token.replace('Bearer ',''), models.User );
-      }catch(error){
+      try {
+        await verifyAccToken(token.replace('Bearer ', ''), models.User);
+      } catch (error) {
         throw InvalidTokenError;
       }
       return resolve.apply(this, args);
@@ -46,29 +46,29 @@ class AccessDirective extends SchemaDirectiveVisitor {
     const fields = type.getFields();
 
     Object.keys(fields).forEach(fieldName => {
-      this.processField(fields[fieldName], this.args.access || [] );
+      this.processField(fields[fieldName], this.args.access || []);
     });
   }
 
   visitFieldDefinition(field, details) {
-    this.processField(field, this.args.access || [] );
+    this.processField(field, this.args.access || []);
   }
 
-  processField(field, access){
+  processField(field, access) {
     const { resolve = defaultFieldResolver } = field;
-    field.resolve = async function ( ...args ) {
+    field.resolve = async function(...args) {
 
       const { userData } = args[2];
 
-      if( !userData ){
+      if (!userData) {
         throw NoAccTokenError;
       }
-      const user = <UserInstance> await models.User.findByPk(userData.id);
+      const user = <UserInstance>await models.User.findByPk(userData.id);
       const role = await user.getRole();
 
       const rules = await role.getAccessRight();
 
-      if( access.every( (rule) => rules[rule] && typeof rules[rule] === "boolean" ) ){
+      if (access.every((rule) => rules[rule] && typeof rules[rule] === "boolean")) {
         return resolve.apply(this, args);
       }
 

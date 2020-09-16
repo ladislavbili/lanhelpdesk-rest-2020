@@ -1,8 +1,8 @@
 import { Op } from 'sequelize';
-import { createDoesNoExistsError, InsufficientProjectAccessError, createIncorrectDateError } from 'configs/errors';
-import { ProjectRightInstance } from 'models/instances';
+import { createDoesNoExistsError, InsufficientProjectAccessError, createIncorrectDateError } from '@/configs/errors';
+import { ProjectRightInstance } from '@/models/instances';
 import moment from 'moment';
-import { models } from 'models';
+import { models } from '@/models';
 
 export const randomString = () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 

@@ -1,7 +1,7 @@
-import { createDoesNoExistsError, AssignedToUserNotSolvingTheTask, InternalMessagesNotAllowed } from 'configs/errors';
-import { models } from 'models';
-import { checkIfHasProjectRights } from "helperFunctions";
-import { RoleInstance, AccessRightsInstance, TaskInstance } from 'models/instances';
+import { createDoesNoExistsError, AssignedToUserNotSolvingTheTask, InternalMessagesNotAllowed } from '@/configs/errors';
+import { models } from '@/models';
+import { checkIfHasProjectRights } from '@/helperFunctions';
+import { RoleInstance, AccessRightsInstance, TaskInstance } from '@/models/instances';
 import { Op } from 'sequelize';
 import checkResolver from './checkResolver';
 

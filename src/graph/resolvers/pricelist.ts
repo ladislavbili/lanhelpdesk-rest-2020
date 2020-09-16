@@ -1,7 +1,7 @@
-import { createDoesNoExistsError, DeletePricelistNeedsNewDefaultError, DeletePricelistCompaniesNeedsNewError, PriceNotInPricelistError, createCantBeNegativeError } from 'configs/errors';
-import { models, sequelize } from 'models';
+import { createDoesNoExistsError, DeletePricelistNeedsNewDefaultError, DeletePricelistCompaniesNeedsNewError, PriceNotInPricelistError, createCantBeNegativeError } from '@/configs/errors';
+import { models, sequelize } from '@/models';
 import checkResolver from './checkResolver';
-import { PriceInstance, PricelistInstance } from 'models/instances';
+import { PriceInstance, PricelistInstance } from '@/models/instances';
 
 const querries = {
   pricelists: async (root, args, { req }) => {

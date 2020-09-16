@@ -1,9 +1,9 @@
-import { models } from 'models';
-import { InvalidTokenError, NoAccTokenError, MutationOrResolverAccessDeniedError, UserDeactivatedError } from 'configs/errors';
-import { verifyAccToken } from 'configs/jwt';
-import { UserInstance, RoleInstance } from 'models/instances';
-import { sequelize } from 'models';
-import { addApolloError } from 'helperFunctions';
+import { models } from '@/models';
+import { InvalidTokenError, NoAccTokenError, MutationOrResolverAccessDeniedError, UserDeactivatedError } from '@/configs/errors';
+import { verifyAccToken } from '@/configs/jwt';
+import { UserInstance, RoleInstance } from '@/models/instances';
+import { sequelize } from '@/models';
+import { addApolloError } from '@/helperFunctions';
 
 export default async function checkResolver(req, access = [], useOR = false) {
   const token = req.headers.authorization as String;

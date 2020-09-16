@@ -5,10 +5,10 @@ import {
   EditRoleError,
   EditRoleLevelTooLowError,
   SetRoleLevelTooLowError
-} from 'configs/errors';
-import { models } from 'models';
-import { UserInstance, RoleInstance, AccessRightsInstance } from 'models/instances';
-import { addApolloError } from 'helperFunctions';
+} from '@/configs/errors';
+import { models } from '@/models';
+import { UserInstance, RoleInstance, AccessRightsInstance } from '@/models/instances';
+import { addApolloError } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {

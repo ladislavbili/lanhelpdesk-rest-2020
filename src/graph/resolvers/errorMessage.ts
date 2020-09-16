@@ -1,6 +1,6 @@
-import { createDoesNoExistsError } from 'configs/errors';
-import { idDoesExistsCheck, idsDoExistsCheck } from 'helperFunctions';
-import { models } from 'models';
+import { createDoesNoExistsError } from '@/configs/errors';
+import { idDoesExistsCheck, idsDoExistsCheck } from '@/helperFunctions';
+import { models } from '@/models';
 import checkResolver from './checkResolver';
 
 const querries = {

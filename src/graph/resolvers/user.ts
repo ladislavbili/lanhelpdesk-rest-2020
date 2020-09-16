@@ -1,8 +1,8 @@
 import { hash, compare } from 'bcrypt';
 import { sign } from 'jsonwebtoken';
 import jwt_decode from 'jwt-decode';
-import { createAccessToken, createRefreshToken } from 'configs/jwt';
-import { randomString, addApolloError, idsDoExistsCheck } from 'helperFunctions';
+import { createAccessToken, createRefreshToken } from '@/configs/jwt';
+import { randomString, addApolloError, idsDoExistsCheck } from '@/helperFunctions';
 import {
   PasswordTooShort,
   FailedLoginError,
@@ -18,9 +18,9 @@ import {
   NotEveryUsersTaskWasCoveredError,
   NotEveryUsersSubtaskWasCoveredError,
   NotEveryUsersWorkTripWasCoveredError
-} from 'configs/errors';
-import { models } from 'models';
-import { UserInstance, RoleInstance, ProjectInstance } from 'models/instances';
+} from '@/configs/errors';
+import { models } from '@/models';
+import { UserInstance, RoleInstance, ProjectInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 
 const maxAge = 7 * 24 * 60 * 60 * 1000;

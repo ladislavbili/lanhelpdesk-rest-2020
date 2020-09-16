@@ -1,6 +1,6 @@
 import { Sequelize, Model, DataTypes, Op } from "sequelize";
-import { logFunctionsOfModel } from 'helperFunctions';
-import data from 'configs/database';
+import { logFunctionsOfModel } from '@/helperFunctions';
+import data from '@/configs/database';
 
 import defineAccessRights from './instances/accessRights';
 import defineTags from './instances/tag';
