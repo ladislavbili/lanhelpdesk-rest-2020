@@ -14,6 +14,8 @@ type Company {
   email: String!
   phone: String!
   description: String!
+  usedSubtaskPausal: Int!
+  usedTripPausal: Int!
 
   monthly: Boolean!
   monthlyPausal: Float!
@@ -32,6 +34,8 @@ type BasicCompany {
   pricelist: Pricelist!
   users: [BasicUser]
   companyRents: [CompanyRent]
+  usedSubtaskPausal: Int!
+  usedTripPausal: Int!
 }
 
 type CompanyRent {

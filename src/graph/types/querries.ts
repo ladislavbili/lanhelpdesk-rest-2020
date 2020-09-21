@@ -3,7 +3,6 @@ import { CommentQuerries } from './entities/comment';
 import { CompanyQuerries } from './entities/company';
 import { CustomItemQuerries } from './entities/customItem';
 import { ErrorMessageQuerries } from './entities/errorMessage';
-import { EmailQuerries } from './entities/email';
 import { FilterQuerries } from './entities/filter';
 import { ImapQuerries } from './entities/imap';
 import { MaterialQuerries } from './entities/material';
@@ -29,7 +28,6 @@ type Query {
   ${CompanyQuerries}
   ${CustomItemQuerries}
   ${ErrorMessageQuerries}
-  ${EmailQuerries}
   ${FilterQuerries}
   ${ImapQuerries}
   ${MaterialQuerries}

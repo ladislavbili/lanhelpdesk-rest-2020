@@ -541,7 +541,6 @@ const mutations = {
     } catch (error) {
       console.log(error);
     }
-    await Task.reload()
     switch (repeatAction.action) {
       case 'add': {
         repeatEvent.emit('add', await Task.get('Repeat'));
@@ -558,6 +557,7 @@ const mutations = {
       default:
         break;
     }
+    await Task.reload()
     pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'update', data: Task, ids: [] } });
     return Task;
   },

@@ -25,5 +25,4 @@ export { WorkTripInstance } from './workTrip';
 export { MaterialInstance } from './material';
 export { CustomItemInstance } from './customItem';
 export { CommentInstance } from './comment';
-export { EmailInstance } from './email';
 export { EmailTargetInstance } from './emailTarget';

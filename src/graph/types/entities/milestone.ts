@@ -4,8 +4,8 @@ type Milestone {
   ${defaultAttributes}
   title: String!
   description: String!
-  startsAt: String!
-  endsAt: String!
+  startsAt: String
+  endsAt: String
   project: Project!
   tasks: [Task]!
 }

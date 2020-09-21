@@ -1,6 +1,7 @@
-import { createDoesNoExistsError } from '@/configs/errors';
+import { createDoesNoExistsError, SmtpIsAlreadyBeingTestedError } from '@/configs/errors';
 import { models } from '@/models';
 import checkResolver from './checkResolver';
+import testSmtp from '@/services/testSmtp';
 
 const querries = {
   smtps: async (root, args, { req }) => {
@@ -47,6 +48,26 @@ const mutations = {
       throw createDoesNoExistsError('Smtp', id);
     }
     return Smtp.destroy();
+  },
+
+  testSmtp: async (root, { id }, { req }) => {
+    await checkResolver(req, ["smtps"]);
+    const Smtp = await models.Smtp.findByPk(id);
+    if (Smtp === null) {
+      throw createDoesNoExistsError('Smtp', id);
+    }
+    if (Smtp.get('currentlyTested')) {
+      throw SmtpIsAlreadyBeingTestedError;
+    }
+    testSmtp(Smtp);
+    return true;
+  },
+
+  testSmtps: async (_, __, { req }) => {
+    await checkResolver(req, ["smtps"]);
+    const Smtps = await models.Smtp.findAll({ where: { currentlyTested: false } });
+    Smtps.forEach((Smtp) => testSmtp(Smtp));
+    return true;
   },
 }
 

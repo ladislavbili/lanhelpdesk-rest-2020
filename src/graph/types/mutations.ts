@@ -3,7 +3,6 @@ import { CommentMutations } from './entities/comment';
 import { CompanyMutations } from './entities/company';
 import { CustomItemMutations } from './entities/customItem';
 import { ErrorMessageMutations } from './entities/errorMessage';
-import { EmailMutations } from './entities/email';
 import { FilterMutations } from './entities/filter';
 import { ImapMutations } from './entities/imap';
 import { MaterialMutations } from './entities/material';
@@ -29,7 +28,6 @@ type Mutation {
   ${CommentMutations}
   ${CustomItemMutations}
   ${ErrorMessageMutations}
-  ${EmailMutations}
   ${FilterMutations}
   ${ImapMutations}
   ${MaterialMutations}

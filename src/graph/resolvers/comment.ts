@@ -1,9 +1,24 @@
-import { createDoesNoExistsError, AssignedToUserNotSolvingTheTask, InternalMessagesNotAllowed } from '@/configs/errors';
+import {
+  createDoesNoExistsError,
+  AssignedToUserNotSolvingTheTask,
+  InternalMessagesNotAllowed,
+  EmailNoRecipientError,
+  createWrongEmailsError,
+  CommentNotEmailError,
+  EmailAlreadySendError
+} from '@/configs/errors';
 import { models } from '@/models';
-import { checkIfHasProjectRights } from '@/helperFunctions';
-import { RoleInstance, AccessRightsInstance, TaskInstance } from '@/models/instances';
+import { checkIfHasProjectRights, isEmail } from '@/helperFunctions';
+import sendEmail from '@/services/sendEmail'
+import { RoleInstance, AccessRightsInstance, TaskInstance, EmailTargetInstance, UserInstance } from '@/models/instances';
 import { Op } from 'sequelize';
 import checkResolver from './checkResolver';
+
+
+interface EmailResultInstance {
+  message: string;
+  error: boolean;
+}
 
 const querries = {
   comments: async (root, { taskId }, { req }) => {
@@ -64,6 +79,78 @@ const mutations = {
     }
     return NewComment;
   },
+
+  sendEmail: async (root, { task, parentCommentId, message, subject, tos }, { req }) => {
+    const SourceUser = await checkResolver(req, ['mailViaComment']);
+    await checkIfHasProjectRights(SourceUser.get('id'), task);
+    if (parentCommentId) {
+      const ParentComment = await models.Comment.findByPk(parentCommentId);
+      if (ParentComment === null || ParentComment.get('TaskId') !== task) {
+        throw createDoesNoExistsError('Parent comment', parentCommentId);
+      }
+    }
+    if (tos.length === 0) {
+      throw EmailNoRecipientError;
+    }
+    if (tos.some((address) => !isEmail(address))) {
+      throw createWrongEmailsError(tos.filter((address) => !isEmail(address)));
+    }
+    let emailResult = <EmailResultInstance>await sendEmail(message, null, subject, tos, SourceUser.get('email'));
+    let savedResult = { emailSend: true, emailError: null };
+    if (emailResult.error) {
+      savedResult = { emailSend: false, emailError: emailResult.message }
+    }
+    const NewComment = await models.Comment.create({
+      message,
+      UserId: SourceUser.get('id'),
+      TaskId: task,
+      commentOfId: parentCommentId || null,
+      internal: false,
+      subject,
+      isEmail: true,
+      ...savedResult,
+      isParent: parentCommentId === null || parentCommentId === undefined,
+      EmailTargets: tos.map((to) => { address: to }),
+    }, { include: [{ model: models.emailTarget }] });
+    models.TaskChange.create({
+      UserId: SourceUser.get('id'),
+      TaskId: task,
+      TaskChangeMessages: [{
+        type: 'email',
+        originalValue: null,
+        newValue: null,
+        message: `${SourceUser.get('fullName')} send email from the task.`,
+      }]
+    }, { include: [{ model: models.TaskChangeMessage }] });
+    return NewComment;
+  },
+  resendEmail: async (root, { messageId }, { req }) => {
+    const SourceUser = await checkResolver(req, ['mailViaComment']);
+    const Comment = await models.Comment.findByPk(messageId, { include: [{ model: models.User }, { model: models.EmailTarget }] });
+    if (Comment === null) {
+      throw createDoesNoExistsError('Comment', messageId);
+    }
+    await checkIfHasProjectRights(SourceUser.get('id'), Comment.get('TaskId'));
+    if (!Comment.get('isEmail')) {
+      throw CommentNotEmailError;
+    }
+    if (!Comment.get('emailSend')) {
+      throw EmailAlreadySendError;
+    }
+    let emailResult = <EmailResultInstance>await sendEmail(
+      Comment.get('message'),
+      null,
+      Comment.get('subject'),
+      (<EmailTargetInstance[]>Comment.get('EmailTargets')).map((EmailTarget) => EmailTarget.get('address')),
+      (<UserInstance>Comment.get('User')).get('email')
+    );
+    if (emailResult.error) {
+      await Comment.update({ emailError: emailResult.message })
+    } else {
+      await Comment.update({ emailError: null })
+    }
+    return Comment;
+  },
 }
 
 const attributes = {
@@ -83,6 +170,11 @@ const attributes = {
     async parentCommentId(comment) {
       return comment.get('CommentId')
     },
+    async tos(comment) {
+      const EmailTargets = await comment.getEmailTargets();
+      return EmailTargets.map((emailTarget) => emailTarget.get('address'));
+    },
+
   }
 };
 

@@ -65,6 +65,7 @@ const mutations = {
     if (ProjectRights === undefined || !ProjectRights.get('admin')) {
       throw NoAccessToThisProjectError;
     }
+    await models.Task.update({ pendingChangable: false }, { where: { pendingChangable: true, MilestoneId: id } });
     return Milestone.destroy();
   },
 }

@@ -101,3 +101,17 @@ export const CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError = new Apo
 
 //calendar events
 export const CalendarEventCantEndBeforeStartingError = new ApolloError("Start date of the task event is after its end.", "EVENT_CANT_END_BEFORE_STARTING");
+
+//SMTP check
+export const SmtpIsAlreadyBeingTestedError = new ApolloError("This Smtp is being tested!", "SMTP_ALREADY_TESTING");
+
+//email check
+export const EmailNoRecipientError = new ApolloError("Email has no recipient!", "EMAIL_NO_RECIPIENT");
+
+export const createWrongEmailsError = (tos): ApolloError => {
+  return new ApolloError(`${tos.toString()} are not e-mail addresses!`, "EMAIL_WRONG_ADDRESSES")
+}
+
+export const CommentNotEmailError = new ApolloError("This comment si not an e-mail!", "COMMENT_NOT_EMAIL");
+
+export const EmailAlreadySendError = new ApolloError("E-mail was already send!", "EMAIL_ALREADY_SEND");

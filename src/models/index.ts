@@ -30,7 +30,6 @@ import defineWorkTrips from './instances/workTrip';
 import defineMaterials from './instances/material';
 import defineCustomItems from './instances/customItem';
 import defineComments from './instances/comment';
-import defineEmails from './instances/email';
 import defineEmailTargets from './instances/emailTarget';
 import defineCalendarEvents from './instances/calendarEvent';
 import defineTaskChanges from './instances/taskChange';
@@ -262,7 +261,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
 
   defineComments(sequelize);
   models.User.hasMany(models.Comment, { onDelete: 'CASCADE' });
-  models.Comment.belongsTo(models.User, { foreignKey: { allowNull: false } });
+  models.Comment.belongsTo(models.User);
 
   models.Task.hasMany(models.Comment, { onDelete: 'CASCADE' });
   models.Comment.belongsTo(models.Task, { foreignKey: { allowNull: false } });
@@ -270,18 +269,10 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   models.Comment.belongsTo(models.Comment, { as: 'commentOf' });
   models.Comment.hasMany(models.Comment, { onDelete: 'CASCADE' });
 
-
-  defineEmails(sequelize);
-  models.User.hasMany(models.Email, { onDelete: 'CASCADE' });
-  models.Email.belongsTo(models.User);
-
-  models.Task.hasMany(models.Email, { onDelete: 'CASCADE' });
-  models.Email.belongsTo(models.Task, { foreignKey: { allowNull: false } });
-
   defineEmailTargets(sequelize);
 
-  models.Email.hasMany(models.EmailTarget, { onDelete: 'CASCADE' });
-  models.EmailTarget.belongsTo(models.Email, { foreignKey: { allowNull: false } });
+  models.Comment.hasMany(models.EmailTarget, { onDelete: 'CASCADE' });
+  models.EmailTarget.belongsTo(models.Comment, { foreignKey: { allowNull: false } });
 
   defineCalendarEvents(sequelize);
   models.Task.hasMany(models.CalendarEvent, { onDelete: 'CASCADE' });
@@ -300,7 +291,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   models.TaskChangeMessage.belongsTo(models.TaskChange, { foreignKey: { allowNull: false } });
 
   //LOG FUNCTIONS
-  //logFunctionsOfModel(models.Task);
+  //logFunctionsOfModel(models.Comment);
   /*
   Todo list
     -calendar events (start end task) - only when can edit task

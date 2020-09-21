@@ -2,6 +2,8 @@ import { createDoesNoExistsError, createCantBeNegativeError, EditedRentNotOfComp
 import { models, sequelize } from '@/models';
 import { UserInstance, CompanyInstance, CompanyRentInstance, ProjectInstance, TaskInstance } from '@/models/instances';
 import { splitArrayByFilter, addApolloError } from '@/helperFunctions';
+import { Op } from 'sequelize';
+import moment from 'moment';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -188,6 +190,41 @@ const attributes = {
     async companyRents(company) {
       return company.getCompanyRents()
     },
+    async usedSubtaskPausal(company) {
+      const fullTasks = await company.getTasks(
+        {
+          include: [{ model: models.Subtask }],
+          where: {
+            closeDate: {
+              [Op.gte]: moment().startOf('month').toDate()
+            }
+          }
+        }
+      );
+      return fullTasks.reduce((acc1, task) => {
+        console.log(task);
+
+        return acc1 + task.get('Subtasks').reduce((acc2, subtask) => acc2 + subtask.get('quantity'), 0)
+      }, 0);
+    },
+    async usedTripPausal(company) {
+      const fullTasks = await company.getTasks(
+        {
+          include: [{ model: models.WorkTrip }],
+          where: {
+            closeDate: {
+              [Op.gte]: moment().startOf('month').toDate()
+            }
+          }
+        }
+      );
+      return fullTasks.reduce((acc1, task) => {
+        console.log(task);
+
+        return acc1 + task.get('WorkTrips').reduce((acc2, trip) => acc2 + trip.get('quantity'), 0)
+      }, 0);
+    },
+
   },
   BasicCompany: {
     async pricelist(company) {
@@ -195,6 +232,40 @@ const attributes = {
     },
     async users(company) {
       return company.getUsers()
+    },
+    async usedSubtaskPausal(company) {
+      const fullTasks = await company.getTasks(
+        {
+          include: [{ model: models.Subtask }],
+          where: {
+            closeDate: {
+              [Op.gte]: moment().startOf('month').toDate()
+            }
+          }
+        }
+      );
+      return fullTasks.reduce((acc1, task) => {
+        console.log(task);
+
+        return acc1 + task.get('Subtasks').reduce((acc2, subtask) => acc2 + subtask.get('quantity'), 0)
+      }, 0);
+    },
+    async usedTripPausal(company) {
+      const fullTasks = await company.getTasks(
+        {
+          include: [{ model: models.WorkTrip }],
+          where: {
+            closeDate: {
+              [Op.gte]: moment().startOf('month').toDate()
+            }
+          }
+        }
+      );
+      return fullTasks.reduce((acc1, task) => {
+        console.log(task);
+
+        return acc1 + task.get('WorkTrips').reduce((acc2, trip) => acc2 + trip.get('quantity'), 0)
+      }, 0);
     }
   },
 };
