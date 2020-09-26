@@ -104,6 +104,7 @@ export const CalendarEventCantEndBeforeStartingError = new ApolloError("Start da
 
 //SMTP check
 export const SmtpIsAlreadyBeingTestedError = new ApolloError("This Smtp is being tested!", "SMTP_ALREADY_TESTING");
+export const IfNotWellKnownSetComunicationError = new ApolloError("If attribute wellKnown is null, you must set attributes host, port, rejectUnauthorized, secure!", "SMTP_MISSING_ATTRIBUTES");
 
 //email check
 export const EmailNoRecipientError = new ApolloError("Email has no recipient!", "EMAIL_NO_RECIPIENT");
@@ -115,3 +116,7 @@ export const createWrongEmailsError = (tos): ApolloError => {
 export const CommentNotEmailError = new ApolloError("This comment si not an e-mail!", "COMMENT_NOT_EMAIL");
 
 export const EmailAlreadySendError = new ApolloError("E-mail was already send!", "EMAIL_ALREADY_SEND");
+
+//Imap check
+export const ImapIsAlreadyBeingTestedError = new ApolloError("This Imap is being tested!", "IMAP_ALREADY_TESTING");
+export const ImapRoleLevelTooLowError = new ApolloError("Imap can't get assigned role with lower level than yours!", "IMAP_ROLE_LEVEL_TOO_LOW");

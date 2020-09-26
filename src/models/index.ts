@@ -92,7 +92,15 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   models.CompanyRent.belongsTo(models.Company, { foreignKey: { allowNull: false } });
 
   defineSmtps(sequelize);
+
   defineImaps(sequelize);
+  //PROJECT - IMAP
+  models.Role.hasMany(models.Imap, { foreignKey: { allowNull: false } });
+  models.Imap.belongsTo(models.Role, { foreignKey: { allowNull: false } });
+
+  models.Company.hasMany(models.Imap, { foreignKey: { allowNull: false } });
+  models.Imap.belongsTo(models.Company, { foreignKey: { allowNull: false } });
+
   defineStatuses(sequelize);
 
   models.Status.belongsToMany(models.User, { through: 'user_set_statuses' });
@@ -104,6 +112,10 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   //PROJECT RIGHTS - USERS
   models.User.hasMany(models.ProjectRight, { onDelete: 'CASCADE' });
   models.ProjectRight.belongsTo(models.User, { foreignKey: { allowNull: false } });
+
+  //PROJECT - IMAP
+  models.Project.hasMany(models.Imap, { foreignKey: { allowNull: false } });
+  models.Imap.belongsTo(models.Project, { foreignKey: { allowNull: false } });
 
   //PROJECT - PROJECT RIGHTS
   models.Project.hasMany(models.ProjectRight, { onDelete: 'CASCADE' });
@@ -180,7 +192,6 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineRepeats(sequelize);
   //TASKS
   defineTasks(sequelize);
-
   //TASKS - USER NOTIFICATION - DELETED
   models.UserNotification.belongsTo(models.Task, { foreignKey: { allowNull: false } });
   models.Task.hasMany(models.UserNotification, { onDelete: 'CASCADE' });
@@ -291,7 +302,8 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   models.TaskChangeMessage.belongsTo(models.TaskChange, { foreignKey: { allowNull: false } });
 
   //LOG FUNCTIONS
-  //logFunctionsOfModel(models.Comment);
+
+  //logFunctionsOfModel(models.Role);
   /*
   Todo list
     -calendar events (start end task) - only when can edit task

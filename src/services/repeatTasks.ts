@@ -38,7 +38,6 @@ async function updateRepeat(repeat) {
   const { repeatEvery, repeatInterval, startsAt, id } = repeat.get();
   const timer = timers.find((existingTimer) => existingTimer.id === id);
   timer.stopTimer();
-  //nastavit add funkciu
   timer.setTimer(moment(startsAt).valueOf(), getMinutes(repeatEvery, repeatInterval), [() => addTask(repeat)])
   timer.restart();
 }

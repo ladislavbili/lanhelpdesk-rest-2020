@@ -9,7 +9,7 @@ export interface CommentInstance extends DefaultInstance {
   //from user
   //task
   //parentcomment
-  //emailTagets
+  //emailTagrets
   internal: boolean;
   subject: string;
   isEmail: boolean;

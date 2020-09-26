@@ -1,7 +1,7 @@
-import { createDoesNoExistsError, SmtpIsAlreadyBeingTestedError } from '@/configs/errors';
+import { createDoesNoExistsError, SmtpIsAlreadyBeingTestedError, IfNotWellKnownSetComunicationError } from '@/configs/errors';
 import { models } from '@/models';
 import checkResolver from './checkResolver';
-import testSmtp from '@/services/testSmtp';
+import { testSmtp } from '@/services/smtp';
 
 const querries = {
   smtps: async (root, args, { req }) => {
@@ -23,6 +23,9 @@ const mutations = {
 
   addSmtp: async (root, args, { req }) => {
     await checkResolver(req, ["smtps"]);
+    if (args.wellKnown === null && ["host", "port", "rejectUnauthorized", "secure"].some((att) => args[att] === null)) {
+      throw IfNotWellKnownSetComunicationError;
+    }
     if (args.def) {
       await models.Smtp.update({ def: false }, { where: { def: true } })
     }
@@ -34,6 +37,9 @@ const mutations = {
     const Smtp = await models.Smtp.findByPk(id);
     if (Smtp === null) {
       throw createDoesNoExistsError('Smtp', id);
+    }
+    if (args.wellKnown === null && ["host", "port", "rejectUnauthorized", "secure"].some((att) => args[att] === null)) {
+      throw IfNotWellKnownSetComunicationError;
     }
     if (args.def) {
       await models.Smtp.update({ def: false }, { where: { def: true } })

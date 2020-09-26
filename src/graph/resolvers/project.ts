@@ -2,7 +2,7 @@ import { createDoesNoExistsError, NotAdminOfProjectNorManagesProjects } from '@/
 import { models, sequelize } from '@/models';
 import checkResolver from './checkResolver';
 import { flattenObject, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, addApolloError } from '@/helperFunctions';
-import { ProjectInstance, ProjectRightInstance, RoleInstance, AccessRightsInstance, TaskInstance } from '@/models/instances';
+import { ProjectInstance, ProjectRightInstance, RoleInstance, AccessRightsInstance, TaskInstance, ImapInstance } from '@/models/instances';
 import { pubsub } from './index';
 import { TASK_CHANGE } from '@/configs/subscriptions';
 import { ApolloError } from 'apollo-server-express';
@@ -176,12 +176,18 @@ const mutations = {
 
   deleteProject: async (root, { id, newId }, { req }) => {
     await checkResolver(req, ["projects"]);
-    const Project = await models.Project.findByPk(id, { include: [{ model: models.Task }] });
+    const Project = await models.Project.findByPk(id, { include: [{ model: models.Task }, { model: models.Imap }] });
     if (Project === null) {
       throw createDoesNoExistsError('Project', id);
     }
+    const NewProject = await models.Project.findByPk(newId);
+    if (NewProject === null) {
+      throw createDoesNoExistsError('New project', newId);
+    }
     const Tasks = <TaskInstance[]>await Project.get('Tasks');
     pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'delete', data: null, ids: Tasks.forEach((Task) => Task.get('id')) } });
+    const Imaps = <ImapInstance[]>await Project.get('Imaps');
+    await Promise.all(Imaps.map((Imap) => Imap.setProject(newId)));
     return Project.destroy();
   },
 
@@ -200,6 +206,9 @@ const attributes = {
     },
     async milestones(project) {
       return project.getMilestones()
+    },
+    async imaps(project) {
+      return project.getImaps()
     },
   },
   BasicProject: {

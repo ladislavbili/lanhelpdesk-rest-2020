@@ -1,6 +1,6 @@
 import { createDoesNoExistsError, createCantBeNegativeError, EditedRentNotOfCompanyError } from '@/configs/errors';
 import { models, sequelize } from '@/models';
-import { UserInstance, CompanyInstance, CompanyRentInstance, ProjectInstance, TaskInstance } from '@/models/instances';
+import { UserInstance, CompanyInstance, CompanyRentInstance, ProjectInstance, TaskInstance, ImapInstance } from '@/models/instances';
 import { splitArrayByFilter, addApolloError } from '@/helperFunctions';
 import { Op } from 'sequelize';
 import moment from 'moment';
@@ -149,7 +149,10 @@ const mutations = {
     const OldCompany = await models.Company.findByPk(id,
       {
         include: [
-          { model: models.Project, as: 'defCompany' }
+          { model: models.Project, as: 'defCompany' },
+          { model: models.Imap },
+          { model: models.User },
+          { model: models.Task }
         ]
       }
     );
@@ -161,26 +164,22 @@ const mutations = {
     if (NewCompany === null) {
       throw createDoesNoExistsError('New company', newId);
     }
-    const allUsers = await models.User.findAll({ where: { CompanyId: id } });
-    await Promise.all(allUsers.map(user => (user as UserInstance).setCompany(newId)));
-
-    const allTasks = await models.Task.findAll({ where: { CompanyId: id } });
-    await Promise.all(allTasks.map(task => (task as TaskInstance).setCompany(newId)));
-
-    await Promise.all(
-      (<ProjectInstance[]>OldCompany.get('defCompany')).map((project) => {
-        return project.setDefCompany(newId);
-      })
-    )
-
-    //setDefCompany(null);
-
+    let promises = [
+      ...(<UserInstance[]>OldCompany.get('Users')).map(user => user.setCompany(newId)),
+      ...(<TaskInstance[]>OldCompany.get('Tasks')).map(task => task.setCompany(newId)),
+      ...(<ImapInstance[]>OldCompany.get('Imaps')).map(imap => imap.setCompany(newId)),
+      ...(<ProjectInstance[]>OldCompany.get('defCompany')).map((project) => project.setDefCompany(newId)),
+    ];
+    await Promise.all(promises);
     return OldCompany.destroy();
   },
 }
 
 const attributes = {
   Company: {
+    async imaps(company) {
+      return company.getImaps()
+    },
     async pricelist(company) {
       return company.getPricelist()
     },

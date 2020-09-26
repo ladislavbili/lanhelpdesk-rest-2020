@@ -9,7 +9,7 @@ import {
 } from '@/configs/errors';
 import { models } from '@/models';
 import { checkIfHasProjectRights, isEmail } from '@/helperFunctions';
-import sendEmail from '@/services/sendEmail'
+import { sendEmail } from '@/services/smtp'
 import { RoleInstance, AccessRightsInstance, TaskInstance, EmailTargetInstance, UserInstance } from '@/models/instances';
 import { Op } from 'sequelize';
 import checkResolver from './checkResolver';
@@ -95,7 +95,7 @@ const mutations = {
     if (tos.some((address) => !isEmail(address))) {
       throw createWrongEmailsError(tos.filter((address) => !isEmail(address)));
     }
-    let emailResult = <EmailResultInstance>await sendEmail(message, null, subject, tos, SourceUser.get('email'));
+    let emailResult = <EmailResultInstance>await sendEmail(message, message, subject, tos, SourceUser.get('email'));
     let savedResult = { emailSend: true, emailError: null };
     if (emailResult.error) {
       savedResult = { emailSend: false, emailError: emailResult.message }
@@ -110,8 +110,8 @@ const mutations = {
       isEmail: true,
       ...savedResult,
       isParent: parentCommentId === null || parentCommentId === undefined,
-      EmailTargets: tos.map((to) => { address: to }),
-    }, { include: [{ model: models.emailTarget }] });
+      EmailTargets: tos.map((to) => ({ address: to })),
+    }, { include: [models.EmailTarget] });
     models.TaskChange.create({
       UserId: SourceUser.get('id'),
       TaskId: task,
@@ -120,7 +120,7 @@ const mutations = {
         originalValue: null,
         newValue: null,
         message: `${SourceUser.get('fullName')} send email from the task.`,
-      }]
+      }],
     }, { include: [{ model: models.TaskChangeMessage }] });
     return NewComment;
   },

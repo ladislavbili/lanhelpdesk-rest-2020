@@ -188,7 +188,7 @@ const mutations = {
       closeDate: null,
       pendingDate: null,
       pendingChangable: false,
-      statusChange: moment().unix() * 1000,
+      statusChange: moment().valueOf(),
       invoicedDate: null,
     }
     const Status = await models.Status.findByPk(status);

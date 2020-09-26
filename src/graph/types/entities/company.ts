@@ -25,6 +25,7 @@ type Company {
   pricelist: Pricelist!
   users: [BasicUser]
   companyRents: [CompanyRent]
+  imaps: [Imap]!
 }
 
 type BasicCompany {

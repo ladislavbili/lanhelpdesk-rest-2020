@@ -101,9 +101,31 @@ const mutations = {
 
     if (pub) {
       await idsDoExistsCheck(roles, models.Role);
-      const newFilter = <FilterInstance>await models.Filter.create({
+      const newFilter = <FilterInstance>await models.Filter.create(
+        {
+          ...args,
+          order,
+          ProjectId: projectId,
+          filterCreatedById: User.get('id'),
+          filterAssignedToId: assignedTo ? assignedTo : null,
+          filterRequesterId: requester ? requester : null,
+          filterCompanyId: company ? company : null,
+          filterTaskTypeId: taskType ? taskType : null,
+          ...directFilterParams,
+          ...dates,
+          pub: true,
+          FilterOneOfs: oneOf.map((item) => ({ input: item })),
+        },
+        {
+          include: [{ model: models.FilterOneOf }]
+        }
+      );
+      newFilter.setRoles(roles);
+      return newFilter;
+    }
+    return models.Filter.create(
+      {
         ...args,
-        order,
         ProjectId: projectId,
         filterCreatedById: User.get('id'),
         filterAssignedToId: assignedTo ? assignedTo : null,
@@ -111,28 +133,13 @@ const mutations = {
         filterCompanyId: company ? company : null,
         filterTaskTypeId: taskType ? taskType : null,
         ...directFilterParams,
-        ...dates,
-        pub: true,
+        pub: false,
         FilterOneOfs: oneOf.map((item) => ({ input: item })),
-      }, {
-          include: [{ model: models.FilterOneOf }]
-        });
-      return newFilter.setRoles(roles);
-    }
-    return models.Filter.create({
-      ...args,
-      ProjectId: projectId,
-      filterCreatedById: User.get('id'),
-      filterAssignedToId: assignedTo ? assignedTo : null,
-      filterRequesterId: requester ? requester : null,
-      filterCompanyId: company ? company : null,
-      filterTaskTypeId: taskType ? taskType : null,
-      ...directFilterParams,
-      pub: false,
-      FilterOneOfs: oneOf.map((item) => ({ input: item })),
-    }, {
+      },
+      {
         include: [{ model: models.FilterOneOf }]
-      });
+      }
+    );
   },
 
   addPublicFilter: async (root, { roles, filter, order, projectId, ...args }, { req }) => {
@@ -183,7 +190,8 @@ const mutations = {
     }, {
         include: [{ model: models.FilterOneOf }]
       });
-    return newFilter.setRoles(roles);
+    await newFilter.setRoles(roles);
+    return newFilter;
   },
 
   //updateFilter - id! title pub! global! dashboard! filter order roles projectId

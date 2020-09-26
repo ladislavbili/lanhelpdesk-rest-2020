@@ -17,6 +17,7 @@ export default class TriggerableTimer {
   id: any;
   timeoutID: any;
   removeFunction: any;
+
   constructor(startAt, repeatEvery, triggerFunctions, removeFunction, id = null, maxWaitingPeriod = 30, minWaitingPeriod = 1, acceptableDelay = 0) {
     this.maxWaitingPeriod = maxWaitingPeriod * minute;
     this.minWaitingPeriod = minWaitingPeriod * minute;

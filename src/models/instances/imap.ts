@@ -2,6 +2,7 @@ import { Sequelize, DataTypes } from "sequelize";
 import DefaultInstance from './defaultInstance';
 
 export interface ImapInstance extends DefaultInstance {
+  active: boolean;
   title: string;
   order: number;
   def: boolean;
@@ -10,16 +11,28 @@ export interface ImapInstance extends DefaultInstance {
   username: string;
   password: string;
   rejectUnauthorized: boolean;
-  tsl: boolean;
+  tls: boolean;
+  destination: string;
+  ignoredRecieversDestination: string;
+  ignoredRecievers: string;
   currentlyTested: boolean;
   errorMessage: string;
   working: boolean;
+
+  setProject?: any;
+  setRole?: any;
+  setCompany?: any;
 }
 
 export default function defineImaps(sequelize: Sequelize) {
   sequelize.define<ImapInstance>(
     "Imap",
     {
+      active: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       title: {
         type: DataTypes.TEXT,
         allowNull: false,
@@ -56,10 +69,24 @@ export default function defineImaps(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: false,
       },
-      tsl: {
+      tls: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+      },
+      destination: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        defaultValue: "Finished"
+      },
+      ignoredRecievers: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      ignoredRecieversDestination: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        defaultValue: "Service e-mails"
       },
       currentlyTested: {
         type: DataTypes.BOOLEAN,

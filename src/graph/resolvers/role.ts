@@ -7,7 +7,7 @@ import {
   SetRoleLevelTooLowError
 } from '@/configs/errors';
 import { models } from '@/models';
-import { UserInstance, RoleInstance, AccessRightsInstance } from '@/models/instances';
+import { UserInstance, RoleInstance, AccessRightsInstance, ImapInstance } from '@/models/instances';
 import { addApolloError } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
@@ -95,7 +95,7 @@ const mutations = {
   deleteRole: async (root, { id, newId }, { req, userID }) => {
     //kontrola prav a ziskanie prav pouzivatela, upravovanej role, a nahradnej role
     const User = await checkResolver(req, ['roles']);
-    const OldRole = await models.Role.findByPk(id);
+    const OldRole = await models.Role.findByPk(id, { include: [{ model: models.User }, { model: models.Imap }] });
     const NewRole = await models.Role.findByPk(newId);
     if (OldRole === null) {
       throw createDoesNoExistsError('Role', id);
@@ -124,8 +124,10 @@ const mutations = {
       throw SetRoleLevelTooLowError;
     }
 
-    const allUsers = await models.User.findAll({ where: { RoleId: id } });
-    await Promise.all(allUsers.map(user => (user as UserInstance).setRole(newId)));
+    const allUsers = <UserInstance[]>OldRole.get('Users');
+    await Promise.all(allUsers.map(user => user.setRole(newId)));
+    const Imaps = <ImapInstance[]>await OldRole.get('Imaps');
+    await Promise.all(Imaps.map((Imap) => Imap.setRole(newId)));
     return OldRole.destroy();
   },
 }
@@ -151,7 +153,10 @@ const attributes = {
     },
     async accessRights(role) {
       return role.getAccessRight()
-    }
+    },
+    async imaps(role) {
+      return role.getImaps()
+    },
   },
   BasicRole: {
     async accessRights(role) {

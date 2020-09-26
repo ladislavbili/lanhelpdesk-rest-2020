@@ -14,6 +14,7 @@ export interface SmtpInstance extends DefaultInstance {
   currentlyTested: boolean;
   errorMessage: string;
   working: boolean;
+  wellKnown: string;
 }
 
 export default function defineSmtps(sequelize: Sequelize) {
@@ -36,11 +37,11 @@ export default function defineSmtps(sequelize: Sequelize) {
       },
       host: {
         type: DataTypes.TEXT,
-        allowNull: false,
+        allowNull: true,
       },
       port: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
         defaultValue: 0
       },
       username: {
@@ -53,12 +54,12 @@ export default function defineSmtps(sequelize: Sequelize) {
       },
       rejectUnauthorized: {
         type: DataTypes.BOOLEAN,
-        allowNull: false,
+        allowNull: true,
         defaultValue: false,
       },
       secure: {
         type: DataTypes.BOOLEAN,
-        allowNull: false,
+        allowNull: true,
         defaultValue: false,
       },
       currentlyTested: {
@@ -74,6 +75,10 @@ export default function defineSmtps(sequelize: Sequelize) {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+      },
+      wellKnown: {
+        type: DataTypes.TEXT,
+        allowNull: true,
       },
     },
     {

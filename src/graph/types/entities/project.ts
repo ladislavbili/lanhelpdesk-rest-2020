@@ -11,6 +11,7 @@ type Project {
   def: ProjectDefaults!
   filters: [BasicFilter]
   milestones: [Milestone]!
+  imaps: [Imap]!
 }
 
 type BasicProject {

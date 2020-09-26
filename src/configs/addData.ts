@@ -35,7 +35,7 @@ async function createCompany() {
   });
 }
 
-async function addUser({ password, roleId, companyId, language, ...targetUserData }) {
+export async function addUser({ password, roleId, companyId, language, ...targetUserData }) {
   const hashedPassword = await hash(password, 12);
   return models.User.create({
     ...targetUserData,
