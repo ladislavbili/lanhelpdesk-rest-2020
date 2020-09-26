@@ -9,7 +9,7 @@ import saveEmailOrCreateTask from './saveEmailOrCreateTask';
 export const imapEvent = new events.EventEmitter();
 
 let imaps = [];
-export default function readEmails() {
+export function readEmails() {
   imapEvent.on('add', addImap);
   imapEvent.on('update', updateImap);
   imapEvent.on('delete', deleteImap);

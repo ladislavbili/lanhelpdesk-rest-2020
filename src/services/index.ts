@@ -1,5 +1,5 @@
 import startRepeatTasks from './repeatTasks';
-import startReadEmails from './imap/readEmails';
+import { readEmails as startReadEmails } from './imap';
 
 export default function startServices() {
   startRepeatTasks();
