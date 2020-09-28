@@ -46,3 +46,9 @@ export default function defineProjectRights(sequelize: Sequelize) {
     }
   );
 }
+
+export function createProjectRightsAssoc(models) {
+  models.ProjectRight.belongsTo(models.User, { foreignKey: { allowNull: false } });
+
+  models.ProjectRight.belongsTo(models.Project, { foreignKey: { allowNull: false } });
+}

@@ -21,3 +21,7 @@ export default function defineFilterOneOf(sequelize: Sequelize) {
     }
   );
 }
+
+export function createFilterOneOfAssoc(models) {
+  models.FilterOneOf.belongsTo(models.Filter, { foreignKey: { allowNull: false } });
+}

@@ -106,3 +106,45 @@ export default function defineUsers(sequelize: Sequelize) {
     }
   );
 }
+
+export function createUsersAssoc(models) {
+  models.User.belongsTo(models.Role, { foreignKey: { allowNull: false } });
+
+  models.User.hasMany(models.Token);
+
+  models.User.belongsTo(models.Company, { foreignKey: { allowNull: false } });
+
+  models.User.belongsToMany(models.Status, { through: 'user_set_statuses' });
+
+  models.User.hasMany(models.ProjectRight, { onDelete: 'CASCADE' });
+
+  models.User.belongsToMany(models.Project, { as: { singular: "defAssignedTo", plural: "defAssignedTos" }, through: 'project_def_assignedTos' });
+
+  models.User.hasMany(models.Project, { as: 'defRequester' });
+
+  models.User.hasMany(models.ErrorMessage);
+
+  models.User.hasMany(models.UserNotification);
+
+  models.User.hasMany(models.Filter, { as: 'filterCreatedBy' });
+
+  models.User.hasMany(models.Filter, { as: 'filterAssignedTo' });
+
+  models.User.hasMany(models.Filter, { as: 'filterRequester' });
+
+  models.User.belongsToMany(models.Task, { as: { singular: "assignedToTask", plural: "assignedToTasks" }, through: 'task_assignedTo' });
+
+  models.User.hasMany(models.Task, { as: 'createdTask' });
+
+  models.User.hasMany(models.Task, { as: { singular: 'requesterTask', plural: 'requesterTasks' } });
+
+  models.User.hasMany(models.Subtask);
+
+  models.User.hasMany(models.WorkTrip);
+
+  models.User.hasMany(models.Comment, { onDelete: 'CASCADE' });
+
+  models.User.hasMany(models.TaskChange);
+
+  //models.User.hasMany(models.TaskAttachment, { onDelete: 'CASCADE' });
+}

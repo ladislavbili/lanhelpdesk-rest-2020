@@ -43,3 +43,7 @@ export default function defineErrorMessages(sequelize: Sequelize) {
     }
   );
 }
+
+export function createErrorMessagesAssoc(models) {
+  models.ErrorMessage.belongsTo(models.User);
+}

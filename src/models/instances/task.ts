@@ -105,3 +105,43 @@ export default function defineTasks(sequelize: Sequelize) {
     }
   );
 }
+
+export function createTasksAssoc(models) {
+  models.Task.hasMany(models.UserNotification, { onDelete: 'CASCADE' });
+
+  models.Task.belongsToMany(models.User, { as: { singular: "assignedTo", plural: "assignedTos" }, through: 'task_assignedTo' });
+
+  models.Task.belongsTo(models.Company, { foreignKey: { allowNull: false } });
+
+  models.Task.belongsTo(models.User, { as: 'createdBy' });
+
+  models.Task.belongsTo(models.Milestone);
+
+  models.Task.belongsTo(models.Project, { foreignKey: { allowNull: false } });
+
+  models.Task.belongsTo(models.User, { as: 'requester' });
+
+  models.Task.belongsTo(models.Status, { foreignKey: { allowNull: false } });
+
+  models.Task.belongsToMany(models.Tag, { through: 'task_has_tags' });
+
+  models.Task.belongsTo(models.TaskType);
+
+  models.Task.hasOne(models.Repeat, { onDelete: 'CASCADE' });
+
+  models.Task.hasMany(models.Subtask, { onDelete: 'CASCADE' });
+
+  models.Task.hasMany(models.WorkTrip, { onDelete: 'CASCADE' });
+
+  models.Task.hasMany(models.Material, { onDelete: 'CASCADE' });
+
+  models.Task.hasMany(models.CustomItem, { onDelete: 'CASCADE' });
+
+  models.Task.hasMany(models.Comment, { onDelete: 'CASCADE' });
+
+  models.Task.hasMany(models.CalendarEvent, { onDelete: 'CASCADE' });
+
+  models.Task.hasMany(models.TaskChange, { onDelete: 'CASCADE' });
+
+  //models.Task.hasMany(models.TaskAttachment, { onDelete: 'CASCADE' });
+}

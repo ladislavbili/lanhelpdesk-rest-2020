@@ -36,3 +36,7 @@ export default function defineTaskChangeMessages(sequelize: Sequelize) {
     }
   );
 }
+
+export function createTaskChangeMessagesAssoc(models) {
+  models.TaskChangeMessage.belongsTo(models.TaskChange, { foreignKey: { allowNull: false } });
+}

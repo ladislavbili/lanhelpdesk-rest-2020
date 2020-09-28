@@ -280,3 +280,28 @@ export default function defineProjects(sequelize: Sequelize) {
     }
   );
 }
+
+
+export function createProjectsAssoc(models) {
+  models.Project.hasMany(models.Imap, { foreignKey: { allowNull: false } });
+
+  models.Project.hasMany(models.ProjectRight, { onDelete: 'CASCADE' });
+
+  models.Project.belongsToMany(models.User, { as: { singular: "defAssignedTo", plural: "defAssignedTos" }, through: 'project_def_assignedTos' });
+
+  models.Project.belongsTo(models.Company, { as: 'defCompany' });
+
+  models.Project.belongsTo(models.User, { as: 'defRequester' });
+
+  models.Project.belongsTo(models.Status, { as: 'defStatus' });
+
+  models.Project.belongsToMany(models.Tag, { as: 'defTags', through: 'project_def_tags' });
+
+  models.Project.belongsTo(models.TaskType, { as: 'defTaskType' });
+
+  models.Project.hasMany(models.Filter, { as: { singular: "filterOfProject", plural: "filterOfProjects" } });
+
+  models.Project.hasMany(models.Milestone, { onDelete: 'CASCADE' });
+
+  models.Project.hasMany(models.Task, { onDelete: 'CASCADE' });
+}

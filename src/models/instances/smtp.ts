@@ -88,3 +88,7 @@ export default function defineSmtps(sequelize: Sequelize) {
     }
   );
 }
+
+export function createSmtpsAssoc(models) {
+
+}

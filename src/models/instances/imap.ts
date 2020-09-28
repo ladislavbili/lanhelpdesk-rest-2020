@@ -110,3 +110,11 @@ export default function defineImaps(sequelize: Sequelize) {
     }
   );
 }
+
+export function createImapsAssoc(models) {
+  models.Imap.belongsTo(models.Role, { foreignKey: { allowNull: false } });
+
+  models.Imap.belongsTo(models.Company, { foreignKey: { allowNull: false } });
+
+  models.Imap.belongsTo(models.Project, { foreignKey: { allowNull: false } });
+}

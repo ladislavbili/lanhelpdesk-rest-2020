@@ -29,3 +29,15 @@ export default function defineTaskTypes(sequelize: Sequelize) {
     }
   );
 }
+
+export function createTaskTypesAssoc(models) {
+  models.TaskType.hasMany(models.Price);
+
+  models.TaskType.hasMany(models.Project, { as: 'defTaskType' });
+
+  models.TaskType.hasMany(models.Filter, { as: 'filterTaskType' });
+
+  models.TaskType.hasMany(models.Task);
+
+  models.TaskType.hasMany(models.Subtask);
+}

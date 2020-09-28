@@ -52,3 +52,9 @@ export default function definePricelists(sequelize: Sequelize) {
     }
   );
 }
+
+export function createPricelistsAssoc(models) {
+  models.Pricelist.hasMany(models.Price, { onDelete: 'CASCADE' });
+
+  models.Pricelist.hasMany(models.Company);
+}

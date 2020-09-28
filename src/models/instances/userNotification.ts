@@ -28,3 +28,9 @@ export default function defineUserNotifications(sequelize: Sequelize) {
     }
   );
 }
+
+export function createUserNotificationsAssoc(models) {
+  models.UserNotification.belongsTo(models.User);
+
+  models.UserNotification.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+}

@@ -28,3 +28,9 @@ export default function defineTripTypes(sequelize: Sequelize) {
     }
   );
 }
+
+export function createTripTypesAssoc(models) {
+  models.TripType.hasMany(models.WorkTrip);
+
+  models.TripType.hasMany(models.Price);
+}

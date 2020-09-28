@@ -27,3 +27,7 @@ export default function defineCalendarEvents(sequelize: Sequelize) {
     }
   );
 }
+
+export function createCalendarEventsAssoc(models) {
+  models.CalendarEvent.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+}

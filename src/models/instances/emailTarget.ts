@@ -22,3 +22,7 @@ export default function defineEmailTargets(sequelize: Sequelize) {
     }
   );
 }
+
+export function createEmailTargetsAssoc(models) {
+  models.EmailTarget.belongsTo(models.Comment, { foreignKey: { allowNull: false } });
+}

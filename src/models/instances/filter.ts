@@ -225,3 +225,21 @@ export default function defineFilter(sequelize: Sequelize) {
     }
   );
 }
+
+export function createFilterAssoc(models) {
+  models.Filter.belongsTo(models.User, { as: 'filterCreatedBy' });
+
+  models.Filter.hasMany(models.FilterOneOf, { onDelete: 'CASCADE' });
+
+  models.Filter.belongsTo(models.User, { as: 'filterAssignedTo' });
+
+  models.Filter.belongsTo(models.User, { as: 'filterRequester' });
+
+  models.Filter.belongsTo(models.Company, { as: 'filterCompany' });
+
+  models.Filter.belongsTo(models.TaskType, { as: 'filterTaskType' });
+
+  models.Filter.belongsTo(models.Project, { as: 'filterOfProject' });
+
+  models.Filter.belongsToMany(models.Role, { through: 'filter_access_roles' });
+}

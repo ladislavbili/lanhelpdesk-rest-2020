@@ -37,3 +37,13 @@ export default function defineRole(sequelize: Sequelize) {
     }
   );
 }
+
+export function createRolesAssoc(models) {
+  models.Role.hasOne(models.AccessRights, { foreignKey: { allowNull: false }, onDelete: 'CASCADE' });
+
+  models.Role.hasMany(models.User);
+
+  models.Role.hasMany(models.Imap, { foreignKey: { allowNull: false } });
+
+  models.Role.belongsToMany(models.Filter, { through: 'filter_access_roles' });
+}

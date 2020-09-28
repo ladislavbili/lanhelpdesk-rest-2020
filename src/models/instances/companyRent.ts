@@ -46,3 +46,7 @@ export default function defineCompanyRents(sequelize: Sequelize) {
     }
   );
 }
+
+export function createCompanyRentsAssoc(models) {
+  models.CompanyRent.belongsTo(models.Company, { foreignKey: { allowNull: false } });
+}

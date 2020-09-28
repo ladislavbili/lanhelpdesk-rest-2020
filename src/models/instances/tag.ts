@@ -33,3 +33,9 @@ export default function defineTags(sequelize: Sequelize) {
     }
   );
 }
+
+export function createTagsAssoc(models) {
+  models.Tag.belongsToMany(models.Project, { as: 'defTags', through: 'project_def_tags' });
+
+  models.Tag.belongsToMany(models.Task, { through: 'task_has_tags' });
+}

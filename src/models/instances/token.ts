@@ -26,3 +26,7 @@ export default function defineTokens(sequelize: Sequelize) {
     }
   );
 }
+
+export function createTokensAssoc(models) {
+  models.Token.belongsTo(models.User);
+}

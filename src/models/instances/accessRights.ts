@@ -173,3 +173,7 @@ export default function defineAccessRights(sequelize: Sequelize) {
     }
   );
 }
+
+export function createAccessRightsAssoc(models) {
+  models.AccessRights.belongsTo(models.Role, { foreignKey: { allowNull: false } });
+}

@@ -99,7 +99,7 @@ function getMails(Imap) {
       let finished = 0;
       console.log(`we have ${messages.length} new message`);
 
-      messages.map((message) => {
+      messages.forEach((message) => {
         const all = lodash.find(message.parts, { "which": "" });
         const id = message.attributes.uid;
         const idHeader = "Imap-Id: " + id + "\r\n";
@@ -133,8 +133,14 @@ function getMails(Imap) {
             }
           })
           .catch(err => {
+            console.log('err 1', err);
+
           });
       })
+    }).catch((err) => {
+      console.log('err 2', err);
     })
+  }).catch((err) => {
+    console.log('err 3', err);
   })
 }

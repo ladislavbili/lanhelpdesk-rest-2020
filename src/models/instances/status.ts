@@ -46,3 +46,11 @@ export default function defineStatuses(sequelize: Sequelize) {
     }
   );
 }
+
+export function createStatusesAssoc(models) {
+  models.Status.belongsToMany(models.User, { through: 'user_set_statuses' });
+
+  models.Status.hasMany(models.Project, { as: 'defStatus' });
+
+  models.Status.hasMany(models.Task);
+}

@@ -15,10 +15,6 @@ import moment from 'moment';
 export default async function processEmail(email, Imap) {
   console.log('processing');
 
-  if (email.from.some((from) => from.address.includes(Imap.get('username')))) {
-    return;
-  }
-
   if (email.from.some((from) => !validator.validate(from.address))) {
     console.log("invalid e-mail!");
     sendEmail('Your message has not been delivered as your e-mail address was rejected. \n In case you feel like you are not breaking any rules please contact administrator.', '', 'Your message hasn\'t been delivered', email.from.map((item) => item.address), 'test@lanhelpdesk.com');
@@ -69,7 +65,7 @@ async function saveEmail(email, Imap) {
   const Users = await models.User.findAll({
     where: {
       email: {
-        [Op.or]: email.from
+        [Op.or]: email.from.map((item) => item.address)
       }
     }
   });
@@ -101,11 +97,15 @@ async function saveEmail(email, Imap) {
   if (!isNaN(taskId)) {
     Task = await models.Task.findByPk(taskId);
   }
+  console.log(Task);
+
   if (Task === null) {
     //createTask
     createTask(email, Imap, User, secret);
 
   } else {
+    console.log('adding comment');
+
     Task.addComment(
       {
         message: email.text,
@@ -124,11 +124,14 @@ async function saveEmail(email, Imap) {
         include: [{ model: models.EmailTarget }]
       }
     )
+    console.log('done adding comment');
   }
 
 }
 
 async function createTask(email, Imap, User, secret) {
+  console.log('create task');
+
   const Status = await models.Status.findOne({ where: { action: 'IsNew' } });
   const TaskType = await models.TaskType.findOne();
   const now = moment().valueOf();
@@ -136,7 +139,6 @@ async function createTask(email, Imap, User, secret) {
     title: email.subject,
     important: true,
     closeDate: null,
-    company: Imap.get('CompanyId'),
     deadline: null,
     description: email.text,
     milestone: null,
@@ -144,11 +146,12 @@ async function createTask(email, Imap, User, secret) {
     pausal: false,
     pendingChangable: false,
     pendingDate: null,
-    project: Imap.get('ProjectId'),
-    requester: User.get('id'),
-    createdBy: User.get('id'),
-    status: Status.get('id'),
-    taskType: TaskType.get('id'),
+    CompanyId: Imap.get('CompanyId'),
+    ProjectId: Imap.get('ProjectId'),
+    requesterId: User.get('id'),
+    createdById: User.get('id'),
+    StatusId: Status.get('id'),
+    TaskTypeId: TaskType.get('id'),
     statusChange: now,
 
     TaskChanges: [{
@@ -174,6 +177,7 @@ async function createTask(email, Imap, User, secret) {
       EmailTargets: [{ address: Imap.get('username') }],
     }],
   };
+
   const defaults = <any>await (<ProjectInstance>await models.Project.findByPk(Imap.get('ProjectId'))).get('def');
 
   (['overtime', 'pausal']).forEach((attribute) => {
@@ -205,7 +209,9 @@ async function createTask(email, Imap, User, secret) {
           ]
         }
       ]
-    });
+    }
+  );
+  console.log(' task created');
   if (defaults.assignedTo.def) {
     NewTask.setAssignedTos(defaults.assignedTo.value.map((value) => value.get('id')));
   }

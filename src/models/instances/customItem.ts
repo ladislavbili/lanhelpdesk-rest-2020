@@ -47,3 +47,7 @@ export default function defineCustomItems(sequelize: Sequelize) {
     }
   );
 }
+
+export function createCustomItemsAssoc(models) {
+  models.CustomItem.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+}

@@ -27,3 +27,11 @@ export default function definePrices(sequelize: Sequelize) {
     }
   );
 }
+
+export function createPricesAssoc(models) {
+  models.Price.belongsTo(models.Pricelist, { foreignKey: { allowNull: false } });
+
+  models.Price.belongsTo(models.TripType);
+
+  models.Price.belongsTo(models.TaskType);
+}

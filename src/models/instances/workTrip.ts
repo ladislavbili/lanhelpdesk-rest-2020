@@ -48,3 +48,11 @@ export default function defineWorkTrips(sequelize: Sequelize) {
     }
   );
 }
+
+export function createWorkTripsAssoc(models) {
+  models.WorkTrip.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+
+  models.WorkTrip.belongsTo(models.TripType);
+
+  models.WorkTrip.belongsTo(models.User);
+}

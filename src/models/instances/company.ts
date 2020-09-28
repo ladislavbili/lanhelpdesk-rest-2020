@@ -117,3 +117,19 @@ export default function defineCompanies(sequelize: Sequelize) {
     }
   );
 }
+
+export function createCompaniesAssoc(models) {
+  models.Company.belongsTo(models.Pricelist, { foreignKey: { allowNull: false } });
+
+  models.Company.hasMany(models.User);
+
+  models.Company.hasMany(models.CompanyRent, { foreignKey: { allowNull: false } });
+
+  models.Company.hasMany(models.Imap, { foreignKey: { allowNull: false } });
+
+  models.Company.hasMany(models.Project, { as: 'defCompany' });
+
+  models.Company.hasMany(models.Filter, { as: 'filterCompany' });
+
+  models.Company.hasMany(models.Task);
+}

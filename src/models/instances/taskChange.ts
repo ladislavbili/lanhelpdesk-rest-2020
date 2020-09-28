@@ -19,3 +19,11 @@ export default function defineTaskChanges(sequelize: Sequelize) {
     }
   );
 }
+
+export function createTaskChangesAssoc(models) {
+  models.TaskChange.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+
+  models.TaskChange.belongsTo(models.User);
+
+  models.TaskChange.hasMany(models.TaskChangeMessage, { onDelete: 'CASCADE' });
+}

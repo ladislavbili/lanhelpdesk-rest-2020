@@ -8,7 +8,7 @@ export interface MilestoneInstance extends DefaultInstance {
   endsAt: Date;
 }
 
-export default function defineMilestone( sequelize: Sequelize ){
+export default function defineMilestone(sequelize: Sequelize) {
   sequelize.define<MilestoneInstance>(
     "Milestone",
     {
@@ -34,4 +34,10 @@ export default function defineMilestone( sequelize: Sequelize ){
       // freezeTableName: true,
     }
   );
+}
+
+export function createMilestoneAssoc(models) {
+  models.Milestone.belongsTo(models.Project, { foreignKey: { allowNull: false } });
+
+  models.Milestone.hasMany(models.Task);
 }

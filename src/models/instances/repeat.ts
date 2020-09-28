@@ -7,7 +7,7 @@ export interface RepeatInstance extends DefaultInstance {
   startsAt: number;
 }
 
-export default function defineRepeats( sequelize: Sequelize ){
+export default function defineRepeats(sequelize: Sequelize) {
   sequelize.define<RepeatInstance>(
     "Repeat",
     {
@@ -30,4 +30,8 @@ export default function defineRepeats( sequelize: Sequelize ){
       // freezeTableName: true,
     }
   );
+}
+
+export function createRepeatsAssoc(models) {
+  models.Repeat.belongsTo(models.Task, { foreignKey: { allowNull: false } });
 }

@@ -78,3 +78,16 @@ export default function definecomments(sequelize: Sequelize) {
     }
   );
 }
+
+export function createCommentsAssoc(models) {
+  models.Comment.belongsTo(models.User);
+
+  models.Comment.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+
+  models.Comment.belongsTo(models.Comment, { as: 'commentOf' });
+
+  models.Comment.hasMany(models.Comment, { onDelete: 'CASCADE' });
+
+  models.Comment.hasMany(models.EmailTarget, { onDelete: 'CASCADE' });
+
+}
