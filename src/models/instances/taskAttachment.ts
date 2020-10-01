@@ -5,7 +5,7 @@ export interface TaskAttachmentInstance extends DefaultInstance {
   filename: string;
   mimetype: string;
   encoding: string;
-  data: any;
+  path: string;
   //task
 }
 
@@ -25,8 +25,8 @@ export default function defineTaskAttachments(sequelize: Sequelize) {
         type: DataTypes.TEXT,
         allowNull: false,
       },
-      data: {
-        type: DataTypes.BLOB({ length: "long" }),
+      path: {
+        type: DataTypes.TEXT,
         allowNull: false,
       },
     },
@@ -39,9 +39,6 @@ export default function defineTaskAttachments(sequelize: Sequelize) {
 }
 
 export function createTaskAttachmentsAssoc(models) {
-  /*
   models.TaskAttachment.belongsTo(models.User);
   models.TaskAttachment.belongsTo(models.Task, { foreignKey: { allowNull: false } });
-  */
-
 }

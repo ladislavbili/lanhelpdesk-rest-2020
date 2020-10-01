@@ -6,3 +6,4 @@ package-lock.json
 # production
 /build
 /src/configs/database.ts
+/files

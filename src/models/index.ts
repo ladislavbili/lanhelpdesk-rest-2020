@@ -46,6 +46,7 @@ export const sequelize = new Sequelize(data.database, data.username, data.pass, 
   logging: false,
   //operatorsAliases
 });
+
 export const models = sequelize.models;
 
 export const updateModels = (ignoreUpdating: Boolean) => {
@@ -119,7 +120,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createTaskAttachmentsAssoc(models);
   //LOG FUNCTIONS
 
-  //logFunctionsOfModel(models.Role);
+  //logFunctionsOfModel(models.Task);
 
   if (ignoreUpdating) {
     return new Promise((resolve, reject) => resolve());

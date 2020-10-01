@@ -201,8 +201,6 @@ const attributes = {
         }
       );
       return fullTasks.reduce((acc1, task) => {
-        console.log(task);
-
         return acc1 + task.get('Subtasks').reduce((acc2, subtask) => acc2 + subtask.get('quantity'), 0)
       }, 0);
     },
@@ -218,8 +216,6 @@ const attributes = {
         }
       );
       return fullTasks.reduce((acc1, task) => {
-        console.log(task);
-
         return acc1 + task.get('WorkTrips').reduce((acc2, trip) => acc2 + trip.get('quantity'), 0)
       }, 0);
     },
@@ -244,8 +240,6 @@ const attributes = {
         }
       );
       return fullTasks.reduce((acc1, task) => {
-        console.log(task);
-
         return acc1 + task.get('Subtasks').reduce((acc2, subtask) => acc2 + subtask.get('quantity'), 0)
       }, 0);
     },
@@ -261,8 +255,6 @@ const attributes = {
         }
       );
       return fullTasks.reduce((acc1, task) => {
-        console.log(task);
-
         return acc1 + task.get('WorkTrips').reduce((acc2, trip) => acc2 + trip.get('quantity'), 0)
       }, 0);
     }

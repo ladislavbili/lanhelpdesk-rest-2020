@@ -11,8 +11,6 @@ export async function testSmtp(Smtp) {
 
   let transporter = null;
   if (smtp.wellKnown === null) {
-    console.log('other smtp');
-
     transporter = nodemailer.createTransport({
       host: smtp.host,
       port: smtp.port,
@@ -26,8 +24,6 @@ export async function testSmtp(Smtp) {
       }
     });
   } else {
-    console.log('well known', smtp.wellKnown.replace("S_", '').replace(/(?:___)/g, '-').replace(/(?:__)/g, '.'));
-
     transporter = nodemailer.createTransport({
       service: smtp.wellKnown.replace("S_", '').replace(/(?:___)/g, '-').replace(/(?:__)/g, '.'),
       auth: {

@@ -15,6 +15,7 @@ import status from './status';
 import subtask from './subtask';
 import tag from './tag';
 import task from './task';
+import taskAttachment from './taskAttachment';
 import taskChange from './taskChange';
 import taskType from './taskType';
 import tripType from './tripType';
@@ -44,6 +45,7 @@ export default {
     ...subtask.querries,
     ...tag.querries,
     ...task.querries,
+    ...taskAttachment.querries,
     ...taskChange.querries,
     ...taskType.querries,
     ...tripType.querries,
@@ -70,6 +72,7 @@ export default {
     ...subtask.mutations,
     ...tag.mutations,
     ...task.mutations,
+    ...taskAttachment.mutations,
     ...taskChange.mutations,
     ...taskType.mutations,
     ...tripType.mutations,
@@ -98,6 +101,7 @@ export default {
   ...subtask.attributes,
   ...tag.attributes,
   ...task.attributes,
+  ...taskAttachment.attributes,
   ...taskType.attributes,
   ...taskChange.attributes,
   ...tripType.attributes,

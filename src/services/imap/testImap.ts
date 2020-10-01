@@ -1,5 +1,6 @@
 import simpleImap from 'imap-simple';
 
+//TODO REWRITE TO NEW IMAP
 export async function testImap(Imap, imap = null) {
   if (Imap !== null) {
     await Imap.update({

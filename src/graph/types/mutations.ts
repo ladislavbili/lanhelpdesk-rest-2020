@@ -15,6 +15,7 @@ import { StatusMutations } from './entities/status';
 import { SubtaskMutations } from './entities/subtask';
 import { TagMutations } from './entities/tag';
 import { TaskMutations } from './entities/task';
+import { TaskAttachmentMutations } from './entities/taskAttachment';
 import { TaskChangeMutations } from './entities/taskChange';
 import { TaskTypeMutations } from './entities/taskType';
 import { TripTypeMutations } from './entities/tripType';
@@ -40,6 +41,7 @@ type Mutation {
   ${SubtaskMutations}
   ${TagMutations}
   ${TaskMutations}
+  ${TaskAttachmentMutations}
   ${TaskChangeMutations}
   ${TaskTypeMutations}
   ${TripTypeMutations}

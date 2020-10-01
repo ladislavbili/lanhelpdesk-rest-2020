@@ -15,6 +15,7 @@ import { StatusQuerries } from './entities/status';
 import { SubtaskQuerries } from './entities/subtask';
 import { TagQuerries } from './entities/tag';
 import { TaskQuerries } from './entities/task';
+import { TaskAttachmentQuerries } from './entities/taskAttachment';
 import { TaskChangeQuerries } from './entities/taskChange';
 import { TaskTypeQuerries } from './entities/taskType';
 import { TripTypeQuerries } from './entities/tripType';
@@ -40,6 +41,7 @@ type Query {
   ${SubtaskQuerries}
   ${TagQuerries}
   ${TaskQuerries}
+  ${TaskAttachmentQuerries}
   ${TaskChangeQuerries}
   ${TaskTypeQuerries}
   ${TripTypeQuerries}

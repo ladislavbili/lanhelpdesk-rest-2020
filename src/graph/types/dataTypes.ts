@@ -15,6 +15,7 @@ import { Status } from './entities/status';
 import { Subtask } from './entities/subtask';
 import { Tag } from './entities/tag';
 import { Task } from './entities/task';
+import { TaskAttachment } from './entities/taskAttachment';
 import { TaskChange } from './entities/taskChange';
 import { TaskType } from './entities/taskType';
 import { TripType } from './entities/tripType';
@@ -39,9 +40,15 @@ ${Status}
 ${Subtask}
 ${Tag}
 ${Task}
+${TaskAttachment}
 ${TaskChange}
 ${TaskType}
 ${TripType}
 ${User}
 ${WorkTrip}
+
+type SecondaryTime{
+  time: Float!
+  source: String!
+}
 `;

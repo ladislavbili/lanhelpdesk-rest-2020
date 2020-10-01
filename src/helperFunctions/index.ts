@@ -8,6 +8,10 @@ export {
 } from './arrayManipulations';
 
 export {
+  createExecClass,
+} from './benchmark';
+
+export {
   isEmail,
 } from './emailCheck';
 

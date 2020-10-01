@@ -9,6 +9,7 @@ import { TASK_CHANGE } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
 import { Op } from 'sequelize';
+import Stopwatch from 'statman-stopwatch';
 const dateNames = ['deadline', 'pendingDate'];
 
 const querries = {
@@ -17,7 +18,10 @@ const querries = {
     return models.Task.findAll();
   },
   tasks: async (root, { projectId, filterId, filter }, { req }) => {
+    const mainWatch = new Stopwatch(true);
+    const checkUserWatch = new Stopwatch(true);
     const SourceUser = await checkResolver(req);
+    const checkUserTime = checkUserWatch.stop();
     let projectWhere = {};
     let taskWhere = {};
     if (projectId) {
@@ -37,6 +41,7 @@ const querries = {
     if (filter) {
       taskWhere = filterToWhere(filter, SourceUser.get('id'))
     }
+    const dbWatch = new Stopwatch(true);
     const User = <UserInstance>await models.User.findByPk(SourceUser.get('id'), {
       include: [
         {
@@ -64,12 +69,21 @@ const querries = {
         }
       ]
     });
-
+    const dbTime = dbWatch.stop();
+    const manualWatch = new Stopwatch(true);
     const tasks = (<ProjectRightInstance[]>User.get('ProjectRights')).map((ProjectRight) => <ProjectInstance>ProjectRight.get('Project')).reduce((acc, proj) => [...acc, ...<TaskInstance[]>proj.get('Tasks')], [])
     if (filter) {
       return filterByOneOf(filter, SourceUser.get('id'), SourceUser.get('CompanyId'), tasks);
     }
-    return tasks;
+    return {
+      tasks,
+      execTime: mainWatch.stop(),
+      secondaryTimes: [
+        { source: 'User check', time: checkUserTime },
+        { source: 'Db get', time: dbTime },
+        { source: 'Processing', time: manualWatch.stop() }
+      ]
+    };
   },
 
   task: async (root, { id }, { req }) => {
@@ -343,204 +357,200 @@ const mutations = {
     }
     let taskChangeMessages = [];
     let promises = [];
-    try {
-      await sequelize.transaction(async (transaction) => {
-        if (project && project !== (<ProjectInstance>Task.get('Project')).get('id')) {
+    await sequelize.transaction(async (transaction) => {
+      if (project && project !== (<ProjectInstance>Task.get('Project')).get('id')) {
+        taskChangeMessages.push({
+          type: 'project',
+          originalValue: Task.get('ProjectId'),
+          newValue: project,
+          message: `Project was changed from ${(<ProjectInstance>Task.get('Project')).get('title')} to ${Project.get('title')}`,
+        });
+        promises.push(Task.setProject(project, { transaction }));
+        if (milestone === undefined || milestone === null) {
+          promises.push(Task.setMilestone(null, { transaction }));
+        }
+      }
+      if (assignedTos) {
+        await idsDoExistsCheck(assignedTos, models.User);
+        if (assignedTos.length === 0) {
+          throw TaskMustBeAssignedToAtLeastOneUser;
+        }
+        //assignedTo must be in project
+        assignedTos = assignedTos.filter((assignedTo) => ProjectRights.some((right) => right.get('UserId') === assignedTo));
+        //all subtasks and worktrips must be assigned
+        const Subtasks = <SubtaskInstance[]>await Task.get('Subtasks');
+        const WorkTrips = <WorkTripInstance[]>await Task.get('WorkTrips');
+        const allAssignedIds = [
+          ...Subtasks.map((Subtask) => Subtask.get('UserId')),
+          ...WorkTrips.map((WorkTrip) => WorkTrip.get('UserId')),
+        ];
+        if (!allAssignedIds.every((id) => assignedTos.includes(id))) {
+          throw CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError;
+        }
+
+        promises.push(Task.setAssignedTos(assignedTos, { transaction }))
+      }
+      if (tags) {
+        await idsDoExistsCheck(tags, models.Tag);
+        promises.push(Task.setTags(tags, { transaction }))
+      }
+      if (requester && requester !== Task.get('requesterId')) {
+        //requester must be in project or project is open
+        if (Project.get('lockedRequester') && !ProjectRights.some((right) => right.get('UserId') === requester)) {
+          throw createUserNotPartOfProjectError('requester');
+        }
+        taskChangeMessages.push({
+          type: 'requester',
+          originalValue: Task.get('RequesterId'),
+          newValue: requester,
+          message: `Requester was changed from ${(<UserInstance>await Task.getRequester()).get('fullName')} to ${(await models.User.findByPk(requester)).get('fullName')}`,
+        });
+
+        promises.push(Task.setRequester(requester, { transaction }))
+      }
+      if (milestone) {
+        //milestone must be of project
+        if (!(<MilestoneInstance[]>Project.get('Milestones')).some((projectMilestone) => projectMilestone.get('id') === milestone)) {
+          throw MilestoneNotPartOfProject;
+        }
+        promises.push(Task.setMilestone(milestone, { transaction }))
+      }
+      if (taskType) {
+        promises.push(Task.setTaskType(taskType, { transaction }))
+      }
+      if (company) {
+        promises.push(Task.setCompany(company, { transaction }))
+      }
+
+      //project def
+      const projectDef = await Project.get('def');
+      (['assignedTo', 'tag']).forEach((attribute) => {
+        if (projectDef[attribute].fixed && args[attribute] !== undefined) {
+          let values = projectDef[attribute].value.map((value) => value.get('id'));
+          //if is fixed, it must fit
+          if (
+            values.length !== args[attribute].length ||
+            args[attribute].some((argValue) => !values.includes(argValue))
+          ) {
+            throw createProjectFixedAttributeError(attribute);
+          }
+        }
+      });
+
+      (['overtime', 'pausal']).forEach((attribute) => {
+        if (projectDef[attribute].fixed && args[attribute] !== undefined) {
+          let value = projectDef[attribute].value;
+          //if is fixed, it must fit
+          if (value !== args[attribute]) {
+            throw createProjectFixedAttributeError(attribute);
+          }
+        }
+      });
+
+      (['company', 'requester', 'status', 'taskType']).forEach((attribute) => {
+        if (projectDef[attribute].fixed && args[attribute] !== undefined) {
+          let value = projectDef[attribute].value.get('id');
+          //if is fixed, it must fit
+          if (value !== args[attribute]) {
+            throw createProjectFixedAttributeError(attribute);
+          }
+        }
+      });
+
+      //status corresponds to data - closedate, pendingDate
+      //createdby
+      if (status) {
+        params = {
+          ...params,
+          ...dates,
+          closeDate: null,
+          pendingDate: null,
+          pendingChangable: false,
+          statusChange: Task.get('statusChange'),
+          invoicedDate: Task.get('invoicedDate'),
+        }
+        const TaskStatus = <StatusInstance>Task.get('Status');
+        const Status = await models.Status.findByPk(status);
+        if (status !== TaskStatus.get('id')) {
           taskChangeMessages.push({
-            type: 'project',
-            originalValue: Task.get('ProjectId'),
-            newValue: project,
-            message: `Project was changed from ${(<ProjectInstance>Task.get('Project')).get('title')} to ${Project.get('title')}`,
+            type: 'status',
+            originalValue: TaskStatus.get('id'),
+            newValue: status,
+            message: `Status was changed from ${TaskStatus.get('title')} to ${Status.get('title')}`,
           });
-          promises.push(Task.setProject(project, { transaction }));
-          if (milestone === undefined || milestone === null) {
-            promises.push(Task.setMilestone(null, { transaction }));
-          }
-        }
-        if (assignedTos) {
-          await idsDoExistsCheck(assignedTos, models.User);
-          if (assignedTos.length === 0) {
-            throw TaskMustBeAssignedToAtLeastOneUser;
-          }
-          //assignedTo must be in project
-          assignedTos = assignedTos.filter((assignedTo) => ProjectRights.some((right) => right.get('UserId') === assignedTo));
-          //all subtasks and worktrips must be assigned
-          const Subtasks = <SubtaskInstance[]>await Task.get('Subtasks');
-          const WorkTrips = <WorkTripInstance[]>await Task.get('WorkTrips');
-          const allAssignedIds = [
-            ...Subtasks.map((Subtask) => Subtask.get('UserId')),
-            ...WorkTrips.map((WorkTrip) => WorkTrip.get('UserId')),
-          ];
-          if (!allAssignedIds.every((id) => assignedTos.includes(id))) {
-            throw CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError;
-          }
-
-          promises.push(Task.setAssignedTos(assignedTos, { transaction }))
-        }
-        if (tags) {
-          await idsDoExistsCheck(tags, models.Tag);
-          promises.push(Task.setTags(tags, { transaction }))
-        }
-        if (requester && requester !== Task.get('requesterId')) {
-          //requester must be in project or project is open
-          if (Project.get('lockedRequester') && !ProjectRights.some((right) => right.get('UserId') === requester)) {
-            throw createUserNotPartOfProjectError('requester');
-          }
-          taskChangeMessages.push({
-            type: 'requester',
-            originalValue: Task.get('RequesterId'),
-            newValue: requester,
-            message: `Requester was changed from ${(<UserInstance>await Task.getRequester()).get('fullName')} to ${(await models.User.findByPk(requester)).get('fullName')}`,
-          });
-
-          promises.push(Task.setRequester(requester, { transaction }))
-        }
-        if (milestone) {
-          //milestone must be of project
-          if (!(<MilestoneInstance[]>Project.get('Milestones')).some((projectMilestone) => projectMilestone.get('id') === milestone)) {
-            throw MilestoneNotPartOfProject;
-          }
-          promises.push(Task.setMilestone(milestone, { transaction }))
-        }
-        if (taskType) {
-          promises.push(Task.setTaskType(taskType, { transaction }))
-        }
-        if (company) {
-          promises.push(Task.setCompany(company, { transaction }))
-        }
-
-        //project def
-        const projectDef = await Project.get('def');
-        (['assignedTo', 'tag']).forEach((attribute) => {
-          if (projectDef[attribute].fixed && args[attribute] !== undefined) {
-            let values = projectDef[attribute].value.map((value) => value.get('id'));
-            //if is fixed, it must fit
-            if (
-              values.length !== args[attribute].length ||
-              args[attribute].some((argValue) => !values.includes(argValue))
-            ) {
-              throw createProjectFixedAttributeError(attribute);
-            }
-          }
-        });
-
-        (['overtime', 'pausal']).forEach((attribute) => {
-          if (projectDef[attribute].fixed && args[attribute] !== undefined) {
-            let value = projectDef[attribute].value;
-            //if is fixed, it must fit
-            if (value !== args[attribute]) {
-              throw createProjectFixedAttributeError(attribute);
-            }
-          }
-        });
-
-        (['company', 'requester', 'status', 'taskType']).forEach((attribute) => {
-          if (projectDef[attribute].fixed && args[attribute] !== undefined) {
-            let value = projectDef[attribute].value.get('id');
-            //if is fixed, it must fit
-            if (value !== args[attribute]) {
-              throw createProjectFixedAttributeError(attribute);
-            }
-          }
-        });
-
-        //status corresponds to data - closedate, pendingDate
-        //createdby
-        if (status) {
-          params = {
-            ...params,
-            ...dates,
-            closeDate: null,
-            pendingDate: null,
-            pendingChangable: false,
-            statusChange: Task.get('statusChange'),
-            invoicedDate: Task.get('invoicedDate'),
-          }
-          const TaskStatus = <StatusInstance>Task.get('Status');
-          const Status = await models.Status.findByPk(status);
-          if (status !== TaskStatus.get('id')) {
-            taskChangeMessages.push({
-              type: 'status',
-              originalValue: TaskStatus.get('id'),
-              newValue: status,
-              message: `Status was changed from ${TaskStatus.get('title')} to ${Status.get('title')}`,
-            });
-            promises.push(Task.setStatus(status, { transaction }))
-          }
-          switch (Status.get('action')) {
-            case 'CloseDate': {
-              if (TaskStatus.get('action') === 'CloseDate' && !args.closeDate) {
-                params.closeDate = Task.get('closeDate');
-                break;
-              }
-              if (args.closeDate === undefined) {
-                params.closeDate = moment().unix() * 1000;
-              } else {
-                params.closeDate = args.closeDate;
-              }
-              params.statusChange = moment().unix() * 1000
-              break;
-            }
-            case 'CloseInvalid': {
-              if (TaskStatus.get('action') === 'CloseInvalid' && !args.closeDate) {
-                params.closeDate = Task.get('closeDate');
-                break;
-              }
-              if (args.closeDate === undefined) {
-                params.closeDate = moment().unix() * 1000;
-              } else {
-                params.closeDate = args.closeDate;
-              }
-              params.statusChange = moment().unix() * 1000
-              break;
-            }
-            case 'PendingDate': {
-              if (TaskStatus.get('action') === 'PendingDate' && !dates.pendingDate) {
-                params.pendingDate = Task.get('pendingDate');
-                params.pendingChangable = Task.get('pendingChangable');
-                break;
-              }
-              if (dates.pendingDate === undefined || args.pendingChangable === undefined) {
-                throw StatusPendingAttributesMissing;
-              } else {
-                params.pendingDate = dates.pendingDate;
-                params.pendingChangable = args.pendingChangable;
-              }
-              params.statusChange = moment().unix() * 1000
-              break;
-            }
-            default:
-              break;
-          }
-
           promises.push(Task.setStatus(status, { transaction }))
         }
-        //repeat processing
-        if (repeat === null && (<RepeatInstance>Task.get('Repeat')) !== null) {
-          promises.push((<RepeatInstance>Task.get('Repeat')).destroy({ transaction }));
-          repeatAction = { action: 'delete', id: (<RepeatInstance>Task.get('Repeat')).get('id') };
-        }
-        else if (repeat !== undefined && repeat !== null) {
-          if ((<RepeatInstance>Task.get('Repeat')) !== null) {
-            promises.push((<RepeatInstance>Task.get('Repeat')).update({ ...repeat, startsAt: parseInt(repeat.startsAt) }, { transaction }));
-            repeatAction = { action: 'update', id: null };
-          } else {
-            promises.push(Task.createRepeat({ ...repeat, startsAt: parseInt(repeat.startsAt) }, { transaction }));
-            repeatAction = { action: 'add', id: null };
+        switch (Status.get('action')) {
+          case 'CloseDate': {
+            if (TaskStatus.get('action') === 'CloseDate' && !args.closeDate) {
+              params.closeDate = Task.get('closeDate');
+              break;
+            }
+            if (args.closeDate === undefined) {
+              params.closeDate = moment().unix() * 1000;
+            } else {
+              params.closeDate = args.closeDate;
+            }
+            params.statusChange = moment().unix() * 1000
+            break;
           }
+          case 'CloseInvalid': {
+            if (TaskStatus.get('action') === 'CloseInvalid' && !args.closeDate) {
+              params.closeDate = Task.get('closeDate');
+              break;
+            }
+            if (args.closeDate === undefined) {
+              params.closeDate = moment().unix() * 1000;
+            } else {
+              params.closeDate = args.closeDate;
+            }
+            params.statusChange = moment().unix() * 1000
+            break;
+          }
+          case 'PendingDate': {
+            if (TaskStatus.get('action') === 'PendingDate' && !dates.pendingDate) {
+              params.pendingDate = Task.get('pendingDate');
+              params.pendingChangable = Task.get('pendingChangable');
+              break;
+            }
+            if (dates.pendingDate === undefined || args.pendingChangable === undefined) {
+              throw StatusPendingAttributesMissing;
+            } else {
+              params.pendingDate = dates.pendingDate;
+              params.pendingChangable = args.pendingChangable;
+            }
+            params.statusChange = moment().unix() * 1000
+            break;
+          }
+          default:
+            break;
         }
-        promises.push(
-          Task.createTaskChange({
-            UserId: User.get('id'),
-            TaskChangeMessages: taskChangeMessages,
-          }, { transaction, include: [{ model: models.TaskChangeMessage }] })
-        );
-        promises.push(Task.update(params, { transaction }));
-        await Promise.all(promises);
-      })
-    } catch (error) {
-      console.log(error);
-    }
+
+        promises.push(Task.setStatus(status, { transaction }))
+      }
+      //repeat processing
+      if (repeat === null && (<RepeatInstance>Task.get('Repeat')) !== null) {
+        promises.push((<RepeatInstance>Task.get('Repeat')).destroy({ transaction }));
+        repeatAction = { action: 'delete', id: (<RepeatInstance>Task.get('Repeat')).get('id') };
+      }
+      else if (repeat !== undefined && repeat !== null) {
+        if ((<RepeatInstance>Task.get('Repeat')) !== null) {
+          promises.push((<RepeatInstance>Task.get('Repeat')).update({ ...repeat, startsAt: parseInt(repeat.startsAt) }, { transaction }));
+          repeatAction = { action: 'update', id: null };
+        } else {
+          promises.push(Task.createRepeat({ ...repeat, startsAt: parseInt(repeat.startsAt) }, { transaction }));
+          repeatAction = { action: 'add', id: null };
+        }
+      }
+      promises.push(
+        Task.createTaskChange({
+          UserId: User.get('id'),
+          TaskChangeMessages: taskChangeMessages,
+        }, { transaction, include: [{ model: models.TaskChangeMessage }] })
+      );
+      promises.push(Task.update(params, { transaction }));
+      await Promise.all(promises);
+    })
     switch (repeatAction.action) {
       case 'add': {
         repeatEvent.emit('add', await Task.get('Repeat'));

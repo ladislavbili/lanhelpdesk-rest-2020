@@ -1,4 +1,5 @@
 import defaultAttributes from './defaultAttributes';
+import { createExecClass } from '@/helperFunctions';
 
 export const Task = `
 type Task {
@@ -103,10 +104,14 @@ enum EnumSubTaskChanged{
   delete
   update
 }
+
+${createExecClass("Task", false)}
+${createExecClass("Task", true)}
 `
+
 export const TaskQuerries = `
 allTasks: [Task]
-tasks( filterId: Int, projectId: Int, filter: FilterInput ): [Task]
+tasks( filterId: Int, projectId: Int, filter: FilterInput ): ExecTasks
 task(id: Int!): Task
 `
 

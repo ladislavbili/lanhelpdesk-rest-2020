@@ -67,6 +67,8 @@ const multipliers = {
 }
 
 async function addTask(repeat) {
+  console.log('add Task 1');
+
   const OriginalTask = await repeat.getTask({
     include: [
       { model: models.Repeat },
@@ -89,6 +91,10 @@ async function addTask(repeat) {
       },
     ]
   });
+  console.log(repeat.get('id'), repeat.get('taskId'), OriginalTask.get().id);
+
+
+  console.log('add Task 2');
 
   const {
     title,
@@ -111,20 +117,26 @@ async function addTask(repeat) {
     TaskTypeId,
   } = OriginalTask.get();
   const OriginalRepeat = OriginalTask.get('Repeat');
+  console.log('get of repeat');
   const originalRepeatData = OriginalRepeat.get();
 
   const OriginalSubtasks = OriginalTask.get('Subtasks');
+  console.log('get of subtask');
   const originalSubtasksData = OriginalSubtasks.map((Subtask) => Subtask.get());
 
   const OriginalWorkTrips = OriginalTask.get('WorkTrips');
+  console.log('get of worktrips');
   const originalWorkTripsData = OriginalWorkTrips.map((WorkTrip) => WorkTrip.get());
 
   const OriginalMaterials = OriginalTask.get('Materials');
+  console.log('get of materials');
   const originalMaterialsData = OriginalMaterials.map((Material) => Material.get());
 
   const OriginalCustomItems = OriginalTask.get('CustomItems');
+  console.log('get of custom items');
   const originalCustomItemsData = OriginalCustomItems.map((CustomItem) => CustomItem.get());
 
+  console.log('get of tags');
   const orginalTagIds = OriginalTask.get('Tags').map((tag) => tag.id)
   const orginalAssignedToIds = OriginalTask.get('assignedTos').map((user) => user.id)
   let params = {

@@ -13,7 +13,6 @@ import moment from 'moment';
 
 
 export default async function processEmail(email, Imap) {
-  console.log('processing');
 
   if (email.from.some((from) => !validator.validate(from.address))) {
     console.log("invalid e-mail!");
@@ -97,14 +96,12 @@ async function saveEmail(email, Imap) {
   if (!isNaN(taskId)) {
     Task = await models.Task.findByPk(taskId);
   }
-  console.log(Task);
 
   if (Task === null) {
     //createTask
     createTask(email, Imap, User, secret);
 
   } else {
-    console.log('adding comment');
 
     Task.addComment(
       {
@@ -211,7 +208,7 @@ async function createTask(email, Imap, User, secret) {
       ]
     }
   );
-  console.log(' task created');
+  console.log(`task created with company ID ${NewTask.get('CompanyId')}`);
   if (defaults.assignedTo.def) {
     NewTask.setAssignedTos(defaults.assignedTo.value.map((value) => value.get('id')));
   }
@@ -223,7 +220,7 @@ async function createTask(email, Imap, User, secret) {
     `Dobrý deň, \n
       Radi by sme Vám oznámili, že Vaša žiadosť bola zaevidovaná pod číslom tiketu: ${NewTask.get('id')} ${email.subject}.
       Odpoveďou na tento e-mail nás viete priamo kontaktovať. Prosím ponechajte číslo tiketu v hlavičke správy.
-      Stav tiketu: https://test2020.lansystems.sk/helpdesk/taskList/i/all/${NewTask.get('id')}` + (!secret.newUser ? '' : `
+      Stav tiketu: https://test2020.lanhelpdesk.com/helpdesk/taskList/i/all/${NewTask.get('id')}` + (!secret.newUser ? '' : `
       Za účelom sledovania stavu tiketu sme Vám vytvorili účet s obmedzeným prístupom, heslo si prosím po prihlásení nezabudnite zmeniť! \n
       E-mail: ${User.get('email')} \n
       Heslo: ${secret.password}\n`),

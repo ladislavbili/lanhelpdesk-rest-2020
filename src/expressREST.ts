@@ -9,10 +9,16 @@ import { verifyAccToken, verifyRefToken, createAccessToken, createRefreshToken }
 import jwt_decode from 'jwt-decode';
 import cookieParser from 'cookie-parser';
 import http from 'http';
-import { randomString } from '@/helperFunctions';
+import { randomString, checkIfHasProjectRights } from '@/helperFunctions';
 import cors from 'cors';
 import axios from 'axios';
 import checkResolver from '@/graph/resolvers/checkResolver';
+import multer from 'multer';
+import fs from 'fs';
+import fileUpload from 'express-fileupload';
+import moment from 'moment';
+import pathResolver from 'path';
+const upload = multer();
 
 const maxAge = 7 * 24 * 60 * 60 * 1000;
 
@@ -85,11 +91,74 @@ export const startRest = () => {
   const app = express();
   app.use(cookieParser());
   app.use(cors(corsOptions));
+  app.use(fileUpload({
+    createParentPath: true, preserveExtension: true, limits: { fileSize: 50 * 1024 * 1024 },
+  }));
   server.applyMiddleware({ app, cors: false });
 
   app.get('/', function(req, res) {
     res.end(JSON.stringify({ message: 'Teeest.' }));
   });
+
+  app.post('/upload-attachments', async function(req, res) {
+    const timestamp = moment().valueOf();
+
+    const { token, taskId } = req.body;
+    let files = null;
+    if (req.files) {
+      if (Array.isArray(req.files.file)) {
+        files = req.files.file;
+      } else {
+        files = [req.files.file];
+      }
+    }
+
+    if (!token || !files || !taskId || files.length === 0) {
+      return res.send({ ok: false, error: 'Upload failed, either no files were send, taskId is missing or token is missing' })
+    }
+    let User = null;
+    let Task = null;
+    try {
+      User = await checkResolver({ headers: { authorization: token } });
+      const checkData = await checkIfHasProjectRights(User.get('id'), taskId, "write");
+      Task = checkData.Task;
+    } catch (err) {
+      return res.send({ ok: false, error: err.message })
+    }
+    await Promise.all(files.map((file) => file.mv(`files/task-attachments/${taskId}/${timestamp}-${file.name}`)));
+
+    await Promise.all(files.map((file) => Task.createTaskAttachment(
+      {
+        filename: file.name,
+        mimetype: file.mimetype,
+        encoding: file.encoding,
+        path: `files/task-attachments/${taskId}/${timestamp}-${file.name}`,
+      }
+    )
+    ))
+    return res.send({ ok: true, error: null })
+  });
+
+  app.get('/get-attachments', async function(req, res) {
+    if (!req.query) {
+      return res.send({ ok: false, error: 'no parameters' })
+    }
+    let taskId = req.query.taskId;
+    let path = req.query.path as string;
+    if (!taskId || !path) {
+      return res.send({ ok: false, error: 'One of parameters taskId or path missing' })
+    }
+    try {
+      const User = await checkResolver(req);
+      await checkIfHasProjectRights(User.get('id'), taskId);
+    } catch (err) {
+      return res.send({ ok: false, error: err.message })
+    }
+
+    res.sendFile(pathResolver.join(__dirname, `../${path}`));
+
+  });
+
 
   app.post('/refresh_token', async (req, res) => {
 

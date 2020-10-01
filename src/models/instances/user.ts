@@ -146,5 +146,5 @@ export function createUsersAssoc(models) {
 
   models.User.hasMany(models.TaskChange);
 
-  //models.User.hasMany(models.TaskAttachment, { onDelete: 'CASCADE' });
+  models.User.hasMany(models.TaskAttachment, { onDelete: 'CASCADE' });
 }
