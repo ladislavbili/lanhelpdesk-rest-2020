@@ -1,24 +1,23 @@
-import { models } from '@/models';
+import { models, sequelize } from '@/models';
 import { InvalidTokenError, NoAccTokenError, MutationOrResolverAccessDeniedError, UserDeactivatedError } from '@/configs/errors';
-import { verifyAccToken } from '@/configs/jwt';
-import { UserInstance, RoleInstance } from '@/models/instances';
-import { sequelize } from '@/models';
+import { verifyAccToken, VerifyResult } from '@/configs/jwt';
+import { UserInstance, RoleInstance, TokenInstance } from '@/models/instances';
+import moment from 'moment';
 import { addApolloError } from '@/helperFunctions';
 
-export default async function checkResolver(req, access = [], useOR = false) {
+export default async function checkResolver(req, access = [], useOR = false, extraParameters = []) {
   const token = req.headers.authorization as String;
 
   if (!token) {
     throw NoAccTokenError;
   }
-  let userData = null;
-  try {
-    userData = await verifyAccToken(token.replace('Bearer ', ''), models.User);
-  } catch (error) {
+  const verifyResult = <VerifyResult>await verifyAccToken(token.replace('Bearer ', ''), models.User, extraParameters);
+  if (!verifyResult.ok) {
     sequelize.query("DELETE FROM tokens WHERE expiresAt < NOW()");
     throw InvalidTokenError;
   }
-  const User = <UserInstance>await models.User.findByPk(userData.id, { include: [{ model: models.Role, include: [{ model: models.AccessRights }] }] });
+  let userData = verifyResult.userData;
+  let User = verifyResult.User;
 
   if (User.get('active') === false) {
     addApolloError(
@@ -34,10 +33,7 @@ export default async function checkResolver(req, access = [], useOR = false) {
   const allRulesResult = !useOR && [...access, 'login'].every((rule) => rules[rule] && typeof rules[rule] === "boolean")
 
   if (oneRuleResult || allRulesResult) {
-    const Token = await models.Token.findOne({ where: { key: userData.loginKey, UserId: userData.id } })
-    let expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-    await Token.update({ expiresAt });
+    (<TokenInstance[]>User.get('Tokens')).map((Token) => Token.update({ expiresAt: moment().add(7, 'd').valueOf() }));
     return User;
   }
   addApolloError(

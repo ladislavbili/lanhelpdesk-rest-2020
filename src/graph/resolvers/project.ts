@@ -21,17 +21,16 @@ const querries = {
     return models.Project.findByPk(id);
   },
   myProjects: async (root, args, { req }) => {
-    const TestedUser = await checkResolver(req);
-    const User = await models.User.findByPk(
-      TestedUser.get('id'),
-      {
+    const User = await checkResolver(
+      req,
+      [],
+      false,
+      [{
+        model: models.ProjectRight,
         include: [{
-          model: models.ProjectRight,
-          include: [{
-            model: models.Project,
-          }]
+          model: models.Project,
         }]
-      }
+      }]
     );
 
     return (<ProjectRightInstance[]>User.get('ProjectRights')).map((right) => ({ right, project: right.get('Project') }))

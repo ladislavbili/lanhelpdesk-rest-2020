@@ -1,6 +1,7 @@
 import { hash, compare } from 'bcrypt';
 import { sign } from 'jsonwebtoken';
 import jwt_decode from 'jwt-decode';
+import moment from 'moment';
 import { createAccessToken, createRefreshToken } from '@/configs/jwt';
 import { randomString, addApolloError, idsDoExistsCheck } from '@/helperFunctions';
 import {
@@ -120,8 +121,7 @@ const mutations = {
       throw UserDeactivatedError;
     }
     let loginKey = randomString();
-    let expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    let expiresAt = moment().add(7, 'd').valueOf()
     User.createToken({ key: loginKey, expiresAt });
 
     res.cookie(
@@ -158,8 +158,7 @@ const mutations = {
     const User = await checkResolver(req);
     await models.Token.destroy({ where: { UserId: User.get('id') } })
     let loginKey = randomString();
-    let expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    let expiresAt = moment().add(7, 'd').valueOf();
     User.createToken({ key: loginKey, expiresAt });
 
     res.cookie(
@@ -300,8 +299,7 @@ const mutations = {
     }
     User.update(changes);
     let loginKey = randomString();
-    let expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    let expiresAt = moment().add(7, 'd').valueOf()
     User.createToken({ key: loginKey, expiresAt });
 
     res.cookie(
@@ -324,7 +322,6 @@ const mutations = {
           { model: models.Role },
           { model: models.Project, as: 'defAssignedTo', include: [{ model: models.User, as: 'defAssignedTo' }] },
           { model: models.Project, as: 'defRequester' },
-
         ]
       }
     );

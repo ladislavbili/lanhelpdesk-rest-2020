@@ -5,6 +5,7 @@ export {
 
 export {
   splitArrayByFilter,
+  filterUnique,
 } from './arrayManipulations';
 
 export {

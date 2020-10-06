@@ -35,6 +35,7 @@ import defineCalendarEvents, { createCalendarEventsAssoc } from './instances/cal
 import defineTaskChanges, { createTaskChangesAssoc } from './instances/taskChange';
 import defineTaskChangeMessages, { createTaskChangeMessagesAssoc } from './instances/taskChangeMessage';
 import defineTaskAttachments, { createTaskAttachmentsAssoc } from './instances/taskAttachment';
+import defineEmailAttachments, { createEmailAttachmentsAssoc } from './instances/emailAttachment';
 /*
 const operatorsAliases = {
 
@@ -84,6 +85,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineTaskChanges(sequelize);
   defineTaskChangeMessages(sequelize);
   defineTaskAttachments(sequelize);
+  defineEmailAttachments(sequelize);
 
   createAccessRightsAssoc(models);
   createTagsAssoc(models);
@@ -118,9 +120,10 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createTaskChangesAssoc(models);
   createTaskChangeMessagesAssoc(models);
   createTaskAttachmentsAssoc(models);
+  createEmailAttachmentsAssoc(models);
   //LOG FUNCTIONS
 
-  //logFunctionsOfModel(models.Task);
+  //logFunctionsOfModel(models.Comment);
 
   if (ignoreUpdating) {
     return new Promise((resolve, reject) => resolve());

@@ -13,7 +13,7 @@ export function readEmails() {
   imapEvent.on('add', addImap);
   imapEvent.on('update', updateImap);
   imapEvent.on('delete', deleteImap);
-  models.Imap.findAll().then((imapResponse) => {
+  models.Imap.findAll({ where: { active: true } }).then((imapResponse) => {
     console.log('Loaded imaps', imapResponse.length);
     imapResponse.forEach((imap) => addImap(imap));
   });
@@ -65,6 +65,10 @@ function addImap(Imap) {
 }
 
 async function updateImap(Imap) {
+  if (!Imap.get('active')) {
+    deleteImap(Imap.get('id'));
+    return;
+  }
   const imapData = imaps.find((existingImap) => existingImap.id === Imap.get('id'));
   if (imapData) {
     imapData.stop();

@@ -1,4 +1,7 @@
-import simpleImap from 'imap-simple';
+import { ImapFlow } from 'imapflow';
+import pino from 'pino';
+const silentLogger = pino();
+silentLogger.level = 'silent';
 
 //TODO REWRITE TO NEW IMAP
 export async function testImap(Imap, imap = null) {
@@ -10,35 +13,36 @@ export async function testImap(Imap, imap = null) {
     imap = Imap.get();
   }
 
-  await simpleImap.connect({
-    imap: {
-      user: imap.username,
-      password: imap.password,
+  const imapFlow = new ImapFlow(
+    {
+      logger: silentLogger,
       host: imap.host,
       port: imap.port,
-      tls: imap.tls,
-      tlsOptions: {
-        rejectUnauthorized: imap.rejectUnauthorized
+      auth: {
+        user: imap.username,
+        pass: imap.password,
       },
-      authTimeout: 18000
+      secure: imap.tls,
+      tls: { //remove before release
+        rejectUnauthorized: imap.rejectUnauthorized
+      }
     },
-  }).then(async (connection) => {
-    if (Imap !== null) {
-      await Imap.update({
-        currentlyTested: false,
-        working: true,
-      });
-    }
-    connection.end();
-    return { error: false, message: null };
-  }).catch(async (error) => {
-    if (Imap !== null) {
-      await Imap.update({
-        currentlyTested: false,
-        working: false,
-        errorMessage: error.message
-      });
-    }
-    return { error: true, message: error.message };
-  })
+  );
+  this.imapFlow.on('error', (error) => testOnError(error, Imap));
+  try {
+    await this.imapFlow.connect();
+  } catch (error) {
+    return testOnError(error, Imap)
+  }
+}
+
+function testOnError(error, Imap) {
+  if (Imap !== null) {
+    Imap.update({
+      currentlyTested: false,
+      working: false,
+      errorMessage: error.message
+    });
+  }
+  return { error: true, message: error.message };
 }

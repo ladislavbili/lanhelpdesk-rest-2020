@@ -90,4 +90,6 @@ export function createCommentsAssoc(models) {
 
   models.Comment.hasMany(models.EmailTarget, { onDelete: 'CASCADE' });
 
+  models.Comment.hasMany(models.EmailAttachment, { onDelete: 'CASCADE' });
+
 }

@@ -63,7 +63,7 @@ export default class ImapData {
       const imap = Imap.get();
       this.Imap = Imap;
       this.user = imap.username;
-      this.pass = imap.pass;
+      this.pass = imap.password;
       this.host = imap.host;
       this.port = imap.port;
       this.tls = imap.tls;

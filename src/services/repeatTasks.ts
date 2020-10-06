@@ -91,7 +91,7 @@ async function addTask(repeat) {
       },
     ]
   });
-  console.log(repeat.get('id'), repeat.get('taskId'), OriginalTask.get().id);
+  console.log(repeat.get('id'), repeat.get('TaskId'), OriginalTask.get().id);
 
 
   console.log('add Task 2');

@@ -174,6 +174,9 @@ const attributes = {
       const EmailTargets = await comment.getEmailTargets();
       return EmailTargets.map((emailTarget) => emailTarget.get('address'));
     },
+    async emailAttachments(comment) {
+      return comment.getEmailAttachments()
+    },
 
   }
 };

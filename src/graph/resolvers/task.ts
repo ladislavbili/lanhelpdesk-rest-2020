@@ -1,7 +1,15 @@
 import { createDoesNoExistsError, InsufficientProjectAccessError, createUserNotPartOfProjectError, MilestoneNotPartOfProject, createProjectFixedAttributeError, StatusPendingAttributesMissing, TaskNotNullAttributesPresent, InternalMessagesNotAllowed, TaskMustBeAssignedToAtLeastOneUser, AssignedToUserNotSolvingTheTask, InvalidTokenError, CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError } from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import { TaskInstance, ProjectRightInstance, MilestoneInstance, ProjectInstance, StatusInstance, RepeatInstance, UserInstance, CommentInstance, AccessRightsInstance, RoleInstance, SubtaskInstance, WorkTripInstance } from '@/models/instances';
-import { idsDoExistsCheck, multipleIdDoesExistsCheck, checkIfHasProjectRights, filterObjectToFilter, taskCheckDate, extractDatesFromObject } from '@/helperFunctions';
+import {
+  idsDoExistsCheck,
+  multipleIdDoesExistsCheck,
+  checkIfHasProjectRights,
+  filterObjectToFilter,
+  taskCheckDate,
+  extractDatesFromObject,
+  filterUnique
+} from '@/helperFunctions';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
@@ -10,6 +18,7 @@ import checkResolver from './checkResolver';
 import moment from 'moment';
 import { Op } from 'sequelize';
 import Stopwatch from 'statman-stopwatch';
+import { sendEmail } from '@/services/smtp';
 const dateNames = ['deadline', 'pendingDate'];
 
 const querries = {
@@ -17,11 +26,8 @@ const querries = {
     await checkResolver(req);
     return models.Task.findAll();
   },
-  tasks: async (root, { projectId, filterId, filter }, { req }) => {
+  tasks: async (root, { projectId, filterId, filter }, { req, userID }) => {
     const mainWatch = new Stopwatch(true);
-    const checkUserWatch = new Stopwatch(true);
-    const SourceUser = await checkResolver(req);
-    const checkUserTime = checkUserWatch.stop();
     let projectWhere = {};
     let taskWhere = {};
     if (projectId) {
@@ -39,11 +45,14 @@ const querries = {
       filter = filterObjectToFilter(await Filter.get('filter'));
     }
     if (filter) {
-      taskWhere = filterToWhere(filter, SourceUser.get('id'))
+      taskWhere = filterToWhere(filter, userID)
     }
-    const dbWatch = new Stopwatch(true);
-    const User = <UserInstance>await models.User.findByPk(SourceUser.get('id'), {
-      include: [
+    const checkUserWatch = new Stopwatch(true);
+    const User = await checkResolver(
+      req,
+      [],
+      false,
+      [
         {
           model: models.ProjectRight,
           include: [
@@ -68,19 +77,18 @@ const querries = {
           ]
         }
       ]
-    });
-    const dbTime = dbWatch.stop();
+    );
+    const checkUserTime = checkUserWatch.stop();
     const manualWatch = new Stopwatch(true);
     const tasks = (<ProjectRightInstance[]>User.get('ProjectRights')).map((ProjectRight) => <ProjectInstance>ProjectRight.get('Project')).reduce((acc, proj) => [...acc, ...<TaskInstance[]>proj.get('Tasks')], [])
     if (filter) {
-      return filterByOneOf(filter, SourceUser.get('id'), SourceUser.get('CompanyId'), tasks);
+      return filterByOneOf(filter, User.get('id'), User.get('CompanyId'), tasks);
     }
     return {
       tasks,
       execTime: mainWatch.stop(),
       secondaryTimes: [
         { source: 'User check', time: checkUserTime },
-        { source: 'Db get', time: dbTime },
         { source: 'Processing', time: manualWatch.stop() }
       ]
     };
@@ -121,7 +129,6 @@ const mutations = {
     const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
     const ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
     if (ProjectRight === undefined || !ProjectRight.get('write')) {
-
       throw InsufficientProjectAccessError;
     }
 
@@ -299,7 +306,10 @@ const mutations = {
       NewTask.setAssignedTos(assignedTos),
       NewTask.setTags(tags),
     ])
-    repeatEvent.emit('add', await NewTask.get('Repeat'));
+    if (repeat !== null && repeat !== undefined) {
+      repeatEvent.emit('add', await NewTask.get('Repeat'));
+    }
+    sendNotifications(User, [`Task was created by ${User.get('fullName')}`], NewTask, assignedTos);
     pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'add', data: NewTask, ids: [] } });
     return NewTask;
   },
@@ -328,7 +338,25 @@ const mutations = {
     (milestone !== undefined && milestone !== null) && pairsToCheck.push({ id: milestone, model: models.Milestone });
     await multipleIdDoesExistsCheck(pairsToCheck);
 
-    const Task = <TaskInstance>await models.Task.findByPk(id, { include: [{ model: models.Repeat }, { model: models.Status }, { model: models.Subtask }, { model: models.WorkTrip }, { model: models.Project, include: [{ model: models.ProjectRight }, { model: models.Milestone }] }] });
+    const Task = <TaskInstance>await models.Task.findByPk(
+      id,
+      {
+        include: [
+          { model: models.Repeat },
+          { model: models.User, as: 'assignedTos', attributes: ['id'] },
+          { model: models.Status },
+          { model: models.Subtask },
+          { model: models.WorkTrip },
+          {
+            model: models.Project,
+            include: [
+              { model: models.ProjectRight },
+              { model: models.Milestone }
+            ]
+          }
+        ]
+      }
+    );
 
     let Project = <ProjectInstance>Task.get('Project');
     //must right write of project
@@ -568,13 +596,27 @@ const mutations = {
         break;
     }
     await Task.reload()
+    sendNotifications(User, taskChangeMessages.map((taskChange) => taskChange.message), Task);
     pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'update', data: Task, ids: [] } });
     return Task;
   },
 
   deleteTask: async (root, { id }, { req }) => {
     const User = await checkResolver(req);
-    const Task = <TaskInstance>await models.Task.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
+    const Task = <TaskInstance>await models.Task.findByPk(
+      id,
+      {
+        include: [
+          { model: models.User, as: 'assignedTos', attributes: ['id'] },
+          {
+            model: models.Project,
+            include: [
+              { model: models.ProjectRight }
+            ]
+          }
+        ]
+      }
+    );
     const Project = <ProjectInstance>Task.get('Project');
     //must right write of project
     const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
@@ -583,6 +625,7 @@ const mutations = {
       throw InsufficientProjectAccessError;
     }
     repeatEvent.emit('delete', id);
+    sendNotifications(User, [`Task was deleted.`], Task)
     pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'delete', data: Task, ids: [id] } });
     return Task.destroy();
   }
@@ -731,6 +774,9 @@ const attributes = {
     async taskChanges(task) {
       return task.getTaskChanges({ order: [['createdAt', 'DESC']] })
     },
+    async taskAttachments(task) {
+      return task.getTaskAttachments()
+    },
   }
 };
 
@@ -739,6 +785,37 @@ export default {
   mutations,
   querries,
   subscriptions
+}
+
+export async function sendNotifications(User, notifications, Task, assignedTos = []) {
+  const AssignedTos = Task.get('assignedTos');
+  const ids = [Task.get('requesterId'), ...(AssignedTos ? AssignedTos.map((assignedTo) => assignedTo.get('id')) : assignedTos)];
+  const uniqueIds = filterUnique(ids).filter((id) => User === null || User.get('id') !== id);
+  if (uniqueIds.length === 0) {
+    return;
+  }
+  const Users = await models.User.findAll({ where: { id: uniqueIds, receiveNotifications: true } });
+  if (Users.length === 0) {
+    return;
+  }
+  sendEmail(
+    `In task with id ${Task.get('id')} and current title ${Task.get('title')} was changed at ${moment().format('HH:mm DD.MM.YYYY')}.
+    Recorded notifications by ${User === null ? 'system' : (`user ${User.get('fullName')}(${User.get('email')})`)} as follows:
+${
+    notifications.length === 0 ?
+      `Non-specified change has happened.
+      ` :
+      notifications.reduce((acc, notification) => acc + ` ${notification}
+`, ``)
+    }
+This is an automated message.If you don't wish to receive this kind of notification, please log in and change your profile setting.
+  `,
+    "",
+    `[${Task.get('id')}]Task ${Task.get('title')} was changed notification at ${moment().format('HH:mm DD.MM.YYYY')} `,
+    Users.map((User) => User.get('email')),
+    'lanhelpdesk2019@gmail.com'
+  );
+
 }
 
 export function filterToWhere(filter, userId) {

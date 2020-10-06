@@ -2,6 +2,7 @@ import { CalendarEventMutations } from './entities/calendarEvent';
 import { CommentMutations } from './entities/comment';
 import { CompanyMutations } from './entities/company';
 import { CustomItemMutations } from './entities/customItem';
+import { EmailAttachmentMutations } from './entities/emailAttachment';
 import { ErrorMessageMutations } from './entities/errorMessage';
 import { FilterMutations } from './entities/filter';
 import { ImapMutations } from './entities/imap';
@@ -28,6 +29,7 @@ type Mutation {
   ${CompanyMutations}
   ${CommentMutations}
   ${CustomItemMutations}
+  ${EmailAttachmentMutations}
   ${ErrorMessageMutations}
   ${FilterMutations}
   ${ImapMutations}

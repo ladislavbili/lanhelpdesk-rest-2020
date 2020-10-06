@@ -6,6 +6,7 @@ export interface TaskAttachmentInstance extends DefaultInstance {
   mimetype: string;
   encoding: string;
   path: string;
+  size: number;
   //task
 }
 
@@ -28,6 +29,11 @@ export default function defineTaskAttachments(sequelize: Sequelize) {
       path: {
         type: DataTypes.TEXT,
         allowNull: false,
+      },
+      size: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
       },
     },
     {

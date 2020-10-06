@@ -7,8 +7,7 @@ import checkResolver from './checkResolver';
 import moment from 'moment';
 
 const querries = {
-  calendarEvents: async (root, { projectId, filterId, filter }, { req }) => {
-    const SourceUser = await checkResolver(req);
+  calendarEvents: async (root, { projectId, filterId, filter }, { req, userID }) => {
     let projectWhere = {};
     let taskWhere = {};
     if (projectId) {
@@ -26,10 +25,14 @@ const querries = {
       filter = filterObjectToFilter(await Filter.get('filter'));
     }
     if (filter) {
-      taskWhere = filterToWhere(filter, SourceUser.get('id'))
+      taskWhere = filterToWhere(filter, userID)
     }
-    const User = <UserInstance>await models.User.findByPk(SourceUser.get('id'), {
-      include: [
+
+    const User = await checkResolver(
+      req,
+      [],
+      false,
+      [
         {
           model: models.ProjectRight,
           include: [
@@ -57,11 +60,11 @@ const querries = {
           ]
         }
       ]
-    });
+    );
 
     const tasks = (<ProjectRightInstance[]>User.get('ProjectRights')).map((ProjectRight) => <ProjectInstance>ProjectRight.get('Project')).reduce((acc, proj) => [...acc, ...<TaskInstance[]>proj.get('Tasks')], [])
     if (filter) {
-      return filterByOneOf(filter, SourceUser.get('id'), SourceUser.get('CompanyId'), tasks).reduce((acc, task) => [...acc, ...<CalendarEventInstance[]>task.get('CalendarEvents')], []);
+      return filterByOneOf(filter, User.get('id'), User.get('CompanyId'), tasks).reduce((acc, task) => [...acc, ...<CalendarEventInstance[]>task.get('CalendarEvents')], []);
     }
     return tasks.reduce((acc, task) => [...acc, ...<CalendarEventInstance[]>task.get('CalendarEvents')], []);
   },

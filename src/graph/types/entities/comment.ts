@@ -15,6 +15,7 @@ type Comment {
   parentCommentId: Int
   subject: String
   tos: [String]
+  emailAttachments: [EmailAttachment]
   emailError: String
   emailSend: Boolean
 }

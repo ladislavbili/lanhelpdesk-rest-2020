@@ -2,14 +2,13 @@ import sanitizeHtml from 'sanitize-html';
 import validator from "email-validator";
 import { Op } from 'sequelize';
 import stripHtml from 'html2plaintext';
-import { JSDOM } from "jsdom";
-import { Duplex } from 'stream';
 import { sendEmail } from '../smtp/sendEmail';
 import { TaskInstance, ProjectInstance } from '@/models/instances';
 import { models } from '@/models';
 import { addUser } from '@/configs/addData';
 import { randomString } from '@/helperFunctions';
 import moment from 'moment';
+import fs from 'fs';
 
 
 export default async function processEmail(email, Imap) {
@@ -29,33 +28,7 @@ export default async function processEmail(email, Imap) {
 
   email.html = email.originalHTML ? sanitizeHtml(email.originalHTML) : null;
   email.text = email.html ? stripHtml(email.html) : email.text;
-  //If you want to save e-mail images too
-  /*
-  let images=[];
-  if(mail.originalHTML){
-    const dom = new JSDOM(mail.originalHTML);
-    let htmlImages = dom.window.document.getElementsByTagName("img");
-    for (let img of htmlImages) {
-      images.push({src:img.src,alt:img.alt, width:img.width, height:img.height})
-    }
-  }
-  mail.images = images;
-  */
-  /*
-  files handle here
-  */
   saveEmail(email, Imap);
-}
-
-function bufferToStream(buffer) {
-  let stream = new Duplex();
-  stream.push(buffer);
-  stream.push(null);
-  return stream;
-}
-
-function uploadMailPart(attachment) {
-  let folder = attachment.contentDisposition === 'inline' ? 'email-content-files' : 'email-attachments';
 }
 
 async function saveEmail(email, Imap) {
@@ -96,39 +69,58 @@ async function saveEmail(email, Imap) {
   if (!isNaN(taskId)) {
     Task = await models.Task.findByPk(taskId);
   }
+  const timestamp = moment().valueOf();
 
   if (Task === null) {
     //createTask
     createTask(email, Imap, User, secret);
 
   } else {
-
-    Task.addComment(
-      {
-        message: email.text,
-        rawMessage: email.originalText,
-        html: email.html,
-        rawHtml: email.originalHTML,
-        internal: false,
-        subject: email.subject,
-        isEmail: true,
-        emailSend: true,
-        emailError: null,
-        isParent: true,
-        EmailTargets: [{ address: Imap.get('username') }],
-      },
-      {
-        include: [{ model: models.EmailTarget }]
-      }
-    )
-    console.log('done adding comment');
+    let completed = 0;
+    let attachmentsData = [];
+    email.attachments.forEach((attachment) => {
+      fs.promises.mkdir(`files/email-attachments/${11}`, { recursive: true }).then((eeh) => {
+        fs.writeFile(`files/email-attachments/${11}/${timestamp}-${attachment.filename}`, attachment.content, (eh) => {
+          completed++;
+          attachmentsData.push({
+            filename: attachment.filename,
+            mimetype: attachment.contentType,
+            size: attachment.size,
+            contentDisposition: attachment.contentDisposition === 'inline' ? 'email-content-files' : 'email-attachments',
+            path: `files/email-attachments/${11}/${timestamp}-${attachment.filename}`,
+          });
+          if (completed === email.attachments.length) {
+            addComment(email, Imap, Task, attachmentsData);
+          }
+        })
+      })
+    })
   }
+}
 
+async function addComment(email, Imap, Task, attachmentsData) {
+  Task.createComment(
+    {
+      message: email.text,
+      rawMessage: email.originalText,
+      html: email.html,
+      rawHtml: email.originalHTML,
+      internal: false,
+      subject: email.subject,
+      isEmail: true,
+      emailSend: true,
+      emailError: null,
+      isParent: true,
+      EmailTargets: [{ address: Imap.get('username') }],
+      EmailAttachments: attachmentsData
+    },
+    {
+      include: [{ model: models.EmailTarget }, { model: models.EmailAttachment }]
+    }
+  )
 }
 
 async function createTask(email, Imap, User, secret) {
-  console.log('create task');
-
   const Status = await models.Status.findOne({ where: { action: 'IsNew' } });
   const TaskType = await models.TaskType.findOne();
   const now = moment().valueOf();
@@ -159,20 +151,7 @@ async function createTask(email, Imap, User, secret) {
         newValue: null,
         message: `Task was created by ${User.get('fullName')}`,
       }]
-    }],
-    Comments: [{
-      message: email.text,
-      rawMessage: email.originalText,
-      html: email.html,
-      rawHtml: email.originalHTML,
-      internal: false,
-      subject: email.subject,
-      isEmail: true,
-      emailSend: true,
-      emailError: null,
-      isParent: true,
-      EmailTargets: [{ address: Imap.get('username') }],
-    }],
+    }]
   };
 
   const defaults = <any>await (<ProjectInstance>await models.Project.findByPk(Imap.get('ProjectId'))).get('def');
@@ -215,6 +194,26 @@ async function createTask(email, Imap, User, secret) {
   if (defaults.tag.def) {
     NewTask.setTags(defaults.tag.value.map((value) => value.get('id')));
   }
+
+  let completed = 0;
+  let attachmentsData = [];
+  email.attachments.forEach((attachment) => {
+    fs.promises.mkdir(`files/email-attachments/${11}`, { recursive: true }).then((eeh) => {
+      fs.writeFile(`files/email-attachments/${11}/${now}-${attachment.filename}`, attachment.content, (eh) => {
+        completed++;
+        attachmentsData.push({
+          filename: attachment.filename,
+          mimetype: attachment.contentType,
+          size: attachment.size,
+          contentDisposition: attachment.contentDisposition === 'inline' ? 'email-content-files' : 'email-attachments',
+          path: `files/email-attachments/${11}/${now}-${attachment.filename}`,
+        });
+        if (completed === email.attachments.length) {
+          addComment(email, Imap, NewTask, attachmentsData);
+        }
+      })
+    })
+  })
 
   sendEmail(
     `Dobrý deň, \n

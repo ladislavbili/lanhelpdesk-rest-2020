@@ -1,7 +1,12 @@
 import startRepeatTasks from './repeatTasks';
 import { readEmails as startReadEmails } from './imap';
+import { imaps, repeatTasks } from '@/configs/constants';
 
 export default function startServices() {
-  startRepeatTasks();
-  startReadEmails();
+  if (repeatTasks) {
+    startRepeatTasks();
+  }
+  if (imaps) {
+    startReadEmails();
+  }
 }
