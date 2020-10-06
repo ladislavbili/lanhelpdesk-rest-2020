@@ -1,5 +1,5 @@
 export const testing = true;
-export const imaps = true;
+export const imaps = false;
 export const smtps = true;
 export const repeatTasks = false;
 
