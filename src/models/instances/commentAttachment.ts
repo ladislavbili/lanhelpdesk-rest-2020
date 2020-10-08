@@ -1,18 +1,18 @@
 import { Sequelize, DataTypes } from "sequelize";
 import DefaultInstance from './defaultInstance';
 
-export interface EmailAttachmentInstance extends DefaultInstance {
+export interface CommentAttachmentInstance extends DefaultInstance {
   filename: string;
   mimetype: string;
   size: number;
   contentDisposition: string;
   path: string;
-  //Email
+  //Comment
 }
 
-export default function defineEmailAttachments(sequelize: Sequelize) {
-  sequelize.define<EmailAttachmentInstance>(
-    "EmailAttachment",
+export default function defineCommentAttachments(sequelize: Sequelize) {
+  sequelize.define<CommentAttachmentInstance>(
+    "CommentAttachment",
     {
       filename: {
         type: DataTypes.TEXT,
@@ -38,12 +38,12 @@ export default function defineEmailAttachments(sequelize: Sequelize) {
     },
     {
       //OPTIONS
-      tableName: 'email_attachments',
+      tableName: 'comment_attachments',
       // freezeTableName: true,
     }
   );
 }
 
-export function createEmailAttachmentsAssoc(models) {
-  models.EmailAttachment.belongsTo(models.Comment, { foreignKey: { allowNull: false } });
+export function createCommentAttachmentsAssoc(models) {
+  models.CommentAttachment.belongsTo(models.Comment, { foreignKey: { allowNull: false } });
 }

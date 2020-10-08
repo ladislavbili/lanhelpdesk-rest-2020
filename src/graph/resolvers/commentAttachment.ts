@@ -9,9 +9,9 @@ const mutations = {
 }
 
 const attributes = {
-  EmailAttachment: {
-    async comment(emailAttachment) {
-      return emailAttachment.getComment()
+  CommentAttachment: {
+    async comment(commentAttachment) {
+      return commentAttachment.getComment()
     }
   },
 };

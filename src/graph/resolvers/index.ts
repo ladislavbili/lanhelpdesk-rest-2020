@@ -1,5 +1,6 @@
 import calendarEvent from './calendarEvent';
 import comment from './comment';
+import commentAttachment from './commentAttachment';
 import company from './company';
 import customItem from './customItem';
 import errorMessage from './errorMessage';
@@ -29,6 +30,7 @@ export default {
   Query: {
     ...calendarEvent.querries,
     ...comment.querries,
+    ...commentAttachment.querries,
     ...company.querries,
     ...customItem.querries,
     ...errorMessage.querries,
@@ -56,6 +58,7 @@ export default {
   Mutation: {
     ...calendarEvent.mutations,
     ...comment.mutations,
+    ...commentAttachment.mutations,
     ...company.mutations,
     ...customItem.mutations,
     ...errorMessage.mutations,
@@ -85,6 +88,7 @@ export default {
 
   ...calendarEvent.attributes,
   ...comment.attributes,
+  ...commentAttachment.attributes,
   ...company.attributes,
   ...customItem.attributes,
   ...errorMessage.attributes,

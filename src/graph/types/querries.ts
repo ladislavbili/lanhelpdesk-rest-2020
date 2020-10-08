@@ -1,8 +1,8 @@
 import { CalendarEventQuerries } from './entities/calendarEvent';
 import { CommentQuerries } from './entities/comment';
+import { CommentAttachmentQuerries } from './entities/commentAttachment';
 import { CompanyQuerries } from './entities/company';
 import { CustomItemQuerries } from './entities/customItem';
-import { EmailAttachmentQuerries } from './entities/emailAttachment';
 import { ErrorMessageQuerries } from './entities/errorMessage';
 import { FilterQuerries } from './entities/filter';
 import { ImapQuerries } from './entities/imap';
@@ -27,9 +27,9 @@ export default `
 type Query {
   ${CalendarEventQuerries}
   ${CommentQuerries}
+  ${CommentAttachmentQuerries}
   ${CompanyQuerries}
   ${CustomItemQuerries}
-  ${EmailAttachmentQuerries}
   ${ErrorMessageQuerries}
   ${FilterQuerries}
   ${ImapQuerries}

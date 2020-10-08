@@ -6,4 +6,6 @@ export function test(app) {
 
 export * from './get-attachments';
 export * from './refresh_token';
+export * from './send-comment';
+export * from './send-email';
 export * from './upload-attachments';

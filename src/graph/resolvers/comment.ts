@@ -10,12 +10,13 @@ import {
 import { models } from '@/models';
 import { checkIfHasProjectRights, isEmail } from '@/helperFunctions';
 import { sendEmail } from '@/services/smtp'
-import { RoleInstance, AccessRightsInstance, TaskInstance, EmailTargetInstance, UserInstance } from '@/models/instances';
+import { RoleInstance, AccessRightsInstance, TaskInstance, EmailTargetInstance, UserInstance, CommentAttachmentInstance } from '@/models/instances';
+import pathResolver from 'path';
 import { Op } from 'sequelize';
 import checkResolver from './checkResolver';
+import fs from 'fs';
 
-
-interface EmailResultInstance {
+export interface EmailResultInstance {
   message: string;
   error: boolean;
 }
@@ -126,7 +127,12 @@ const mutations = {
   },
   resendEmail: async (root, { messageId }, { req }) => {
     const SourceUser = await checkResolver(req, ['mailViaComment']);
-    const Comment = await models.Comment.findByPk(messageId, { include: [{ model: models.User }, { model: models.EmailTarget }] });
+    const Comment = await models.Comment.findByPk(messageId, {
+      include: [
+        { model: models.User },
+        { model: models.EmailTarget },
+        { model: models.CommentAttachment }]
+    });
     if (Comment === null) {
       throw createDoesNoExistsError('Comment', messageId);
     }
@@ -134,21 +140,60 @@ const mutations = {
     if (!Comment.get('isEmail')) {
       throw CommentNotEmailError;
     }
+    /*
     if (!Comment.get('emailSend')) {
       throw EmailAlreadySendError;
     }
-    let emailResult = <EmailResultInstance>await sendEmail(
-      Comment.get('message'),
-      null,
-      Comment.get('subject'),
-      (<EmailTargetInstance[]>Comment.get('EmailTargets')).map((EmailTarget) => EmailTarget.get('address')),
-      (<UserInstance>Comment.get('User')).get('email')
-    );
-    if (emailResult.error) {
-      await Comment.update({ emailError: emailResult.message })
-    } else {
-      await Comment.update({ emailError: null })
+    */
+    const CommentAttachments = <CommentAttachmentInstance[]>Comment.get('CommentAttachments');
+    let files = [];
+    if (CommentAttachments.length === 0) {
+      let emailResult = <EmailResultInstance>await sendEmail(
+        Comment.get('message'),
+        null,
+        Comment.get('subject'),
+        (<EmailTargetInstance[]>Comment.get('EmailTargets')).map((EmailTarget) => EmailTarget.get('address')),
+        (<UserInstance>Comment.get('User')).get('email')
+      );
+      if (emailResult.error) {
+        Comment.update({ emailError: emailResult.message })
+      } else {
+        Comment.update({ emailError: null, emailSend: true })
+      }
     }
+    CommentAttachments.forEach((CommentAttachment) => {
+      fs.readFile(`./${CommentAttachment.get('path')}`, async (err, data) => {
+        if (err) {
+          CommentAttachment.destroy();
+          files.push({
+            ...CommentAttachment.get(),
+            data: null
+          })
+        } else {
+          files.push({
+            ...CommentAttachment.get(),
+            data
+          })
+        }
+        if (files.length === CommentAttachments.length) {
+          files = files.filter((file) => file.data !== null);
+          let emailResult = <EmailResultInstance>await sendEmail(
+            Comment.get('message'),
+            null,
+            Comment.get('subject'),
+            (<EmailTargetInstance[]>Comment.get('EmailTargets')).map((EmailTarget) => EmailTarget.get('address')),
+            (<UserInstance>Comment.get('User')).get('email'),
+            files
+          );
+          if (emailResult.error) {
+            Comment.update({ emailError: emailResult.message })
+          } else {
+            Comment.update({ emailError: null, emailSend: true })
+          }
+        }
+      });
+    });
+
     return Comment;
   },
 }
@@ -174,8 +219,8 @@ const attributes = {
       const EmailTargets = await comment.getEmailTargets();
       return EmailTargets.map((emailTarget) => emailTarget.get('address'));
     },
-    async emailAttachments(comment) {
-      return comment.getEmailAttachments()
+    async commentAttachments(comment) {
+      return comment.getCommentAttachments()
     },
 
   }

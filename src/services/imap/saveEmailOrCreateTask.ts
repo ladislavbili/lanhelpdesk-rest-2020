@@ -79,15 +79,15 @@ async function saveEmail(email, Imap) {
     let completed = 0;
     let attachmentsData = [];
     email.attachments.forEach((attachment) => {
-      fs.promises.mkdir(`files/email-attachments/${11}`, { recursive: true }).then((eeh) => {
-        fs.writeFile(`files/email-attachments/${11}/${timestamp}-${attachment.filename}`, attachment.content, (eh) => {
+      fs.promises.mkdir(`files/comment-attachments/${11}`, { recursive: true }).then((eeh) => {
+        fs.writeFile(`files/comment-attachments/${11}/${timestamp}-${attachment.filename}`, attachment.content, (eh) => {
           completed++;
           attachmentsData.push({
             filename: attachment.filename,
             mimetype: attachment.contentType,
             size: attachment.size,
-            contentDisposition: attachment.contentDisposition === 'inline' ? 'email-content-files' : 'email-attachments',
-            path: `files/email-attachments/${11}/${timestamp}-${attachment.filename}`,
+            contentDisposition: attachment.contentDisposition === 'inline' ? 'email-content-files' : 'attachments',
+            path: `files/comment-attachments/${11}/${timestamp}-${attachment.filename}`,
           });
           if (completed === email.attachments.length) {
             addComment(email, Imap, Task, attachmentsData);
@@ -112,10 +112,10 @@ async function addComment(email, Imap, Task, attachmentsData) {
       emailError: null,
       isParent: true,
       EmailTargets: [{ address: Imap.get('username') }],
-      EmailAttachments: attachmentsData
+      CommentAttachments: attachmentsData
     },
     {
-      include: [{ model: models.EmailTarget }, { model: models.EmailAttachment }]
+      include: [{ model: models.EmailTarget }, { model: models.CommentAttachment }]
     }
   )
 }
@@ -198,15 +198,15 @@ async function createTask(email, Imap, User, secret) {
   let completed = 0;
   let attachmentsData = [];
   email.attachments.forEach((attachment) => {
-    fs.promises.mkdir(`files/email-attachments/${11}`, { recursive: true }).then((eeh) => {
-      fs.writeFile(`files/email-attachments/${11}/${now}-${attachment.filename}`, attachment.content, (eh) => {
+    fs.promises.mkdir(`files/comment-attachments/${11}`, { recursive: true }).then((eeh) => {
+      fs.writeFile(`files/comment-attachments/${11}/${now}-${attachment.filename}`, attachment.content, (eh) => {
         completed++;
         attachmentsData.push({
           filename: attachment.filename,
           mimetype: attachment.contentType,
           size: attachment.size,
-          contentDisposition: attachment.contentDisposition === 'inline' ? 'email-content-files' : 'email-attachments',
-          path: `files/email-attachments/${11}/${now}-${attachment.filename}`,
+          contentDisposition: attachment.contentDisposition === 'inline' ? 'email-content-files' : 'attachments',
+          path: `files/comment-attachments/${11}/${now}-${attachment.filename}`,
         });
         if (completed === email.attachments.length) {
           addComment(email, Imap, NewTask, attachmentsData);

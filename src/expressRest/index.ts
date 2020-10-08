@@ -11,6 +11,8 @@ import {
   uploadAttachments,
   getAttachments,
   refreshToken,
+  sendComment,
+  sendEmail
 } from './rest';
 
 var running: boolean = false;
@@ -33,6 +35,8 @@ export const startRest = () => {
   uploadAttachments(app);
   getAttachments(app);
   refreshToken(app);
+  sendComment(app);
+  sendEmail(app);
 
   const httpServer = http.createServer(app);
   server.installSubscriptionHandlers(httpServer);

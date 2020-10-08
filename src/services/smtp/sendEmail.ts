@@ -54,8 +54,8 @@ export function sendEmail(textMessage, htmlMessage, subject, to, from, files = [
         html: htmlMessage,
         attachments: files.map((file) => {
           return {
-            filename: file.originalname,
-            content: file.buffer,
+            filename: file.name,
+            content: file.data,
             contentType: file.mimetype,
             contentDisposition: 'attachment',
             encoding: file.encoding,

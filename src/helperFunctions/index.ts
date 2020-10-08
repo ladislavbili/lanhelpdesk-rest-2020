@@ -17,6 +17,11 @@ export {
 } from './emailCheck';
 
 export {
+  checkType,
+  getAttributes
+} from './expressProcessing';
+
+export {
   filterObjectToFilter,
 } from './filter';
 

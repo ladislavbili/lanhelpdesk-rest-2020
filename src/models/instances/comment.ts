@@ -16,6 +16,7 @@ export interface CommentInstance extends DefaultInstance {
   emailSend: boolean;
   emailError: string;
   isParent: boolean;
+  createCommentAttachment?: any;
 }
 
 export default function definecomments(sequelize: Sequelize) {
@@ -90,6 +91,6 @@ export function createCommentsAssoc(models) {
 
   models.Comment.hasMany(models.EmailTarget, { onDelete: 'CASCADE' });
 
-  models.Comment.hasMany(models.EmailAttachment, { onDelete: 'CASCADE' });
+  models.Comment.hasMany(models.CommentAttachment, { onDelete: 'CASCADE' });
 
 }

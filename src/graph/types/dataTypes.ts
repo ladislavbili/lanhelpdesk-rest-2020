@@ -1,9 +1,9 @@
 import { CalendarEvent } from './entities/calendarEvent';
 import { Comment } from './entities/comment';
+import { CommentAttachment } from './entities/commentAttachment';
 import { Company } from './entities/company';
 import { CustomItem } from './entities/customItem';
 import { ErrorMessage } from './entities/errorMessage';
-import { EmailAttachment } from './entities/emailAttachment';
 import { Filter } from './entities/filter';
 import { Imap } from './entities/imap';
 import { Material } from './entities/material';
@@ -26,9 +26,9 @@ import { WorkTrip } from './entities/workTrip';
 export default `
 ${CalendarEvent}
 ${Comment}
+${CommentAttachment}
 ${Company}
 ${CustomItem}
-${EmailAttachment}
 ${ErrorMessage}
 ${Filter}
 ${Imap}

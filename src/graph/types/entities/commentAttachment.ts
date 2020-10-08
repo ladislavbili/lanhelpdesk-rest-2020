@@ -1,6 +1,6 @@
 import defaultAttributes from './defaultAttributes';
-export const EmailAttachment = `
-type EmailAttachment {
+export const CommentAttachment = `
+type CommentAttachment {
   ${defaultAttributes}
   path: String!
   filename: String!
@@ -11,8 +11,8 @@ type EmailAttachment {
 }
 `
 
-export const EmailAttachmentQuerries = `
+export const CommentAttachmentQuerries = `
 `
 
-export const EmailAttachmentMutations = `
+export const CommentAttachmentMutations = `
 `

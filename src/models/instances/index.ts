@@ -27,3 +27,4 @@ export { CustomItemInstance } from './customItem';
 export { CommentInstance } from './comment';
 export { EmailTargetInstance } from './emailTarget';
 export { TaskAttachmentInstance } from './taskAttachment';
+export { CommentAttachmentInstance } from './CommentAttachment';

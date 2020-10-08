@@ -1,8 +1,8 @@
 import { CalendarEventMutations } from './entities/calendarEvent';
 import { CommentMutations } from './entities/comment';
+import { CommentAttachmentMutations } from './entities/commentAttachment';
 import { CompanyMutations } from './entities/company';
 import { CustomItemMutations } from './entities/customItem';
-import { EmailAttachmentMutations } from './entities/emailAttachment';
 import { ErrorMessageMutations } from './entities/errorMessage';
 import { FilterMutations } from './entities/filter';
 import { ImapMutations } from './entities/imap';
@@ -28,8 +28,8 @@ type Mutation {
   ${CalendarEventMutations}
   ${CompanyMutations}
   ${CommentMutations}
+  ${CommentAttachmentMutations}
   ${CustomItemMutations}
-  ${EmailAttachmentMutations}
   ${ErrorMessageMutations}
   ${FilterMutations}
   ${ImapMutations}
