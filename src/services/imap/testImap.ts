@@ -28,9 +28,14 @@ export async function testImap(Imap, imap = null) {
       }
     },
   );
-  this.imapFlow.on('error', (error) => testOnError(error, Imap));
+  imapFlow.on('error', (error) => testOnError(error, Imap));
   try {
-    await this.imapFlow.connect();
+    await imapFlow.connect();
+    Imap.update({
+      currentlyTested: false,
+      working: true,
+      errorMessage: null
+    });
   } catch (error) {
     return testOnError(error, Imap)
   }

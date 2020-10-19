@@ -18,6 +18,7 @@ import { TagMutations } from './entities/tag';
 import { TaskMutations } from './entities/task';
 import { TaskAttachmentMutations } from './entities/taskAttachment';
 import { TaskChangeMutations } from './entities/taskChange';
+import { TaskInvoiceMutations } from './entities/taskInvoice';
 import { TaskTypeMutations } from './entities/taskType';
 import { TripTypeMutations } from './entities/tripType';
 import { UserMutations } from './entities/user';
@@ -45,6 +46,7 @@ type Mutation {
   ${TaskMutations}
   ${TaskAttachmentMutations}
   ${TaskChangeMutations}
+  ${TaskInvoiceMutations}
   ${TaskTypeMutations}
   ${TripTypeMutations}
   ${UserMutations}

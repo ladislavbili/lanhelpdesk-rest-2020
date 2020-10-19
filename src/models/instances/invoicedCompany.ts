@@ -1,44 +1,38 @@
 import { Sequelize, DataTypes } from "sequelize";
 import DefaultInstance from './defaultInstance';
 
-export interface MaterialInstance extends DefaultInstance {
+export interface InvoicedCompanyInstance extends DefaultInstance {
   title: string;
-  order: number;
-  done: boolean;
-  quantity: number;
-  margin: number;
-  price: number;
+  dph: number;
+  monthlyPausal: number;
+  taskTripPausal: number;
+  taskWorkPausal: number;
 }
 
-export default function defineMaterials(sequelize: Sequelize) {
-  sequelize.define<MaterialInstance>(
-    "Material",
+export default function defineInvoicedCompanies(sequelize: Sequelize) {
+  sequelize.define<InvoicedCompanyInstance>(
+    "InvoicedCompany",
     {
       title: {
         type: DataTypes.TEXT,
         allowNull: false,
       },
-      order: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0
-      },
-      done: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      quantity: {
+      dph: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0
       },
-      margin: {
+      monthlyPausal: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0
       },
-      price: {
+      taskTripPausal: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0
+      },
+      taskWorkPausal: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0
@@ -46,12 +40,12 @@ export default function defineMaterials(sequelize: Sequelize) {
     },
     {
       //OPTIONS
-      tableName: 'materials',
+      tableName: 'invoiced_company',
       // freezeTableName: true,
     }
   );
 }
 
-export function createMaterialsAssoc(models) {
-  models.Material.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+export function createInvoicedCompaniesAssoc(models) {
+  models.InvoicedCompany.belongsTo(models.TaskInvoice);
 }

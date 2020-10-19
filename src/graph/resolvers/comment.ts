@@ -140,11 +140,9 @@ const mutations = {
     if (!Comment.get('isEmail')) {
       throw CommentNotEmailError;
     }
-    /*
     if (!Comment.get('emailSend')) {
       throw EmailAlreadySendError;
     }
-    */
     const CommentAttachments = <CommentAttachmentInstance[]>Comment.get('CommentAttachments');
     let files = [];
     if (CommentAttachments.length === 0) {

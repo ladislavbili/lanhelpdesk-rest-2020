@@ -21,6 +21,15 @@ const querries = {
       ]
     })
   },
+  basicRoles: async (root, args, { req }) => {
+    await checkResolver(req);
+    return models.Role.findAll({
+      order: [
+        ['order', 'ASC'],
+        ['title', 'ASC'],
+      ]
+    })
+  },
   role: async (root, { id }, { req }) => {
     await checkResolver(req, ['roles']);
     return models.Role.findByPk(id);

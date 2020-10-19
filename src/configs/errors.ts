@@ -120,3 +120,6 @@ export const EmailAlreadySendError = new ApolloError("E-mail was already send!",
 //Imap check
 export const ImapIsAlreadyBeingTestedError = new ApolloError("This Imap is being tested!", "IMAP_ALREADY_TESTING");
 export const ImapRoleLevelTooLowError = new ApolloError("Imap can't get assigned role with lower level than yours!", "IMAP_ROLE_LEVEL_TOO_LOW");
+
+//VYKAZY
+export const MustSelectStatusesError = new ApolloError("You must pick at least one status!", "NO_STATUS_SELECTED");

@@ -18,6 +18,7 @@ import { Tag } from './entities/tag';
 import { Task } from './entities/task';
 import { TaskAttachment } from './entities/taskAttachment';
 import { TaskChange } from './entities/taskChange';
+import { TaskInvoice } from './entities/taskInvoice';
 import { TaskType } from './entities/taskType';
 import { TripType } from './entities/tripType';
 import { User } from './entities/user';
@@ -44,6 +45,7 @@ ${Tag}
 ${Task}
 ${TaskAttachment}
 ${TaskChange}
+${TaskInvoice}
 ${TaskType}
 ${TripType}
 ${User}

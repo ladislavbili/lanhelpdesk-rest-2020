@@ -1,0 +1,78 @@
+VYKAZY - pravo na "vykazy"
+-nemozes editovat vykazy
+-nemozes nastavit status vykazane v task edite
+-nemozes ovlplyvnovat subtasky atd ak su veci vykazane
+-opakovane vykazanie ulohy - fixna cena
+-pri mazani task typu ovplyvnit aj subtasky
+_______
+
+prehlad firiem parameter - datum od, datum do, statusy - firmy a ich sucty
+-ziskaj firmy, optimalizovane sucet veci
+_______
+
+vykaz firmy parameter - datum od, datum do, statusy, id
+-jeho tasky filtrovane, ich subtasky atd,
+_______
+
+vykaz obsahuje
+-zoznam taskov
+-vlastna tabulka s fixnutymi hodnotami - ceny atd subtaskov a podobne
+-sucty vypocitane:
+
+Počet prác vrámci paušálu: 0
+Počet výjazdov vrámci paušálu: 0
+Obdobie od 00:00 01.08.2020 do: 23:59 31.08.2020
+Firma Test
+
+
+--Práce a výjazdy vrámci paušálu
+-Práce
+Spolu počet hodín: 0
+Spolu počet hodín mimo pracovný čas: 0 ( Čísla úloh: )
+Spolu prirážka za práce mimo pracovných hodín: 0 eur
+
+-Výjazdy
+Spolu počet výjazdov: 0
+Spolu počet výjazdov mimo pracovný čas: 0 ( Čísla úloh: )
+Spolu prirážka za výjazdov mimo pracovných hodín: 0 eur
+
+
+--Práce a výjazdy nad rámec paušálu
+-Práce
+Spolu počet hodín: 0
+Spolu počet hodín mimo pracovný čas: 0 ( Čísla úloh: )
+Spolu prirážka za práce mimo pracovných hodín: 0 eur
+Spolu cena bez DPH: 0 eur
+Spolu cena s DPH: 0 eur
+
+-Výjazdy
+Spolu počet výjazdov: 0
+Spolu počet výjazdov mimo pracovný čas: 0 ( Čísla úloh: )
+Spolu prirážka za výjazdy mimo pracovných hodín: 0 eur
+Spolu cena bez DPH: 0 eur
+Spolu cena s DPH: 0 eur
+
+
+--Projektové práce a výjazdy
+-Práce
+Spolu počet hodín: 33
+Spolu počet hodín mimo pracovný čas: 0 ( Čísla úloh: )
+Spolu prirážka za práce mimo pracovných hodín: 0 eur
+Spolu cena bez DPH: 904 eur
+Spolu cena s DPH: 994.4 eur
+
+-Výjazdy
+Spolu počet výjazdov: 11
+Spolu počet výjazdov mimo pracovný čas: 0 ( Čísla úloh: )
+Spolu prirážka za výjazdov mimo pracovných hodín: 0 eur
+Spolu cena bez DPH: 114 eur
+Spolu cena s DPH: 125.4 eur
+
+--Materiále a voľné položky
+Spolu cena bez DPH: 1000 EUR
+Spolu cena s DPH: 1100 EUR
+
+--Mesačný prenájom služieb a harware
+-DUPLIKOVAT NAJMY FIRMY, PAUSALE ATD
+Spolu cena bez DPH: 0 EUR
+Spolu cena s DPH: 0 EUR

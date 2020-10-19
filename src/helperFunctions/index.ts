@@ -26,6 +26,22 @@ export {
 } from './filter';
 
 export {
+  toPercents,
+  roundPoint,
+  getDiscountedPrice,
+  getAHExtraPrice,
+  getAHPrice,
+  getFinalPrice,
+  getTotalPrice,
+  getTotalDiscountedPrice,
+  getTotalAHExtraPrice,
+  getTotalAHPrice,
+  getTotalFinalPrice,
+  getTotalFinalPriceWithDPH,
+} from './invoiceCalculations';
+
+
+export {
   logFunctionsOfModel,
 
   idDoesExists,

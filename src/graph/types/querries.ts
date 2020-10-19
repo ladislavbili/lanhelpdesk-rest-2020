@@ -18,6 +18,7 @@ import { TagQuerries } from './entities/tag';
 import { TaskQuerries } from './entities/task';
 import { TaskAttachmentQuerries } from './entities/taskAttachment';
 import { TaskChangeQuerries } from './entities/taskChange';
+import { TaskInvoiceQuerries } from './entities/taskInvoice';
 import { TaskTypeQuerries } from './entities/taskType';
 import { TripTypeQuerries } from './entities/tripType';
 import { UserQuerries } from './entities/user';
@@ -45,6 +46,7 @@ type Query {
   ${TaskQuerries}
   ${TaskAttachmentQuerries}
   ${TaskChangeQuerries}
+  ${TaskInvoiceQuerries}
   ${TaskTypeQuerries}
   ${TripTypeQuerries}
   ${UserQuerries}

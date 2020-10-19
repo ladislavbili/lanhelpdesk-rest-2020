@@ -11,7 +11,7 @@ export default function definePrices(sequelize: Sequelize) {
     "Price",
     {
       price: {
-        type: DataTypes.FLOAT(10, 2),
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0
       },

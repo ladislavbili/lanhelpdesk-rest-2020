@@ -8,6 +8,7 @@ export interface SubtaskInstance extends DefaultInstance {
   done: boolean;
   quantity: number;
   discount: number;
+  invoiced: boolean;
   //task
   //type
   //assignedTo
@@ -35,15 +36,21 @@ export default function defineSubtasks(sequelize: Sequelize) {
         defaultValue: false,
       },
       quantity: {
-        type: DataTypes.FLOAT(10, 2),
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0
       },
       discount: {
-        type: DataTypes.FLOAT(10, 2),
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0
       },
+      invoiced: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+
     },
     {
       //OPTIONS
@@ -59,4 +66,6 @@ export function createSubtasksAssoc(models) {
   models.Subtask.belongsTo(models.TaskType);
 
   models.Subtask.belongsTo(models.User);
+
+  models.Subtask.hasMany(models.InvoicedSubtask);
 }

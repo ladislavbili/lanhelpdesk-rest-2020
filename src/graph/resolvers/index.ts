@@ -18,6 +18,7 @@ import tag from './tag';
 import task from './task';
 import taskAttachment from './taskAttachment';
 import taskChange from './taskChange';
+import taskInvoice from './taskInvoice';
 import taskType from './taskType';
 import tripType from './tripType';
 import user from './user';
@@ -49,6 +50,7 @@ export default {
     ...task.querries,
     ...taskAttachment.querries,
     ...taskChange.querries,
+    ...taskInvoice.querries,
     ...taskType.querries,
     ...tripType.querries,
     ...user.querries,
@@ -77,6 +79,7 @@ export default {
     ...task.mutations,
     ...taskAttachment.mutations,
     ...taskChange.mutations,
+    ...taskInvoice.mutations,
     ...taskType.mutations,
     ...tripType.mutations,
     ...user.mutations,
@@ -108,6 +111,7 @@ export default {
   ...taskAttachment.attributes,
   ...taskType.attributes,
   ...taskChange.attributes,
+  ...taskInvoice.attributes,
   ...tripType.attributes,
   ...user.attributes,
   ...workTrip.attributes,

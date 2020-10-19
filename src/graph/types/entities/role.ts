@@ -43,6 +43,7 @@ input AccessRightsUpdateInput {
 export const RoleQuerries = `
 roles: [Role]
 role(id: Int!): Role
+basicRoles: [BasicRole]
 accessRights: AccessRights
 `
 

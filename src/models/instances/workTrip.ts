@@ -31,12 +31,12 @@ export default function defineWorkTrips(sequelize: Sequelize) {
         defaultValue: false,
       },
       quantity: {
-        type: DataTypes.FLOAT(10, 2),
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0
       },
       discount: {
-        type: DataTypes.FLOAT(10, 2),
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0
       },
@@ -55,4 +55,6 @@ export function createWorkTripsAssoc(models) {
   models.WorkTrip.belongsTo(models.TripType);
 
   models.WorkTrip.belongsTo(models.User);
+
+  models.WorkTrip.hasMany(models.InvoicedTrip);
 }

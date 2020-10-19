@@ -36,6 +36,12 @@ import defineTaskChanges, { createTaskChangesAssoc } from './instances/taskChang
 import defineTaskChangeMessages, { createTaskChangeMessagesAssoc } from './instances/taskChangeMessage';
 import defineTaskAttachments, { createTaskAttachmentsAssoc } from './instances/taskAttachment';
 import defineCommentAttachments, { createCommentAttachmentsAssoc } from './instances/commentAttachment';
+import defineInvoicedCompanies, { createInvoicedCompaniesAssoc } from './instances/invoicedCompany';
+import defineInvoicedSubtasks, { createInvoicedSubtasksAssoc } from './instances/invoicedSubtask';
+import defineInvoicedTasks, { createInvoicedTasksAssoc } from './instances/invoicedTask';
+import defineInvoicedTrips, { createInvoicedTripsAssoc } from './instances/invoicedTrip';
+import defineTaskInvoices, { createTaskInvoicesAssoc } from './instances/taskInvoice';
+
 /*
 const operatorsAliases = {
 
@@ -86,6 +92,11 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineTaskChangeMessages(sequelize);
   defineTaskAttachments(sequelize);
   defineCommentAttachments(sequelize);
+  defineInvoicedCompanies(sequelize);
+  defineInvoicedSubtasks(sequelize);
+  defineInvoicedTasks(sequelize);
+  defineInvoicedTrips(sequelize);
+  defineTaskInvoices(sequelize);
 
   createAccessRightsAssoc(models);
   createTagsAssoc(models);
@@ -121,9 +132,14 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createTaskChangeMessagesAssoc(models);
   createTaskAttachmentsAssoc(models);
   createCommentAttachmentsAssoc(models);
+  createInvoicedCompaniesAssoc(models);
+  createInvoicedSubtasksAssoc(models);
+  createInvoicedTasksAssoc(models);
+  createInvoicedTripsAssoc(models);
+  createTaskInvoicesAssoc(models);
   //LOG FUNCTIONS
 
-  //logFunctionsOfModel(models.Comment);
+  //logFunctionsOfModel(models.TaskInvoice);
 
   if (ignoreUpdating) {
     return new Promise((resolve, reject) => resolve());
