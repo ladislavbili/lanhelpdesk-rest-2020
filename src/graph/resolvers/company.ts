@@ -65,9 +65,11 @@ const mutations = {
     })
 
     return models.Company.create({
+      monthly,
       ...attributes,
       PricelistId: pricelistId,
-      CompanyRents: rents
+      CompanyRents: rents,
+      ...otherAttributes
     }, {
         include: [{ model: models.CompanyRent }]
       });
@@ -137,6 +139,7 @@ const mutations = {
           .filter((compRent) => !existingRents.some((rent) => compRent.get('id') === rent.id))
           .forEach((compRent) => promises.push(compRent.destroy({ transaction: t })))
       }
+      console.log(args);
 
       promises.push(TargetCompany.update(args, { transaction: t }));
       await Promise.all(promises);

@@ -177,8 +177,8 @@ const querries = {
     })
     //project tasks
     let { rawPausalTasks, projectTasks } = splitTasksByPausal(Company.get('Tasks'));
-    //TODO project tasks counts, add to database
-    const projectCounts = {};
+    //tasks counts
+    const projectCounts = getProjectTasksCounts(projectTasks, Company);
     //all pausal tasks
     const { pausalTasks, overPausalTasks, pausalCounts, overPausalCounts } = processTasksPausals(
       splitTasksByMonthAndYear(

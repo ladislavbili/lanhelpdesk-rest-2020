@@ -5,7 +5,6 @@ import { checkIfHasProjectRights } from '@/helperFunctions';
 export function uploadAttachments(app) {
   app.post('/upload-attachments', async function(req, res) {
     const timestamp = moment().valueOf();
-
     const { token, taskId } = req.body;
     let files = null;
     if (req.files) {

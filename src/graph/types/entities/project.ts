@@ -5,7 +5,7 @@ export const Project = `
 type Project {
   ${defaultAttributes}
   title: String!
-  descrption: String!
+  description: String!
   lockedRequester: Boolean!
   projectRights: [ProjectRight]!
   def: ProjectDefaults!
@@ -17,7 +17,7 @@ type Project {
 type BasicProject {
   ${defaultAttributes}
   title: String!
-  descrption: String!
+  description: String!
   def: ProjectDefaults!
   filters: [BasicFilter]
   milestones: [Milestone]!
@@ -40,7 +40,7 @@ myProjects: [MyProject]!
 `
 
 export const ProjectMutations = `
-addProject( title: String!, descrption: String!, lockedRequester: Boolean!, projectRights: [ProjectRightInput]!, def: ProjectDefaultsInput! ): Project
-updateProject( id: Int!, title: String, descrption: String, lockedRequester: Boolean, projectRights: [ProjectRightInput], def: ProjectDefaultsInput ): Project
+addProject( title: String!, description: String!, lockedRequester: Boolean!, projectRights: [ProjectRightInput]!, def: ProjectDefaultsInput! ): Project
+updateProject( id: Int!, title: String, description: String, lockedRequester: Boolean, projectRights: [ProjectRightInput], def: ProjectDefaultsInput ): Project
 deleteProject( id: Int!, newId: Int! ): Project
 `

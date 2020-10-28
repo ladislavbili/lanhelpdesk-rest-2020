@@ -37,13 +37,13 @@ type Task {
 }
 
 type Repeat{
-  repeatEvery: Int!
+  repeatEvery: String!
   repeatInterval: EnumRepeatInterval!
   startsAt: String!
 }
 
 input RepeatInput{
-  repeatEvery: Int!
+  repeatEvery: String!
   repeatInterval: EnumRepeatInterval!
   startsAt: String!
 }

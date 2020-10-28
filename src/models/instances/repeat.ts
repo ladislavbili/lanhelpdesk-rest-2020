@@ -12,7 +12,7 @@ export default function defineRepeats(sequelize: Sequelize) {
     "Repeat",
     {
       repeatEvery: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.BIGINT,
         allowNull: false,
       },
       repeatInterval: {

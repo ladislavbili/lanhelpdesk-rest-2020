@@ -216,17 +216,17 @@ const mutations = {
     switch (Status.get('action')) {
       case 'CloseDate': {
         if (args.closeDate === undefined) {
-          params.closeDate = moment().unix() * 1000;
+          params.closeDate = moment().valueOf();
         } else {
-          params.closeDate = args.closeDate;
+          params.closeDate = parseInt(args.closeDate);
         }
         break;
       }
       case 'CloseInvalid': {
         if (args.closeDate === undefined) {
-          params.closeDate = moment().unix() * 1000;
+          params.closeDate = moment().valueOf();
         } else {
-          params.closeDate = args.closeDate;
+          params.closeDate = parseInt(args.closeDate);
         }
         break;
       }
@@ -246,7 +246,7 @@ const mutations = {
     if (repeat !== null && repeat !== undefined) {
       params = {
         ...params,
-        Repeat: { ...repeat, startsAt: parseInt(repeat.startsAt) }
+        Repeat: { ...repeat, startsAt: parseInt(repeat.startsAt), repeatEvery: parseInt(repeat.repeatEvery) }
       }
     }
     //comments processing
@@ -515,11 +515,11 @@ const mutations = {
               break;
             }
             if (args.closeDate === undefined) {
-              params.closeDate = moment().unix() * 1000;
+              params.closeDate = moment().valueOf();
             } else {
-              params.closeDate = args.closeDate;
+              params.closeDate = parseInt(args.closeDate);
             }
-            params.statusChange = moment().unix() * 1000
+            params.statusChange = moment().valueOf();
             break;
           }
           case 'CloseInvalid': {
@@ -528,11 +528,11 @@ const mutations = {
               break;
             }
             if (args.closeDate === undefined) {
-              params.closeDate = moment().unix() * 1000;
+              params.closeDate = moment().valueOf();
             } else {
-              params.closeDate = args.closeDate;
+              params.closeDate = parseInt(args.closeDate);
             }
-            params.statusChange = moment().unix() * 1000
+            params.statusChange = moment().valueOf();
             break;
           }
           case 'PendingDate': {
@@ -563,10 +563,10 @@ const mutations = {
       }
       else if (repeat !== undefined && repeat !== null) {
         if ((<RepeatInstance>Task.get('Repeat')) !== null) {
-          promises.push((<RepeatInstance>Task.get('Repeat')).update({ ...repeat, startsAt: parseInt(repeat.startsAt) }, { transaction }));
+          promises.push((<RepeatInstance>Task.get('Repeat')).update({ ...repeat, startsAt: parseInt(repeat.startsAt), repeatEvery: parseInt(repeat.repeatEvery) }, { transaction }));
           repeatAction = { action: 'update', id: null };
         } else {
-          promises.push(Task.createRepeat({ ...repeat, startsAt: parseInt(repeat.startsAt) }, { transaction }));
+          promises.push(Task.createRepeat({ ...repeat, startsAt: parseInt(repeat.startsAt), repeatEvery: parseInt(repeat.repeatEvery) }, { transaction }));
           repeatAction = { action: 'add', id: null };
         }
       }

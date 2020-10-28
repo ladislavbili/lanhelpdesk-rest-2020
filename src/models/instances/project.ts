@@ -3,7 +3,7 @@ import DefaultInstance from './defaultInstance';
 
 export interface ProjectInstance extends DefaultInstance {
   title: string;
-  descrption: string;
+  description: string;
   lockedRequester: boolean;
 
   defAssignedToDef: boolean;
@@ -68,7 +68,7 @@ export default function defineProjects(sequelize: Sequelize) {
         type: DataTypes.TEXT,
         allowNull: false,
       },
-      descrption: {
+      description: {
         type: DataTypes.TEXT,
         allowNull: false,
       },

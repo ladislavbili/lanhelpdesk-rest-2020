@@ -98,7 +98,7 @@ filter(id: Int!): Filter
 export const FilterMutations = `
 addFilter( title: String!, pub: Boolean!, global: Boolean!, dashboard: Boolean!, filter: FilterInput!, order: Int, roles: [Int], projectId: Int ): Filter
 updateFilter( id: Int!, title: String, pub: Boolean!, global: Boolean!, dashboard: Boolean!, filter: FilterInput, order: Int, roles: [Int], projectId: Int ): Filter
-addPublicFilter( title: String!, global: Boolean!, dashboard: Boolean!, order: Int!, filter: FilterInput!, order: Int!, roles: [Int]!, projectId: Int ): Filter
-updatePublicFilter( id: Int!, title: String, global: Boolean!, dashboard: Boolean!, order: Int, filter: FilterInput, order: Int, roles: [Int], projectId: Int ): Filter
+addPublicFilter( title: String!, global: Boolean!, dashboard: Boolean!, order: Int!, filter: FilterInput!, roles: [Int]!, projectId: Int ): Filter
+updatePublicFilter( id: Int!, title: String, global: Boolean!, dashboard: Boolean!, order: Int, filter: FilterInput, roles: [Int], projectId: Int ): Filter
 deleteFilter( id: Int! ): Filter
 `
