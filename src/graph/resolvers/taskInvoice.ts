@@ -137,9 +137,19 @@ const querries = {
           include: [
             {
               model: models.Subtask,
+              include: [
+                {
+                  model: models.TaskType
+                },
+              ],
             },
             {
               model: models.WorkTrip,
+              include: [
+                {
+                  model: models.TripType
+                },
+              ],
             },
             {
               model: models.Material,
@@ -179,6 +189,8 @@ const querries = {
     let { rawPausalTasks, projectTasks } = splitTasksByPausal(Company.get('Tasks'));
     //tasks counts
     const projectCounts = getProjectTasksCounts(projectTasks, Company);
+    // TODO 
+    //projectTasks = processProjectTasks(projectTasks, Company);
     //all pausal tasks
     const { pausalTasks, overPausalTasks, pausalCounts, overPausalCounts } = processTasksPausals(
       splitTasksByMonthAndYear(
@@ -188,12 +200,12 @@ const querries = {
       previousMonthTasks
     );
     const companyRentsCounts = processCompanyRents(Company.get('CompanyRents'), Company);
-    const { materials, customItems, totalMaterialAndCustomItemPriceWithoutDPH, totalMaterialAndCustomItemPriceWithDPH } = processTasksMaterialsAndCustomItems(Company.get('Tasks'), Company);
+    const { materialTasks, totalMaterialAndCustomItemPriceWithoutDPH, totalMaterialAndCustomItemPriceWithDPH } = processTasksMaterialsAndCustomItems(Company.get('Tasks'), Company);
     return {
       company: Company,
       projectTasks, projectCounts,
       pausalTasks, overPausalTasks, pausalCounts, overPausalCounts,
-      materials, customItems, totalMaterialAndCustomItemPriceWithoutDPH, totalMaterialAndCustomItemPriceWithDPH,
+      materialTasks, totalMaterialAndCustomItemPriceWithoutDPH, totalMaterialAndCustomItemPriceWithDPH,
       companyRentsCounts
     };
   },
@@ -328,7 +340,7 @@ const mutations = {
       previousMonthTasks
     );
     const companyRentsCounts = processCompanyRents(Company.get('CompanyRents'), Company);
-    const { materials, customItems, totalMaterialAndCustomItemPriceWithoutDPH, totalMaterialAndCustomItemPriceWithDPH } = processTasksMaterialsAndCustomItems(Company.get('Tasks'), Company);
+    const { materialTasks, totalMaterialAndCustomItemPriceWithoutDPH, totalMaterialAndCustomItemPriceWithDPH } = processTasksMaterialsAndCustomItems(Company.get('Tasks'), Company);
     const prices = <PriceInstance[]>(<PricelistInstance>Company.get('Pricelist')).get('Prices');
     const afterHours = (<PricelistInstance>Company.get('Pricelist')).get('afterHours');
     const dph = Company.get('dph');
@@ -584,7 +596,9 @@ function processTasksPausals(datedTasks, Company, previousMonthTasks) {
           discount: parseFloat(Subtask.get('discount')),
           quantity: parseFloat(Subtask.get('quantity')),
           price: getFinalPrice(price, Subtask.get('discount'), Task.get('overtime'), afterHours),
+          type: Subtask.get('TaskType'),
         };
+
         let quantity = subtask.quantity;
 
         if (taskWorkPausalCount > quantity) {
@@ -662,6 +676,7 @@ function processTasksPausals(datedTasks, Company, previousMonthTasks) {
           discount: parseFloat(WorkTrip.get('discount')),
           quantity: parseFloat(WorkTrip.get('quantity')),
           price: getFinalPrice(price, WorkTrip.get('discount'), Task.get('overtime'), afterHours),
+          type: WorkTrip.get('TripType')
         };
         let quantity = workTrip.quantity;
         if (taskTripPausalCount > quantity) {
@@ -751,13 +766,17 @@ function processTasksPausals(datedTasks, Company, previousMonthTasks) {
 function processTasksMaterialsAndCustomItems(Tasks, Company) {
   //price per unit, total + margin - in materials
   const dph = Company.get('dph');
-  const { materials, customItems } = Tasks.reduce((acc, Task) => {
+
+  let totalMaterialAndCustomItemPriceWithoutDPH = 0;
+
+  const materialTasks = Tasks.map((Task) => {
     const newMaterials = Task.get('Materials').map((Material) => {
       const price = parseFloat(Material.get('price'));
       const margin = parseFloat(Material.get('margin'));
       const quantity = parseFloat(Material.get('quantity'));
+      totalMaterialAndCustomItemPriceWithoutDPH +=  (price * margin / 100 + price) * quantity;
       return {
-        material: Material,
+        ...Material.get(),
         price: price * margin / 100 + price,
         totalPrice: (price * margin / 100 + price) * quantity
       }
@@ -766,18 +785,18 @@ function processTasksMaterialsAndCustomItems(Tasks, Company) {
     const newCustomItems = Task.get('CustomItems').map((CustomItem) => {
       const price = parseFloat(CustomItem.get('price'));
       const quantity = parseFloat(CustomItem.get('quantity'));
+      totalMaterialAndCustomItemPriceWithoutDPH +=  price * quantity;
       return {
-        customItem: CustomItem,
+        ...CustomItem.get(),
         price: price,
         totalPrice: price * quantity
       }
     })
-    return { materials: [...acc.materials, ...newMaterials], customItems: [...acc.customItems, ...newCustomItems] };
-  }, { materials: [], customItems: [] })
-  const totalMaterialAndCustomItemPriceWithoutDPH = [...materials, ...customItems].reduce((acc, Material) => acc + Material.totalPrice, 0);
+    return { task: Task, materials: newMaterials, customItems: newCustomItems };
+  })
+
   return {
-    materials,
-    customItems,
+    materialTasks,
     totalMaterialAndCustomItemPriceWithoutDPH,
     totalMaterialAndCustomItemPriceWithDPH: totalMaterialAndCustomItemPriceWithoutDPH * (1 + dph / 100),
   };
@@ -846,6 +865,13 @@ function getProjectTasksCounts(Tasks, Company) {
 
     Task.get('WorkTrips').forEach((WorkTrip) => {
       let price = prices.find((Price) => Price.get('type') === 'TripType' && Price.get('TripTypeId') === WorkTrip.get('TripTypeId'));
+
+      if (price === undefined) {
+        price = 0
+      } else {
+        price = parseFloat(price.get('price'));
+      }
+
       let workTrip = {
         ...WorkTrip.get(),
         discount: parseFloat(WorkTrip.get('discount')),
