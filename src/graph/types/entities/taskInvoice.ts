@@ -14,7 +14,7 @@ type InvoiceList{
   companyRentsCounts: InvoiceCompanyRentsCounts!
   pausalCounts: InvoicePausalCounts!
   overPausalCounts: InvoiceOverPausalCounts!
-  projectTasks: [Task]!
+  projectTasks: [InvoiceTask]!
   projectCounts: InvoiceProjectCounts!
   pausalTasks: [InvoiceTask]!
   overPausalTasks:[InvoiceTask]!

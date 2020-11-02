@@ -186,11 +186,9 @@ const querries = {
       ],
     })
     //project tasks
-    let { rawPausalTasks, projectTasks } = splitTasksByPausal(Company.get('Tasks'));
+    let { rawPausalTasks, rawProjectTasks } = splitTasksByPausal(Company.get('Tasks'));
     //tasks counts
-    const projectCounts = getProjectTasksCounts(projectTasks, Company);
-    // TODO 
-    //projectTasks = processProjectTasks(projectTasks, Company);
+    const { projectTasks, projectCounts } = processProjectTasks(rawProjectTasks, Company);
     //all pausal tasks
     const { pausalTasks, overPausalTasks, pausalCounts, overPausalCounts } = processTasksPausals(
       splitTasksByMonthAndYear(
@@ -328,9 +326,9 @@ const mutations = {
       ],
     })
     //project tasks
-    let { rawPausalTasks, projectTasks } = splitTasksByPausal(Company.get('Tasks'));
+    let { rawPausalTasks, rawProjectTasks } = splitTasksByPausal(Company.get('Tasks'));
     //project tasks counts, add to database
-    const projectCounts = getProjectTasksCounts(projectTasks, Company);
+    const { projectTasks, projectCounts } = processProjectTasks(rawProjectTasks, Company);
     //all pausal tasks
     const { pausalTasks, overPausalTasks, pausalCounts, overPausalCounts } = processTasksPausals(
       splitTasksByMonthAndYear(
@@ -487,6 +485,7 @@ const mutations = {
       totalMaterialAndCustomItemPriceWithoutDPH: totalMaterialAndCustomItemPriceWithoutDPH,
       totalMaterialAndCustomItemPriceWithDPH: totalMaterialAndCustomItemPriceWithDPH,
     }
+    return null;
     //set all TASKS to task stuff. for materials!
     const TaskInvoice = <TaskInvoiceInstance>await models.TaskInvoice.create(
       taskInvoice,
@@ -515,7 +514,7 @@ export default {
 
 function splitTasksByPausal(tasks) {
   const [rawPausalTasks, projectTasks] = splitArrayByFilter(tasks, (Task) => Task.get('pausal'));
-  return { rawPausalTasks, projectTasks };
+  return { rawPausalTasks, rawProjectTasks: projectTasks };
 }
 
 function splitTasksByMonthAndYear(tasks) {
@@ -814,7 +813,7 @@ function processCompanyRents(CompanyRents, Company) {
   }
 }
 
-function getProjectTasksCounts(Tasks, Company) {
+function processProjectTasks(Tasks, Company) {
   const prices = Company.get('Pricelist').get('Prices');
   const afterHours = Company.get('Pricelist').get('afterHours');
   const dph = Company.get('dph');
@@ -833,9 +832,9 @@ function getProjectTasksCounts(Tasks, Company) {
     tripsTotalPriceWithoutDPH: 0,
     tripsTotalPriceWithDPH: 0,
   }
-  Tasks.forEach((Task) => {
+  const projectTasks = Tasks.map((Task) => {
     let overtime = Task.get('overtime');
-    Task.get('Subtasks').forEach((Subtask) => {
+    const subtasks = Task.get('Subtasks').map((Subtask) => {
       let price = prices.find((Price) => Price.get('type') === 'TaskType' && Price.get('TaskTypeId') === Subtask.get('TaskTypeId'));
       if (price === undefined) {
         price = 0
@@ -848,6 +847,7 @@ function getProjectTasksCounts(Tasks, Company) {
         discount: parseFloat(Subtask.get('discount')),
         quantity: parseFloat(Subtask.get('quantity')),
         price: getFinalPrice(price, Subtask.get('discount'), Task.get('overtime'), afterHours),
+        type: Subtask.get('TaskType'),
       };
 
       counts.subtasks += subtask.quantity;
@@ -861,9 +861,10 @@ function getProjectTasksCounts(Tasks, Company) {
         }
         counts.subtasksAfterHoursPrice += getTotalAHPrice(price, subtask.quantity, subtask.discount, afterHours);
       }
+      return subtask;
     });
 
-    Task.get('WorkTrips').forEach((WorkTrip) => {
+    const trips = Task.get('WorkTrips').map((WorkTrip) => {
       let price = prices.find((Price) => Price.get('type') === 'TripType' && Price.get('TripTypeId') === WorkTrip.get('TripTypeId'));
 
       if (price === undefined) {
@@ -877,6 +878,7 @@ function getProjectTasksCounts(Tasks, Company) {
         discount: parseFloat(WorkTrip.get('discount')),
         quantity: parseFloat(WorkTrip.get('quantity')),
         price: getFinalPrice(price, WorkTrip.get('discount'), Task.get('overtime'), afterHours),
+        type: WorkTrip.get('TripType'),
       };
       counts.trips += workTrip.quantity;
       counts.tripsTotalPriceWithoutDPH += getTotalFinalPrice(price, workTrip.quantity, workTrip.discount, overtime, afterHours);
@@ -889,7 +891,13 @@ function getProjectTasksCounts(Tasks, Company) {
         }
         counts.tripsAfterHoursPrice += getTotalAHPrice(price, workTrip.quantity, workTrip.discount, afterHours);
       }
+      return workTrip;
     });
+    return {
+      task: Task,
+      subtasks,
+      trips,
+    };
   })
-  return counts;
+  return { projectTasks, projectCounts: counts };
 }
