@@ -29,11 +29,23 @@ const querries = {
         model: models.ProjectRight,
         include: [{
           model: models.Project,
+          include: [{
+            model: models.ProjectRight,
+            include: [{
+              model: models.User,
+            }]
+          }]
         }]
       }]
     );
 
-    return (<ProjectRightInstance[]>User.get('ProjectRights')).map((right) => ({ right, project: right.get('Project') }))
+    return (<ProjectRightInstance[]>User.get('ProjectRights')).map((right) => (
+      {
+        right,
+        project: right.get('Project'),
+        usersWithRights: (<ProjectRightInstance[]>(<ProjectInstance>right.get('Project')).get('ProjectRights')).map((ProjectRight) => ProjectRight.get('User'))
+      }
+    ))
   },
 }
 
@@ -209,13 +221,54 @@ const attributes = {
     async imaps(project) {
       return project.getImaps()
     },
+    async right(project, _, { userID }, __) {
+      const rights = await project.getProjectRights({ where: { UserId: userID } });
+      if (rights.length === 0) {
+        return {
+          read: false,
+          write: false,
+          delete: false,
+          internal: false,
+          admin: false
+        }
+      }
+      return {
+        read: rights[0].get('read'),
+        write: rights[0].get('write'),
+        delete: rights[0].get('delete'),
+        internal: rights[0].get('internal'),
+        admin: rights[0].get('admin')
+      };
+    },
   },
   BasicProject: {
     async filters(project) {
       return project.getFiltersOfProject()
     },
+    async def(project) {
+      return project.get('def')
+    },
     async milestones(project) {
       return project.getMilestones()
+    },
+    async right(project, _, { userID }, __) {
+      const rights = await project.getProjectRights({ where: { UserId: userID } });
+      if (rights.length === 0) {
+        return {
+          read: false,
+          write: false,
+          delete: false,
+          internal: false,
+          admin: false
+        }
+      }
+      return {
+        read: rights[0].get('read'),
+        write: rights[0].get('write'),
+        delete: rights[0].get('delete'),
+        internal: rights[0].get('internal'),
+        admin: rights[0].get('admin')
+      };
     },
   },
   ProjectRight: {

@@ -773,7 +773,7 @@ function processTasksMaterialsAndCustomItems(Tasks, Company) {
       const price = parseFloat(Material.get('price'));
       const margin = parseFloat(Material.get('margin'));
       const quantity = parseFloat(Material.get('quantity'));
-      totalMaterialAndCustomItemPriceWithoutDPH +=  (price * margin / 100 + price) * quantity;
+      totalMaterialAndCustomItemPriceWithoutDPH += (price * margin / 100 + price) * quantity;
       return {
         ...Material.get(),
         price: price * margin / 100 + price,
@@ -784,7 +784,7 @@ function processTasksMaterialsAndCustomItems(Tasks, Company) {
     const newCustomItems = Task.get('CustomItems').map((CustomItem) => {
       const price = parseFloat(CustomItem.get('price'));
       const quantity = parseFloat(CustomItem.get('quantity'));
-      totalMaterialAndCustomItemPriceWithoutDPH +=  price * quantity;
+      totalMaterialAndCustomItemPriceWithoutDPH += price * quantity;
       return {
         ...CustomItem.get(),
         price: price,
