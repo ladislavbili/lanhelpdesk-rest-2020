@@ -91,6 +91,7 @@ input FilterInput {
 
 export const FilterQuerries = `
 myFilters: [BasicFilter]!
+myFilter(id: Int!): Filter
 publicFilters: [Filter]
 filter(id: Int!): Filter
 `

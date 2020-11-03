@@ -1,6 +1,6 @@
 import { createDoesNoExistsError, NoAccessToThisProjectError, NoAccessToThisFilterError } from '@/configs/errors';
 import { models } from '@/models';
-import { FilterInstance, RoleInstance, ProjectRightInstance } from '@/models/instances';
+import { FilterInstance, RoleInstance, ProjectRightInstance, AccessRightsInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 import { idDoesExistsCheck, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, extractDatesFromObject } from '@/helperFunctions';
 import { Op } from 'sequelize';
@@ -29,6 +29,28 @@ const querries = {
       (filter.get('pub') && (<RoleInstance[]>filter.get('Roles')).some((role) => role.get('id') === (<RoleInstance>User.get('Role')).get('id'))) ||
       !filter.get('pub')
     ))
+  },
+
+  myFilter: async (root, { id }, { req }) => {
+    const User = await checkResolver(req);
+    if ((<RoleInstance>User.get('Role')).get('level') !== 0) {
+      const Filter = await models.Filter.findOne({
+        where: {
+          id,
+          filterCreatedById: User.get('id')
+        }
+      });
+      if (Filter === null) {
+        throw createDoesNoExistsError('Filter', id);
+      }
+      return Filter;
+    } else {
+      const Filter = await models.Filter.findByPk(id);
+      if (Filter === null) {
+        throw createDoesNoExistsError('Filter', id);
+      }
+      return Filter;
+    }
   },
 
   publicFilters: async (root, args, { req }) => {

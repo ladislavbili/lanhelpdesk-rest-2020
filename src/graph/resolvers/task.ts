@@ -81,9 +81,18 @@ const querries = {
     const checkUserTime = checkUserWatch.stop();
     const manualWatch = new Stopwatch(true);
     const tasks = (<ProjectRightInstance[]>User.get('ProjectRights')).map((ProjectRight) => <ProjectInstance>ProjectRight.get('Project')).reduce((acc, proj) => [...acc, ...<TaskInstance[]>proj.get('Tasks')], [])
+
     if (filter) {
-      return filterByOneOf(filter, User.get('id'), User.get('CompanyId'), tasks);
+      return {
+        tasks: filterByOneOf(filter, User.get('id'), User.get('CompanyId'), tasks),
+        execTime: mainWatch.stop(),
+        secondaryTimes: [
+          { source: 'User check', time: checkUserTime },
+          { source: 'Processing', time: manualWatch.stop() },
+        ]
+      };
     }
+
     return {
       tasks,
       execTime: mainWatch.stop(),

@@ -32,6 +32,7 @@ type BasicCompany {
   id: Int!
   title: String!
   dph: Int!
+  monthly: Boolean!
   pricelist: Pricelist!
   users: [BasicUser]
   companyRents: [CompanyRent]

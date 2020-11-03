@@ -12,23 +12,26 @@ type Project {
   filters: [BasicFilter]
   milestones: [Milestone]!
   imaps: [Imap]!
+  right: ProjectRight!
 }
 
 type BasicProject {
   ${defaultAttributes}
   title: String!
+  lockedRequester: Boolean!
   description: String!
   def: ProjectDefaults!
   filters: [BasicFilter]
   milestones: [Milestone]!
+  right: ProjectRight!
 }
 
 
 type MyProject {
   project: BasicProject!
   right: ProjectRight!
+  usersWithRights: [BasicUser]!
 }
-
 
 ${projectExtra}
 `

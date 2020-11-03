@@ -139,7 +139,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createTaskInvoicesAssoc(models);
   //LOG FUNCTIONS
 
-  //logFunctionsOfModel(models.TaskInvoice);
+  //logFunctionsOfModel(models.Project);
 
   if (ignoreUpdating) {
     return new Promise((resolve, reject) => resolve());

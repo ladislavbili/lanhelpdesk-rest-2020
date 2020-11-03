@@ -846,6 +846,12 @@ function getProjectTasksCounts(Tasks, Company) {
 
     Task.get('WorkTrips').forEach((WorkTrip) => {
       let price = prices.find((Price) => Price.get('type') === 'TripType' && Price.get('TripTypeId') === WorkTrip.get('TripTypeId'));
+      if (price === undefined) {
+        price = 0
+      } else {
+        price = parseFloat(price.get('price'));
+      }
+
       let workTrip = {
         ...WorkTrip.get(),
         discount: parseFloat(WorkTrip.get('discount')),
