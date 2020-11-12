@@ -185,6 +185,43 @@ const mutations = {
     return Project;
   },
 
+  addUserToProject: async (root, { projectId, userId }, { req }) => {
+    const User = await checkResolver(req);
+    const Project = <ProjectInstance>await models.Project.findByPk(projectId, { include: [{ model: models.ProjectRight }] });
+    if (Project === null) {
+      throw createDoesNoExistsError('Project', projectId);
+    }
+    await idsDoExistsCheck([userId], models.User);
+
+    //Who can edit (admin in project project manager)
+    const userRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
+    if (
+      (
+        userRights === undefined ||
+        !userRights.get('admin')
+      ) &&
+      !((<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get().projects)
+    ) {
+      addApolloError(
+        'Project',
+        NotAdminOfProjectNorManagesProjects,
+        User.get('id'),
+        projectId
+      );
+      throw NotAdminOfProjectNorManagesProjects;
+    }
+    await Project.createProjectRight({
+      UserId: userId,
+      read: true,
+      write: false,
+      delete: false,
+      internal: false,
+      admin: false
+    });
+
+    return Project.reload();
+  },
+
   deleteProject: async (root, { id, newId }, { req }) => {
     await checkResolver(req, ["projects"]);
     const Project = await models.Project.findByPk(id, { include: [{ model: models.Task }, { model: models.Imap }] });

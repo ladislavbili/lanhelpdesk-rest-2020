@@ -52,7 +52,7 @@ export function sendEmail(textMessage, htmlMessage, subject, to, from, files = [
         subject: subject,
         text: 'Message from: ' + from + '\n' + textMessage,
         html: htmlMessage,
-        attachments: files.map((file) => {
+        attachments: (files ? files : []).map((file) => {
           return {
             filename: file.name,
             content: file.data,

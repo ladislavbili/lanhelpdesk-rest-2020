@@ -9,6 +9,9 @@ import { sendEmail as sendEmailService } from '@/services/smtp'
 
 export function sendEmail(app) {
   app.post('/send-email', async function(req, res) {
+    if (!Array.isArray(req.body.tos) && typeof req.body.tos === 'string') {
+      req.body.tos = [req.body.tos];
+    }
     const timestamp = moment().valueOf();
     const {
       failedGettingAttributes,
@@ -26,6 +29,7 @@ export function sendEmail(app) {
       { key: 'subject', nullAccepted: false, type: 'str' },
       { key: 'parentCommentId', nullAccepted: true, type: 'int' },
     ], req.body);
+
     if (failedGettingAttributes) {
       return res.send({ ok: false, error: 'Comment failed, taskId(Int), token(String), message(String), subject(String) or tos(String[]) is missing/wrong type' })
     }
@@ -67,8 +71,11 @@ export function sendEmail(app) {
     if (tos.some((address) => !isEmail(address))) {
       return res.send({ ok: false, error: createWrongEmailsError(tos.filter((address) => !isEmail(address))).message })
     }
+    console.log('emailResult');
 
     let emailResult = <EmailResultInstance>await sendEmailService(message, message, subject, tos, User.get('email'), files);
+    console.log(emailResult);
+
     let savedResult = { emailSend: true, emailError: null };
     if (emailResult.error) {
       savedResult = { emailSend: false, emailError: emailResult.message }
@@ -96,14 +103,16 @@ export function sendEmail(app) {
         message: `${User.get('fullName')} send email from the task.`,
       }],
     }, { include: [{ model: models.TaskChangeMessage }] });
-    await Promise.all(files.map((file) => file.mv(`files/comment-attachments/${taskId}/${NewComment.get('id')}/${timestamp}-${file.name}`)));
-    files.map((file) => NewComment.createCommentAttachment({
-      filename: file.name,
-      mimetype: file.mimetype,
-      contentDisposition: 'attachment',
-      size: file.size,
-      path: `files/comment-attachments/${taskId}/${NewComment.get('id')}/${timestamp}-${file.name}`,
-    }));
+    if (files) {
+      await Promise.all(files.map((file) => file.mv(`files/comment-attachments/${taskId}/${NewComment.get('id')}/${timestamp}-${file.name}`)));
+      files.map((file) => NewComment.createCommentAttachment({
+        filename: file.name,
+        mimetype: file.mimetype,
+        contentDisposition: 'attachment',
+        size: file.size,
+        path: `files/comment-attachments/${taskId}/${NewComment.get('id')}/${timestamp}-${file.name}`,
+      }));
+    }
     return res.send({ ok: true, error: null, comment: NewComment.get() });
   });
 }

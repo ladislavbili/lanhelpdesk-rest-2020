@@ -22,6 +22,7 @@ export function sendComment(app) {
       { key: 'parentCommentId', nullAccepted: true, type: 'int' },
       { key: 'internal', nullAccepted: false, type: 'bool' },
     ], req.body);
+
     if (failedGettingAttributes) {
       return res.send({ ok: false, error: 'Comment failed, taskId(Int), token(String), message(String) or parentCommentId(Int) is missing/wrong type' })
     }
@@ -78,14 +79,16 @@ export function sendComment(app) {
         }]
       }, { include: [{ model: models.TaskChangeMessage }] });
     }
-    await Promise.all(files.map((file) => file.mv(`files/comment-attachments/${taskId}/${NewComment.get('id')}/${timestamp}-${file.name}`)));
-    files.map((file) => NewComment.createCommentAttachment({
-      filename: file.name,
-      mimetype: file.mimetype,
-      contentDisposition: 'attachment',
-      size: file.size,
-      path: `files/comment-attachments/${taskId}/${NewComment.get('id')}/${timestamp}-${file.name}`,
-    }));
+    if (files) {
+      await Promise.all(files.map((file) => file.mv(`files/comment-attachments/${taskId}/${NewComment.get('id')}/${timestamp}-${file.name}`)));
+      files.map((file) => NewComment.createCommentAttachment({
+        filename: file.name,
+        mimetype: file.mimetype,
+        contentDisposition: 'attachment',
+        size: file.size,
+        path: `files/comment-attachments/${taskId}/${NewComment.get('id')}/${timestamp}-${file.name}`,
+      }));
+    }
     return res.send({ ok: true, error: null, comment: NewComment.get() });
   });
 }

@@ -327,6 +327,7 @@ const mutations = {
     let { id, assignedTo: assignedTos, company, milestone, project, requester, status, tags, taskType, repeat, ...params } = args;
     let repeatAction = { action: null, id: null };
     const dates = extractDatesFromObject(params, dateNames);
+    params = { ...params, ...dates };
     const User = await checkResolver(req);
     //if you send something it cant be null in this attributes, if undefined its ok
     if (
@@ -394,6 +395,7 @@ const mutations = {
     }
     let taskChangeMessages = [];
     let promises = [];
+
     await sequelize.transaction(async (transaction) => {
       if (project && project !== (<ProjectInstance>Task.get('Project')).get('id')) {
         taskChangeMessages.push({
@@ -445,12 +447,15 @@ const mutations = {
 
         promises.push(Task.setRequester(requester, { transaction }))
       }
+
       if (milestone) {
         //milestone must be of project
         if (!(<MilestoneInstance[]>Project.get('Milestones')).some((projectMilestone) => projectMilestone.get('id') === milestone)) {
           throw MilestoneNotPartOfProject;
         }
         promises.push(Task.setMilestone(milestone, { transaction }))
+      } else if (milestone === null) {
+        promises.push(Task.setMilestone(null, { transaction }))
       }
       if (taskType) {
         promises.push(Task.setTaskType(taskType, { transaction }))
@@ -499,13 +504,13 @@ const mutations = {
       if (status) {
         params = {
           ...params,
-          ...dates,
           closeDate: null,
           pendingDate: null,
           pendingChangable: false,
           statusChange: Task.get('statusChange'),
           invoicedDate: Task.get('invoicedDate'),
         }
+
         const TaskStatus = <StatusInstance>Task.get('Status');
         const Status = await models.Status.findByPk(status);
         if (status !== TaskStatus.get('id')) {
@@ -556,7 +561,7 @@ const mutations = {
               params.pendingDate = dates.pendingDate;
               params.pendingChangable = args.pendingChangable;
             }
-            params.statusChange = moment().unix() * 1000
+            params.statusChange = moment().valueOf()
             break;
           }
           default:

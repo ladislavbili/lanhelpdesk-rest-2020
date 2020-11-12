@@ -3,7 +3,7 @@ export const TaskChange = `
 type TaskChange {
   ${defaultAttributes}
   task: Task!
-  user: BasicUser!
+  user: BasicUser
   taskChangeMessages: [TaskChangeMessage]!
 }
 

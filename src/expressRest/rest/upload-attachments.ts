@@ -29,7 +29,7 @@ export function uploadAttachments(app) {
     }
     await Promise.all(files.map((file) => file.mv(`files/task-attachments/${taskId}/${timestamp}-${file.name}`)));
 
-    await Promise.all(files.map((file) => Task.createTaskAttachment(
+    const attachments = await Promise.all(files.map((file) => Task.createTaskAttachment(
       {
         filename: file.name,
         mimetype: file.mimetype,
@@ -39,6 +39,6 @@ export function uploadAttachments(app) {
       }
     )
     ))
-    return res.send({ ok: true, error: null })
+    return res.send({ ok: true, error: null, attachments })
   });
 }

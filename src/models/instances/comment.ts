@@ -17,6 +17,7 @@ export interface CommentInstance extends DefaultInstance {
   emailError: string;
   isParent: boolean;
   createCommentAttachment?: any;
+  getUser?: any;
 }
 
 export default function definecomments(sequelize: Sequelize) {

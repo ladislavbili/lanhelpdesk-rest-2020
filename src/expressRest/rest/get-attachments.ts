@@ -23,7 +23,10 @@ export function getAttachments(app) {
       checkResult = await checkTask(path, req);
     } else if (type === 'comment') {
       checkResult = await checkComment(path, req);
+    } else {
+      return res.send({ ok: false, error: 'Wrong attachment type (task/comment)' });
     }
+
     if (!checkResult.ok) {
       return res.send({ ok: false, error: checkResult.error });
     }
@@ -43,7 +46,7 @@ async function checkTask(path, req) {
   try {
     const User = await checkResolver(req);
     await checkIfHasProjectRights(User.get('id'), TaskAttachment.get('TaskId'));
-    return { ok: true, error: null };
+    return { ok: true, error: null, Attachment: TaskAttachment };
   } catch (err) {
     return { ok: false, error: err.message }
   }
@@ -62,7 +65,7 @@ async function checkComment(path, req) {
     if (Comment.get('internal') && !(checkResult.internal || internalRight)) {
       return { ok: false, error: `Can't show internal comment to user without rights.` }
     }
-    return { ok: true, error: null };
+    return { ok: true, error: null, Attachment: CommentAttachment };
   } catch (err) {
     return { ok: false, error: err.message }
   }

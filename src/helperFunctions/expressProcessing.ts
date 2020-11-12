@@ -32,7 +32,8 @@ export function getAttributes(requiredData, source) {
   requiredData.forEach((item) => {
     let { key, nullAccepted, type } = item;
     let value = source[key];
-    if ((value === undefined || value === null)) {
+
+    if ((value === undefined || value === 'null')) {
       if (nullAccepted) {
         result[key] = null;
       } else {

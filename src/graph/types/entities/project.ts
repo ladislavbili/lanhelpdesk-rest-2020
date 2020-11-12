@@ -46,4 +46,5 @@ export const ProjectMutations = `
 addProject( title: String!, description: String!, lockedRequester: Boolean!, projectRights: [ProjectRightInput]!, def: ProjectDefaultsInput! ): Project
 updateProject( id: Int!, title: String, description: String, lockedRequester: Boolean, projectRights: [ProjectRightInput], def: ProjectDefaultsInput ): Project
 deleteProject( id: Int!, newId: Int! ): Project
+addUserToProject( projectId: Int!, userId: Int! ): Project
 `
