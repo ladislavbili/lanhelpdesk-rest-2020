@@ -17,13 +17,43 @@ const querries = {
   },
   company: async (root, { id }, { req }) => {
     await checkResolver(req, ["companies"]);
-    return models.Company.findByPk(id);
+    return models.Company.findByPk(id, {
+      include: [
+        {
+          model: models.Pricelist,
+          include: [
+            {
+              model: models.Price,
+              include: [
+                models.TaskType,
+                models.TripType,
+              ]
+            }
+          ]
+        },
+        models.CompanyRent
+      ]
+    });
   },
   basicCompanies: async (root, args, { req }) => {
     await checkResolver(req);
     return models.Company.findAll({
       order: [
         ['title', 'ASC'],
+      ],
+      include: [
+        {
+          model: models.Pricelist,
+          include: [
+            {
+              model: models.Price,
+              include: [
+                models.TaskType,
+                models.TripType,
+              ]
+            }
+          ]
+        },
       ]
     })
   },

@@ -32,7 +32,11 @@ const querries = {
   },
   role: async (root, { id }, { req }) => {
     await checkResolver(req, ['roles']);
-    return models.Role.findByPk(id);
+    return models.Role.findByPk(id, {
+      include: [
+        models.AccessRight
+      ]
+    });
   },
   accessRights: async (root, args, { req }) => {
     const User = await checkResolver(req);

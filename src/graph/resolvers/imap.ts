@@ -18,7 +18,13 @@ const querries = {
   },
   imap: async (root, { id }, { req }) => {
     await checkResolver(req, ['imaps']);
-    return models.Imap.findByPk(id);
+    return models.Imap.findByPk(id, {
+      include: [
+        models.Project,
+        models.Role,
+        models.Company
+      ]
+    });
   },
 }
 

@@ -33,12 +33,17 @@ const querries = {
         model: models.ProjectRight,
         include: [{
           model: models.Project,
-          include: [{
-            model: models.ProjectRight,
-            include: [{
-              model: models.User,
-            }]
-          }]
+          include: [
+            models.Milestone,
+            {
+              model: models.ProjectRight,
+              include: [
+                {
+                  model: models.User,
+                }
+              ]
+            }
+          ]
         }]
       }]
     );

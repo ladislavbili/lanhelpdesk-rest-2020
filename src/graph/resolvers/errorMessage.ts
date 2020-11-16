@@ -9,6 +9,9 @@ const querries = {
     return models.ErrorMessage.findAll({
       order: [
         ['createdAt', 'ASC'],
+      ],
+      include: [
+        models.User
       ]
     })
   },

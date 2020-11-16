@@ -34,12 +34,21 @@ const querries = {
         ['surname', 'ASC'],
         ['name', 'ASC'],
         ['email', 'ASC'],
+      ],
+      include: [
+        models.Role,
+        models.Company
       ]
     })
   },
   user: async (root, { id }, { req }) => {
     await checkResolver(req, ['users']);
-    return models.User.findByPk(id);
+    return models.User.findByPk(id, {
+      include: [
+        models.Role,
+        models.Company
+      ]
+    });
   },
   basicUsers: async (root, { id }, { req }) => {
     await checkResolver(req);
@@ -49,6 +58,10 @@ const querries = {
         ['surname', 'ASC'],
         ['name', 'ASC'],
         ['email', 'ASC'],
+      ],
+      include: [
+        models.Role,
+        models.Company
       ]
     })
   },
@@ -63,6 +76,7 @@ const querries = {
       false,
       [
         models.Company,
+        models.Status,
         {
           model: models.Role,
           includes: [

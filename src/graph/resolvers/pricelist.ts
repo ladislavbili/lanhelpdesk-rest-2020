@@ -16,7 +16,17 @@ const querries = {
   },
   pricelist: async (root, { id }, { req }) => {
     await checkResolver(req);
-    return models.Pricelist.findByPk(id);
+    return models.Pricelist.findByPk(id, {
+      include: [
+        {
+          model: models.Price,
+          include: [
+            models.TaskType,
+            models.TripType,
+          ]
+        }
+      ]
+    });
   },
 }
 

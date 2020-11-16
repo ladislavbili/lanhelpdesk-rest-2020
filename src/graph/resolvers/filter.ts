@@ -405,7 +405,7 @@ const attributes = {
       return getModelAttribute(filter, 'Roles');
     },
     async project(filter) {
-      return getModelAttribute(filter, 'Project');
+      return getModelAttribute(filter, 'filterOfProject', 'getFilterOfProject');
     },
   },
   BasicFilter: {
@@ -413,7 +413,7 @@ const attributes = {
       return getModelAttribute(filter, 'Roles');
     },
     async project(filter) {
-      return getModelAttribute(filter, 'Project', 'getFilterOfProject');
+      return getModelAttribute(filter, 'filterOfProject', 'getFilterOfProject');
     },
   },
 };
