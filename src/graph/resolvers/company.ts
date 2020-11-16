@@ -1,7 +1,7 @@
 import { createDoesNoExistsError, createCantBeNegativeError, EditedRentNotOfCompanyError } from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import { UserInstance, CompanyInstance, CompanyRentInstance, ProjectInstance, TaskInstance, ImapInstance } from '@/models/instances';
-import { splitArrayByFilter, addApolloError } from '@/helperFunctions';
+import { splitArrayByFilter, addApolloError, getModelAttribute } from '@/helperFunctions';
 import { Op } from 'sequelize';
 import moment from 'moment';
 import checkResolver from './checkResolver';
@@ -181,16 +181,16 @@ const mutations = {
 const attributes = {
   Company: {
     async imaps(company) {
-      return company.getImaps()
+      return getModelAttribute(company, 'Imaps');
     },
     async pricelist(company) {
-      return company.getPricelist()
+      return getModelAttribute(company, 'Pricelist');
     },
     async users(company) {
-      return company.getUsers()
+      return getModelAttribute(company, 'Users');
     },
     async companyRents(company) {
-      return company.getCompanyRents()
+      return getModelAttribute(company, 'CompanyRents');
     },
     async usedSubtaskPausal(company) {
       const fullTasks = await company.getTasks(
@@ -226,10 +226,10 @@ const attributes = {
   },
   BasicCompany: {
     async pricelist(company) {
-      return company.getPricelist()
+      return getModelAttribute(company, 'Pricelist');
     },
     async users(company) {
-      return company.getUsers()
+      return getModelAttribute(company, 'Users');
     },
     async usedSubtaskPausal(company) {
       const fullTasks = await company.getTasks(
@@ -246,6 +246,7 @@ const attributes = {
         return acc1 + task.get('Subtasks').reduce((acc2, subtask) => acc2 + subtask.get('quantity'), 0)
       }, 0);
     },
+
     async usedTripPausal(company) {
       const fullTasks = await company.getTasks(
         {

@@ -1,7 +1,7 @@
 import { createDoesNoExistsError, NoAccessToThisProjectError } from '@/configs/errors';
 import { models } from '@/models';
 import { ProjectInstance, ProjectRightInstance } from '@/models/instances';
-import { extractDatesFromObject } from '@/helperFunctions';
+import { extractDatesFromObject, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -73,10 +73,10 @@ const mutations = {
 const attributes = {
   Milestone: {
     async project(milestone) {
-      return milestone.getProject()
+      return getModelAttribute(milestone, 'Project');
     },
     async tasks(milestone) {
-      return milestone.getTasks()
+      return getModelAttribute(milestone, 'Tasks');
     },
   },
 };

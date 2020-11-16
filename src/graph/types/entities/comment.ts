@@ -8,7 +8,7 @@ type Comment {
   rawHtml: String
   isEmail: Boolean!
   internal: Boolean!
-  user: BasicUser!
+  user: BasicUser
   task: Task!
   childComments: [Comment]!
   parentComment: Comment

@@ -4,6 +4,7 @@ import { ProjectInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 import {
   checkIfHasProjectRights,
+  getModelAttribute,
 } from '@/helperFunctions';
 import fs from 'fs';
 const querries = {
@@ -28,7 +29,7 @@ const mutations = {
 const attributes = {
   TaskAttachment: {
     async task(taskAttachment) {
-      return taskAttachment.getTask()
+      return getModelAttribute(taskAttachment, 'Task');
     }
   },
 };

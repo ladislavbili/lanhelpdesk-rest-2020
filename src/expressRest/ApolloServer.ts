@@ -46,10 +46,7 @@ export default new ApolloServer({
     })
   },
   formatError: (err) => {
-    console.log('has error');
-
-    console.log(err);
-
+    //console.log('has error');
     //manipulate errors here
     return err;
   },

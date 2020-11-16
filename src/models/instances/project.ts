@@ -81,18 +81,33 @@ export default function defineProjects(sequelize: Sequelize) {
       def: {
         type: DataTypes.VIRTUAL,
         async get() {
+          const [
+            assignedTos,
+            company,
+            requester,
+            status,
+            tag,
+            taskType
+          ] = await Promise.all([
+            this.getDefAssignedTos(),
+            this.getDefCompany(),
+            this.getDefRequester(),
+            this.getDefStatus(),
+            this.getDefTags(),
+            this.getDefTaskType()
+          ]);
           return {
             assignedTo: {
               def: this.get('defAssignedToDef'),
               fixed: this.get('defAssignedToFixed'),
               show: this.get('defAssignedToShow'),
-              value: await this.getDefAssignedTos()
+              value: assignedTos
             },
             company: {
               def: this.get('defCompanyDef'),
               fixed: this.get('defCompanyFixed'),
               show: this.get('defCompanyShow'),
-              value: await this.getDefCompany()
+              value: company
             },
             overtime: {
               def: this.get('defOvertimeDef'),
@@ -110,25 +125,25 @@ export default function defineProjects(sequelize: Sequelize) {
               def: this.get('defRequesterDef'),
               fixed: this.get('defRequesterFixed'),
               show: this.get('defRequesterShow'),
-              value: await this.getDefRequester()
+              value: requester
             },
             status: {
               def: this.get('defStatusDef'),
               fixed: this.get('defStatusFixed'),
               show: this.get('defStatusShow'),
-              value: await this.getDefStatus()
+              value: status
             },
             tag: {
               def: this.get('defTagDef'),
               fixed: this.get('defTagFixed'),
               show: this.get('defTagShow'),
-              value: await this.getDefTags()
+              value: tag
             },
             taskType: {
               def: this.get('defTaskTypeDef'),
               fixed: this.get('defTaskTypeFixed'),
               show: this.get('defTaskTypeShow'),
-              value: await this.getDefTaskType()
+              value: taskType
             },
           }
         }

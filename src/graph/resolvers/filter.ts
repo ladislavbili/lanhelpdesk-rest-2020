@@ -2,7 +2,7 @@ import { createDoesNoExistsError, NoAccessToThisProjectError, NoAccessToThisFilt
 import { models } from '@/models';
 import { FilterInstance, RoleInstance, ProjectRightInstance, AccessRightsInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
-import { idDoesExistsCheck, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, extractDatesFromObject } from '@/helperFunctions';
+import { idDoesExistsCheck, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, extractDatesFromObject, getModelAttribute } from '@/helperFunctions';
 import { Op } from 'sequelize';
 const dateNames = ['statusDateFrom', 'statusDateTo', 'pendingDateFrom', 'pendingDateTo', 'closeDateFrom', 'closeDateTo', 'deadlineFrom', 'deadlineTo'];
 
@@ -21,12 +21,19 @@ const querries = {
         ]
       },
       include: [
-        { model: models.Role }
+        models.Role,
+        {
+          model: models.Project,
+          as: 'filterOfProject'
+        },
       ],
     })
     //either created by user or has same role as user and is pub
     return Filters.filter((filter) => (
-      (filter.get('pub') && (<RoleInstance[]>filter.get('Roles')).some((role) => role.get('id') === (<RoleInstance>User.get('Role')).get('id'))) ||
+      (
+        filter.get('pub') &&
+        (<RoleInstance[]>filter.get('Roles')).some((role) => role.get('id') === (<RoleInstance>User.get('Role')).get('id'))
+      ) ||
       !filter.get('pub')
     ))
   },
@@ -38,7 +45,14 @@ const querries = {
         where: {
           id,
           filterCreatedById: User.get('id')
-        }
+        },
+        include: [
+          models.Role,
+          {
+            model: models.Project,
+            as: 'filterOfProject'
+          },
+        ]
       });
       if (Filter === null) {
         throw createDoesNoExistsError('Filter', id);
@@ -60,13 +74,24 @@ const querries = {
         ['order', 'ASC'],
         ['title', 'ASC'],
       ],
-      where: { pub: true }
+      where: { pub: true },
+      include: [
+        models.Role
+      ]
     })
   },
 
   filter: async (root, { id }, { req }) => {
     await checkResolver(req, ["publicFilters"]);
-    const Filter = await models.Filter.findByPk(id);
+    const Filter = await models.Filter.findByPk(id, {
+      include: [
+        models.Role,
+        {
+          model: models.Project,
+          as: 'filterOfProject'
+        },
+      ]
+    });
     if (!Filter.get('pub')) {
       return null;
     }
@@ -377,18 +402,18 @@ const mutations = {
 const attributes = {
   Filter: {
     async roles(filter) {
-      return filter.getRoles()
+      return getModelAttribute(filter, 'Roles');
     },
     async project(filter) {
-      return filter.getFilterOfProject()
+      return getModelAttribute(filter, 'Project');
     },
   },
   BasicFilter: {
     async roles(filter) {
-      return filter.getRoles()
+      return getModelAttribute(filter, 'Roles');
     },
     async project(filter) {
-      return filter.getFilterOfProject()
+      return getModelAttribute(filter, 'Project', 'getFilterOfProject');
     },
   },
 };

@@ -2,6 +2,7 @@ import { createDoesNoExistsError, DeletePricelistNeedsNewDefaultError, DeletePri
 import { models, sequelize } from '@/models';
 import checkResolver from './checkResolver';
 import { PriceInstance, PricelistInstance } from '@/models/instances';
+import { getModelAttribute } from '@/helperFunctions';
 
 const querries = {
   pricelists: async (root, args, { req }) => {
@@ -127,18 +128,18 @@ const mutations = {
 const attributes = {
   Pricelist: {
     async prices(pricelist) {
-      return pricelist.getPrices()
+      return getModelAttribute(pricelist, 'Prices');
     },
     async companies(pricelist) {
-      return pricelist.getCompanies()
+      return getModelAttribute(pricelist, 'Companies');
     }
   },
   Price: {
     async taskType(price) {
-      return price.getTaskType()
+      return getModelAttribute(price, 'TaskType');
     },
     async tripType(price) {
-      return price.getTripType()
+      return getModelAttribute(price, 'TripType');
     },
   },
 };

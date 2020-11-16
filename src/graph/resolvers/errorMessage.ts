@@ -1,5 +1,5 @@
 import { createDoesNoExistsError } from '@/configs/errors';
-import { idDoesExistsCheck, idsDoExistsCheck } from '@/helperFunctions';
+import { idDoesExistsCheck, idsDoExistsCheck, getModelAttribute } from '@/helperFunctions';
 import { models } from '@/models';
 import checkResolver from './checkResolver';
 
@@ -58,7 +58,7 @@ const mutations = {
 const attributes = {
   ErrorMessage: {
     async user(errorMessage) {
-      return errorMessage.getUser()
+      return getModelAttribute(errorMessage, 'User');
     },
   },
 };

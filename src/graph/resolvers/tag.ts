@@ -2,6 +2,7 @@ import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
 import { ProjectInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
+import { getModelAttribute } from '@/helperFunctions';
 
 const querries = {
   tags: async (root, args, { req }) => {
@@ -59,7 +60,7 @@ const mutations = {
 const attributes = {
   Tag: {
     async tasks(tag) {
-      return tag.getTasks()
+      return getModelAttribute(tag, 'Tasks');
     }
   },
 };

@@ -62,6 +62,10 @@ export {
 } from './projectRightsCheck';
 
 export {
+  getModelAttribute
+} from './sequelizeFunctions';
+
+export {
   randomString,
   capitalizeFirstLetter,
 } from './stringManipulations';

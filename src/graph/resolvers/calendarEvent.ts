@@ -1,7 +1,7 @@
 import { createDoesNoExistsError, CalendarEventCantEndBeforeStartingError } from '@/configs/errors';
 import { models } from '@/models';
 import { UserInstance, ProjectRightInstance, ProjectInstance, TaskInstance, CalendarEventInstance } from '@/models/instances';
-import { checkIfHasProjectRights, filterObjectToFilter, extractDatesFromObject, multipleIdDoesExistsCheck } from '@/helperFunctions';
+import { checkIfHasProjectRights, filterObjectToFilter, extractDatesFromObject, multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
 import { filterToWhere, filterByOneOf } from './task';
 import checkResolver from './checkResolver';
 import moment from 'moment';
@@ -122,7 +122,7 @@ const mutations = {
 const attributes = {
   CalendarEvent: {
     async task(calendarEvent) {
-      return calendarEvent.getTask()
+      return getModelAttribute(calendarEvent, 'Task');
     },
   }
 };

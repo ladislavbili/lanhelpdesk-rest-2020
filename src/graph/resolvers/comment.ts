@@ -8,7 +8,7 @@ import {
   EmailAlreadySendError
 } from '@/configs/errors';
 import { models } from '@/models';
-import { checkIfHasProjectRights, isEmail } from '@/helperFunctions';
+import { checkIfHasProjectRights, isEmail, getModelAttribute } from '@/helperFunctions';
 import { sendEmail } from '@/services/smtp'
 import { RoleInstance, AccessRightsInstance, TaskInstance, EmailTargetInstance, UserInstance, CommentAttachmentInstance } from '@/models/instances';
 import pathResolver from 'path';
@@ -199,26 +199,26 @@ const mutations = {
 const attributes = {
   Comment: {
     async user(comment) {
-      return comment.getUser()
+      return getModelAttribute(comment, 'User');
     },
     async task(comment) {
-      return comment.getTask()
+      return getModelAttribute(comment, 'Task');
     },
     async childComments(comment) {
-      return comment.getComments()
+      return getModelAttribute(comment, 'Comments');
     },
     async parentComment(comment) {
-      return comment.getCommentOf()
+      return getModelAttribute(comment, 'commentOf');
     },
     async parentCommentId(comment) {
       return comment.get('CommentId')
     },
     async tos(comment) {
-      const EmailTargets = await comment.getEmailTargets();
+      const EmailTargets = await getModelAttribute(comment, 'EmailTargets');;
       return EmailTargets.map((emailTarget) => emailTarget.get('address'));
     },
     async commentAttachments(comment) {
-      return comment.getCommentAttachments()
+      return getModelAttribute(comment, 'CommentAttachments');
     },
 
   }

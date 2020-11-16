@@ -3,7 +3,7 @@ import { sign } from 'jsonwebtoken';
 import jwt_decode from 'jwt-decode';
 import moment from 'moment';
 import { createAccessToken, createRefreshToken } from '@/configs/jwt';
-import { randomString, addApolloError, idsDoExistsCheck } from '@/helperFunctions';
+import { randomString, addApolloError, idsDoExistsCheck, getModelAttribute } from '@/helperFunctions';
 import {
   PasswordTooShort,
   FailedLoginError,
@@ -57,7 +57,20 @@ const querries = {
     return models.User.findByPk(id);
   },
   getMyData: async (root, args, { req }) => {
-    return checkResolver(req);
+    return checkResolver(
+      req,
+      [],
+      false,
+      [
+        models.Company,
+        {
+          model: models.Role,
+          includes: [
+            models.AccessRight
+          ]
+        }
+      ]
+    );
   },
 
 }
@@ -417,21 +430,21 @@ const mutations = {
 const attributes = {
   User: {
     async role(user) {
-      return user.getRole()
+      return getModelAttribute(user, 'Role');
     },
     async company(user) {
-      return user.getCompany()
+      return getModelAttribute(user, 'Company');
     },
     async statuses(user) {
-      return user.getStatuses()
+      return getModelAttribute(user, 'Statuses');
     },
   },
   BasicUser: {
     async company(user) {
-      return user.getCompany()
+      return getModelAttribute(user, 'Company');
     },
     async role(user) {
-      return user.getRole()
+      return getModelAttribute(user, 'Role');
     },
   },
 };

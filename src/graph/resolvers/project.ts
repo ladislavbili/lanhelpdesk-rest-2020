@@ -1,7 +1,7 @@
 import { createDoesNoExistsError, NotAdminOfProjectNorManagesProjects } from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import checkResolver from './checkResolver';
-import { flattenObject, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, addApolloError } from '@/helperFunctions';
+import { flattenObject, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, addApolloError, getModelAttribute } from '@/helperFunctions';
 import { ProjectInstance, ProjectRightInstance, RoleInstance, AccessRightsInstance, TaskInstance, ImapInstance } from '@/models/instances';
 import { pubsub } from './index';
 import { TASK_CHANGE } from '@/configs/subscriptions';
@@ -18,7 +18,11 @@ const querries = {
   },
   project: async (root, { id }, { req }) => {
     await checkResolver(req);
-    return models.Project.findByPk(id);
+    return models.Project.findByPk(id, {
+      include: [
+        models.ProjectRight,
+      ]
+    });
   },
   myProjects: async (root, args, { req }) => {
     const User = await checkResolver(
@@ -244,19 +248,19 @@ const mutations = {
 const attributes = {
   Project: {
     async projectRights(project) {
-      return project.getProjectRights()
+      return getModelAttribute(project, 'ProjectRights');
     },
     async def(project) {
       return project.get('def')
     },
     async filters(project) {
-      return project.getFiltersOfProject()
+      return getModelAttribute(project, 'filterOfProjects');
     },
     async milestones(project) {
-      return project.getMilestones()
+      return getModelAttribute(project, 'Milestones');
     },
     async imaps(project) {
-      return project.getImaps()
+      return getModelAttribute(project, 'Imaps');
     },
     async right(project, _, { userID }, __) {
       const rights = await project.getProjectRights({ where: { UserId: userID } });
@@ -278,15 +282,16 @@ const attributes = {
       };
     },
   },
+
   BasicProject: {
     async filters(project) {
-      return project.getFiltersOfProject()
+      return getModelAttribute(project, 'filterOfProjects');
     },
     async def(project) {
       return project.get('def')
     },
     async milestones(project) {
-      return project.getMilestones()
+      return getModelAttribute(project, 'Milestones');
     },
     async right(project, _, { userID }, __) {
       const rights = await project.getProjectRights({ where: { UserId: userID } });
@@ -310,7 +315,7 @@ const attributes = {
   },
   ProjectRight: {
     async user(projectRight) {
-      return projectRight.getUser()
+      return getModelAttribute(projectRight, 'User');
     },
   },
 };

@@ -92,15 +92,29 @@ export default function defineFilter(sequelize: Sequelize) {
       filter: {
         type: DataTypes.VIRTUAL,
         async get() {
+          const [
+            assignedTo,
+            requester,
+            company,
+            taskType,
+            oneOfResponse,
+          ] = await Promise.all([
+            this.getFilterAssignedTo(),
+            this.getFilterRequester(),
+            this.getFilterCompany(),
+            this.getFilterTaskType(),
+            this.getFilterOneOfs(),
+          ]);
+
           return {
             assignedToCur: this.get('assignedToCur'),
-            assignedTo: await this.getFilterAssignedTo(),
+            assignedTo,
             requesterCur: this.get('requesterCur'),
-            requester: await this.getFilterRequester(),
+            requester,
             companyCur: this.get('companyCur'),
-            company: await this.getFilterCompany(),
-            taskType: await this.getFilterTaskType(),
-            oneOf: (await this.getFilterOneOfs()).map((oneOf) => oneOf.get('input')),
+            company,
+            taskType,
+            oneOf: oneOfResponse.map((oneOf) => oneOf.get('input')),
 
             statusDateFrom: this.get('statusDateFrom'),
             statusDateFromNow: this.get('statusDateFromNow'),

@@ -1,6 +1,7 @@
 import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
 import checkResolver from './checkResolver';
+import { getModelAttribute } from '@/helperFunctions';
 import { PricelistInstance, TripTypeInstance } from '@/models/instances';
 
 const querries = {
@@ -64,7 +65,7 @@ const mutations = {
 const attributes = {
   TripType: {
     async prices(tripType) {
-      return tripType.getPrices()
+      return getModelAttribute(tripType, 'Prices');
     }
   },
 };

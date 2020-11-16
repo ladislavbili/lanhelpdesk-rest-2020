@@ -1,3 +1,7 @@
+import {
+  getModelAttribute
+} from '@/helperFunctions';
+
 const querries = {
 }
 
@@ -7,13 +11,13 @@ const mutations = {
 const attributes = {
   TaskChange: {
     async task(taskChange) {
-      return taskChange.getTask()
+      return getModelAttribute(taskChange, 'Task');
     },
     async user(taskChange) {
-      return taskChange.getUser()
+      return getModelAttribute(taskChange, 'User');
     },
     async taskChangeMessages(taskChange) {
-      return taskChange.getTaskChangeMessages()
+      return getModelAttribute(taskChange, 'TaskChangeMessages');
     },
   },
 };

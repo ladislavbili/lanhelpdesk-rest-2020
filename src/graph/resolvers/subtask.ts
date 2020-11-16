@@ -1,6 +1,6 @@
 import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import { models, sequelize } from '@/models';
-import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights } from '@/helperFunctions';
+import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
 import { TaskInstance, UserInstance, SubtaskInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 
@@ -90,13 +90,13 @@ const mutations = {
 const attributes = {
   Subtask: {
     async task(subtask) {
-      return subtask.getTask()
+      return getModelAttribute(subtask, 'Task');
     },
     async type(subtask) {
-      return subtask.getTaskType()
+      return getModelAttribute(subtask, 'TaskType');
     },
     async assignedTo(subtask) {
-      return subtask.getUser()
+      return getModelAttribute(subtask, 'User');
     },
   }
 };

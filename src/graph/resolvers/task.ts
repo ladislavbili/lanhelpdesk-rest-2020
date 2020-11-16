@@ -8,7 +8,8 @@ import {
   filterObjectToFilter,
   taskCheckDate,
   extractDatesFromObject,
-  filterUnique
+  filterUnique,
+  getModelAttribute
 } from '@/helperFunctions';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
@@ -24,8 +25,22 @@ const dateNames = ['deadline', 'pendingDate'];
 const querries = {
   allTasks: async (root, args, { req }) => {
     await checkResolver(req);
-    return models.Task.findAll();
+    return models.Task.findAll({
+      include: [
+        { model: models.User, as: 'assignedTos' },
+        models.Company,
+        { model: models.User, as: 'createdBy' },
+        models.Milestone,
+        models.Project,
+        { model: models.User, as: 'requester' },
+        models.Status,
+        models.Tag,
+        models.TaskType,
+        models.Repeat
+      ]
+    });
   },
+
   tasks: async (root, { projectId, filterId, filter }, { req, userID }) => {
     const mainWatch = new Stopwatch(true);
     let projectWhere = {};
@@ -66,10 +81,16 @@ const querries = {
                   where: taskWhere,
                   required: true,
                   include: [
-                    {
-                      model: models.User,
-                      as: 'assignedTos'
-                    }
+                    { model: models.User, as: 'assignedTos' },
+                    models.Company,
+                    { model: models.User, as: 'createdBy' },
+                    models.Milestone,
+                    models.Project,
+                    { model: models.User, as: 'requester' },
+                    models.Status,
+                    models.Tag,
+                    models.TaskType,
+                    models.Repeat,
                   ]
                 }
               ]
@@ -105,7 +126,71 @@ const querries = {
 
   task: async (root, { id }, { req }) => {
     const User = await checkResolver(req);
-    const Task = <TaskInstance>await models.Task.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
+    const Task = <TaskInstance>await models.Task.findByPk(
+      id,
+      {
+        include: [
+          { model: models.Project, include: [models.ProjectRight] },
+          models.TaskAttachment,
+          { model: models.User, as: 'assignedTos' },
+          {
+            model: models.Company,
+            include: [
+              {
+                model: models.Pricelist,
+                include: [
+                  {
+                    model: models.Price,
+                    include: [models.TaskType, models.TripType]
+                  }
+                ]
+              },
+            ]
+          },
+          {
+            model: models.TaskChange,
+            include: [
+              models.User,
+              models.TaskChangeMessage
+            ]
+          },
+          { model: models.User, as: 'createdBy' },
+          models.Milestone,
+          models.Project,
+          { model: models.User, as: 'requester' },
+          models.Status,
+          models.Tag,
+          models.TaskType,
+          models.Repeat,
+          {
+            model: models.Subtask,
+            include: [models.TaskType, { model: models.User, include: [models.Company] }]
+          },
+          {
+            model: models.WorkTrip,
+            include: [models.TripType, { model: models.User, include: [models.Company] }]
+          },
+          models.Material,
+          models.CustomItem,
+          {
+            model: models.Comment,
+            include: [
+              models.User,
+              models.CommentAttachment,
+              {
+                model: models.Comment,
+                include: [
+                  models.User,
+                  models.CommentAttachment,
+                  models.Comment,
+                ]
+              }
+            ]
+          }
+
+        ]
+      }
+    );
     const Project = <ProjectInstance>Task.get('Project');
     //must right write of project
     const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
@@ -732,64 +817,70 @@ const subscriptions = {
 const attributes = {
   Task: {
     async assignedTo(task) {
-      return task.getAssignedTos()
+      return getModelAttribute(task, 'assignedTos');
     },
     async company(task) {
-      return task.getCompany()
+      return getModelAttribute(task, 'Company');
     },
     async createdBy(task) {
-      return task.getCreatedBy()
+      return getModelAttribute(task, 'createdBy');
     },
     async milestone(task) {
-      return task.getMilestone()
+      return getModelAttribute(task, 'Milestone');
     },
     async project(task) {
-      return task.getProject()
+      return getModelAttribute(task, 'Project');
     },
     async requester(task) {
-      return task.getRequester()
+      return getModelAttribute(task, 'requester');
     },
     async status(task) {
-      return task.getStatus()
+      return getModelAttribute(task, 'Status');
     },
     async tags(task) {
-      return task.getTags()
+      return getModelAttribute(task, 'Tags');
     },
     async taskType(task) {
-      return task.getTaskType()
+      return getModelAttribute(task, 'TaskType');
     },
     async repeat(task) {
-      return task.getRepeat()
+      return getModelAttribute(task, 'Repeat');
     },
 
-    async comments(task, body, { req }) {
-      const SourceUser = await checkResolver(req);
-      const AccessRights = <AccessRightsInstance>(<RoleInstance>SourceUser.get('Role')).get('AccessRight');
-      const { internal } = await checkIfHasProjectRights(SourceUser.get('id'), task.get('id'));
+    async comments(task, body, { req, userID }) {
+      const [
+        SourceUser,
+        { internal },
+        Comments,
 
-      let Comments = <CommentInstance[]>await task.getComments({ order: [['createdAt', 'DESC']] })
+      ] = await Promise.all([
+        checkResolver(req),
+        checkIfHasProjectRights(userID, task.get('id')),
+        getModelAttribute(task, 'Comments', 'getComments', { order: [['createdAt', 'DESC']] })
+      ])
+      const AccessRights = <AccessRightsInstance>(<RoleInstance>SourceUser.get('Role')).get('AccessRight');
       return Comments.filter((Comment) => Comment.get('isParent') && (!Comment.get('internal') || internal || AccessRights.get('internal')))
     },
     async subtasks(task) {
-      return task.getSubtasks()
+      return getModelAttribute(task, 'subtasks');
     },
     async workTrips(task) {
-      return task.getWorkTrips()
+      return getModelAttribute(task, 'workTrips');
     },
     async materials(task) {
-      return task.getMaterials()
+      return getModelAttribute(task, 'materials');
     },
     async customItems(task) {
-      return task.getCustomItems()
+      return getModelAttribute(task, 'customItems');
     },
     async calendarEvents(task) {
-      return task.getCalendarEvents()
+      return getModelAttribute(task, 'calendarEvents');
     },
     async taskChanges(task) {
-      return task.getTaskChanges({ order: [['createdAt', 'DESC']] })
+      return getModelAttribute(task, 'taskChanges', 'getTaskChanges', { order: [['createdAt', 'DESC']] });
     },
     async taskAttachments(task) {
-      return task.getTaskAttachments()
+      return getModelAttribute(task, 'taskAttachments');
     },
   }
 };

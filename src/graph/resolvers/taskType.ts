@@ -1,6 +1,9 @@
 import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
 import checkResolver from './checkResolver';
+import {
+  getModelAttribute
+} from '@/helperFunctions';
 import { PricelistInstance, ProjectInstance, TaskTypeInstance } from '@/models/instances';
 
 const querries = {
@@ -78,7 +81,7 @@ const mutations = {
 const attributes = {
   TaskType: {
     async prices(taskType) {
-      return taskType.getPrices()
+      return getModelAttribute(taskType, 'Prices');
     }
   },
 };

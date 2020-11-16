@@ -8,7 +8,7 @@ import {
 } from '@/configs/errors';
 import { models } from '@/models';
 import { UserInstance, RoleInstance, AccessRightsInstance, ImapInstance } from '@/models/instances';
-import { addApolloError } from '@/helperFunctions';
+import { addApolloError, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -158,18 +158,18 @@ function checkRights(myRights, targetRights, newRights, userID, targetId) {
 const attributes = {
   Role: {
     async currentUsers(role) {
-      return role.getUsers()
+      return getModelAttribute(role, 'Users');
     },
     async accessRights(role) {
-      return role.getAccessRight()
+      return getModelAttribute(role, 'AccessRight');
     },
     async imaps(role) {
-      return role.getImaps()
+      return getModelAttribute(role, 'Imaps');
     },
   },
   BasicRole: {
     async accessRights(role) {
-      return role.getAccessRight()
+      return getModelAttribute(role, 'AccessRight');
     }
   },
 };

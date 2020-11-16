@@ -1,7 +1,6 @@
 import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
-import { checkIfHasProjectRights } from '@/helperFunctions';
-import { multipleIdDoesExistsCheck } from '@/helperFunctions';
+import { checkIfHasProjectRights, multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -54,7 +53,7 @@ const mutations = {
 const attributes = {
   CustomItem: {
     async task(customItem) {
-      return customItem.getTask()
+      return getModelAttribute(customItem, 'Task');
     },
   }
 };

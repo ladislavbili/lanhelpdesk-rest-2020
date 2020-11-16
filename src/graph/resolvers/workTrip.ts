@@ -1,7 +1,7 @@
 import { createDoesNoExistsError, WorkTripNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import { TaskInstance, UserInstance, WorkTripInstance } from '@/models/instances';
-import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights } from '@/helperFunctions';
+import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -90,13 +90,13 @@ const mutations = {
 const attributes = {
   WorkTrip: {
     async task(workTrip) {
-      return workTrip.getTask()
+      return getModelAttribute(workTrip, 'Task');
     },
     async type(workTrip) {
-      return workTrip.getTripType()
+      return getModelAttribute(workTrip, 'TripType');
     },
     async assignedTo(workTrip) {
-      return workTrip.getUser()
+      return getModelAttribute(workTrip, 'User');
     },
   }
 };

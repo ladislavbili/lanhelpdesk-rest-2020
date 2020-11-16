@@ -2,7 +2,7 @@ import { createDoesNoExistsError, ImapIsAlreadyBeingTestedError, ImapRoleLevelTo
 import { models } from '@/models';
 import { RoleInstance, ImapInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
-import { multipleIdDoesExistsCheck, idDoesExistsCheck, addApolloError } from '@/helperFunctions';
+import { multipleIdDoesExistsCheck, idDoesExistsCheck, addApolloError, getModelAttribute } from '@/helperFunctions';
 import { imapEvent } from '@/services/imap/readEmails';
 import { testImap } from '@/services/imap/testImap';
 
@@ -127,12 +127,15 @@ const mutations = {
 const attributes = {
   Imap: {
     async project(imap) {
+      return getModelAttribute(imap, 'Project');
       return imap.getProject()
     },
     async company(imap) {
+      return getModelAttribute(imap, 'Company');
       return imap.getCompany()
     },
     async role(imap) {
+      return getModelAttribute(imap, 'Role');
       return imap.getRole()
     },
   }
