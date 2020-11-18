@@ -48,4 +48,5 @@ export default function defineInvoicedCompanies(sequelize: Sequelize) {
 
 export function createInvoicedCompaniesAssoc(models) {
   models.InvoicedCompany.belongsTo(models.TaskInvoice);
+  models.InvoicedCompany.hasMany(models.InvoicedCompanyRent);
 }

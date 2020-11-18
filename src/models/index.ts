@@ -41,6 +41,10 @@ import defineInvoicedSubtasks, { createInvoicedSubtasksAssoc } from './instances
 import defineInvoicedTasks, { createInvoicedTasksAssoc } from './instances/invoicedTask';
 import defineInvoicedTrips, { createInvoicedTripsAssoc } from './instances/invoicedTrip';
 import defineTaskInvoices, { createTaskInvoicesAssoc } from './instances/taskInvoice';
+import defineInvoicedCompanyRents, { createInvoicedCompanyRentsAssoc } from './instances/invoicedCompanyRent';
+import defineInvoicedCustomItems, { createInvoicedCustomItemsAssoc } from './instances/invoicedCustomItem';
+import defineInvoicedMaterials, { createInvoicedMaterialsAssoc } from './instances/invoicedMaterial';
+import defineInvoicedMaterialTasks, { createInvoicedMaterialTasksAssoc } from './instances/invoicedMaterialTask';
 
 /*
 const operatorsAliases = {
@@ -97,6 +101,10 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineInvoicedTasks(sequelize);
   defineInvoicedTrips(sequelize);
   defineTaskInvoices(sequelize);
+  defineInvoicedCompanyRents(sequelize);
+  defineInvoicedCustomItems(sequelize);
+  defineInvoicedMaterials(sequelize);
+  defineInvoicedMaterialTasks(sequelize);
 
   createAccessRightsAssoc(models);
   createTagsAssoc(models);
@@ -137,6 +145,11 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createInvoicedTasksAssoc(models);
   createInvoicedTripsAssoc(models);
   createTaskInvoicesAssoc(models);
+  createInvoicedCompanyRentsAssoc(models);
+  createInvoicedCustomItemsAssoc(models);
+  createInvoicedMaterialsAssoc(models);
+  createInvoicedMaterialTasksAssoc(models);
+
   //LOG FUNCTIONS
 
   //logFunctionsOfModel(models.Project);

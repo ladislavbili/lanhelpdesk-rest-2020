@@ -17,6 +17,7 @@ import {
 
 var running: boolean = false;
 const port = 4000;
+
 export const startRest = () => {
   if (running) return;
   //Setup

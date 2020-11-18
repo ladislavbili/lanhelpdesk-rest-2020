@@ -1,32 +1,21 @@
 import { Sequelize, DataTypes } from "sequelize";
 import DefaultInstance from './defaultInstance';
 
-export interface MaterialInstance extends DefaultInstance {
+export interface InvoicedMaterialInstance extends DefaultInstance {
   title: string;
-  order: number;
-  done: boolean;
   quantity: number;
   margin: number;
   price: number;
+  totalPrice: number;
 }
 
-export default function defineMaterials(sequelize: Sequelize) {
-  sequelize.define<MaterialInstance>(
-    "Material",
+export default function defineInvoicedMaterials(sequelize: Sequelize) {
+  sequelize.define<InvoicedMaterialInstance>(
+    "InvoicedMaterial",
     {
       title: {
         type: DataTypes.TEXT,
         allowNull: false,
-      },
-      order: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0
-      },
-      done: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
       },
       quantity: {
         type: DataTypes.DECIMAL(10, 2),
@@ -43,16 +32,21 @@ export default function defineMaterials(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: 0
       },
+      totalPrice: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0
+      },
     },
     {
       //OPTIONS
-      tableName: 'materials',
+      tableName: 'invoiced_material',
       // freezeTableName: true,
     }
   );
 }
 
-export function createMaterialsAssoc(models) {
-  models.Material.belongsTo(models.Task, { foreignKey: { allowNull: false } });
-  models.Material.hasOne(models.InvoicedMaterial);
+export function createInvoicedMaterialsAssoc(models) {
+  models.InvoicedMaterial.belongsTo(models.Material);
+  models.InvoicedMaterial.belongsTo(models.InvoicedMaterialTask);
 }

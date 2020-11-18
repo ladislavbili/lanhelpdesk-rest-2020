@@ -146,6 +146,5 @@ export function createTasksAssoc(models) {
   models.Task.hasMany(models.TaskAttachment, { onDelete: 'CASCADE' });
 
   models.Task.hasMany(models.InvoicedTask);
-
-  models.Task.belongsToMany(models.TaskInvoice, { through: 'task_invoice_has_tasks' });
+  models.Task.hasMany(models.InvoicedMaterialTask);
 }

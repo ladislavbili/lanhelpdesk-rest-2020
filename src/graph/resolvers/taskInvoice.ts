@@ -136,32 +136,28 @@ const querries = {
           },
           include: [
             {
+              model: models.User,
+              as: 'requester'
+            },
+            {
+              model: models.User,
+              as: 'assignedTos'
+            },
+            models.Status,
+            models.Company,
+            {
               model: models.Subtask,
-              include: [
-                {
-                  model: models.TaskType
-                },
-              ],
+              include: [models.TaskType],
             },
             {
               model: models.WorkTrip,
-              include: [
-                {
-                  model: models.TripType
-                },
-              ],
+              include: [models.TripType],
             },
-            {
-              model: models.Material,
-            },
-            {
-              model: models.CustomItem,
-            }
+            models.Material,
+            models.CustomItem,
           ]
         },
-        {
-          model: models.CompanyRent,
-        }
+        models.CompanyRent,
       ]
     });
 
@@ -344,7 +340,6 @@ const mutations = {
     const dph = Company.get('dph');
     const taskInvoice = {
       title: title,
-
       //company
       CompanyId: companyId,
       InvoicedCompany: {
@@ -353,6 +348,13 @@ const mutations = {
         monthlyPausal: Company.get('monthlyPausal'),
         taskTripPausal: Company.get('taskWorkPausal'),
         taskWorkPausal: Company.get('taskTripPausal'),
+        InvoicedCompanyRents: (<CompanyRentInstance[]>Company.get('CompanyRents')).map((rent) => ({
+          title: rent.title,
+          quantity: rent.quantity,
+          cost: rent.cost,
+          price: rent.price,
+          total: rent.total,
+        }))
       },
       //companyRentsCounts -g
       CRCRentTotalWithoutDPH: companyRentsCounts.totalWithoutDPH,
@@ -399,92 +401,73 @@ const mutations = {
       PRCTripsTotalPriceWithDPH: projectCounts.tripsTotalPriceWithDPH,
       pausalTasks: pausalTasks.map((pausalTask) => ({
         TaskId: pausalTask.task.id,
-        InvoicedSubtasks: [
-          pausalTask.subtasks.map((subtask) => ({
-            price: subtask.price,
-            quantity: subtask.quantity,
-            type: subtask.TaskType.get('title'),
-            assignedTo: `${subtask.User.get('fullName')}(${subtask.User.get('email')})`,
-          }))
-        ],
-        InvoicedTrips: [
-          pausalTask.trips.map((workTrip) => ({
-            price: workTrip.price,
-            quantity: workTrip.quantity,
-            type: workTrip.TripType.get('title'),
-            assignedTo: `${workTrip.User.get('fullName')}(${workTrip.User.get('email')})`,
-          }))
-        ],
+        InvoicedSubtasks: pausalTask.subtasks.map((subtask) => ({
+          price: subtask.price,
+          quantity: subtask.quantity,
+          type: subtask.TaskType.get('title'),
+          assignedTo: `${subtask.User.get('fullName')}(${subtask.User.get('email')})`,
+        })),
+        InvoicedTrips: pausalTask.trips.map((workTrip) => ({
+          price: workTrip.price,
+          quantity: workTrip.quantity,
+          type: workTrip.TripType.get('title'),
+          assignedTo: `${workTrip.User.get('fullName')}(${workTrip.User.get('email')})`,
+        })),
       })),
       overPausalTasks: overPausalTasks.map((OPTask) => ({
         TaskId: OPTask.task.id,
-        InvoicedSubtasks: [
-          OPTask.subtasks.map((subtask) => ({
-            price: subtask.price,
-            quantity: subtask.quantity,
-            type: subtask.TaskType.get('title'),
-            assignedTo: `${subtask.User.get('fullName')}(${subtask.User.get('email')})`,
-          }))
-        ],
-        InvoicedTrips: [
-          OPTask.trips.map((workTrip) => ({
-            price: workTrip.price,
-            quantity: workTrip.quantity,
-            type: workTrip.TripType.get('title'),
-            assignedTo: `${workTrip.User.get('fullName')}(${workTrip.User.get('email')})`,
-          }))
-        ],
+        InvoicedSubtasks: OPTask.subtasks.map((subtask) => ({
+          price: subtask.price,
+          quantity: subtask.quantity,
+          type: subtask.TaskType.get('title'),
+          assignedTo: `${subtask.User.get('fullName')}(${subtask.User.get('email')})`,
+        })),
+        InvoicedTrips: OPTask.trips.map((workTrip) => ({
+          price: workTrip.price,
+          quantity: workTrip.quantity,
+          type: workTrip.TripType.get('title'),
+          assignedTo: `${workTrip.User.get('fullName')}(${workTrip.User.get('email')})`,
+        })),
       })),
-      projectTasks: projectTasks.map((Task) => ({
-        TaskId: Task.get('id'),
-        InvoicedSubtasks: [
-          Task.get('Subtasks').map((Subtask) => {
-            let Price = prices.find((Price) => Price.get('type') === 'TaskType' && Price.get('TaskTypeId') === Subtask.get('TaskTypeId'));
-            let price = 0;
-            if (Price !== undefined) {
-              price = parseFloat(<any>Price.get('price'));
-            }
-
-            let subtask = {
-              ...Subtask.get(),
-              discount: parseFloat(Subtask.get('discount')),
-              quantity: parseFloat(Subtask.get('quantity')),
-              price: getFinalPrice(price, Subtask.get('discount'), Task.get('overtime'), afterHours),
-            };
-            return {
-              price: subtask.price,
-              quantity: subtask.quantity,
-              type: subtask.TaskType.get('title'),
-              assignedTo: `${subtask.User.get('fullName')}(${subtask.User.get('email')})`,
-            }
-          })
+      projectTasks: projectTasks.map((ProjTask) => ({
+        TaskId: ProjTask.task.id,
+        InvoicedSubtasks: ProjTask.subtasks.map((subtask) => ({
+          price: subtask.price,
+          quantity: subtask.quantity,
+          type: subtask.TaskType.get('title'),
+          assignedTo: `${subtask.User.get('fullName')}(${subtask.User.get('email')})`,
+        })),
+        InvoicedTrips: ProjTask.trips.map((workTrip) => ({
+          price: workTrip.price,
+          quantity: workTrip.quantity,
+          type: workTrip.TripType.get('title'),
+          assignedTo: `${workTrip.User.get('fullName')}(${workTrip.User.get('email')})`,
+        })),
+      })),
+      materialTasks: materialTasks.map((materialTask) => ({
+        TaskId: materialTask.task.id,
+        materials: [
+          materialTask.materials.map((material) => ({
+            title: material.title,
+            quantity: material.quantity,
+            margin: material.margin,
+            price: material.price,
+            totalPrice: material.totalPrice,
+          }))
         ],
-        InvoicedTrips: [
-          Task.trips.map((WorkTrip) => {
-            let Price = prices.find((Price) => Price.get('type') === 'TripType' && Price.get('TripTypeId') === WorkTrip.get('TripTypeId'));
-            let price = 0;
-            if (Price !== undefined) {
-              price = parseFloat(<any>Price.get('price'));
-            }
-
-            let workTrip = {
-              ...WorkTrip.get(),
-              discount: parseFloat(WorkTrip.get('discount')),
-              quantity: parseFloat(WorkTrip.get('quantity')),
-              price: getFinalPrice(price, WorkTrip.get('discount'), Task.get('overtime'), afterHours),
-            };
-            return {
-              price: workTrip.price,
-              quantity: workTrip.quantity,
-              type: workTrip.TripType.get('title'),
-              assignedTo: `${workTrip.User.get('fullName')}(${workTrip.User.get('email')})`,
-            }
-          })
-        ],
+        customItems: materialTask.customItems.map((customItem) => ({
+          title: customItem.title,
+          quantity: customItem.quantity,
+          price: customItem.price,
+          totalPrice: customItem.totalPrice,
+        })),
       })),
       totalMaterialAndCustomItemPriceWithoutDPH: totalMaterialAndCustomItemPriceWithoutDPH,
       totalMaterialAndCustomItemPriceWithDPH: totalMaterialAndCustomItemPriceWithDPH,
     }
+    console.log('apple');
+    console.log(taskInvoice);
+
     return null;
     //set all TASKS to task stuff. for materials!
     const TaskInvoice = <TaskInvoiceInstance>await models.TaskInvoice.create(
@@ -492,9 +475,13 @@ const mutations = {
       {
         include: [
           models.InvoicedCompany,
+          models.InvoicedCompanyRent,
+          models.InvoicedTask,
           models.InvoicedSubtask,
           models.InvoicedTrip,
-          models.InvoicedTask,
+          models.InvoicedMaterialTask,
+          models.InvoicedMaterial,
+          models.InvoicedCustomItem,
         ]
       }
     );

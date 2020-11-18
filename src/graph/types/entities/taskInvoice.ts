@@ -10,7 +10,7 @@ type CompanyInvoiceInfo{
 }
 
 type InvoiceList{
-  company: Company!,
+  company: Company!
   companyRentsCounts: InvoiceCompanyRentsCounts!
   pausalCounts: InvoicePausalCounts!
   overPausalCounts: InvoiceOverPausalCounts!
@@ -130,7 +130,6 @@ type InvoiceCustomItem{
 
 type TaskInvoice{
   title: String!
-  tasks: [Task]!
 }
 `
 

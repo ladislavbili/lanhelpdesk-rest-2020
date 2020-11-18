@@ -318,7 +318,7 @@ export function createTaskInvoicesAssoc(models) {
 
   models.TaskInvoice.belongsTo(models.Company);
   models.TaskInvoice.hasOne(models.InvoicedCompany);
-  models.TaskInvoice.belongsToMany(models.Task, { through: 'task_invoice_has_tasks' });
+  models.TaskInvoice.hasMany(models.InvoicedMaterialTask, { as: { singular: 'materialTask', plural: 'materialTasks' } });
   models.TaskInvoice.hasMany(models.InvoicedTask, { as: { singular: 'pausalTask', plural: 'pausalTasks' } });
   models.TaskInvoice.hasMany(models.InvoicedTask, { as: { singular: 'overPausalTask', plural: 'overPausalTasks' } });
   models.TaskInvoice.hasMany(models.InvoicedTask, { as: { singular: 'projectTask', plural: 'projectTasks' } });

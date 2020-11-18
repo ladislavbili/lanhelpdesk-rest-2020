@@ -79,8 +79,8 @@ const querries = {
         models.Status,
         {
           model: models.Role,
-          includes: [
-            models.AccessRight
+          include: [
+            models.AccessRights
           ]
         }
       ]
@@ -131,7 +131,15 @@ const mutations = {
     if (password.length < 6) {
       throw PasswordTooShort;
     }
-    const User = <UserInstance>await models.User.findOne({ where: { email } })
+    const User = <UserInstance>await models.User.findOne({
+      where: { email },
+      include: [
+        {
+          model: models.Role,
+          include: [{ model: models.AccessRights }]
+        }
+      ]
+    })
     if (!User) {
       throw FailedLoginError;
     }
