@@ -1,5 +1,6 @@
 import { createDoesNoExistsError, createCantBeNegativeError, EditedRentNotOfCompanyError } from '@/configs/errors';
 import { models, sequelize } from '@/models';
+import { Sequelize } from "sequelize";
 import { UserInstance, CompanyInstance, CompanyRentInstance, ProjectInstance, TaskInstance, ImapInstance } from '@/models/instances';
 import { splitArrayByFilter, addApolloError, getModelAttribute } from '@/helperFunctions';
 import { Op } from 'sequelize';
@@ -14,6 +15,14 @@ const querries = {
         ['title', 'ASC'],
       ]
     })
+  },
+  companiesWithInvoices: async (root, args, { req }) => {
+    await checkResolver(req, ['vykazy', 'viewVykaz'], true);
+    const Companies = await models.Company.findAll({
+      include: [{ model: models.TaskInvoice, required: true }]
+    });
+
+    return Companies;
   },
   company: async (root, { id }, { req }) => {
     await checkResolver(req, ["companies"]);
@@ -234,7 +243,7 @@ const attributes = {
         }
       );
       return fullTasks.reduce((acc1, task) => {
-        return acc1 + task.get('Subtasks').reduce((acc2, subtask) => acc2 + subtask.get('quantity'), 0)
+        return acc1 + task.get('Subtasks').reduce((acc2, subtask) => acc2 + parseInt(subtask.get('quantity')), 0)
       }, 0);
     },
     async usedTripPausal(company) {
@@ -249,7 +258,7 @@ const attributes = {
         }
       );
       return fullTasks.reduce((acc1, task) => {
-        return acc1 + task.get('WorkTrips').reduce((acc2, trip) => acc2 + trip.get('quantity'), 0)
+        return acc1 + task.get('WorkTrips').reduce((acc2, trip) => acc2 + parseInt(trip.get('quantity')), 0)
       }, 0);
     },
 

@@ -1,9 +1,17 @@
 import { Sequelize, DataTypes } from "sequelize";
 import DefaultInstance from './defaultInstance';
 
+const stringToListOfIntegers = (stringForm) => {
+  if (stringForm === '') {
+    return []
+  }
+  return stringForm.split(',').map((val) => parseInt(val))
+}
+
 export interface TaskInvoiceInstance extends DefaultInstance {
   title: string;
-
+  fromDate: number;
+  toDate: number;
   //company
   //companyRentsCounts -g
   CRCRentTotalWithoutDPH: number;
@@ -65,6 +73,14 @@ export default function defineTaskInvoices(sequelize: Sequelize) {
     {
       title: {
         type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      fromDate: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+      toDate: {
+        type: DataTypes.DATE,
         allowNull: false,
       },
       CRCRentTotalWithoutDPH: {
@@ -247,8 +263,8 @@ export default function defineTaskInvoices(sequelize: Sequelize) {
         type: DataTypes.VIRTUAL,
         async get() {
           return {
-            rentTotalWithoutDPH: this.get('CRCRentTotalWithoutDPH'),
-            rentTotalWithDPH: this.get('CRCRentTotalWithDPH'),
+            totalWithoutDPH: this.get('CRCRentTotalWithoutDPH'),
+            totalWithDPH: this.get('CRCRentTotalWithDPH'),
           }
         }
       },
@@ -258,11 +274,11 @@ export default function defineTaskInvoices(sequelize: Sequelize) {
           return {
             subtasks: this.get('PCSubtasks'),
             subtasksAfterHours: this.get('PCSubtasksAfterHours'),
-            subtasksAfterHoursTaskIds: this.get('PCSubtasksAfterHoursTaskIds').split(','),
+            subtasksAfterHoursTaskIds: stringToListOfIntegers(this.get('PCSubtasksAfterHoursTaskIds')),
             subtasksAfterHoursPrice: this.get('PCSubtasksAfterHoursPrice'),
             trips: this.get('PCTrips'),
             tripsAfterHours: this.get('PCTripsAfterHours'),
-            tripsAfterHoursTaskIds: this.get('PCTripsAfterHoursTaskIds').split(','),
+            tripsAfterHoursTaskIds: stringToListOfIntegers(this.get('PCTripsAfterHoursTaskIds')),
             tripsAfterHoursPrice: this.get('PCTripsAfterHoursPrice'),
           }
         }
@@ -273,13 +289,13 @@ export default function defineTaskInvoices(sequelize: Sequelize) {
           return {
             subtasks: this.get('OPCSubtasks'),
             subtasksAfterHours: this.get('OPCSubtasksAfterHours'),
-            subtasksAfterHoursTaskIds: this.get('OPCSubtasksAfterHoursTaskIds').split(','),
+            subtasksAfterHoursTaskIds: stringToListOfIntegers(this.get('OPCSubtasksAfterHoursTaskIds')),
             subtasksAfterHoursPrice: this.get('OPCSubtasksAfterHoursPrice'),
             subtasksTotalPriceWithoutDPH: this.get('OPCSubtasksTotalPriceWithoutDPH'),
             subtasksTotalPriceWithDPH: this.get('OPCSubtasksTotalPriceWithDPH'),
             trips: this.get('OPCTrips'),
             tripsAfterHours: this.get('OPCTripsAfterHours'),
-            tripsAfterHoursTaskIds: this.get('OPCTripsAfterHoursTaskIds').split(','),
+            tripsAfterHoursTaskIds: stringToListOfIntegers(this.get('OPCTripsAfterHoursTaskIds')),
             tripsAfterHoursPrice: this.get('OPCTripsAfterHoursPrice'),
             tripsTotalPriceWithoutDPH: this.get('OPCTripsTotalPriceWithoutDPH'),
             tripsTotalPriceWithDPH: this.get('OPCTripsTotalPriceWithDPH'),
@@ -292,13 +308,13 @@ export default function defineTaskInvoices(sequelize: Sequelize) {
           return {
             subtasks: this.get('PRCSubtasks'),
             subtasksAfterHours: this.get('PRCSubtasksAfterHours'),
-            subtasksAfterHoursTaskIds: this.get('PRCSubtasksAfterHoursTaskIds').split(','),
+            subtasksAfterHoursTaskIds: stringToListOfIntegers(this.get('PRCSubtasksAfterHoursTaskIds')),
             subtasksAfterHoursPrice: this.get('PRCSubtasksAfterHoursPrice'),
             subtasksTotalPriceWithoutDPH: this.get('PRCSubtasksTotalPriceWithoutDPH'),
             subtasksTotalPriceWithDPH: this.get('PRCSubtasksTotalPriceWithDPH'),
             trips: this.get('PRCTrips'),
             tripsAfterHours: this.get('PRCTripsAfterHours'),
-            tripsAfterHoursTaskIds: this.get('PRCTripsAfterHoursTaskIds').split(','),
+            tripsAfterHoursTaskIds: stringToListOfIntegers(this.get('PRCTripsAfterHoursTaskIds')),
             tripsAfterHoursPrice: this.get('PRCTripsAfterHoursPrice'),
             tripsTotalPriceWithoutDPH: this.get('PRCTripsTotalPriceWithoutDPH'),
             tripsTotalPriceWithDPH: this.get('PRCTripsTotalPriceWithDPH'),
@@ -319,7 +335,5 @@ export function createTaskInvoicesAssoc(models) {
   models.TaskInvoice.belongsTo(models.Company);
   models.TaskInvoice.hasOne(models.InvoicedCompany);
   models.TaskInvoice.hasMany(models.InvoicedMaterialTask, { as: { singular: 'materialTask', plural: 'materialTasks' } });
-  models.TaskInvoice.hasMany(models.InvoicedTask, { as: { singular: 'pausalTask', plural: 'pausalTasks' } });
-  models.TaskInvoice.hasMany(models.InvoicedTask, { as: { singular: 'overPausalTask', plural: 'overPausalTasks' } });
-  models.TaskInvoice.hasMany(models.InvoicedTask, { as: { singular: 'projectTask', plural: 'projectTasks' } });
+  models.TaskInvoice.hasMany(models.InvoicedTask);
 }

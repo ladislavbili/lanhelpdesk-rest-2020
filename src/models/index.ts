@@ -152,7 +152,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
 
   //LOG FUNCTIONS
 
-  //logFunctionsOfModel(models.Project);
+  //logFunctionsOfModel(models.TaskInvoice);
 
   if (ignoreUpdating) {
     return new Promise((resolve, reject) => resolve());

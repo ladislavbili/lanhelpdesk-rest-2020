@@ -18,7 +18,7 @@ type InvoiceList{
   projectCounts: InvoiceProjectCounts!
   pausalTasks: [InvoiceTask]!
   overPausalTasks:[InvoiceTask]!
-  materialTasks: [MaterialTask]!
+  materialTasks: [InvoiceMaterialTask]!
   totalMaterialAndCustomItemPriceWithoutDPH: Float!
   totalMaterialAndCustomItemPriceWithDPH: Float!
 }
@@ -80,6 +80,7 @@ type InvoiceTask {
 
 type InvoiceSubtask{
   ${defaultAttributes}
+  subtaskID: Int
   title: String!
   order: Int!
   done: Boolean!
@@ -92,6 +93,7 @@ type InvoiceSubtask{
 
 type InvoiceWorkTrip{
   ${defaultAttributes}
+  workTripID: Int
   order: Int!
   done: Boolean!
   quantity: Float!
@@ -101,7 +103,7 @@ type InvoiceWorkTrip{
   assignedTo: BasicUser!
 }
 
-type MaterialTask {
+type InvoiceMaterialTask {
   task: Task!,
   materials: [InvoiceMaterial],
   customItems: [InvoiceCustomItem]
@@ -128,8 +130,95 @@ type InvoiceCustomItem{
   totalPrice: Float!
 }
 
-type TaskInvoice{
+type TaskInvoice {
+  ${defaultAttributes}
   title: String!
+  fromDate: String!
+  toDate: String!
+  companyRentsCounts: InvoiceCompanyRentsCounts!
+  pausalCounts: InvoicePausalCounts!
+  overPausalCounts: InvoiceOverPausalCounts!
+  projectCounts: InvoiceProjectCounts!
+  totalMaterialAndCustomItemPriceWithoutDPH: Float!
+  totalMaterialAndCustomItemPriceWithDPH: Float!
+  company: Company!
+  invoicedCompany: InvoicedCompany!
+
+  materialTasks: [MaterialTask]!
+  pausalTasks: [InvoicedTask]!
+  overPausalTasks: [InvoicedTask]!
+  projectTasks: [InvoicedTask]!
+}
+
+type InvoicedCompany {
+  ${defaultAttributes}
+  title: String!
+  dph: Float!
+  monthly: Boolean!
+  monthlyPausal: Float
+  taskTripPausal: Float
+  taskWorkPausal: Float
+  companyRents: [InvoicedCompanyRent]!
+}
+
+type InvoicedCompanyRent {
+  ${defaultAttributes}
+  title: String!
+  quantity: Float!
+  cost: Float!
+  price: Float!
+  total: Float!
+}
+
+type MaterialTask {
+  ${defaultAttributes}
+  task: Task!
+  materials: [InvoicedMaterial]!
+  customItems: [InvoicedCustomItem]!
+}
+
+type InvoicedMaterial {
+  ${defaultAttributes}
+  material: Material!
+  title: String!
+  quantity: Float!
+  price: Float!
+  totalPrice: Float!
+  margin: Float!
+}
+
+type InvoicedCustomItem {
+  ${defaultAttributes}
+  customItem: CustomItem!
+  title: String!
+  quantity: Float!
+  price: Float!
+  totalPrice: Float!
+}
+
+type InvoicedTask {
+  ${defaultAttributes}
+  task: Task!
+  subtasks: [InvoicedSubtask]!
+  trips: [InvoicedTrip]!
+}
+
+type InvoicedSubtask {
+  ${defaultAttributes}
+  subtask: Subtask!
+  price: Float!
+  quantity: Float!
+  type: String!
+  assignedTo: String!
+}
+
+type InvoicedTrip {
+  ${defaultAttributes}
+  trip: WorkTrip!
+  price: Float!
+  quantity: Float!
+  type: String!
+  assignedTo: String!
 }
 `
 

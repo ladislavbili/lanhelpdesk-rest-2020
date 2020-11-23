@@ -4,6 +4,7 @@ import DefaultInstance from './defaultInstance';
 export interface InvoicedCompanyInstance extends DefaultInstance {
   title: string;
   dph: number;
+  monthly: boolean;
   monthlyPausal: number;
   taskTripPausal: number;
   taskWorkPausal: number;
@@ -21,6 +22,11 @@ export default function defineInvoicedCompanies(sequelize: Sequelize) {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0
+      },
+      monthly: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
       },
       monthlyPausal: {
         type: DataTypes.DECIMAL(10, 2),

@@ -30,12 +30,14 @@ const mutations = {
   setSelectedErrorMessagesRead: async (root, { ids, read }, { req }) => {
     await checkResolver(req, ["viewErrors"]);
     await idsDoExistsCheck(ids, models.ErrorMessage)
-    return models.ErrorMessage.update({ read: read === undefined ? true : read }, { where: { id: ids } });
+    await models.ErrorMessage.update({ read: read === undefined ? true : read }, { where: { id: ids } });
+    return ids;
   },
 
   setAllErrorMessagesRead: async (root, { read }, { req }) => {
     await checkResolver(req, ["viewErrors"]);
-    return models.ErrorMessage.update({ read: read === undefined ? true : read }, { where: { read: !(read === undefined ? true : read) } });
+    await models.ErrorMessage.update({ read: read === undefined ? true : read }, { where: { read: !(read === undefined ? true : read) } });
+    return true;
   },
 
 
@@ -50,11 +52,14 @@ const mutations = {
   deleteSelectedErrorMessages: async (root, { ids }, { req }) => {
     await checkResolver(req, ["viewErrors"]);
     await idsDoExistsCheck(ids, models.ErrorMessage)
-    return models.ErrorMessage.destroy({ where: { id: ids } });
+    await models.ErrorMessage.destroy({ where: { id: ids } });
+    return ids;
   },
+
   deleteAllErrorMessages: async (root, args, { req }) => {
     await checkResolver(req, ["viewErrors"]);
-    return models.ErrorMessage.destroy();
+    await models.ErrorMessage.destroy();
+    return true;
   },
 }
 

@@ -24,10 +24,12 @@ import {
   getTotalFinalPriceWithDPH,
   getAHExtraPrice,
   getTotalAHExtraPrice,
-
+  getModelAttribute,
 } from '@/helperFunctions';
 import moment from 'moment';
 const dateNames = ['fromDate', 'toDate'];
+
+let fakeID = 0;
 
 const querries = {
   getInvoiceCompanies: async (root, { statuses, ...args }, { req }) => {
@@ -183,15 +185,17 @@ const querries = {
     })
     //project tasks
     let { rawPausalTasks, rawProjectTasks } = splitTasksByPausal(Company.get('Tasks'));
+
     //tasks counts
-    const { projectTasks, projectCounts } = processProjectTasks(rawProjectTasks, Company);
+    const { projectTasks, projectCounts } = processProjectTasks(rawProjectTasks, Company, true);
     //all pausal tasks
     const { pausalTasks, overPausalTasks, pausalCounts, overPausalCounts } = processTasksPausals(
       splitTasksByMonthAndYear(
         [...previousMonthTasks, ...rawPausalTasks]
       ),
       Company,
-      previousMonthTasks
+      previousMonthTasks,
+      true
     );
     const companyRentsCounts = processCompanyRents(Company.get('CompanyRents'), Company);
     const { materialTasks, totalMaterialAndCustomItemPriceWithoutDPH, totalMaterialAndCustomItemPriceWithDPH } = processTasksMaterialsAndCustomItems(Company.get('Tasks'), Company);
@@ -215,7 +219,52 @@ const querries = {
 
   getTaskInvoice: async (root, { id }, { req }) => {
     await checkResolver(req, ['vykazy']);
-    const TaskInvoice = await models.TaskInvoice.findByPk(id);
+    const TaskInvoice = await models.TaskInvoice.findByPk(id, {
+      include: [
+        models.Company,
+        {
+          model: models.InvoicedCompany,
+          include: [
+            models.InvoicedCompanyRent,
+          ]
+        },
+        {
+          model: models.InvoicedMaterialTask,
+          as: 'materialTasks',
+          include: [
+            models.Task,
+            {
+              model: models.InvoicedMaterial,
+              as: 'materials',
+              include: [models.Material],
+            },
+            {
+              model: models.InvoicedCustomItem,
+              as: 'customItems',
+              include: [models.CustomItem]
+            }
+          ]
+        },
+        {
+          model: models.InvoicedTask,
+          include: [
+            models.Task,
+            {
+              model: models.InvoicedSubtask,
+              include: [models.Subtask]
+            },
+            {
+              model: models.InvoicedTrip,
+              include: [{
+                model: models.WorkTrip,
+                include: [models.TripType]
+              }]
+            },
+          ]
+        },
+      ]
+    });
+
     if (TaskInvoice === null) {
       throw createDoesNoExistsError('Task invoice', id);
     }
@@ -340,11 +389,14 @@ const mutations = {
     const dph = Company.get('dph');
     const taskInvoice = {
       title: title,
+      fromDate: fromDate,
+      toDate: toDate,
       //company
       CompanyId: companyId,
       InvoicedCompany: {
         title: Company.get('title'),
         dph: Company.get('dph'),
+        monthly: Company.get('monthly'),
         monthlyPausal: Company.get('monthlyPausal'),
         taskTripPausal: Company.get('taskWorkPausal'),
         taskWorkPausal: Company.get('taskTripPausal'),
@@ -363,24 +415,24 @@ const mutations = {
       //pausalCounts -g
       PCSubtasks: pausalCounts.subtasks,
       PCSubtasksAfterHours: pausalCounts.subtasksAfterHours,
-      PCSubtasksAfterHoursTaskIds: pausalCounts.subtasksAfterHoursTaskIds,
+      PCSubtasksAfterHoursTaskIds: pausalCounts.subtasksAfterHoursTaskIds.toString(),
       PCSubtasksAfterHoursPrice: pausalCounts.subtasksAfterHoursPrice,
       PCTrips: pausalCounts.trips,
       PCTripsAfterHours: pausalCounts.tripsAfterHours,
-      PCTripsAfterHoursTaskIds: pausalCounts.tripsAfterHoursTaskIds,
+      PCTripsAfterHoursTaskIds: pausalCounts.tripsAfterHoursTaskIds.toString(),
       PCTripsAfterHoursPrice: pausalCounts.tripsAfterHoursPrice,
 
       //overPausalCounts -g
       OPCSubtasks: overPausalCounts.subtasks,
       OPCSubtasksAfterHours: overPausalCounts.subtasksAfterHours,
-      OPCSubtasksAfterHoursTaskIds: overPausalCounts.subtasksAfterHoursTaskIds,
+      OPCSubtasksAfterHoursTaskIds: overPausalCounts.subtasksAfterHoursTaskIds.toString(),
       OPCSubtasksAfterHoursPrice: overPausalCounts.subtasksAfterHoursPrice,
       OPCSubtasksTotalPriceWithoutDPH: overPausalCounts.subtasksTotalPriceWithoutDPH,
       OPCSubtasksTotalPriceWithDPH: overPausalCounts.subtasksTotalPriceWithDPH,
 
       OPCTrips: overPausalCounts.trips,
       OPCTripsAfterHours: overPausalCounts.tripsAfterHours,
-      OPCTripsAfterHoursTaskIds: overPausalCounts.tripsAfterHoursTaskIds,
+      OPCTripsAfterHoursTaskIds: overPausalCounts.tripsAfterHoursTaskIds.toString(),
       OPCTripsAfterHoursPrice: overPausalCounts.tripsAfterHoursPrice,
       OPCTripsTotalPriceWithoutDPH: overPausalCounts.tripsTotalPriceWithoutDPH,
       OPCTripsTotalPriceWithDPH: overPausalCounts.tripsTotalPriceWithDPH,
@@ -388,74 +440,34 @@ const mutations = {
       //projectCounts -g
       PRCSubtasks: projectCounts.subtasks,
       PRCSubtasksAfterHours: projectCounts.subtasksAfterHours,
-      PRCSubtasksAfterHoursTaskIds: projectCounts.subtasksAfterHoursTaskIds,
+      PRCSubtasksAfterHoursTaskIds: projectCounts.subtasksAfterHoursTaskIds.toString(),
       PRCSubtasksAfterHoursPrice: projectCounts.subtasksAfterHoursPrice,
       PRCSubtasksTotalPriceWithoutDPH: projectCounts.subtasksTotalPriceWithoutDPH,
       PRCSubtasksTotalPriceWithDPH: projectCounts.subtasksTotalPriceWithDPH,
 
       PRCTrips: projectCounts.trips,
       PRCTripsAfterHours: projectCounts.tripsAfterHours,
-      PRCTripsAfterHoursTaskIds: projectCounts.tripsAfterHoursTaskIds,
+      PRCTripsAfterHoursTaskIds: projectCounts.tripsAfterHoursTaskIds.toString(),
       PRCTripsAfterHoursPrice: projectCounts.tripsAfterHoursPrice,
       PRCTripsTotalPriceWithoutDPH: projectCounts.tripsTotalPriceWithoutDPH,
       PRCTripsTotalPriceWithDPH: projectCounts.tripsTotalPriceWithDPH,
-      pausalTasks: pausalTasks.map((pausalTask) => ({
-        TaskId: pausalTask.task.id,
-        InvoicedSubtasks: pausalTask.subtasks.map((subtask) => ({
-          price: subtask.price,
-          quantity: subtask.quantity,
-          type: subtask.TaskType.get('title'),
-          assignedTo: `${subtask.User.get('fullName')}(${subtask.User.get('email')})`,
-        })),
-        InvoicedTrips: pausalTask.trips.map((workTrip) => ({
-          price: workTrip.price,
-          quantity: workTrip.quantity,
-          type: workTrip.TripType.get('title'),
-          assignedTo: `${workTrip.User.get('fullName')}(${workTrip.User.get('email')})`,
-        })),
-      })),
-      overPausalTasks: overPausalTasks.map((OPTask) => ({
-        TaskId: OPTask.task.id,
-        InvoicedSubtasks: OPTask.subtasks.map((subtask) => ({
-          price: subtask.price,
-          quantity: subtask.quantity,
-          type: subtask.TaskType.get('title'),
-          assignedTo: `${subtask.User.get('fullName')}(${subtask.User.get('email')})`,
-        })),
-        InvoicedTrips: OPTask.trips.map((workTrip) => ({
-          price: workTrip.price,
-          quantity: workTrip.quantity,
-          type: workTrip.TripType.get('title'),
-          assignedTo: `${workTrip.User.get('fullName')}(${workTrip.User.get('email')})`,
-        })),
-      })),
-      projectTasks: projectTasks.map((ProjTask) => ({
-        TaskId: ProjTask.task.id,
-        InvoicedSubtasks: ProjTask.subtasks.map((subtask) => ({
-          price: subtask.price,
-          quantity: subtask.quantity,
-          type: subtask.TaskType.get('title'),
-          assignedTo: `${subtask.User.get('fullName')}(${subtask.User.get('email')})`,
-        })),
-        InvoicedTrips: ProjTask.trips.map((workTrip) => ({
-          price: workTrip.price,
-          quantity: workTrip.quantity,
-          type: workTrip.TripType.get('title'),
-          assignedTo: `${workTrip.User.get('fullName')}(${workTrip.User.get('email')})`,
-        })),
-      })),
+      InvoicedTasks: [
+        ...pausalTasks.map((PausalTask) => buildInvoicedTask(PausalTask, 'PAUSAL')),
+        ...overPausalTasks.map((OPTask) => buildInvoicedTask(OPTask, 'OVERTIME')),
+        ...projectTasks.map((ProjTask) => buildInvoicedTask(ProjTask, 'PROJECT')),
+      ],
       materialTasks: materialTasks.map((materialTask) => ({
         TaskId: materialTask.task.id,
-        materials: [
-          materialTask.materials.map((material) => ({
-            title: material.title,
-            quantity: material.quantity,
-            margin: material.margin,
-            price: material.price,
-            totalPrice: material.totalPrice,
-          }))
-        ],
+        materials: materialTask.materials.map((material) => ({
+          MaterialId: material.id,
+          title: material.title,
+          quantity: material.quantity,
+          margin: material.margin,
+          price: material.price,
+          totalPrice: material.totalPrice,
+        })),
         customItems: materialTask.customItems.map((customItem) => ({
+          CustomItemId: customItem.id,
           title: customItem.title,
           quantity: customItem.quantity,
           price: customItem.price,
@@ -465,32 +477,108 @@ const mutations = {
       totalMaterialAndCustomItemPriceWithoutDPH: totalMaterialAndCustomItemPriceWithoutDPH,
       totalMaterialAndCustomItemPriceWithDPH: totalMaterialAndCustomItemPriceWithDPH,
     }
-    console.log('apple');
-    console.log(taskInvoice);
 
-    return null;
-    //set all TASKS to task stuff. for materials!
     const TaskInvoice = <TaskInvoiceInstance>await models.TaskInvoice.create(
       taskInvoice,
       {
         include: [
-          models.InvoicedCompany,
-          models.InvoicedCompanyRent,
-          models.InvoicedTask,
-          models.InvoicedSubtask,
-          models.InvoicedTrip,
-          models.InvoicedMaterialTask,
-          models.InvoicedMaterial,
-          models.InvoicedCustomItem,
+          { model: models.InvoicedCompany, include: [models.InvoicedCompanyRent] },
+          { model: models.InvoicedTask, include: [models.InvoicedSubtask, models.InvoicedTrip] },
+          { model: models.InvoicedMaterialTask, include: [{ model: models.InvoicedMaterial, as: 'materials' }, { model: models.InvoicedCustomItem, as: 'customItems' }], as: 'materialTasks' },
         ]
       }
     );
-    await TaskInvoice.setTasks((<TaskInstance[]>Company.get('Tasks')).map((Task) => Task.get('id')));
+    await Promise.all((<TaskInstance[]>Company.get('Tasks')).map((Task) => Task.setStatus(InvoiceStatus)));
     return TaskInvoice;
   },
 }
 
 const attributes = {
+  TaskInvoice: {
+    async companyRentsCounts(taskInvoice) {
+      return taskInvoice.get('companyRentsCounts')
+    },
+    async pausalCounts(taskInvoice) {
+      return taskInvoice.get('pausalCounts')
+    },
+    async overPausalCounts(taskInvoice) {
+      return taskInvoice.get('overPausalCounts')
+    },
+    async projectCounts(taskInvoice) {
+      return taskInvoice.get('projectCounts')
+    },
+    async company(taskInvoice) {
+      return getModelAttribute(taskInvoice, 'Company');
+    },
+    async invoicedCompany(taskInvoice) {
+      return getModelAttribute(taskInvoice, 'InvoicedCompany');
+    },
+    async materialTasks(taskInvoice) {
+      return getModelAttribute(taskInvoice, 'materialTasks');
+    },
+    async pausalTasks(taskInvoice) {
+      const allTasks = await getModelAttribute(taskInvoice, 'InvoicedTasks');
+      return allTasks.filter((Task) => Task.get('type') === 'PAUSAL');
+    },
+    async overPausalTasks(taskInvoice) {
+      const allTasks = await getModelAttribute(taskInvoice, 'InvoicedTasks');
+      return allTasks.filter((Task) => Task.get('type') === 'OVERTIME');
+    },
+    async projectTasks(taskInvoice) {
+      const allTasks = await getModelAttribute(taskInvoice, 'InvoicedTasks');
+      return allTasks.filter((Task) => Task.get('type') === 'PROJECT');
+    },
+  },
+
+  InvoicedCompany: {
+    async companyRents(invoicedCompany) {
+      return getModelAttribute(invoicedCompany, 'InvoicedCompanyRents');
+    },
+  },
+  MaterialTask: {
+    async task(materialTask) {
+      return getModelAttribute(materialTask, 'Task');
+    },
+    async materials(materialTask) {
+      return getModelAttribute(materialTask, 'materials');
+    },
+    async customItems(materialTask) {
+      return getModelAttribute(materialTask, 'customItems');
+    },
+  },
+  InvoicedMaterial: {
+    async material(invoicedMaterial) {
+      return getModelAttribute(invoicedMaterial, 'Material');
+    }
+  },
+  InvoicedCustomItem: {
+    async customItem(invoicedCustomItem) {
+      return getModelAttribute(invoicedCustomItem, 'CustomItem');
+    }
+  },
+  InvoicedTask: {
+    async task(invoicedTask) {
+      return getModelAttribute(invoicedTask, 'Task');
+    },
+    async subtasks(invoicedTask) {
+      return getModelAttribute(invoicedTask, 'InvoicedSubtasks');
+
+    },
+    async trips(invoicedTask) {
+      return getModelAttribute(invoicedTask, 'InvoicedTrips');
+
+    }
+  },
+  InvoicedSubtask: {
+    async subtask(invoicedSubtask) {
+      return getModelAttribute(invoicedSubtask, 'Subtask');
+    }
+  },
+  InvoicedTrip: {
+    async trip(invoicedTrip) {
+      return getModelAttribute(invoicedTrip, 'WorkTrip');
+    }
+  },
 };
 
 export default {
@@ -517,7 +605,28 @@ function splitTasksByMonthAndYear(tasks) {
   return splitTasks;
 }
 
-function processTasksPausals(datedTasks, Company, previousMonthTasks) {
+function buildInvoicedTask(taskData, type) {
+  return {
+    TaskId: taskData.task.id,
+    type,
+    InvoicedSubtasks: taskData.subtasks.map((subtask) => ({
+      SubtaskId: subtask.id,
+      price: subtask.price,
+      quantity: subtask.quantity,
+      type: subtask.TaskType.get('title'),
+      assignedTo: `${subtask.User.get('fullName')}(${subtask.User.get('email')})`,
+    })),
+    InvoicedTrips: taskData.trips.map((workTrip) => ({
+      WorkTripId: workTrip.id,
+      price: workTrip.price,
+      quantity: workTrip.quantity,
+      type: workTrip.TripType.get('title'),
+      assignedTo: `${workTrip.User.get('fullName')}(${workTrip.User.get('email')})`,
+    })),
+  }
+}
+
+function processTasksPausals(datedTasks, Company, previousMonthTasks, useFakeID = false) {
   const prices = Company.get('Pricelist').get('Prices');
   const afterHours = Company.get('Pricelist').get('afterHours');
   const dph = Company.get('dph');
@@ -579,6 +688,8 @@ function processTasksPausals(datedTasks, Company, previousMonthTasks) {
 
         let subtask = {
           ...Subtask.get(),
+          id: Subtask.get('id'),
+          subtaskID: Subtask.get('id'),
           discount: parseFloat(Subtask.get('discount')),
           quantity: parseFloat(Subtask.get('quantity')),
           price: getFinalPrice(price, Subtask.get('discount'), Task.get('overtime'), afterHours),
@@ -634,7 +745,7 @@ function processTasksPausals(datedTasks, Company, previousMonthTasks) {
             }
           }
 
-          taskPausalObject.subtasks.push({ ...subtask, quantity: taskWorkPausalCount });
+          taskPausalObject.subtasks.push({ ...subtask, id: useFakeID ? fakeID++ : subtask.id, quantity: taskWorkPausalCount });
 
           //over pausal
           if (!dontCount) {
@@ -650,15 +761,23 @@ function processTasksPausals(datedTasks, Company, previousMonthTasks) {
               overPausalCounts.subtasksAfterHoursPrice += getTotalAHPrice(price, quantity - taskWorkPausalCount, subtask.discount, afterHours);
             }
           }
-          taskOverPausalObject.subtasks.push({ ...subtask, quantity: quantity - taskWorkPausalCount });
+          taskOverPausalObject.subtasks.push({ ...subtask, id: useFakeID ? fakeID++ : subtask.id, quantity: quantity - taskWorkPausalCount });
           taskWorkPausalCount = 0;
         }
       });
 
       Task.get('WorkTrips').forEach((WorkTrip) => {
         let price = prices.find((Price) => Price.get('type') === 'TripType' && Price.get('TripTypeId') === WorkTrip.get('TripTypeId'));
+        if (price === undefined) {
+          price = 0
+        } else {
+          price = parseFloat(price.get('price'));
+        }
+
         let workTrip = {
           ...WorkTrip.get(),
+          id: WorkTrip.get('id'),
+          workTripID: WorkTrip.get('id'),
           discount: parseFloat(WorkTrip.get('discount')),
           quantity: parseFloat(WorkTrip.get('quantity')),
           price: getFinalPrice(price, WorkTrip.get('discount'), Task.get('overtime'), afterHours),
@@ -712,7 +831,7 @@ function processTasksPausals(datedTasks, Company, previousMonthTasks) {
             }
           }
 
-          taskPausalObject.trips.push({ ...workTrip, quantity: taskTripPausalCount });
+          taskPausalObject.trips.push({ ...workTrip, id: useFakeID ? fakeID++ : workTrip.id, quantity: taskTripPausalCount });
 
           //over pausal
           if (!dontCount) {
@@ -729,7 +848,7 @@ function processTasksPausals(datedTasks, Company, previousMonthTasks) {
             }
           }
 
-          taskOverPausalObject.trips.push({ ...workTrip, quantity: quantity - taskTripPausalCount });
+          taskOverPausalObject.trips.push({ ...workTrip, id: useFakeID ? fakeID++ : workTrip.id, quantity: quantity - taskTripPausalCount });
           taskTripPausalCount = 0;
         }
       });
@@ -800,7 +919,7 @@ function processCompanyRents(CompanyRents, Company) {
   }
 }
 
-function processProjectTasks(Tasks, Company) {
+function processProjectTasks(Tasks, Company, useFakeID = false) {
   const prices = Company.get('Pricelist').get('Prices');
   const afterHours = Company.get('Pricelist').get('afterHours');
   const dph = Company.get('dph');
@@ -831,6 +950,8 @@ function processProjectTasks(Tasks, Company) {
 
       let subtask = {
         ...Subtask.get(),
+        id: useFakeID ? fakeID++ : Subtask.get('id'),
+        subtaskID: Subtask.get('id'),
         discount: parseFloat(Subtask.get('discount')),
         quantity: parseFloat(Subtask.get('quantity')),
         price: getFinalPrice(price, Subtask.get('discount'), Task.get('overtime'), afterHours),
@@ -862,6 +983,8 @@ function processProjectTasks(Tasks, Company) {
 
       let workTrip = {
         ...WorkTrip.get(),
+        id: useFakeID ? fakeID++ : WorkTrip.get('id'),
+        workTripID: WorkTrip.get('id'),
         discount: parseFloat(WorkTrip.get('discount')),
         quantity: parseFloat(WorkTrip.get('quantity')),
         price: getFinalPrice(price, WorkTrip.get('discount'), Task.get('overtime'), afterHours),

@@ -18,10 +18,10 @@ errorMessages: [ErrorMessage]
 
 export const ErrorMessageMutations = `
 setErrorMessageRead( id: Int!, read: Boolean ): ErrorMessage
-setSelectedErrorMessagesRead( ids: [Int]!, read: Boolean ): [ErrorMessage]
-setAllErrorMessagesRead( read: Boolean ): [ErrorMessage]
+setSelectedErrorMessagesRead( ids: [Int]!, read: Boolean ): [Int]
+setAllErrorMessagesRead( read: Boolean ): Boolean
 
 deleteErrorMessage( id: Int! ): ErrorMessage
-deleteSelectedErrorMessages( ids: [Int]! ): [ErrorMessage]
-deleteAllErrorMessages: [ErrorMessage]
+deleteSelectedErrorMessages( ids: [Int]! ): [Int]
+deleteAllErrorMessages: Boolean
 `

@@ -5,12 +5,17 @@ export interface InvoicedTaskInstance extends DefaultInstance {
   //task
   //InvoicedSubtask
   //InvoicedTrip
+  type: string;
 }
 
 export default function defineInvoicedTasks(sequelize: Sequelize) {
   sequelize.define<InvoicedTaskInstance>(
     "InvoicedTask",
     {
+      type: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
     },
     {
       //OPTIONS
