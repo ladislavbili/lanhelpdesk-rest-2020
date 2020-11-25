@@ -9,6 +9,7 @@ type Material {
   margin: Float!
   price: Float!
   task: Task!
+  invoicedData: [InvoicedMaterial]
 }
 `
 

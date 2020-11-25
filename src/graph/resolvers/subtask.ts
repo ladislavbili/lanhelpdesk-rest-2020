@@ -98,6 +98,9 @@ const attributes = {
     async assignedTo(subtask) {
       return getModelAttribute(subtask, 'User');
     },
+    async invoicedData(subtask) {
+      return getModelAttribute(subtask, 'InvoicedSubtasks');
+    },
   }
 };
 

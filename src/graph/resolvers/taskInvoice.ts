@@ -232,7 +232,20 @@ const querries = {
           model: models.InvoicedMaterialTask,
           as: 'materialTasks',
           include: [
-            models.Task,
+            {
+              model: models.Task, include: [
+                {
+                  model: models.User,
+                  as: 'requester'
+                },
+                {
+                  model: models.User,
+                  as: 'assignedTos'
+                },
+                models.Status,
+                models.Company,
+              ]
+            },
             {
               model: models.InvoicedMaterial,
               as: 'materials',
@@ -248,7 +261,20 @@ const querries = {
         {
           model: models.InvoicedTask,
           include: [
-            models.Task,
+            {
+              model: models.Task, include: [
+                {
+                  model: models.User,
+                  as: 'requester'
+                },
+                {
+                  model: models.User,
+                  as: 'assignedTos'
+                },
+                models.Status,
+                models.Company,
+              ]
+            },
             {
               model: models.InvoicedSubtask,
               include: [models.Subtask]

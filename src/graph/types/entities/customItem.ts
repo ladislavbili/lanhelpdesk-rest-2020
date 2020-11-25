@@ -8,6 +8,7 @@ type CustomItem {
   quantity: Float!
   price: Float!
   task: Task!
+  invoicedData: [InvoicedCustomItem]
 }
 `
 

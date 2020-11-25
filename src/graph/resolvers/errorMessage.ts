@@ -15,6 +15,10 @@ const querries = {
       ]
     })
   },
+  errorMessageCount: async (root, args, { req }) => {
+    await checkResolver(req, ["viewErrors"]);
+    return models.ErrorMessage.count()
+  },
 }
 
 const mutations = {
@@ -58,7 +62,7 @@ const mutations = {
 
   deleteAllErrorMessages: async (root, args, { req }) => {
     await checkResolver(req, ["viewErrors"]);
-    await models.ErrorMessage.destroy();
+    await models.ErrorMessage.destroy({ truncate: true });
     return true;
   },
 }

@@ -9,6 +9,7 @@ type WorkTrip {
   task: Task!
   type: TripType!
   assignedTo: BasicUser!
+  invoicedData: [InvoicedTrip]
 }
 `
 

@@ -54,5 +54,5 @@ export default function defineMaterials(sequelize: Sequelize) {
 
 export function createMaterialsAssoc(models) {
   models.Material.belongsTo(models.Task, { foreignKey: { allowNull: false } });
-  models.Material.hasOne(models.InvoicedMaterial);
+  models.Material.hasMany(models.InvoicedMaterial);
 }

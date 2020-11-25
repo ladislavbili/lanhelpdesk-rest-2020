@@ -55,6 +55,9 @@ const attributes = {
     async task(material) {
       return getModelAttribute(material, 'Task');
     },
+    async invoicedData(material) {
+      return getModelAttribute(material, 'InvoicedMaterials');
+    },
   }
 };
 

@@ -55,6 +55,9 @@ const attributes = {
     async task(customItem) {
       return getModelAttribute(customItem, 'Task');
     },
+    async invoicedData(customItem) {
+      return getModelAttribute(customItem, 'InvoicedCustomItems');
+    },
   }
 };
 

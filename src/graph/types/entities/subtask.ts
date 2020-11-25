@@ -10,6 +10,7 @@ type Subtask {
   task: Task!
   type: TaskType!
   assignedTo: BasicUser!
+  invoicedData: [InvoicedSubtask]
 }
 `
 

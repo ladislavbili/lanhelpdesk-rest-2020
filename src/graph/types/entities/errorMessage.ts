@@ -14,6 +14,7 @@ type ErrorMessage {
 
 export const ErrorMessageQuerries = `
 errorMessages: [ErrorMessage]
+errorMessageCount: Int
 `
 
 export const ErrorMessageMutations = `

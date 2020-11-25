@@ -20,7 +20,7 @@ import moment from 'moment';
 import { Op } from 'sequelize';
 import Stopwatch from 'statman-stopwatch';
 import { sendEmail } from '@/services/smtp';
-const dateNames = ['deadline', 'pendingDate'];
+const dateNames = ['deadline', 'pendingDate', 'closeDate'];
 
 const querries = {
   allTasks: async (root, args, { req }) => {
@@ -164,14 +164,20 @@ const querries = {
           models.Repeat,
           {
             model: models.Subtask,
-            include: [models.TaskType, { model: models.User, include: [models.Company] }]
+            include: [models.TaskType, models.InvoicedSubtask, { model: models.User, include: [models.Company] }]
           },
           {
             model: models.WorkTrip,
-            include: [models.TripType, { model: models.User, include: [models.Company] }]
+            include: [models.TripType, models.InvoicedTrip, { model: models.User, include: [models.Company] }]
           },
-          models.Material,
-          models.CustomItem,
+          {
+            model: models.Material,
+            include: [models.InvoicedMaterial],
+          },
+          {
+            model: models.CustomItem,
+            include: [models.InvoicedCustomItem],
+          },
           {
             model: models.Comment,
             include: [
@@ -187,7 +193,6 @@ const querries = {
               }
             ]
           }
-
         ]
       }
     );
@@ -862,25 +867,25 @@ const attributes = {
       return Comments.filter((Comment) => Comment.get('isParent') && (!Comment.get('internal') || internal || AccessRights.get('internal')))
     },
     async subtasks(task) {
-      return getModelAttribute(task, 'subtasks');
+      return getModelAttribute(task, 'Subtasks');
     },
     async workTrips(task) {
-      return getModelAttribute(task, 'workTrips');
+      return getModelAttribute(task, 'WorkTrips');
     },
     async materials(task) {
-      return getModelAttribute(task, 'materials');
+      return getModelAttribute(task, 'Materials');
     },
     async customItems(task) {
-      return getModelAttribute(task, 'customItems');
+      return getModelAttribute(task, 'CustomItems');
     },
     async calendarEvents(task) {
-      return getModelAttribute(task, 'calendarEvents');
+      return getModelAttribute(task, 'CalendarEvents');
     },
     async taskChanges(task) {
-      return getModelAttribute(task, 'taskChanges', 'getTaskChanges', { order: [['createdAt', 'DESC']] });
+      return getModelAttribute(task, 'TaskChanges', 'getTaskChanges', { order: [['createdAt', 'DESC']] });
     },
     async taskAttachments(task) {
-      return getModelAttribute(task, 'taskAttachments');
+      return getModelAttribute(task, 'TaskAttachments');
     },
   }
 };
