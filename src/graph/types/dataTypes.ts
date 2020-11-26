@@ -22,6 +22,7 @@ import { TaskInvoice } from './entities/taskInvoice';
 import { TaskType } from './entities/taskType';
 import { TripType } from './entities/tripType';
 import { User } from './entities/user';
+import { UserInvoice } from './entities/userInvoice';
 import { WorkTrip } from './entities/workTrip';
 
 export default `
@@ -49,6 +50,7 @@ ${TaskInvoice}
 ${TaskType}
 ${TripType}
 ${User}
+${UserInvoice}
 ${WorkTrip}
 
 type SecondaryTime{

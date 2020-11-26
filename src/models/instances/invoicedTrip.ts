@@ -42,4 +42,5 @@ export default function defineInvoicedTrips(sequelize: Sequelize) {
 export function createInvoicedTripsAssoc(models) {
   models.InvoicedTrip.belongsTo(models.WorkTrip);
   models.InvoicedTrip.belongsTo(models.InvoicedTask);
+  models.InvoicedTrip.belongsTo(models.User);
 }

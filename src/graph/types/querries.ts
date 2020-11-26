@@ -22,6 +22,7 @@ import { TaskInvoiceQuerries } from './entities/taskInvoice';
 import { TaskTypeQuerries } from './entities/taskType';
 import { TripTypeQuerries } from './entities/tripType';
 import { UserQuerries } from './entities/user';
+import { UserInvoiceQuerries } from './entities/userInvoice';
 import { WorkTripQuerries } from './entities/workTrip';
 
 export default `
@@ -50,6 +51,7 @@ type Query {
   ${TaskTypeQuerries}
   ${TripTypeQuerries}
   ${UserQuerries}
+  ${UserInvoiceQuerries}
   ${WorkTripQuerries}
 }
 `

@@ -22,6 +22,7 @@ import { TaskInvoiceMutations } from './entities/taskInvoice';
 import { TaskTypeMutations } from './entities/taskType';
 import { TripTypeMutations } from './entities/tripType';
 import { UserMutations } from './entities/user';
+import { UserInvoiceMutations } from './entities/userInvoice';
 import { WorkTripMutations } from './entities/workTrip';
 
 export default `
@@ -50,6 +51,7 @@ type Mutation {
   ${TaskTypeMutations}
   ${TripTypeMutations}
   ${UserMutations}
+  ${UserInvoiceMutations}
   ${WorkTripMutations}
 }
 `

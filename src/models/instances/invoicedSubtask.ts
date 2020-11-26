@@ -41,5 +41,6 @@ export default function defineInvoicedSubtasks(sequelize: Sequelize) {
 
 export function createInvoicedSubtasksAssoc(models) {
   models.InvoicedSubtask.belongsTo(models.Subtask);
+  models.InvoicedSubtask.belongsTo(models.User);
   models.InvoicedSubtask.belongsTo(models.InvoicedTask);
 }

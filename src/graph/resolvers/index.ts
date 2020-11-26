@@ -22,6 +22,7 @@ import taskInvoice from './taskInvoice';
 import taskType from './taskType';
 import tripType from './tripType';
 import user from './user';
+import userInvoice from './userInvoice';
 import workTrip from './workTrip';
 const { PubSub } = require('apollo-server-express');
 export const pubsub = new PubSub();
@@ -54,6 +55,7 @@ export default {
     ...taskType.querries,
     ...tripType.querries,
     ...user.querries,
+    ...userInvoice.querries,
     ...workTrip.querries,
   },
 
@@ -83,6 +85,7 @@ export default {
     ...taskType.mutations,
     ...tripType.mutations,
     ...user.mutations,
+    ...userInvoice.mutations,
     ...workTrip.mutations,
   },
   Subscription: {
@@ -114,5 +117,6 @@ export default {
   ...taskInvoice.attributes,
   ...tripType.attributes,
   ...user.attributes,
+  ...userInvoice.attributes,
   ...workTrip.attributes,
 };
