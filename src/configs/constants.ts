@@ -1,6 +1,6 @@
 export const testing = true;
 export const imaps = false;
-export const smtps = true;
+export const smtps = false;
 export const repeatTasks = false;
 
 export const refTokenLife = '10w';

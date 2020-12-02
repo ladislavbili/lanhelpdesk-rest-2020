@@ -10,7 +10,8 @@ import {
   CompanyInstance,
   TaskInvoiceInstance,
   PricelistInstance,
-  PriceInstance
+  PriceInstance,
+  RepeatInstance
 } from '@/models/instances';
 import { Op, Sequelize as sequelize } from 'sequelize';
 import checkResolver from './checkResolver';
@@ -337,6 +338,14 @@ const mutations = {
             StatusId: statuses
           },
           include: [
+            models.Project,
+            models.Company,
+            { model: models.User, as: 'requester' },
+            { model: models.User, as: 'assignedTos' },
+            models.TaskType,
+            models.Milestone,
+            models.Tag,
+            models.Repeat,
             {
               model: models.Subtask,
               include: [
@@ -363,17 +372,11 @@ const mutations = {
                 },
               ]
             },
-            {
-              model: models.Material,
-            },
-            {
-              model: models.CustomItem,
-            }
+            models.Material,
+            models.CustomItem,
           ]
         },
-        {
-          model: models.CompanyRent,
-        }
+        models.CompanyRent,
       ]
     });
     const previousMonthTasks = await models.Task.findAll({
@@ -509,12 +512,16 @@ const mutations = {
       {
         include: [
           { model: models.InvoicedCompany, include: [models.InvoicedCompanyRent] },
-          { model: models.InvoicedTask, include: [models.InvoicedSubtask, models.InvoicedTrip] },
+          { model: models.InvoicedTask, include: [models.InvoicedSubtask, models.InvoicedTrip, models.InvoicedTag, models.InvoicedAssignedTo] },
           { model: models.InvoicedMaterialTask, include: [{ model: models.InvoicedMaterial, as: 'materials' }, { model: models.InvoicedCustomItem, as: 'customItems' }], as: 'materialTasks' },
         ]
       }
     );
-    await Promise.all((<TaskInstance[]>Company.get('Tasks')).map((Task) => Task.setStatus(InvoiceStatus)));
+    const allRepeats = (<RepeatInstance[]>(<TaskInstance[]>Company.get('Tasks')).map((Task) => Task.get('Repeat'))).filter((Repeat) => Repeat !== null);
+    await Promise.all([
+      ...(<TaskInstance[]>Company.get('Tasks')).map((Task) => Task.setStatus(InvoiceStatus)),
+      ...allRepeats.map((Repeat) => Repeat.destroy()),
+    ]);
     return TaskInvoice;
   },
 }
@@ -592,8 +599,13 @@ const attributes = {
     },
     async trips(invoicedTask) {
       return getModelAttribute(invoicedTask, 'InvoicedTrips');
-
-    }
+    },
+    async assignedTo(invoicedTask) {
+      return getModelAttribute(invoicedTask, 'InvoicedAssignedTos');
+    },
+    async tags(invoicedTask) {
+      return getModelAttribute(invoicedTask, 'InvoicedTags');
+    },
   },
   InvoicedSubtask: {
     async subtask(invoicedSubtask) {
@@ -635,6 +647,20 @@ function buildInvoicedTask(taskData, type) {
   return {
     TaskId: taskData.task.id,
     type,
+    project: taskData.task.get('Project').title,
+    requester: `${taskData.task.get('requester').get('fullName')} (${taskData.task.get('requester').get('email')})`,
+    taskType: taskData.task.get('TaskType').get('title'),
+    company: taskData.task.get('Company').get('title'),
+    milestone: taskData.task.get('Milestone') ? taskData.task.get('Milestone').get('title') : null,
+    InvoicedTag: taskData.task.get('Tags').map((Tag) => ({
+      title: Tag.get('title'),
+      color: Tag.get('color'),
+      TagId: Tag.get('id'),
+    })),
+    InvoicedAssignedTo: taskData.task.get('assignedTos').map((User) => ({
+      title: `${User.get('fullName')} (${User.get('email')})`,
+      UserId: User.get('id')
+    })),
     InvoicedSubtasks: taskData.subtasks.map((subtask) => ({
       SubtaskId: subtask.id,
       price: subtask.price,

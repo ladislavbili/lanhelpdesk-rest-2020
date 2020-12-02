@@ -163,6 +163,10 @@ const querries = {
           models.TaskType,
           models.Repeat,
           {
+            model: models.InvoicedTask,
+            include: [models.InvoicedTag, models.InvoicedAssignedTo]
+          },
+          {
             model: models.Subtask,
             include: [models.TaskType, models.InvoicedSubtask, { model: models.User, include: [models.Company] }]
           },
@@ -182,11 +186,13 @@ const querries = {
             model: models.Comment,
             include: [
               models.User,
+              models.EmailTarget,
               models.CommentAttachment,
               {
                 model: models.Comment,
                 include: [
                   models.User,
+                  models.EmailTarget,
                   models.CommentAttachment,
                   models.Comment,
                 ]
@@ -699,10 +705,23 @@ const mutations = {
       default:
         break;
     }
-    await Task.reload()
-    sendNotifications(User, taskChangeMessages.map((taskChange) => taskChange.message), Task);
-    pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'update', data: Task, ids: [] } });
-    return Task;
+    let NewTask = await models.Task.findByPk(id, {
+      include: [
+        { model: models.User, as: 'assignedTos' },
+        models.Company,
+        { model: models.User, as: 'createdBy' },
+        models.Milestone,
+        models.Project,
+        { model: models.User, as: 'requester' },
+        models.Status,
+        models.Tag,
+        models.TaskType,
+        models.Repeat,
+      ]
+    })
+    sendNotifications(User, taskChangeMessages.map((taskChange) => taskChange.message), NewTask);
+    pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'update', data: NewTask, ids: [] } });
+    return NewTask;
   },
 
   deleteTask: async (root, { id }, { req }) => {
@@ -886,6 +905,9 @@ const attributes = {
     },
     async taskAttachments(task) {
       return getModelAttribute(task, 'TaskAttachments');
+    },
+    async invoicedTasks(task) {
+      return getModelAttribute(task, 'InvoicedTasks');
     },
   }
 };

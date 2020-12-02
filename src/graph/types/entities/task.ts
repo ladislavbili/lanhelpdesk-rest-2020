@@ -33,7 +33,8 @@ type Task {
   customItems: [CustomItem]!
   calendarEvents: [CalendarEvent]!
   taskChanges: [TaskChange]!
-  taskAttachments: [TaskAttachment]
+  taskAttachments: [TaskAttachment]!
+  invoicedTasks: [InvoicedTask]!
 }
 
 type Repeat{

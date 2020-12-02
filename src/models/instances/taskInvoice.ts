@@ -333,7 +333,7 @@ export default function defineTaskInvoices(sequelize: Sequelize) {
 export function createTaskInvoicesAssoc(models) {
 
   models.TaskInvoice.belongsTo(models.Company);
-  models.TaskInvoice.hasOne(models.InvoicedCompany);
-  models.TaskInvoice.hasMany(models.InvoicedMaterialTask, { as: { singular: 'materialTask', plural: 'materialTasks' } });
-  models.TaskInvoice.hasMany(models.InvoicedTask);
+  models.TaskInvoice.hasOne(models.InvoicedCompany, { onDelete: 'CASCADE' });
+  models.TaskInvoice.hasMany(models.InvoicedMaterialTask, { as: { singular: 'materialTask', plural: 'materialTasks' }, onDelete: 'CASCADE' });
+  models.TaskInvoice.hasMany(models.InvoicedTask, { onDelete: 'CASCADE' });
 }

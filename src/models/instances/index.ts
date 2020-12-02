@@ -33,3 +33,6 @@ export { InvoicedSubtaskInstance } from './invoicedSubtask';
 export { InvoicedTaskInstance } from './invoicedTask';
 export { InvoicedTripInstance } from './invoicedTrip';
 export { TaskInvoiceInstance } from './taskInvoice';
+export { InvoicedTagInstance } from './invoicedTag';
+export { InvoicedAssignedToInstance } from './invoicedAssignedTo';
+export { InvoicedMaterialTaskInstance } from './invoicedMaterialTask';

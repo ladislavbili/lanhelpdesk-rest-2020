@@ -6,6 +6,7 @@ import { CustomItemQuerries } from './entities/customItem';
 import { ErrorMessageQuerries } from './entities/errorMessage';
 import { FilterQuerries } from './entities/filter';
 import { ImapQuerries } from './entities/imap';
+import { InvoicedTaskQuerries } from './entities/invoicedTask';
 import { MaterialQuerries } from './entities/material';
 import { MilestoneQuerries } from './entities/milestone';
 import { PricelistQuerries } from './entities/pricelist';
@@ -35,6 +36,7 @@ type Query {
   ${ErrorMessageQuerries}
   ${FilterQuerries}
   ${ImapQuerries}
+  ${InvoicedTaskQuerries}
   ${MaterialQuerries}
   ${MilestoneQuerries}
   ${PricelistQuerries}

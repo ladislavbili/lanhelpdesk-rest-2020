@@ -45,6 +45,9 @@ import defineInvoicedCompanyRents, { createInvoicedCompanyRentsAssoc } from './i
 import defineInvoicedCustomItems, { createInvoicedCustomItemsAssoc } from './instances/invoicedCustomItem';
 import defineInvoicedMaterials, { createInvoicedMaterialsAssoc } from './instances/invoicedMaterial';
 import defineInvoicedMaterialTasks, { createInvoicedMaterialTasksAssoc } from './instances/invoicedMaterialTask';
+import defineInvoicedTags, { createInvoicedTagsAssoc } from './instances/invoicedTag';
+import defineInvoicedAssignedTos, { createInvoicedAssignedTosAssoc } from './instances/invoicedAssignedTo';
+
 
 /*
 const operatorsAliases = {
@@ -105,6 +108,8 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineInvoicedCustomItems(sequelize);
   defineInvoicedMaterials(sequelize);
   defineInvoicedMaterialTasks(sequelize);
+  defineInvoicedTags(sequelize);
+  defineInvoicedAssignedTos(sequelize);
 
   createAccessRightsAssoc(models);
   createTagsAssoc(models);
@@ -140,19 +145,22 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createTaskChangeMessagesAssoc(models);
   createTaskAttachmentsAssoc(models);
   createCommentAttachmentsAssoc(models);
-  createInvoicedCompaniesAssoc(models);
-  createInvoicedSubtasksAssoc(models);
-  createInvoicedTasksAssoc(models);
-  createInvoicedTripsAssoc(models);
+
   createTaskInvoicesAssoc(models);
+  createInvoicedTasksAssoc(models);
+  createInvoicedMaterialTasksAssoc(models);
+  createInvoicedCompaniesAssoc(models);
   createInvoicedCompanyRentsAssoc(models);
+  createInvoicedSubtasksAssoc(models);
+  createInvoicedTripsAssoc(models);
   createInvoicedCustomItemsAssoc(models);
   createInvoicedMaterialsAssoc(models);
-  createInvoicedMaterialTasksAssoc(models);
+  createInvoicedTagsAssoc(models);
+  createInvoicedAssignedTosAssoc(models);
 
   //LOG FUNCTIONS
 
-  //logFunctionsOfModel(models.TaskInvoice);
+  //logFunctionsOfModel(models.Task);
 
   if (ignoreUpdating) {
     return new Promise((resolve, reject) => resolve());

@@ -214,7 +214,7 @@ const attributes = {
       return comment.get('CommentId')
     },
     async tos(comment) {
-      const EmailTargets = await getModelAttribute(comment, 'EmailTargets');;
+      const EmailTargets = await getModelAttribute(comment, 'EmailTargets');
       return EmailTargets.map((emailTarget) => emailTarget.get('address'));
     },
     async commentAttachments(comment) {

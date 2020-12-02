@@ -23,6 +23,6 @@ export default function defineInvoicedMaterialTasks(sequelize: Sequelize) {
 export function createInvoicedMaterialTasksAssoc(models) {
   models.InvoicedMaterialTask.belongsTo(models.TaskInvoice);
   models.InvoicedMaterialTask.belongsTo(models.Task);
-  models.InvoicedMaterialTask.hasMany(models.InvoicedMaterial, { as: { singular: 'material', plural: 'materials' } });
-  models.InvoicedMaterialTask.hasMany(models.InvoicedCustomItem, { as: { singular: 'customItem', plural: 'customItems' } });
+  models.InvoicedMaterialTask.hasMany(models.InvoicedMaterial, { as: { singular: 'material', plural: 'materials' }, onDelete: 'CASCADE' });
+  models.InvoicedMaterialTask.hasMany(models.InvoicedCustomItem, { as: { singular: 'customItem', plural: 'customItems' }, onDelete: 'CASCADE' });
 }

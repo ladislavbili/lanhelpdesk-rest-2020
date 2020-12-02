@@ -151,4 +151,6 @@ export function createUsersAssoc(models) {
   models.User.hasMany(models.InvoicedTrip);
 
   models.User.hasMany(models.InvoicedSubtask);
+
+  models.User.hasMany(models.InvoicedAssignedTo);
 }

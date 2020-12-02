@@ -6,6 +6,7 @@ import { CustomItem } from './entities/customItem';
 import { ErrorMessage } from './entities/errorMessage';
 import { Filter } from './entities/filter';
 import { Imap } from './entities/imap';
+import { InvoicedTask } from './entities/invoicedTask';
 import { Material } from './entities/material';
 import { Milestone } from './entities/milestone';
 import { Pricelist } from './entities/pricelist';
@@ -34,6 +35,7 @@ ${CustomItem}
 ${ErrorMessage}
 ${Filter}
 ${Imap}
+${InvoicedTask}
 ${Material}
 ${Milestone}
 ${Pricelist}
