@@ -9,7 +9,8 @@ import {
   taskCheckDate,
   extractDatesFromObject,
   filterUnique,
-  getModelAttribute
+  getModelAttribute,
+  mergeFragmentedModel
 } from '@/helperFunctions';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
@@ -126,82 +127,94 @@ const querries = {
 
   task: async (root, { id }, { req }) => {
     const User = await checkResolver(req);
-    const Task = <TaskInstance>await models.Task.findByPk(
-      id,
-      {
-        include: [
-          { model: models.Project, include: [models.ProjectRight] },
-          models.TaskAttachment,
-          { model: models.User, as: 'assignedTos' },
-          {
-            model: models.Company,
-            include: [
-              {
-                model: models.Pricelist,
-                include: [
-                  {
-                    model: models.Price,
-                    include: [models.TaskType, models.TripType]
-                  }
-                ]
-              },
-            ]
-          },
-          {
-            model: models.TaskChange,
-            include: [
-              models.User,
-              models.TaskChangeMessage
-            ]
-          },
-          { model: models.User, as: 'createdBy' },
-          models.Milestone,
-          models.Project,
-          { model: models.User, as: 'requester' },
-          models.Status,
-          models.Tag,
-          models.TaskType,
-          models.Repeat,
-          {
-            model: models.InvoicedTask,
-            include: [models.InvoicedTag, models.InvoicedAssignedTo]
-          },
-          {
-            model: models.Subtask,
-            include: [models.TaskType, models.InvoicedSubtask, { model: models.User, include: [models.Company] }]
-          },
-          {
-            model: models.WorkTrip,
-            include: [models.TripType, models.InvoicedTrip, { model: models.User, include: [models.Company] }]
-          },
-          {
-            model: models.Material,
-            include: [models.InvoicedMaterial],
-          },
-          {
-            model: models.CustomItem,
-            include: [models.InvoicedCustomItem],
-          },
-          {
-            model: models.Comment,
-            include: [
-              models.User,
-              models.EmailTarget,
-              models.CommentAttachment,
-              {
-                model: models.Comment,
-                include: [
-                  models.User,
-                  models.EmailTarget,
-                  models.CommentAttachment,
-                  models.Comment,
-                ]
-              }
-            ]
-          }
-        ]
-      }
-    );
+    const FragmentedTask = await Promise.all([
+      models.Task.findByPk(
+        id,
+        {
+          include: [
+            { model: models.Project, include: [models.ProjectRight] },
+            models.TaskAttachment,
+            { model: models.User, as: 'assignedTos' },
+            {
+              model: models.Company,
+              include: [
+                {
+                  model: models.Pricelist,
+                  include: [
+                    {
+                      model: models.Price,
+                      include: [models.TaskType, models.TripType]
+                    }
+                  ]
+                },
+              ]
+            },
+            {
+              model: models.TaskChange,
+              include: [
+                models.User,
+                models.TaskChangeMessage
+              ]
+            },
+            { model: models.User, as: 'createdBy' },
+            models.Milestone,
+            models.Project,
+            { model: models.User, as: 'requester' },
+            models.Status,
+            models.Tag,
+            models.TaskType,
+            models.Repeat,
+            {
+              model: models.Comment,
+              include: [
+                models.User,
+                models.EmailTarget,
+                models.CommentAttachment,
+                {
+                  model: models.Comment,
+                  include: [
+                    models.User,
+                    models.EmailTarget,
+                    models.CommentAttachment,
+                    models.Comment,
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ),
+      models.Task.findByPk(
+        id,
+        {
+          include: [
+            {
+              model: models.InvoicedTask,
+              include: [models.InvoicedTag, models.InvoicedAssignedTo]
+            },
+            {
+              model: models.Subtask,
+              include: [models.TaskType, models.InvoicedSubtask, { model: models.User, include: [models.Company] }]
+            },
+            {
+              model: models.WorkTrip,
+              include: [models.TripType, models.InvoicedTrip, { model: models.User, include: [models.Company] }]
+            },
+            {
+              model: models.Material,
+              include: [models.InvoicedMaterial],
+            },
+            {
+              model: models.CustomItem,
+              include: [models.InvoicedCustomItem],
+            },
+          ]
+        }
+      ),
+    ])
+
+    const Task = mergeFragmentedModel(FragmentedTask)
+
     const Project = <ProjectInstance>Task.get('Project');
     //must right write of project
     const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))

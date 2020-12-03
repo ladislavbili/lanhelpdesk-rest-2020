@@ -62,7 +62,8 @@ export {
 } from './projectRightsCheck';
 
 export {
-  getModelAttribute
+  getModelAttribute,
+  mergeFragmentedModel
 } from './sequelizeFunctions';
 
 export {

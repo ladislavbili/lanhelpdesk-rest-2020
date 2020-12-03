@@ -311,94 +311,96 @@ const mutations = {
       throw createDoesNoExistsError('Invoice status');
     }
     const { fromDate, toDate } = extractDatesFromObject(args, dateNames);
-    const Company = await models.Company.findByPk(companyId, {
-      include: [
-        {
-          model: models.Pricelist,
-          attributes: [
-            'afterHours',
-            'title'
-          ],
-          include: [
-            {
-              model: models.Price,
-            }
-          ]
-        },
-        {
-          model: models.Task,
-          order: [['closeDate', 'ASC']],
-          where: {
-            closeDate: {
-              [Op.and]: {
-                [Op.gte]: fromDate,
-                [Op.lte]: toDate
+    const [Company, previousMonthTasks] = await Promise.all([
+      models.Company.findByPk(companyId, {
+        include: [
+          {
+            model: models.Pricelist,
+            attributes: [
+              'afterHours',
+              'title'
+            ],
+            include: [
+              {
+                model: models.Price,
               }
-            },
-            StatusId: statuses
+            ]
           },
-          include: [
-            models.Project,
-            models.Company,
-            { model: models.User, as: 'requester' },
-            { model: models.User, as: 'assignedTos' },
-            models.TaskType,
-            models.Milestone,
-            models.Tag,
-            models.Repeat,
-            {
-              model: models.Subtask,
-              include: [
-                {
-                  model: models.TaskType,
-                  attributes: ['title']
-                },
-                {
-                  model: models.User,
-                  attributes: ['name', 'surname', 'email', 'username']
-                },
-              ]
+          {
+            model: models.Task,
+            order: [['closeDate', 'ASC']],
+            where: {
+              closeDate: {
+                [Op.and]: {
+                  [Op.gte]: fromDate,
+                  [Op.lte]: toDate
+                }
+              },
+              StatusId: statuses
             },
-            {
-              model: models.WorkTrip,
-              include: [
-                {
-                  model: models.TripType,
-                  attributes: ['title']
-                },
-                {
-                  model: models.User,
-                  attributes: ['name', 'surname', 'email', 'username']
-                },
-              ]
-            },
-            models.Material,
-            models.CustomItem,
-          ]
-        },
-        models.CompanyRent,
-      ]
-    });
-    const previousMonthTasks = await models.Task.findAll({
-      where: {
-        CompanyId: companyId,
-        closeDate: {
-          [Op.and]: {
-            [Op.gte]: moment(fromDate).startOf('month').valueOf(),
-            [Op.lte]: fromDate
+            include: [
+              models.Project,
+              models.Company,
+              { model: models.User, as: 'requester' },
+              { model: models.User, as: 'assignedTos' },
+              models.TaskType,
+              models.Milestone,
+              models.Tag,
+              models.Repeat,
+              {
+                model: models.Subtask,
+                include: [
+                  {
+                    model: models.TaskType,
+                    attributes: ['title']
+                  },
+                  {
+                    model: models.User,
+                    attributes: ['id', 'name', 'surname', 'email', 'username']
+                  },
+                ]
+              },
+              {
+                model: models.WorkTrip,
+                include: [
+                  {
+                    model: models.TripType,
+                    attributes: ['title']
+                  },
+                  {
+                    model: models.User,
+                    attributes: ['id', 'name', 'surname', 'email', 'username']
+                  },
+                ]
+              },
+              models.Material,
+              models.CustomItem,
+            ]
           },
+          models.CompanyRent,
+        ]
+      }),
+      models.Task.findAll({
+        where: {
+          CompanyId: companyId,
+          closeDate: {
+            [Op.and]: {
+              [Op.gte]: moment(fromDate).startOf('month').valueOf(),
+              [Op.lte]: fromDate
+            },
+          },
+          pausal: true,
         },
-        pausal: true,
-      },
-      include: [
-        {
-          model: models.Subtask,
-        },
-        {
-          model: models.WorkTrip,
-        },
-      ],
-    })
+        include: [
+          {
+            model: models.Subtask,
+          },
+          {
+            model: models.WorkTrip,
+          },
+        ],
+      })
+    ])
     //project tasks
     let { rawPausalTasks, rawProjectTasks } = splitTasksByPausal(Company.get('Tasks'));
     //project tasks counts, add to database
@@ -652,12 +654,12 @@ function buildInvoicedTask(taskData, type) {
     taskType: taskData.task.get('TaskType').get('title'),
     company: taskData.task.get('Company').get('title'),
     milestone: taskData.task.get('Milestone') ? taskData.task.get('Milestone').get('title') : null,
-    InvoicedTag: taskData.task.get('Tags').map((Tag) => ({
+    InvoicedTags: taskData.task.get('Tags').map((Tag) => ({
       title: Tag.get('title'),
       color: Tag.get('color'),
       TagId: Tag.get('id'),
     })),
-    InvoicedAssignedTo: taskData.task.get('assignedTos').map((User) => ({
+    InvoicedAssignedTos: taskData.task.get('assignedTos').map((User) => ({
       title: `${User.get('fullName')} (${User.get('email')})`,
       UserId: User.get('id')
     })),
@@ -666,6 +668,7 @@ function buildInvoicedTask(taskData, type) {
       price: subtask.price,
       quantity: subtask.quantity,
       type: subtask.TaskType.get('title'),
+      UserId: subtask.User.get('id'),
       assignedTo: `${subtask.User.get('fullName')}(${subtask.User.get('email')})`,
     })),
     InvoicedTrips: taskData.trips.map((workTrip) => ({
@@ -673,6 +676,7 @@ function buildInvoicedTask(taskData, type) {
       price: workTrip.price,
       quantity: workTrip.quantity,
       type: workTrip.TripType.get('title'),
+      UserId: workTrip.User.get('id'),
       assignedTo: `${workTrip.User.get('fullName')}(${workTrip.User.get('email')})`,
     })),
   }
