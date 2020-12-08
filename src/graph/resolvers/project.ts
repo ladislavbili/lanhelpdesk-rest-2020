@@ -54,7 +54,7 @@ const querries = {
         project: right.get('Project'),
         usersWithRights: (<ProjectRightInstance[]>(<ProjectInstance>right.get('Project')).get('ProjectRights')).map((ProjectRight) => ProjectRight.get('User'))
       }
-    ))
+    ));
   },
 }
 

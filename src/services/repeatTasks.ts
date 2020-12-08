@@ -5,6 +5,7 @@ import events from 'events';
 import { TaskInstance } from '@/models/instances';
 import { pubsub } from '@/graph/resolvers';
 import { TASK_CHANGE } from '@/configs/subscriptions';
+import { repeatTasks } from '@/configs/constants';
 
 export const repeatEvent = new events.EventEmitter();
 
@@ -67,8 +68,10 @@ const multipliers = {
 }
 
 async function addTask(repeat) {
+  if (!repeatTasks) {
+    return;
+  }
   console.log('add Task 1');
-
   const OriginalTask = await repeat.getTask({
     include: [
       { model: models.Repeat },
