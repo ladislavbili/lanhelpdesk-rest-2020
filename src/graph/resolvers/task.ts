@@ -22,6 +22,16 @@ import { Op } from 'sequelize';
 import Stopwatch from 'statman-stopwatch';
 import { sendEmail } from '@/services/smtp';
 const dateNames = ['deadline', 'pendingDate', 'closeDate'];
+const dateNames2 = [
+  'closeDateFrom',
+  'closeDateTo',
+  'deadlineFrom',
+  'deadlineTo',
+  'pendingDateFrom',
+  'pendingDateTo',
+  'statusDateFrom',
+  'statusDateTo',
+];
 
 const querries = {
   allTasks: async (root, args, { req }) => {
@@ -61,8 +71,10 @@ const querries = {
       filter = filterObjectToFilter(await Filter.get('filter'));
     }
     if (filter) {
-      taskWhere = filterToWhere(filter, userID)
+      const dates = extractDatesFromObject(filter, dateNames2);
+      taskWhere = filterToWhere({ ...filter, ...dates }, userID)
     }
+
     const checkUserWatch = new Stopwatch(true);
     const User = await checkResolver(
       req,
@@ -230,7 +242,8 @@ const mutations = {
     let { assignedTo: assignedTos, company, milestone, project, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, ...params } = args;
     const User = await checkResolver(req);
     //check all Ids if exists
-    const pairsToCheck = [{ id: company, model: models.Company }, { id: project, model: models.Project }, { id: status, model: models.Status }, { id: taskType, model: models.TaskType }];
+    const pairsToCheck = [{ id: company, model: models.Company }, { id: project, model: models.Project }, { id: status, model: models.Status }];
+    (taskType !== undefined && taskType !== null) && pairsToCheck.push({ id: taskType, model: models.TaskType });
     (requester !== undefined && requester !== null) && pairsToCheck.push({ id: requester, model: models.User });
     (milestone !== undefined && milestone !== null) && pairsToCheck.push({ id: milestone, model: models.Milestone });
     await idsDoExistsCheck(assignedTos, models.User);
@@ -442,8 +455,7 @@ const mutations = {
     if (
       company === null ||
       project === null ||
-      status === null ||
-      taskType === null
+      status === null
     ) {
       throw TaskNotNullAttributesPresent;
     }
@@ -452,7 +464,7 @@ const mutations = {
     (company !== undefined) && pairsToCheck.push({ id: company, model: models.Company });
     (project !== undefined) && pairsToCheck.push({ id: project, model: models.Project });
     (status !== undefined) && pairsToCheck.push({ id: status, model: models.Status });
-    (taskType !== undefined) && pairsToCheck.push({ id: taskType, model: models.TaskType });
+    (taskType !== undefined && taskType !== null) && pairsToCheck.push({ id: taskType, model: models.TaskType });
     (requester !== undefined && requester !== null) && pairsToCheck.push({ id: requester, model: models.User });
     (milestone !== undefined && milestone !== null) && pairsToCheck.push({ id: milestone, model: models.Milestone });
     await multipleIdDoesExistsCheck(pairsToCheck);
@@ -566,7 +578,7 @@ const mutations = {
       } else if (milestone === null) {
         promises.push(Task.setMilestone(null, { transaction }))
       }
-      if (taskType) {
+      if (taskType !== undefined) {
         promises.push(Task.setTaskType(taskType, { transaction }))
       }
       if (company) {
@@ -992,7 +1004,7 @@ export function filterToWhere(filter, userId) {
   if (taskType) {
     where = {
       ...where,
-      taskType
+      TaskTypeId: taskType
     }
   }
 

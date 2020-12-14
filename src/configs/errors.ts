@@ -86,7 +86,7 @@ export const createProjectFixedAttributeError = (name): ApolloError => {
 }
 export const StatusPendingAttributesMissing = new ApolloError("If status is set to action pending, you must pass both, pendingDate and pendingChangable.", "INSUFFICIENT_PENDING_ATTRIBUTES");
 
-export const TaskNotNullAttributesPresent = new ApolloError("Task can't have null value for company, project, status and taskType.", "TASK_NOT_NULL_ATTRIBUTES");
+export const TaskNotNullAttributesPresent = new ApolloError("Task can't have null value for company, project and status.", "TASK_NOT_NULL_ATTRIBUTES");
 export const TaskMustBeAssignedToAtLeastOneUser = new ApolloError("Task must be assigned to at least one user.", "TASK_MUST_BE_ASSIGNED");
 
 export const AssignedToUserNotSolvingTheTask = new ApolloError("Person assigned to this subtask must be also assigned to the main task itself.", "ASSIGNED_TO_NOT_IN_TASK_ASSIGNED_TOS");

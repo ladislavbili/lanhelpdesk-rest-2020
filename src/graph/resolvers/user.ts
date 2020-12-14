@@ -355,7 +355,7 @@ const mutations = {
       {
         include: [
           { model: models.Role },
-          { model: models.Project, as: 'defAssignedTo', include: [{ model: models.User, as: 'defAssignedTo' }] },
+          { model: models.Project, as: 'defAssignedTos', include: [{ model: models.User, as: 'defAssignedTos' }] },
           { model: models.Project, as: 'defRequester' },
         ]
       }
@@ -389,6 +389,7 @@ const mutations = {
       ],
       models.User
     );
+
     const [tasks, subtasks, workTrips] = await Promise.all([
       TargetUser.getRequesterTasks({ include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] }),
       TargetUser.getSubtasks({ include: [{ model: models.Task, include: [{ model: models.User, as: 'assignedTos' }] }] }),
@@ -417,8 +418,8 @@ const mutations = {
 
     // DELETING AND UPDATING
     let promises = [
-      ...(<ProjectInstance[]>TargetUser.get('defAssignedTo')).map((project) => {
-        if ((<UserInstance[]>project.get('defAssignedTo')).length === 1 && project.get('defAssignedToFixed')) {
+      ...(<ProjectInstance[]>TargetUser.get('defAssignedTos')).map((project) => {
+        if ((<UserInstance[]>project.get('defAssignedTos')).length === 1 && project.get('defAssignedToFixed')) {
           return Promise.all([project.removeDefAssignedTo(TargetUser.get('id')), project.update({ defAssignedToDef: false, defAssignedToFixed: false, defAssignedToShow: true })])
         }
         return project.removeDefAssignedTo(TargetUser.get('id'));
@@ -438,8 +439,18 @@ const mutations = {
   //setUserStatuses( ids: [Int]! ): User
   setUserStatuses: async (root, { ids }, { req }) => {
     const User = await checkResolver(req);
-    await idsDoExistsCheck(ids, models.User);
-    return User.setStatuses(ids);
+    await idsDoExistsCheck(ids, models.Status);
+    await User.setStatuses(ids);
+    return models.User.findByPk(User.get('id'), {
+      include: [
+        models.Status,
+        models.Company,
+        {
+          model: models.Role,
+          include: [models.AccessRights]
+        }
+      ]
+    });
   },
 
   //setTasklistLayout( : TasklistLayoutEnum! ): User

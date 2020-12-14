@@ -232,7 +232,7 @@ const mutations = {
       filterTaskTypeId: taskType ? taskType : null,
       ...directFilterParams,
       ...dates,
-      pub: false,
+      pub: true,
       FilterOneOfs: oneOf.map((item) => ({ input: item })),
     }, {
         include: [{ model: models.FilterOneOf }]

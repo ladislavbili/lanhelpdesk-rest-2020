@@ -111,13 +111,13 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineInvoicedTags(sequelize);
   defineInvoicedAssignedTos(sequelize);
 
+  createRolesAssoc(models);
+  createUsersAssoc(models);
   createAccessRightsAssoc(models);
   createTagsAssoc(models);
   createTokensAssoc(models);
-  createUsersAssoc(models);
   createProjectsAssoc(models);
   createProjectRightsAssoc(models);
-  createRolesAssoc(models);
   createTaskTypesAssoc(models);
   createTripTypesAssoc(models);
   createPricelistsAssoc(models);

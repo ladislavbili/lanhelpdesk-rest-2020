@@ -13,6 +13,12 @@ const querries = {
     return models.Project.findAll({
       order: [
         ['title', 'ASC'],
+      ],
+      include: [
+        {
+          model: models.ProjectRight,
+          include: [models.User]
+        }
       ]
     })
   },
@@ -54,7 +60,7 @@ const querries = {
         project: right.get('Project'),
         usersWithRights: (<ProjectRightInstance[]>(<ProjectInstance>right.get('Project')).get('ProjectRights')).map((ProjectRight) => ProjectRight.get('User'))
       }
-    ));
+    ))
   },
 }
 
@@ -130,14 +136,13 @@ const mutations = {
       throw NotAdminOfProjectNorManagesProjects;
     }
 
+    let promises = [];
     await sequelize.transaction(async (t) => {
       let extraAttributes = {};
-      const promises = [];
       //RIGHTS
       const projectRights = fixRights(projectRightsInput);
       //all users exists in rights
       await idsDoExistsCheck(projectRights.map((right) => right.UserId), models.User);
-
       if (projectRights !== null) {
         const [existingRights, deletedRights] = splitArrayByFilter(
           <ProjectRightInstance[]>Project.get('ProjectRights'),
@@ -188,8 +193,8 @@ const mutations = {
         promises.push(Project.setDefTags(tags === null ? [] : tags));
       }
 
-      promises.push(Project.update({ ...attributes, ...extraAttributes }));
-      await Promise.all(promises);
+      promises.push(Project.update({ ...attributes, ...extraAttributes }, { transaction: t }));
+      let result = await Promise.all(promises);
     })
     return Project;
   },

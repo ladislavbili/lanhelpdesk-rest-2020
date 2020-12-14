@@ -178,7 +178,6 @@ const mutations = {
           .filter((compRent) => !existingRents.some((rent) => compRent.get('id') === rent.id))
           .forEach((compRent) => promises.push(compRent.destroy({ transaction: t })))
       }
-      console.log(args);
 
       promises.push(TargetCompany.update(args, { transaction: t }));
       await Promise.all(promises);

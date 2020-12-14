@@ -39,7 +39,7 @@ export const extractDatesFromObject = (data, dates, controlDates = true, ignoreU
         result[date] = newDate;
       }
     } else {
-      newDate = parseInt(newDate);
+      newDate = isNaN(parseInt(newDate)) ? moment(newDate).valueOf() : parseInt(newDate);
       if (controlDates && (isNaN(newDate) || newDate < 0)) {
         throw createIncorrectDateError(date, data[date], newDate);
       }

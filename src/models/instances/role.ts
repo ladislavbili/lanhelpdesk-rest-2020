@@ -39,7 +39,7 @@ export default function defineRole(sequelize: Sequelize) {
 }
 
 export function createRolesAssoc(models) {
-  models.Role.hasOne(models.AccessRights, { foreignKey: { allowNull: false }, onDelete: 'CASCADE' });
+  models.Role.hasOne(models.AccessRights, { onDelete: 'CASCADE' });
 
   models.Role.hasMany(models.User);
 
