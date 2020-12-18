@@ -1,6 +1,19 @@
 import { createDoesNoExistsError, InsufficientProjectAccessError, createUserNotPartOfProjectError, MilestoneNotPartOfProject, createProjectFixedAttributeError, StatusPendingAttributesMissing, TaskNotNullAttributesPresent, InternalMessagesNotAllowed, TaskMustBeAssignedToAtLeastOneUser, AssignedToUserNotSolvingTheTask, InvalidTokenError, CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError } from '@/configs/errors';
 import { models, sequelize } from '@/models';
-import { TaskInstance, ProjectRightInstance, MilestoneInstance, ProjectInstance, StatusInstance, RepeatInstance, UserInstance, CommentInstance, AccessRightsInstance, RoleInstance, SubtaskInstance, WorkTripInstance } from '@/models/instances';
+import {
+  TaskInstance,
+  ProjectRightInstance,
+  MilestoneInstance,
+  ProjectInstance, StatusInstance,
+  RepeatInstance,
+  UserInstance,
+  CommentInstance,
+  AccessRightsInstance,
+  RoleInstance,
+  SubtaskInstance,
+  WorkTripInstance,
+  TagInstance
+} from '@/models/instances';
 import {
   idsDoExistsCheck,
   multipleIdDoesExistsCheck,
@@ -34,23 +47,6 @@ const dateNames2 = [
 ];
 
 const querries = {
-  allTasks: async (root, args, { req }) => {
-    await checkResolver(req);
-    return models.Task.findAll({
-      include: [
-        { model: models.User, as: 'assignedTos' },
-        models.Company,
-        { model: models.User, as: 'createdBy' },
-        models.Milestone,
-        models.Project,
-        { model: models.User, as: 'requester' },
-        models.Status,
-        models.Tag,
-        models.TaskType,
-        models.Repeat
-      ]
-    });
-  },
 
   tasks: async (root, { projectId, filterId, filter }, { req, userID }) => {
     const mainWatch = new Stopwatch(true);
@@ -200,6 +196,7 @@ const querries = {
         id,
         {
           include: [
+            models.ShortSubtask,
             {
               model: models.InvoicedTask,
               include: [models.InvoicedTag, models.InvoicedAssignedTo]
@@ -239,7 +236,7 @@ const querries = {
 }
 const mutations = {
   addTask: async (root, args, { req }) => {
-    let { assignedTo: assignedTos, company, milestone, project, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, ...params } = args;
+    let { assignedTo: assignedTos, company, milestone, project, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, shortSubtasks, ...params } = args;
     const User = await checkResolver(req);
     //check all Ids if exists
     const pairsToCheck = [{ id: company, model: models.Company }, { id: project, model: models.Project }, { id: status, model: models.Status }];
@@ -253,9 +250,17 @@ const mutations = {
     const Project = await models.Project.findByPk(
       project,
       {
-        include: [{ model: models.ProjectRight }, { model: models.Milestone }]
+        include: [
+          models.ProjectRight,
+          models.Milestone,
+          {
+            model: models.Tag,
+            as: 'tags'
+          }
+        ]
       }
     );
+    tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
     //must right write of project
     const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
     const ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
@@ -429,6 +434,13 @@ const mutations = {
         CustomItems: customItems
       }
     }
+    //Short Subtasks
+    if (shortSubtasks) {
+      params = {
+        ...params,
+        ShortSubtasks: shortSubtasks
+      }
+    }
 
     const NewTask = <TaskInstance>await models.Task.create(params, {
       include: [{ model: models.Repeat }, { model: models.Comment }, { model: models.Subtask }, { model: models.WorkTrip }, { model: models.Material }, { model: models.CustomItem }, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
@@ -482,7 +494,11 @@ const mutations = {
             model: models.Project,
             include: [
               { model: models.ProjectRight },
-              { model: models.Milestone }
+              { model: models.Milestone },
+              {
+                model: models.Tag,
+                as: 'tags'
+              }
             ]
           }
         ]
@@ -490,6 +506,10 @@ const mutations = {
     );
 
     let Project = <ProjectInstance>Task.get('Project');
+
+    if (tags) {
+      tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
+    }
     //must right write of project
     let ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
     let ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
@@ -909,6 +929,9 @@ const attributes = {
       ])
       const AccessRights = <AccessRightsInstance>(<RoleInstance>SourceUser.get('Role')).get('AccessRight');
       return Comments.filter((Comment) => Comment.get('isParent') && (!Comment.get('internal') || internal || AccessRights.get('internal')))
+    },
+    async shortSubtasks(task) {
+      return getModelAttribute(task, 'ShortSubtasks');
     },
     async subtasks(task) {
       return getModelAttribute(task, 'Subtasks');

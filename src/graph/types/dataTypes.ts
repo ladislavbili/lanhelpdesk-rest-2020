@@ -12,6 +12,7 @@ import { Milestone } from './entities/milestone';
 import { Pricelist } from './entities/pricelist';
 import { Project } from './entities/project';
 import { Role } from './entities/role';
+import { ShortSubtask } from './entities/shortSubtask';
 import { Smtp } from './entities/smtp';
 import { Status } from './entities/status';
 import { Subtask } from './entities/subtask';
@@ -41,6 +42,7 @@ ${Milestone}
 ${Pricelist}
 ${Project}
 ${Role}
+${ShortSubtask}
 ${Smtp}
 ${Status}
 ${Subtask}

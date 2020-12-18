@@ -41,6 +41,7 @@ export interface ProjectInstance extends DefaultInstance {
   defTaskTypeShow: boolean;
 
   createProjectRight?: any;
+  createTag?: any;
 
   getDefAssignedTos?: any;
   getDefCompany?: any;
@@ -311,6 +312,8 @@ export function createProjectsAssoc(models) {
   models.Project.belongsTo(models.Status, { as: 'defStatus' });
 
   models.Project.belongsToMany(models.Tag, { as: 'defTags', through: 'project_def_tags' });
+
+  models.Project.hasMany(models.Tag, { as: 'tags' }, { onDelete: 'CASCADE' });
 
   models.Project.belongsTo(models.TaskType, { as: 'defTaskType' });
 

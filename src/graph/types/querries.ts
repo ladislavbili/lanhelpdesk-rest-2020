@@ -12,6 +12,7 @@ import { MilestoneQuerries } from './entities/milestone';
 import { PricelistQuerries } from './entities/pricelist';
 import { ProjectQuerries } from './entities/project';
 import { RoleQuerries } from './entities/role';
+import { ShortSubtaskQuerries } from './entities/shortSubtask';
 import { SmtpQuerries } from './entities/smtp';
 import { StatusQuerries } from './entities/status';
 import { SubtaskQuerries } from './entities/subtask';
@@ -42,6 +43,7 @@ type Query {
   ${PricelistQuerries}
   ${ProjectQuerries}
   ${RoleQuerries}
+  ${ShortSubtaskQuerries}
   ${SmtpQuerries}
   ${StatusQuerries}
   ${SubtaskQuerries}

@@ -5,6 +5,7 @@ import checkResolver from './checkResolver';
 import { getModelAttribute } from '@/helperFunctions';
 
 const querries = {
+  /*
   tags: async (root, args, { req }) => {
     await checkResolver(req);
     return models.Tag.findAll({
@@ -18,10 +19,11 @@ const querries = {
     await checkResolver(req, ["tags"]);
     return models.Tag.findByPk(id);
   },
+  */
 }
 
 const mutations = {
-
+  /*
   addTag: async (root, args, { req }) => {
     await checkResolver(req, ["tags"]);
     return models.Tag.create(args);
@@ -55,13 +57,17 @@ const mutations = {
     ])
     return Tag.destroy();
   },
+  */
 }
 
 const attributes = {
   Tag: {
     async tasks(tag) {
       return getModelAttribute(tag, 'Tasks');
-    }
+    },
+    async project(tag) {
+      return getModelAttribute(tag, 'ofProject');
+    },
   },
 };
 

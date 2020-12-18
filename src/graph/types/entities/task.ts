@@ -27,6 +27,7 @@ type Task {
 
   repeat: Repeat
   comments: [Comment]!
+  shortSubtasks: [ShortSubtask]!
   subtasks: [Subtask]!
   workTrips: [WorkTrip]!
   materials: [Material]!
@@ -112,13 +113,12 @@ ${createExecClass("Task", true)}
 `
 
 export const TaskQuerries = `
-allTasks: [Task]
 tasks( filterId: Int, projectId: Int, filter: FilterInput ): ExecTasks
 task(id: Int!): Task
 `
 
 export const TaskMutations = `
-addTask( title: String!, important: Boolean, closeDate: String, assignedTo: [Int]!, company: Int!, deadline: String, description: String!, milestone: Int, overtime: Boolean!, pausal: Boolean!, pendingChangable: Boolean, pendingDate: String, project: Int!, requester: Int, status: Int!, tags: [Int]!, taskType: Int, repeat: RepeatInput, comments: [CommentInput], subtasks: [SubtaskInput], workTrips: [WorkTripInput], materials: [MaterialInput], customItems: [CustomItemInput] ): Task
+addTask( title: String!, important: Boolean, closeDate: String, assignedTo: [Int]!, company: Int!, deadline: String, description: String!, milestone: Int, overtime: Boolean!, pausal: Boolean!, pendingChangable: Boolean, pendingDate: String, project: Int!, requester: Int, status: Int!, tags: [Int]!, taskType: Int, repeat: RepeatInput, comments: [CommentInput], shortSubtasks: [ShortSubtaskInput], subtasks: [SubtaskInput], workTrips: [WorkTripInput], materials: [MaterialInput], customItems: [CustomItemInput] ): Task
 updateTask( id: Int!, title: String, important: Boolean, closeDate: String, assignedTo: [Int], company: Int, deadline: String, description: String, milestone: Int, overtime: Boolean, pausal: Boolean, pendingChangable: Boolean, pendingDate: String, project: Int, requester: Int, status: Int, tags: [Int], taskType: Int, repeat: RepeatInput ): Task
 deleteTask( id: Int! ): Task
 `

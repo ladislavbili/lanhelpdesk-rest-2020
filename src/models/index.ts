@@ -47,6 +47,7 @@ import defineInvoicedMaterials, { createInvoicedMaterialsAssoc } from './instanc
 import defineInvoicedMaterialTasks, { createInvoicedMaterialTasksAssoc } from './instances/invoicedMaterialTask';
 import defineInvoicedTags, { createInvoicedTagsAssoc } from './instances/invoicedTag';
 import defineInvoicedAssignedTos, { createInvoicedAssignedTosAssoc } from './instances/invoicedAssignedTo';
+import defineShortSubtasks, { createShortSubtasksAssoc } from './instances/shortSubtask';
 
 
 /*
@@ -110,13 +111,14 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineInvoicedMaterialTasks(sequelize);
   defineInvoicedTags(sequelize);
   defineInvoicedAssignedTos(sequelize);
+  defineShortSubtasks(sequelize);
 
   createRolesAssoc(models);
   createUsersAssoc(models);
   createAccessRightsAssoc(models);
-  createTagsAssoc(models);
   createTokensAssoc(models);
   createProjectsAssoc(models);
+  createTagsAssoc(models);
   createProjectRightsAssoc(models);
   createTaskTypesAssoc(models);
   createTripTypesAssoc(models);
@@ -157,10 +159,11 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createInvoicedMaterialsAssoc(models);
   createInvoicedTagsAssoc(models);
   createInvoicedAssignedTosAssoc(models);
+  createShortSubtasksAssoc(models);
 
   //LOG FUNCTIONS
 
-  //logFunctionsOfModel(models.Task);
+  //logFunctionsOfModel(models.Project);
 
   if (ignoreUpdating) {
     return new Promise((resolve, reject) => resolve());

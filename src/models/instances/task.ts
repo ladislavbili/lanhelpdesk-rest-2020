@@ -129,6 +129,8 @@ export function createTasksAssoc(models) {
 
   models.Task.hasOne(models.Repeat, { onDelete: 'CASCADE' });
 
+  models.Task.hasMany(models.ShortSubtask, { onDelete: 'CASCADE' });
+
   models.Task.hasMany(models.Subtask, { onDelete: 'CASCADE' });
 
   models.Task.hasMany(models.WorkTrip, { onDelete: 'CASCADE' });

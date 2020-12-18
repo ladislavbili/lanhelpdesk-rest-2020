@@ -6,16 +6,26 @@ type Tag {
   color: String!
   order: Int!
   tasks: [Task]
+  project: Project!
+}
+
+input NewTagInput {
+  id: Int!
+  title: String!
+  color: String!
+  order: Int!
+}
+
+input TagUpdateInput {
+  id: Int!
+  title: String
+  color: String
+  order: Int
 }
 `
 
 export const TagQuerries = `
-tags: [Tag]
-tag(id: Int!): Tag
 `
 
 export const TagMutations = `
-addTag( title: String!, color: String, order: Int ): Tag
-updateTag( id: Int!, title: String, color: String, order: Int ): Tag
-deleteTag( id: Int! ): Tag
 `
