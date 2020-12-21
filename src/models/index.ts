@@ -48,6 +48,7 @@ import defineInvoicedMaterialTasks, { createInvoicedMaterialTasksAssoc } from '.
 import defineInvoicedTags, { createInvoicedTagsAssoc } from './instances/invoicedTag';
 import defineInvoicedAssignedTos, { createInvoicedAssignedTosAssoc } from './instances/invoicedAssignedTo';
 import defineShortSubtasks, { createShortSubtasksAssoc } from './instances/shortSubtask';
+import defineScheduledTasks, { createScheduledTasksAssoc } from './instances/scheduledTask';
 
 
 /*
@@ -112,6 +113,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineInvoicedTags(sequelize);
   defineInvoicedAssignedTos(sequelize);
   defineShortSubtasks(sequelize);
+  defineScheduledTasks(sequelize);
 
   createRolesAssoc(models);
   createUsersAssoc(models);
@@ -160,6 +162,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createInvoicedTagsAssoc(models);
   createInvoicedAssignedTosAssoc(models);
   createShortSubtasksAssoc(models);
+  createScheduledTasksAssoc(models);
 
   //LOG FUNCTIONS
 

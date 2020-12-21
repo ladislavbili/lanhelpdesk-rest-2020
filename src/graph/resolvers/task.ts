@@ -197,6 +197,7 @@ const querries = {
         {
           include: [
             models.ShortSubtask,
+            models.ScheduledTask,
             {
               model: models.InvoicedTask,
               include: [models.InvoicedTag, models.InvoicedAssignedTo]
@@ -236,7 +237,7 @@ const querries = {
 }
 const mutations = {
   addTask: async (root, args, { req }) => {
-    let { assignedTo: assignedTos, company, milestone, project, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, shortSubtasks, ...params } = args;
+    let { assignedTo: assignedTos, company, milestone, project, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, shortSubtasks, scheduled, ...params } = args;
     const User = await checkResolver(req);
     //check all Ids if exists
     const pairsToCheck = [{ id: company, model: models.Company }, { id: project, model: models.Project }, { id: status, model: models.Status }];
@@ -441,9 +442,19 @@ const mutations = {
         ShortSubtasks: shortSubtasks
       }
     }
+    //Scheduled Subtasks
+    if (scheduled) {
+      params = {
+        ...params,
+        ScheduledTasks: scheduled.map((item) => ({
+          ...item,
+          ...extractDatesFromObject(item, ['from', 'to'])
+        }))
+      }
+    }
 
     const NewTask = <TaskInstance>await models.Task.create(params, {
-      include: [{ model: models.Repeat }, { model: models.Comment }, { model: models.Subtask }, { model: models.WorkTrip }, { model: models.Material }, { model: models.CustomItem }, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
+      include: [models.Repeat, models.Comment, models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
     });
     await Promise.all([
       NewTask.setAssignedTos(assignedTos),
@@ -930,8 +941,12 @@ const attributes = {
       const AccessRights = <AccessRightsInstance>(<RoleInstance>SourceUser.get('Role')).get('AccessRight');
       return Comments.filter((Comment) => Comment.get('isParent') && (!Comment.get('internal') || internal || AccessRights.get('internal')))
     },
+
     async shortSubtasks(task) {
       return getModelAttribute(task, 'ShortSubtasks');
+    },
+    async scheduled(task) {
+      return getModelAttribute(task, 'ScheduledTasks');
     },
     async subtasks(task) {
       return getModelAttribute(task, 'Subtasks');

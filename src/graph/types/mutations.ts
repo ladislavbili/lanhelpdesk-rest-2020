@@ -12,6 +12,7 @@ import { MilestoneMutations } from './entities/milestone';
 import { PricelistMutations } from './entities/pricelist';
 import { ProjectMutations } from './entities/project';
 import { RoleMutations } from './entities/role';
+import { ScheduledTaskMutations } from './entities/scheduledTask';
 import { ShortSubtaskMutations } from './entities/shortSubtask';
 import { SmtpMutations } from './entities/smtp';
 import { StatusMutations } from './entities/status';
@@ -43,6 +44,7 @@ type Mutation {
   ${PricelistMutations}
   ${ProjectMutations}
   ${RoleMutations}
+  ${ScheduledTaskMutations}
   ${ShortSubtaskMutations}
   ${SmtpMutations}
   ${StatusMutations}

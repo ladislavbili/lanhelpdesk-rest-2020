@@ -37,3 +37,4 @@ export { InvoicedTagInstance } from './invoicedTag';
 export { InvoicedAssignedToInstance } from './invoicedAssignedTo';
 export { InvoicedMaterialTaskInstance } from './invoicedMaterialTask';
 export { ShortSubtaskInstance } from './shortSubtask';
+export { ScheduledTaskInstance } from './scheduledTask';

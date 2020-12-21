@@ -337,14 +337,15 @@ const attributes = {
       return getModelAttribute(project, 'tags');
     },
     async right(project, _, { userID }, __) {
-      const rights = await project.getProjectRights({ where: { UserId: userID } });
+      const rights = await project.getProjectRights({ where: { UserId: userID }, include: [models.User] });
       if (rights.length === 0) {
         return {
           read: false,
           write: false,
           delete: false,
           internal: false,
-          admin: false
+          admin: false,
+          user: null
         }
       }
       return {
@@ -352,7 +353,8 @@ const attributes = {
         write: rights[0].get('write'),
         delete: rights[0].get('delete'),
         internal: rights[0].get('internal'),
-        admin: rights[0].get('admin')
+        admin: rights[0].get('admin'),
+        user: rights[0].get('User')
       };
     },
   },
@@ -368,14 +370,15 @@ const attributes = {
       return getModelAttribute(project, 'Milestones');
     },
     async right(project, _, { userID }, __) {
-      const rights = await project.getProjectRights({ where: { UserId: userID } });
+      const rights = await project.getProjectRights({ where: { UserId: userID }, include: [models.User] });
       if (rights.length === 0) {
         return {
           read: false,
           write: false,
           delete: false,
           internal: false,
-          admin: false
+          admin: false,
+          user: null
         }
       }
       return {
@@ -383,7 +386,8 @@ const attributes = {
         write: rights[0].get('write'),
         delete: rights[0].get('delete'),
         internal: rights[0].get('internal'),
-        admin: rights[0].get('admin')
+        admin: rights[0].get('admin'),
+        user: rights[0].get('User')
       };
     },
     async tags(project) {
@@ -392,7 +396,7 @@ const attributes = {
   },
   ProjectRight: {
     async user(projectRight) {
-      return getModelAttribute(projectRight, 'User');
+      return projectRight.user ? projectRight.user.get() : null;
     },
   },
 };

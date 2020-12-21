@@ -11,6 +11,7 @@ import milestone from './milestone';
 import pricelist from './pricelist';
 import project from './project';
 import role from './role';
+import scheduledTask from './scheduledTask';
 import shortSubtask from './shortSubtask';
 import smtp from './smtp';
 import status from './status';
@@ -47,6 +48,7 @@ export default {
     ...project.querries,
     ...role.querries,
     ...tag.querries,
+    ...scheduledTask.querries,
     ...shortSubtask.querries,
     ...smtp.querries,
     ...status.querries,
@@ -79,6 +81,7 @@ export default {
     ...project.mutations,
     ...role.mutations,
     ...tag.mutations,
+    ...scheduledTask.mutations,
     ...shortSubtask.mutations,
     ...smtp.mutations,
     ...status.mutations,
@@ -113,6 +116,7 @@ export default {
   ...project.attributes,
   ...role.attributes,
   ...tag.attributes,
+  ...scheduledTask.attributes,
   ...shortSubtask.attributes,
   ...smtp.attributes,
   ...status.attributes,
