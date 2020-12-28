@@ -372,6 +372,7 @@ const attributes = {
     async right(project, _, { userID }, __) {
       const rights = await project.getProjectRights({ where: { UserId: userID }, include: [models.User] });
       if (rights.length === 0) {
+        return null;
         return {
           read: false,
           write: false,
@@ -381,6 +382,7 @@ const attributes = {
           user: null
         }
       }
+      return rights[0];
       return {
         read: rights[0].get('read'),
         write: rights[0].get('write'),
@@ -396,6 +398,9 @@ const attributes = {
   },
   ProjectRight: {
     async user(projectRight) {
+      console.log(projectRight);
+      return getModelAttribute(projectRight, 'User');
+
       return projectRight.user ? projectRight.user.get() : null;
     },
   },
