@@ -18,15 +18,34 @@ enum StatusAllowedType {
   PendingDate
   Invoiced
 }
+
+input NewStatusInput {
+  id: Int!
+  title: String!
+  order: Int!
+  color: String!
+  icon: String!
+  action: StatusAllowedType!
+}
+
+input UpdateStatusInput {
+  id: Int!
+  title: String
+  order: Int
+  color: String
+  icon: String
+  action: StatusAllowedType
+}
 `
 
 export const StatusQuerries = `
-statuses: [Status]
-status(id: Int!): Status
+statusTemplates: [Status]
+statusTemplate(id: Int!): Status
+statuses(projectId: Int!): [Status]
 `
 
 export const StatusMutations = `
-addStatus( title: String!, order: Int!, color: String!, icon: String!, action: StatusAllowedType! ): Status
-updateStatus( id: Int!, title: String, order: Int, color: String, icon: String, action: StatusAllowedType ): Status
-deleteStatus( id: Int!, newId: Int! ): Status
+addStatusTemplate( title: String!, order: Int!, color: String!, icon: String!, action: StatusAllowedType! ): Status
+updateStatusTemplate( id: Int!, title: String, order: Int, color: String, icon: String, action: StatusAllowedType ): Status
+deleteStatusTemplate( id: Int! ): Status
 `

@@ -42,6 +42,7 @@ export interface ProjectInstance extends DefaultInstance {
 
   createProjectRight?: any;
   createTag?: any;
+  createProjectStatus?: any;
 
   getDefAssignedTos?: any;
   getDefCompany?: any;
@@ -303,13 +304,15 @@ export function createProjectsAssoc(models) {
 
   models.Project.hasMany(models.ProjectRight, { onDelete: 'CASCADE' });
 
+  models.Project.hasMany(models.Status, { as: { singular: 'projectStatus', plural: 'projectStatuses' } });
+
   models.Project.belongsToMany(models.User, { as: { singular: "defAssignedTo", plural: "defAssignedTos" }, through: 'project_def_assignedTos' });
 
   models.Project.belongsTo(models.Company, { as: 'defCompany' });
 
   models.Project.belongsTo(models.User, { as: 'defRequester' });
 
-  models.Project.belongsTo(models.Status, { as: 'defStatus' });
+  models.Project.hasOne(models.Status, { as: 'defStatus' });
 
   models.Project.belongsToMany(models.Tag, { as: 'defTags', through: 'project_def_tags' });
 

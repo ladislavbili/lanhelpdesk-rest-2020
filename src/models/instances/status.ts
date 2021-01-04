@@ -23,6 +23,11 @@ export default function defineStatuses(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: 0
       },
+      template: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
       color: {
         type: DataTypes.TEXT({ length: "tiny" }),
         allowNull: false,
@@ -50,7 +55,9 @@ export default function defineStatuses(sequelize: Sequelize) {
 export function createStatusesAssoc(models) {
   models.Status.belongsToMany(models.User, { through: 'user_set_statuses' });
 
-  models.Status.hasMany(models.Project, { as: 'defStatus' });
+  models.Status.belongsTo(models.Project, { as: 'projectStatus' });
+
+  models.Status.belongsTo(models.Project, { as: 'defStatus' });
 
   models.Status.hasMany(models.Task);
 }

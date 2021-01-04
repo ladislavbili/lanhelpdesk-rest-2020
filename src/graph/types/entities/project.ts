@@ -14,6 +14,7 @@ type Project {
   imaps: [Imap]!
   right: ProjectRight!
   tags: [Tag]!
+  statuses: [Status]!
 }
 
 type BasicProject {
@@ -26,8 +27,8 @@ type BasicProject {
   milestones: [Milestone]!
   right: ProjectRight!
   tags: [Tag]!
+  statuses: [Status]!
 }
-
 
 type MyProject {
   project: BasicProject!
@@ -46,12 +47,27 @@ myProjects: [MyProject]!
 
 export const ProjectMutations = `
 addProject(
-  title: String!, description: String!, lockedRequester: Boolean!,
-  projectRights: [ProjectRightInput]!, def: ProjectDefaultsInput!, tags: [NewTagInput]!
+  title: String!,
+  description: String!,
+  lockedRequester: Boolean!,
+  projectRights: [ProjectRightInput]!,
+  def: ProjectDefaultsInput!,
+  tags: [NewTagInput]!,
+  statuses: [NewStatusInput]!
 ): Project
 updateProject(
-  id: Int!, title: String, description: String, lockedRequester: Boolean,
-  projectRights: [ProjectRightInput], def: ProjectDefaultsInput, deleteTags: [Int]!, updateTags: [TagUpdateInput]!, addTags: [NewTagInput]!
+  id: Int!,
+  title: String,
+  description: String,
+  lockedRequester: Boolean,
+  projectRights: [ProjectRightInput],
+  def: ProjectDefaultsInput,
+  deleteTags: [Int]!,
+  updateTags: [TagUpdateInput]!,
+  addTags: [NewTagInput]!,
+  deleteStatuses: [Int]!,
+  updateStatuses: [UpdateStatusInput]!,
+  addStatuses: [NewStatusInput]!,
 ): Project
 deleteProject( id: Int!, newId: Int! ): Project
 addUserToProject( projectId: Int!, userId: Int! ): Project

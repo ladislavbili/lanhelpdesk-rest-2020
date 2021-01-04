@@ -257,11 +257,18 @@ const mutations = {
           {
             model: models.Tag,
             as: 'tags'
-          }
+          },
+          {
+            model: models.Status,
+            as: 'projectStatuses'
+          },
         ]
       }
     );
     tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
+    if (!(<StatusInstance[]>Project.get('projectStatuses')).some((Status) => Status.get('id') === status)) {
+      throw createDoesNoExistsError('Status', status);
+    }
     //must right write of project
     const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
     const ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
@@ -518,9 +525,6 @@ const mutations = {
 
     let Project = <ProjectInstance>Task.get('Project');
 
-    if (tags) {
-      tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
-    }
     //must right write of project
     let ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
     let ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
@@ -545,6 +549,10 @@ const mutations = {
         throw InsufficientProjectAccessError
       }
     }
+    if (tags) {
+      tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
+    }
+
     let taskChangeMessages = [];
     let promises = [];
 

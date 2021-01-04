@@ -2,7 +2,7 @@ import { createDoesNoExistsError, NotAdminOfProjectNorManagesProjects } from '@/
 import { models, sequelize } from '@/models';
 import checkResolver from './checkResolver';
 import { flattenObject, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, addApolloError, getModelAttribute } from '@/helperFunctions';
-import { ProjectInstance, ProjectRightInstance, RoleInstance, AccessRightsInstance, TaskInstance, ImapInstance, TagInstance } from '@/models/instances';
+import { ProjectInstance, ProjectRightInstance, RoleInstance, AccessRightsInstance, TaskInstance, ImapInstance, TagInstance, StatusInstance } from '@/models/instances';
 import { pubsub } from './index';
 import { TASK_CHANGE } from '@/configs/subscriptions';
 import { ApolloError } from 'apollo-server-express';
@@ -30,7 +30,11 @@ const querries = {
         {
           model: models.Tag,
           as: 'tags'
-        }
+        },
+        {
+          model: models.Status,
+          as: 'projectStatuses'
+        },
       ]
     });
   },
@@ -48,6 +52,10 @@ const querries = {
             {
               model: models.Tag,
               as: 'tags'
+            },
+            {
+              model: models.Status,
+              as: 'projectStatuses'
             },
             {
               model: models.ProjectRight,
@@ -74,14 +82,14 @@ const querries = {
 }
 
 const mutations = {
-  addProject: async (root, { def, projectRights, tags, ...attributes }, { req }) => {
+  addProject: async (root, { def, projectRights, tags, statuses, ...attributes }, { req }) => {
     await checkResolver(req, ["projects"]);
     checkDefIntegrity(def);
     let assignedTos = def.assignedTo.value;
     let company = def.company.value;
     let requester = def.requester.value;
-    let status = def.status.value;
     let fakeTagIds = def.tag.value.filter((fakeID) => tags.some((tag) => tag.id === fakeID));
+    let fakeStatusId = statuses.some((status) => status.id === def.status.value) ? def.status.value : null;
     let taskType = def.taskType.value;
 
     await idsDoExistsCheck(projectRights.map((right) => right.UserId), models.User);
@@ -89,7 +97,6 @@ const mutations = {
     await multipleIdDoesExistsCheck([
       { model: models.Company, id: company },
       { model: models.User, id: requester },
-      { model: models.Status, id: status },
       { model: models.TaskType, id: taskType }
     ].filter((pair) => pair.id !== null));
 
@@ -106,13 +113,22 @@ const mutations = {
       ...attributes,
       defCompanyId: company,
       defRequesterId: requester,
-      defStatusId: status,
       defTaskTypeId: taskType,
       ProjectRights: fixRights(projectRights),
     }, {
         include: [models.ProjectRight],
       });
     await newProject.setDefAssignedTos(assignedTos === null ? [] : assignedTos);
+    const newStatuses = <StatusInstance[]>await Promise.all(
+      statuses.map((newStatus) => newProject.createProjectStatus({
+        title: newStatus.title,
+        order: newStatus.order,
+        color: newStatus.color,
+        icon: newStatus.icon,
+        action: newStatus.action,
+        template: false,
+      }))
+    )
     const newTags = <TagInstance[]>await Promise.all(
       tags.map((newTag) => newProject.createTag({
         title: newTag.title,
@@ -120,6 +136,9 @@ const mutations = {
         order: newTag.order,
       }))
     )
+    if (fakeStatusId !== null) {
+      await newProject.setDefStatus(newStatuses[statuses.findIndex((status) => status.id === fakeStatusId)].get('id'));
+    }
     await newProject.setDefTags(fakeTagIds.map((fakeID) => {
       let index = tags.findIndex((tag) => tag.id === fakeID);
       return newTags[index].get('id');
@@ -127,7 +146,22 @@ const mutations = {
     return newProject;
   },
 
-  updateProject: async (root, { id, def: defInput, projectRights: projectRightsInput, deleteTags, updateTags, addTags, ...attributes }, { req, userID }) => {
+  updateProject: async (
+    root,
+    {
+      id,
+      def: defInput,
+      projectRights: projectRightsInput,
+      deleteTags,
+      updateTags,
+      addTags,
+      deleteStatuses,
+      updateStatuses,
+      addStatuses,
+      ...attributes
+    },
+    { req, userID }
+  ) => {
     const User = await checkResolver(req);
     const Project = <ProjectInstance>await models.Project.findByPk(id, {
       include: [
@@ -135,7 +169,11 @@ const mutations = {
         {
           model: models.Tag,
           as: 'tags'
-        }
+        },
+        {
+          model: models.Status,
+          as: 'projectStatuses'
+        },
       ]
     });
     if (Project === null) {
@@ -144,11 +182,13 @@ const mutations = {
 
     //Who can edit (admin in project project manager)
     const userRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
-    if ((
-      userRights === undefined ||
-      !userRights.get('admin')
-    ) &&
-      !((<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get().projects)) {
+    if (
+      (
+        userRights === undefined ||
+        !userRights.get('admin')
+      ) &&
+      !((<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get().projects)
+    ) {
       addApolloError(
         'Project',
         NotAdminOfProjectNorManagesProjects,
@@ -172,7 +212,7 @@ const mutations = {
       await multipleIdDoesExistsCheck([
         { model: models.Company, id: company },
         { model: models.User, id: requester },
-        { model: models.Status, id: status },
+        { model: models.Status, id: defInput.status.value !== null && defInput.status.value > 0 ? defInput.status.value : null },
         { model: models.TaskType, id: taskType }
       ].filter((pair) => pair.id !== null));
     }
@@ -194,6 +234,17 @@ const mutations = {
       existingRights.forEach((Right) => promises.push(Right.update(projectRights.find((right) => right.UserId === Right.get('UserId')))));
       deletedRights.forEach((Right) => promises.push(Right.destroy()));
     }
+    const newStatuses = <StatusInstance[]>await Promise.all(
+      addStatuses.map((newStatus) => Project.createProjectStatus({
+        title: newStatus.title,
+        order: newStatus.order,
+        color: newStatus.color,
+        icon: newStatus.icon,
+        action: newStatus.action,
+        template: false,
+      }))
+    )
+
     const newTags = <TagInstance[]>await Promise.all(
       addTags.map((newTag) => Project.createTag({
         title: newTag.title,
@@ -222,10 +273,15 @@ const mutations = {
         ...def,
         defCompanyId: company,
         defRequesterId: requester,
-        defStatusId: status,
         defTaskTypeId: taskType,
       }
       promises.push(Project.setDefAssignedTos(assignedTos === null ? [] : assignedTos));
+      if (status < 0) {
+        promises.push(Project.setDefStatus(newStatuses[addStatuses.findIndex((newStatus) => newStatus.id === status)].get('id')));
+      } else {
+        promises.push(Project.setDefStatus(status));
+      }
+
       const [existingTags, fakeTags] = splitArrayByFilter(tags, (tagID) => tagID > -1);
       promises.push(Project.setDefTags(
         tags === null ?
@@ -252,6 +308,25 @@ const mutations = {
           title: tag.title,
           color: tag.color,
           order: tag.order,
+        }));
+      }
+    })
+
+    deleteStatuses.forEach((statusID) => {
+      const Status = (<StatusInstance[]>Project.get('projectStatuses')).find((Status) => Status.get('id') === statusID);
+      if (Status) {
+        promises.push(Status.destroy());
+      }
+    })
+    updateStatuses.forEach((status) => {
+      const Status = (<StatusInstance[]>Project.get('projectStatuses')).find((Status) => Status.get('id') === status.id);
+      if (Status) {
+        promises.push(Status.update({
+          title: status.title,
+          order: status.order,
+          color: status.color,
+          icon: status.icon,
+          action: status.action,
         }));
       }
     })
@@ -336,6 +411,9 @@ const attributes = {
     async tags(project) {
       return getModelAttribute(project, 'tags');
     },
+    async statuses(project) {
+      return getModelAttribute(project, 'projectStatuses');
+    },
     async right(project, _, { userID }, __) {
       const rights = await project.getProjectRights({ where: { UserId: userID }, include: [models.User] });
       if (rights.length === 0) {
@@ -394,6 +472,9 @@ const attributes = {
     },
     async tags(project) {
       return getModelAttribute(project, 'tags');
+    },
+    async statuses(project) {
+      return getModelAttribute(project, 'projectStatuses');
     },
   },
   ProjectRight: {
