@@ -26,6 +26,7 @@ export interface TaskInstance extends DefaultInstance {
   closeDate: number; //X
   statusChange: number; //X
   invoicedDate: number; //X
+  invoiced: boolean;
   //taskType - X
   setStatus?: any;
   setCompany?: any;
@@ -96,6 +97,11 @@ export default function defineTasks(sequelize: Sequelize) {
       invoicedDate: {
         type: DataTypes.DATE,
         allowNull: true,
+      },
+      invoiced: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
       },
     },
     {

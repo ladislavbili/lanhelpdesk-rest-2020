@@ -11,7 +11,8 @@ import {
   TaskInvoiceInstance,
   PricelistInstance,
   PriceInstance,
-  RepeatInstance
+  RepeatInstance,
+  StatusInstance,
 } from '@/models/instances';
 import { Op, Sequelize as sequelize } from 'sequelize';
 import checkResolver from './checkResolver';
@@ -33,12 +34,33 @@ const dateNames = ['fromDate', 'toDate'];
 let fakeID = 0;
 
 const querries = {
-  getInvoiceCompanies: async (root, { statuses, ...args }, { req }) => {
+  getInvoiceCompanies: async (root, { type, ...args }, { req }) => {
     await checkResolver(req, ['vykazy']);
-    if (statuses.length === 0) {
-      throw MustSelectStatusesError;
-    }
+
     const { fromDate, toDate } = extractDatesFromObject(args, dateNames);
+    let where = <any>{
+      closeDate: {
+        [Op.and]: {
+          [Op.gte]: fromDate,
+          [Op.lte]: toDate
+        }
+      },
+    }
+    switch (type) {
+      case 'Invoiced': {
+        where.invoiced = true;
+        break;
+      }
+      case 'Closed': {
+        where.invoiced = false;
+        const ClosedStatuses = <StatusInstance[]>await models.Status.findAll({ where: { action: 'CloseDate' } });
+        where.StatusID = ClosedStatuses.map((ClosedStatus) => ClosedStatus.get('id'));
+        break;
+      }
+      default:
+        break;
+    }
+
     const Companies = await models.Company.findAll({
       order: [
         ['id', 'ASC']
@@ -47,15 +69,7 @@ const querries = {
         {
           model: models.Task,
           attributes: ['id'],
-          where: {
-            closeDate: {
-              [Op.and]: {
-                [Op.gte]: fromDate,
-                [Op.lte]: toDate
-              }
-            },
-            StatusId: statuses
-          },
+          where,
           include: [
             {
               model: models.Subtask,
@@ -108,12 +122,31 @@ const querries = {
     ));
   },
 
-  getCompanyInvoiceData: async (root, { statuses, companyId, ...args }, { req }) => {
+  getCompanyInvoiceData: async (root, { type, companyId, ...args }, { req }) => {
     await checkResolver(req, ['vykazy']);
-    if (statuses.length === 0) {
-      throw MustSelectStatusesError;
-    }
     const { fromDate, toDate } = extractDatesFromObject(args, dateNames);
+    let where = <any>{
+      closeDate: {
+        [Op.and]: {
+          [Op.gte]: fromDate,
+          [Op.lte]: toDate
+        }
+      },
+    }
+    switch (type) {
+      case 'Invoiced': {
+        where.invoiced = true;
+        break;
+      }
+      case 'Closed': {
+        where.invoiced = false;
+        const ClosedStatuses = <StatusInstance[]>await models.Status.findAll({ where: { action: 'CloseDate' } });
+        where.StatusID = ClosedStatuses.map((ClosedStatus) => ClosedStatus.get('id'));
+        break;
+      }
+      default:
+        break;
+    }
     const Company = await models.Company.findByPk(companyId, {
       include: [
         {
@@ -128,15 +161,7 @@ const querries = {
         {
           model: models.Task,
           order: [['closeDate', 'ASC']],
-          where: {
-            closeDate: {
-              [Op.and]: {
-                [Op.gte]: fromDate,
-                [Op.lte]: toDate
-              }
-            },
-            StatusId: statuses
-          },
+          where,
           include: [
             {
               model: models.User,
@@ -300,17 +325,20 @@ const querries = {
 }
 
 const mutations = {
-  createTaskInvoice: async (root, { statuses, companyId, title, ...args }, { req }) => {
+  createTaskInvoice: async (root, { companyId, title, invoiced, ...args }, { req }) => {
     await checkResolver(req, ['vykazy']);
-    if (statuses.length === 0) {
-      throw MustSelectStatusesError;
-    }
-    //check invoice status
-    const InvoiceStatus = await models.Status.findOne({ where: { action: 'Invoiced' } });
-    if (InvoiceStatus === null) {
-      throw createDoesNoExistsError('Invoice status');
-    }
     const { fromDate, toDate } = extractDatesFromObject(args, dateNames);
+    let where = <any>{
+      closeDate: {
+        [Op.and]: {
+          [Op.gte]: fromDate,
+          [Op.lte]: toDate
+        }
+      },
+      StatusID: (<StatusInstance[]>await models.Status.findAll({ where: { action: 'CloseDate' } })).map((ClosedStatus) => ClosedStatus.get('id')),
+      invoiced: invoiced === true,
+    }
+
     const [Company, previousMonthTasks] = await Promise.all([
       models.Company.findByPk(companyId, {
         include: [
@@ -329,15 +357,7 @@ const mutations = {
           {
             model: models.Task,
             order: [['closeDate', 'ASC']],
-            where: {
-              closeDate: {
-                [Op.and]: {
-                  [Op.gte]: fromDate,
-                  [Op.lte]: toDate
-                }
-              },
-              StatusId: statuses
-            },
+            where,
             include: [
               models.Project,
               models.Company,
@@ -401,6 +421,9 @@ const mutations = {
         ],
       })
     ])
+    if ((<TaskInstance[]>Company.get('Tasks')).length === 0) {
+      return null;
+    }
     //project tasks
     let { rawPausalTasks, rawProjectTasks } = splitTasksByPausal(Company.get('Tasks'));
     //project tasks counts, add to database
@@ -520,8 +543,9 @@ const mutations = {
       }
     );
     const allRepeats = (<RepeatInstance[]>(<TaskInstance[]>Company.get('Tasks')).map((Task) => Task.get('Repeat'))).filter((Repeat) => Repeat !== null);
+    const invoicedDate = moment().valueOf();
     await Promise.all([
-      ...(<TaskInstance[]>Company.get('Tasks')).map((Task) => Task.setStatus(InvoiceStatus)),
+      ...<any[]>((<TaskInstance[]>Company.get('Tasks')).map((Task) => (Task as TaskInstance).update({ invoiced: true, invoicedDate }))),
       ...allRepeats.map((Repeat) => Repeat.destroy()),
     ]);
     return TaskInvoice;
@@ -651,7 +675,7 @@ function buildInvoicedTask(taskData, type) {
     type,
     project: taskData.task.get('Project').title,
     requester: `${taskData.task.get('requester').get('fullName')} (${taskData.task.get('requester').get('email')})`,
-    taskType: taskData.task.get('TaskType').get('title'),
+    taskType: taskData.task.get('TaskType') ? taskData.task.get('TaskType').get('title') : 'No task type',
     company: taskData.task.get('Company').get('title'),
     milestone: taskData.task.get('Milestone') ? taskData.task.get('Milestone').get('title') : null,
     InvoicedTags: taskData.task.get('Tags').map((Tag) => ({

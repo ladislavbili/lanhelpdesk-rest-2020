@@ -15,117 +15,7 @@ const querries = {
 }
 
 const mutations = {
-  /*
-  updateInvoicedTask: async (root, { id, taskChanges, stmcChanges }, { req }) => {
-    const User = await checkResolver(req, ['vykazy']);
-    //update vykazy
-    const Task = await models.Task.findByPk(id,
-      {
-        include: [
-          models.Subtask,
-          models.WorkTrip,
-          models.Material,
-          models.CustomItem,
-          {
-            model: models.InvoicedTask,
-            include: [
-              {
-                model: models.TaskInvoice,
-                include: [
-                  {
-                    model: models.InvoicedTask,
-                    include: [
-                      models.InvoicedSubtask,
-                      models.InvoicedTrip,
-                      models.InvoicedTag,
-                      models.InvoicedAssignedTo,
-                    ]
-                  },
-                  {
-                    model: models.InvoicedMaterialTask,
-                    as: 'materialTasks',
-                    include: [
-                      { model: models.InvoicedMaterial, as: 'materials' },
-                      { model: models.InvoicedCustomItem, as: 'customItems' }
-                    ]
-                  }
-                ]
-              },
-              models.InvoicedSubtask,
-              models.InvoicedTrip,
-              models.InvoicedTag,
-              models.InvoicedAssignedTo,
-            ]
-          },
-          {
-            model: models.InvoicedMaterialTask,
-            include: [
-              {
-                model: models.TaskInvoice,
-                include: [
-                  {
-                    model: models.InvoicedTask,
-                    include: [
-                      models.InvoicedSubtask,
-                      models.InvoicedTrip,
-                      models.InvoicedTag,
-                      models.InvoicedAssignedTo,
-                    ]
-                  },
-                  {
-                    model: models.InvoicedMaterialTask,
-                    as: 'materialTasks',
-                    include: [
-                      { model: models.InvoicedMaterial, as: 'materials' },
-                      { model: models.InvoicedCustomItem, as: 'customItems' }
-                    ]
-                  }
-                ]
-              },
-            ]
-          },
-        ]
-      });
-    let Invoices = [];
-    (<InvoicedTaskInstance[]>Task.get('InvoicedTasks'))
-      .forEach((InvoicedTask) => {
-        Invoices.push(<TaskInvoiceInstance>InvoicedTask.get('TaskInvoice'))
-      });
-    (<InvoicedMaterialTaskInstance[]>Task.get('InvoicedMaterialTasks'))
-      .forEach((InvoicedMaterialTask) => {
-        Invoices.push(<TaskInvoiceInstance>InvoicedMaterialTask.get('TaskInvoice'))
-      });
-    Invoices = filterUnique(Invoices, 'id');
-
-    const InvoicedTasksToDelete = Invoices.reduce((acc, Invoice) => acc.concat(<InvoicedTaskInstance[]>Invoice.get('InvoicedTasks')), []);
-    const InvoicedMaterialTasksToDelete = Invoices.reduce((acc, Invoice) => acc.concat(<InvoicedMaterialTaskInstance[]>Invoice.get('InvoicedMaterialTasks')), []);
-    console.log((<SubtaskInstance[]>Task.get('Subtasks')).map((Subtask) => Subtask.get('id')));
-    console.log(stmcChanges.subtasks.EDIT.map((item) => item.id));
-
-    return;
-    await TaskResolvers.mutations.updateTask(root, { id, ...taskChanges }, { req });
-    await Promise.all([
-      ...stmcChanges.subtasks.ADD.map((subtask) => addInvoicedSubtask(subtask, Task)),
-      ...stmcChanges.subtasks.EDIT.map((subtask) => updateInvoicedSubtask(subtask, Task)),
-      ...stmcChanges.subtasks.DELETE.map((id) => deleteInvoicedSubtask(id, Task)),
-      ...stmcChanges.trips.ADD.map((trip) => addInvoicedTrip(trip, Task)),
-      ...stmcChanges.trips.EDIT.map((trip) => updateInvoicedTrip(trip, Task)),
-      ...stmcChanges.trips.DELETE.map((id) => deleteInvoicedTrip(id, Task)),
-      ...stmcChanges.materials.ADD.map((material) => addInvoicedMaterial(material, Task)),
-      ...stmcChanges.materials.EDIT.map((material) => updateInvoicedMaterial(material, Task)),
-      ...stmcChanges.materials.DELETE.map((id) => deleteInvoicedMaterial(id, Task)),
-      ...stmcChanges.customItem.ADD.map((customItem) => addInvoicedCustomItem(customItem, Task)),
-      ...stmcChanges.customItem.EDIT.map((customItem) => updateInvoicedCustomItem(customItem, Task)),
-      ...stmcChanges.customItem.DELETE.map((id) => deleteInvoicedCustomItem(id, Task)),
-    ]);
-    //update invoiced tasks
-    //update invoiced parts
-    //update invoice
-    return Task;
-  },
-  */
-
-  updateInvoicedTask: async (root, { id, taskChanges, stmcChanges }, { req }) => {
+  updateInvoicedTask: async (root, { id, taskChanges, stmcChanges, cancelInvoiced }, { req }) => {
     const User = await checkResolver(req, ['vykazy']);
     //update vykazy
     const Task = await models.Task.findByPk(id,
@@ -157,13 +47,8 @@ const mutations = {
       });
     Invoices = filterUnique(Invoices, 'id');
 
-    const [Statuses, _] = await Promise.all([
-      models.Status.findAll({
-        where: {
-          action: 'Invoiced'
-        }
-      }),
-      TaskResolvers.mutations.updateTask(root, { id, ...taskChanges }, { req }),
+    await Promise.all([
+      TaskResolvers.mutations.updateTask(root, { id, invoiced: !cancelInvoiced, ...taskChanges }, { req }),
       ...stmcChanges.subtasks.ADD.map((subtask) => addInvoicedSubtask(subtask, Task)),
       ...stmcChanges.subtasks.EDIT.map((subtask) => updateInvoicedSubtask(subtask, Task)),
       ...stmcChanges.subtasks.DELETE.map((id) => deleteInvoicedSubtask(id, Task)),
@@ -184,9 +69,9 @@ const mutations = {
         {
           title: Invoice.get('title'),
           companyId: Invoice.get('CompanyId'),
-          statuses: Statuses.map((Status) => Status.get('id')),
           fromDate: moment(Invoice.get('fromDate')).valueOf().toString(),
           toDate: moment(Invoice.get('toDate')).valueOf().toString(),
+          invoiced: true
         },
         { req }
       )

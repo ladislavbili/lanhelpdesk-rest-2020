@@ -24,6 +24,7 @@ type Task {
   statusChange: String!
   tags: [Tag]!
   taskType: TaskType
+  invoiced: Boolean!
 
   repeat: Repeat
   comments: [Comment]!
@@ -120,7 +121,7 @@ task(id: Int!): Task
 
 export const TaskMutations = `
 addTask( title: String!, important: Boolean, closeDate: String, assignedTo: [Int]!, company: Int!, deadline: String, description: String!, milestone: Int, overtime: Boolean!, pausal: Boolean!, pendingChangable: Boolean, pendingDate: String, project: Int!, requester: Int, status: Int!, tags: [Int]!, taskType: Int, repeat: RepeatInput, comments: [CommentInput], scheduled: [ScheduledTaskInput], shortSubtasks: [ShortSubtaskInput], subtasks: [SubtaskInput], workTrips: [WorkTripInput], materials: [MaterialInput], customItems: [CustomItemInput] ): Task
-updateTask( id: Int!, title: String, important: Boolean, closeDate: String, assignedTo: [Int], company: Int, deadline: String, description: String, milestone: Int, overtime: Boolean, pausal: Boolean, pendingChangable: Boolean, pendingDate: String, project: Int, requester: Int, status: Int, tags: [Int], taskType: Int, repeat: RepeatInput ): Task
+updateTask( id: Int!, title: String, important: Boolean, closeDate: String, assignedTo: [Int], company: Int, deadline: String, description: String, milestone: Int, overtime: Boolean, pausal: Boolean, pendingChangable: Boolean, pendingDate: String, project: Int, requester: Int, status: Int, tags: [Int], taskType: Int, repeat: RepeatInput, invoiced: Boolean ): Task
 deleteTask( id: Int! ): Task
 `
 

@@ -479,7 +479,6 @@ const attributes = {
   },
   ProjectRight: {
     async user(projectRight) {
-      console.log(projectRight);
       return getModelAttribute(projectRight, 'User');
 
       return projectRight.user ? projectRight.user.get() : null;

@@ -16,7 +16,6 @@ enum StatusAllowedType {
   CloseDate
   CloseInvalid
   PendingDate
-  Invoiced
 }
 
 input NewStatusInput {

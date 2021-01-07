@@ -129,15 +129,21 @@ type InvoiceCustomItem{
   price: Float!
   totalPrice: Float!
 }
+
+enum ReportTypeAllowed {
+  All
+  Invoiced
+  Closed
+}
 `
 
 export const TaskInvoiceQuerries = `
-  getInvoiceCompanies( fromDate: String!, toDate: String!, statuses: [Int]! ) :[CompanyInvoiceInfo]
-  getCompanyInvoiceData( fromDate: String!, toDate: String!, companyId: Int!, statuses: [Int]! ) :InvoiceList
+  getInvoiceCompanies( fromDate: String!, toDate: String!, type: ReportTypeAllowed! ) :[CompanyInvoiceInfo]
+  getCompanyInvoiceData( fromDate: String!, toDate: String!, companyId: Int!, type: ReportTypeAllowed! ) :InvoiceList
   getCompanyInvoices( id:Int! ) :[TaskInvoice]
   getTaskInvoice( id:Int! ) :TaskInvoice
 `
 
 export const TaskInvoiceMutations = `
-createTaskInvoice( fromDate: String!, toDate: String!, companyId: Int!, statuses: [Int]!, title: String! ) :TaskInvoice
+createTaskInvoice( fromDate: String!, toDate: String!, companyId: Int!, title: String! ) :TaskInvoice
 `

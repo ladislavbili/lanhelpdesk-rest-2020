@@ -8,9 +8,10 @@ export const getModelAttribute = (item, attribute, globalAttribute = null, param
   if (item.get(attribute) !== undefined) {
     return item.get(attribute);
   }
+  /*
   console.log('============================');
   console.log(item.constructor, 'direct load', loadTimer++, attribute);
-
+  */
 
   if (parameters === null) {
     return item[globalAttribute === null ? `get${capitalizeFirstLetter(attribute)}` : globalAttribute]();

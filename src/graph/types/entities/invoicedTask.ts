@@ -237,6 +237,6 @@ export const InvoicedTaskQuerries = `
 `
 
 export const InvoicedTaskMutations = `
-  updateInvoicedTask( id: Int!, taskChanges: TaskChangeInput, stmcChanges: SMTCChangesInput ): Task
+  updateInvoicedTask( id: Int!, taskChanges: TaskChangeInput, stmcChanges: SMTCChangesInput, cancelInvoiced: Boolean! ): Task
 
 `
