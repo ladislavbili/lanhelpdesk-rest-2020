@@ -26,7 +26,13 @@ export const createAttributeNoAccess = (item): ApolloError => {
 }
 
 export const createCantChangeRightsError = (rights): ApolloError => {
-  return new ApolloError(`Your role can't cange these rights: ${rights.toString()}!`, 'CANT_CHANGE_SOME_RIGHTS');
+  return new ApolloError(`Your role can't change these rights: ${rights.toString()}!`, 'CANT_CHANGE_SOME_RIGHTS');
+}
+
+//TASK EDIT ATTRIBUTE
+
+export const createCantEditTaskAttributeError = (attribute): ApolloError => {
+  return new ApolloError(`Your can't change attribute ${attribute} in this project and its not default in the project!`, 'CANT_CHANGE_SOME_TASK_ATTRIBUTES');
 }
 
 export const InvalidTokenError = new ApolloError("Token is invalid or outdated!", 'INVALID_OR_OUTDATED_TOKEN');
@@ -70,6 +76,10 @@ export const EditedRentNotOfCompanyError = new ApolloError("Some edited rent doe
 
 //project
 export const NotAdminOfProjectNorManagesProjects = new ApolloError("You can't edit this project! You are neither admin of project nor manager of all projects.", "NOT_PROJECT_ADMIN_NOR_MANAGES_PROJECTS");
+
+export const ProjectNoAdminGroupWithUsers = new ApolloError("You can't create or edit this project! There is no group with users that could edit it.", "PROJECT_WITHOUT_ADMIN_GROUP_WITH_USERS");
+export const ProjectNoNewStatus = new ApolloError("You can't create or edit this project! There is no new status.", "PROJECT_WITHOUT_NEW_STATUS");
+export const ProjectNoCloseStatus = new ApolloError("You can't create or edit this project! There is no close status.", "PROJECT_WITHOUT_CLOSE_STATUS");
 
 //filters
 export const NoAccessToThisProjectError = new ApolloError("You can't access this project.", "NO_ACCESS_TO_PROJECT");

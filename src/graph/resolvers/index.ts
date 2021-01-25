@@ -10,6 +10,7 @@ import material from './material';
 import milestone from './milestone';
 import pricelist from './pricelist';
 import project from './project';
+import projectGroup from './projectGroup';
 import role from './role';
 import scheduledTask from './scheduledTask';
 import shortSubtask from './shortSubtask';
@@ -46,6 +47,7 @@ export default {
     ...milestone.querries,
     ...pricelist.querries,
     ...project.querries,
+    ...projectGroup.querries,
     ...role.querries,
     ...tag.querries,
     ...scheduledTask.querries,
@@ -79,6 +81,7 @@ export default {
     ...milestone.mutations,
     ...pricelist.mutations,
     ...project.mutations,
+    ...projectGroup.mutations,
     ...role.mutations,
     ...tag.mutations,
     ...scheduledTask.mutations,
@@ -114,6 +117,7 @@ export default {
   ...milestone.attributes,
   ...pricelist.attributes,
   ...project.attributes,
+  ...projectGroup.attributes,
   ...role.attributes,
   ...tag.attributes,
   ...scheduledTask.attributes,

@@ -8,41 +8,42 @@ export interface ProjectInstance extends DefaultInstance {
 
   defAssignedToDef: boolean;
   defAssignedToFixed: boolean;
-  defAssignedToShow: boolean;
+  defAssignedToRequired: boolean;
 
   defCompanyDef: boolean;
   defCompanyFixed: boolean;
-  defCompanyShow: boolean;
+  defCompanyRequired: boolean;
 
   defOvertimeDef: boolean;
   defOvertimeFixed: boolean;
-  defOvertimeShow: boolean;
+  defOvertimeRequired: boolean;
   defOvertimeValue: boolean;
 
   defPausalDef: boolean;
   defPausalFixed: boolean;
-  defPausalShow: boolean;
+  defPausalRequired: boolean;
   defPausalValue: boolean;
 
   defRequesterDef: boolean;
   defRequesterFixed: boolean;
-  defRequesterShow: boolean;
+  defRequesterRequired: boolean;
 
   defStatusDef: boolean;
   defStatusFixed: boolean;
-  defStatusShow: boolean;
+  defStatusRequired: boolean;
 
   defTagDef: boolean;
   defTagFixed: boolean;
-  defTagShow: boolean;
+  defTagRequired: boolean;
 
   defTaskTypeDef: boolean;
   defTaskTypeFixed: boolean;
-  defTaskTypeShow: boolean;
+  defTaskTypeRequired: boolean;
 
   createProjectRight?: any;
   createTag?: any;
   createProjectStatus?: any;
+  createProjectGroup?: any;
 
   getDefAssignedTos?: any;
   getDefCompany?: any;
@@ -102,49 +103,49 @@ export default function defineProjects(sequelize: Sequelize) {
             assignedTo: {
               def: this.get('defAssignedToDef'),
               fixed: this.get('defAssignedToFixed'),
-              show: this.get('defAssignedToShow'),
+              required: this.get('defAssignedToRequired'),
               value: assignedTos
             },
             company: {
               def: this.get('defCompanyDef'),
               fixed: this.get('defCompanyFixed'),
-              show: this.get('defCompanyShow'),
+              required: this.get('defCompanyRequired'),
               value: company
             },
             overtime: {
               def: this.get('defOvertimeDef'),
               fixed: this.get('defOvertimeFixed'),
-              show: this.get('defOvertimeShow'),
+              required: this.get('defOvertimeRequired'),
               value: this.get('defOvertimeValue'),
             },
             pausal: {
               def: this.get('defPausalDef'),
               fixed: this.get('defPausalFixed'),
-              show: this.get('defPausalShow'),
+              required: this.get('defPausalRequired'),
               value: this.get('defPausalValue'),
             },
             requester: {
               def: this.get('defRequesterDef'),
               fixed: this.get('defRequesterFixed'),
-              show: this.get('defRequesterShow'),
+              required: this.get('defRequesterRequired'),
               value: requester
             },
             status: {
               def: this.get('defStatusDef'),
               fixed: this.get('defStatusFixed'),
-              show: this.get('defStatusShow'),
+              required: this.get('defStatusRequired'),
               value: status
             },
             tag: {
               def: this.get('defTagDef'),
               fixed: this.get('defTagFixed'),
-              show: this.get('defTagShow'),
+              required: this.get('defTagRequired'),
               value: tag
             },
             taskType: {
               def: this.get('defTaskTypeDef'),
               fixed: this.get('defTaskTypeFixed'),
-              show: this.get('defTaskTypeShow'),
+              required: this.get('defTaskTypeRequired'),
               value: taskType
             },
           }
@@ -161,7 +162,7 @@ export default function defineProjects(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: false,
       },
-      defAssignedToShow: {
+      defAssignedToRequired: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
@@ -177,7 +178,7 @@ export default function defineProjects(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: false,
       },
-      defCompanyShow: {
+      defCompanyRequired: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
@@ -193,7 +194,7 @@ export default function defineProjects(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: false,
       },
-      defOvertimeShow: {
+      defOvertimeRequired: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
@@ -214,7 +215,7 @@ export default function defineProjects(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: false,
       },
-      defPausalShow: {
+      defPausalRequired: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
@@ -235,7 +236,7 @@ export default function defineProjects(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: false,
       },
-      defRequesterShow: {
+      defRequesterRequired: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
@@ -251,7 +252,7 @@ export default function defineProjects(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: false,
       },
-      defStatusShow: {
+      defStatusRequired: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
@@ -267,7 +268,7 @@ export default function defineProjects(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: false,
       },
-      defTagShow: {
+      defTagRequired: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
@@ -283,7 +284,7 @@ export default function defineProjects(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: false,
       },
-      defTaskTypeShow: {
+      defTaskTypeRequired: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
@@ -325,4 +326,6 @@ export function createProjectsAssoc(models) {
   models.Project.hasMany(models.Milestone, { onDelete: 'CASCADE' });
 
   models.Project.hasMany(models.Task, { onDelete: 'CASCADE' });
+
+  models.Project.hasMany(models.ProjectGroup, { onDelete: 'CASCADE' });
 }

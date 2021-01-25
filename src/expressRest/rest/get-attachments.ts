@@ -1,4 +1,4 @@
-import { checkIfHasProjectRights } from '@/helperFunctions';
+import { checkIfHasProjectRightsOld } from '@/helperFunctions';
 import checkResolver from '@/graph/resolvers/checkResolver';
 import { AccessRightsInstance, RoleInstance, CommentInstance } from '@/models/instances';
 import { models } from '@/models';
@@ -45,7 +45,7 @@ async function checkTask(path, req) {
   }
   try {
     const User = await checkResolver(req);
-    await checkIfHasProjectRights(User.get('id'), TaskAttachment.get('TaskId'));
+    await checkIfHasProjectRightsOld(User.get('id'), TaskAttachment.get('TaskId'));
     return { ok: true, error: null, Attachment: TaskAttachment };
   } catch (err) {
     return { ok: false, error: err.message }
@@ -60,7 +60,7 @@ async function checkComment(path, req) {
   const Comment = <CommentInstance>CommentAttachment.get('Comment');
   try {
     const User = await checkResolver(req);
-    const checkResult = await checkIfHasProjectRights(User.get('id'), Comment.get('TaskId'));
+    const checkResult = await checkIfHasProjectRightsOld(User.get('id'), Comment.get('TaskId'));
     const internalRight = (<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('internal');
     if (Comment.get('internal') && !(checkResult.internal || internalRight)) {
       return { ok: false, error: `Can't show internal comment to user without rights.` }

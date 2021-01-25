@@ -1,13 +1,13 @@
 import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import { models, sequelize } from '@/models';
-import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
+import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRightsOld, getModelAttribute } from '@/helperFunctions';
 import { TaskInstance, UserInstance, SubtaskInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 
 const querries = {
   subtasks: async (root, { taskId }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser.get('id'), taskId);
+    await checkIfHasProjectRightsOld(SourceUser.get('id'), taskId);
     return models.Subtask.findAll({
       order: [
         ['order', 'ASC'],
@@ -23,7 +23,7 @@ const querries = {
 const mutations = {
   addSubtask: async (root, { task, type, assignedTo, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const Task = <TaskInstance>(await checkIfHasProjectRights(SourceUser.get('id'), task, 'write')).Task;
+    const Task = <TaskInstance>(await checkIfHasProjectRightsOld(SourceUser.get('id'), task, 'write')).Task;
     const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
     if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
       throw AssignedToUserNotSolvingTheTask;
@@ -43,7 +43,7 @@ const mutations = {
     if (Subtask === null) {
       throw createDoesNoExistsError('Subtask', id);
     }
-    const Task = <TaskInstance>(await checkIfHasProjectRights(SourceUser.get('id'), Subtask.get('TaskId'), 'write')).Task;
+    const Task = <TaskInstance>(await checkIfHasProjectRightsOld(SourceUser.get('id'), Subtask.get('TaskId'), 'write')).Task;
     if (assignedTo !== undefined) {
       const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
       if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
@@ -82,7 +82,7 @@ const mutations = {
     if (Subtask === null) {
       throw createDoesNoExistsError('Subtask', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), Subtask.get('TaskId'), 'write');
+    await checkIfHasProjectRightsOld(SourceUser.get('id'), Subtask.get('TaskId'), 'write');
     return Subtask.destroy();
   },
 }

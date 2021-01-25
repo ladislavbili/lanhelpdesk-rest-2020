@@ -58,8 +58,14 @@ export {
 } from './objectManipulations';
 
 export {
+  checkDefIntegrity,
   checkIfHasProjectRights,
-} from './projectRightsCheck';
+  checkIfHasProjectRightsOld,
+  checkDefRequiredSatisfied,
+  checkIfChanged,
+  checkIfCanEditTaskAttributes,
+  applyFixedOnAttributes,
+} from './projectChecks';
 
 export {
   getModelAttribute,

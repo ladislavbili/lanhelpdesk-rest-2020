@@ -11,6 +11,7 @@ import { Material } from './entities/material';
 import { Milestone } from './entities/milestone';
 import { Pricelist } from './entities/pricelist';
 import { Project } from './entities/project';
+import { ProjectGroup } from './entities/projectGroup';
 import { Role } from './entities/role';
 import { ScheduledTask } from './entities/scheduledTask';
 import { ShortSubtask } from './entities/shortSubtask';
@@ -42,6 +43,7 @@ ${Material}
 ${Milestone}
 ${Pricelist}
 ${Project}
+${ProjectGroup}
 ${Role}
 ${ScheduledTask}
 ${ShortSubtask}

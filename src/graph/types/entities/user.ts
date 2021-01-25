@@ -16,6 +16,7 @@ type User {
   role: BasicRole!
   company: BasicCompany!
   statuses: [Status]!
+  groups: [ProjectGroup]!
 }
 
 enum LanguageEnum {

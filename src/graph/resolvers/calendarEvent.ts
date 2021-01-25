@@ -1,7 +1,7 @@
 import { createDoesNoExistsError, CalendarEventCantEndBeforeStartingError } from '@/configs/errors';
 import { models } from '@/models';
 import { UserInstance, ProjectRightInstance, ProjectInstance, TaskInstance, CalendarEventInstance } from '@/models/instances';
-import { checkIfHasProjectRights, filterObjectToFilter, extractDatesFromObject, multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
+import { checkIfHasProjectRightsOld, filterObjectToFilter, extractDatesFromObject, multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
 import { filterToWhere, filterByOneOf } from './task';
 import checkResolver from './checkResolver';
 import moment from 'moment';
@@ -74,7 +74,7 @@ const mutations = {
   addCalendarEvent: async (root, { task, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { startsAt, endsAt } = extractDatesFromObject(params, ['startsAt', 'endsAt']);
-    await checkIfHasProjectRights(SourceUser.get('id'), task, 'write');
+    await checkIfHasProjectRightsOld(SourceUser.get('id'), task, 'write');
     if (startsAt > endsAt) {
       throw CalendarEventCantEndBeforeStartingError;
     }
@@ -104,7 +104,7 @@ const mutations = {
     ) {
       throw CalendarEventCantEndBeforeStartingError;
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), CalendarEvent.get('TaskId'), 'write');
+    await checkIfHasProjectRightsOld(SourceUser.get('id'), CalendarEvent.get('TaskId'), 'write');
     return CalendarEvent.update(changes);
   },
 
@@ -114,7 +114,7 @@ const mutations = {
     if (CalendarEvent === null) {
       throw createDoesNoExistsError('CalendarEvent', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), CalendarEvent.get('TaskId'), 'write');
+    await checkIfHasProjectRightsOld(SourceUser.get('id'), CalendarEvent.get('TaskId'), 'write');
     return CalendarEvent.destroy();
   },
 }

@@ -1,7 +1,7 @@
 import moment from 'moment';
 import { createDoesNoExistsError, InternalMessagesNotAllowed } from '@/configs/errors';
 import checkResolver from '@/graph/resolvers/checkResolver';
-import { checkIfHasProjectRights, checkType, getAttributes } from '@/helperFunctions';
+import { checkIfHasProjectRightsOld, checkType, getAttributes } from '@/helperFunctions';
 import { models } from '@/models';
 import { AccessRightsInstance, RoleInstance, TaskInstance, CommentInstance } from '@/models/instances';
 
@@ -40,7 +40,7 @@ export function sendComment(app) {
     let allowedInternal = false;
     try {
       User = await checkResolver({ headers: { authorization: token } });
-      const checkData = await checkIfHasProjectRights(User.get('id'), taskId);
+      const checkData = await checkIfHasProjectRightsOld(User.get('id'), taskId);
       Task = checkData.Task;
       allowedInternal = checkData.internal;
     } catch (err) {

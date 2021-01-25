@@ -1,10 +1,29 @@
-import { createDoesNoExistsError, InsufficientProjectAccessError, createUserNotPartOfProjectError, MilestoneNotPartOfProject, createProjectFixedAttributeError, StatusPendingAttributesMissing, TaskNotNullAttributesPresent, InternalMessagesNotAllowed, TaskMustBeAssignedToAtLeastOneUser, AssignedToUserNotSolvingTheTask, InvalidTokenError, CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError } from '@/configs/errors';
+import {
+  createDoesNoExistsError,
+  InsufficientProjectAccessError,
+  createUserNotPartOfProjectError,
+  MilestoneNotPartOfProject,
+  createProjectFixedAttributeError,
+  StatusPendingAttributesMissing,
+  TaskNotNullAttributesPresent,
+  InternalMessagesNotAllowed,
+  TaskMustBeAssignedToAtLeastOneUser,
+  AssignedToUserNotSolvingTheTask,
+  InvalidTokenError,
+  CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError
+} from '@/configs/errors';
+import {
+  allGroupRights
+} from '@/configs/projectConstants';
 import { models, sequelize } from '@/models';
 import {
   TaskInstance,
   ProjectRightInstance,
   MilestoneInstance,
-  ProjectInstance, StatusInstance,
+  ProjectInstance,
+  ProjectGroupInstance,
+  ProjectGroupRightsInstance,
+  StatusInstance,
   RepeatInstance,
   UserInstance,
   CommentInstance,
@@ -17,13 +36,16 @@ import {
 import {
   idsDoExistsCheck,
   multipleIdDoesExistsCheck,
-  checkIfHasProjectRights,
   filterObjectToFilter,
   taskCheckDate,
   extractDatesFromObject,
   filterUnique,
   getModelAttribute,
-  mergeFragmentedModel
+  mergeFragmentedModel,
+  checkIfHasProjectRights,
+  checkDefRequiredSatisfied,
+  checkIfCanEditTaskAttributes,
+  applyFixedOnAttributes,
 } from '@/helperFunctions';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
@@ -78,7 +100,7 @@ const querries = {
       false,
       [
         {
-          model: models.ProjectRight,
+          model: models.ProjectGroup,
           include: [
             {
               model: models.Project,
@@ -110,7 +132,7 @@ const querries = {
     );
     const checkUserTime = checkUserWatch.stop();
     const manualWatch = new Stopwatch(true);
-    const tasks = (<ProjectRightInstance[]>User.get('ProjectRights')).map((ProjectRight) => <ProjectInstance>ProjectRight.get('Project')).reduce((acc, proj) => [...acc, ...<TaskInstance[]>proj.get('Tasks')], [])
+    const tasks = (<ProjectGroupInstance[]>User.get('ProjectGroups')).map((ProjectGroup) => <ProjectInstance>ProjectGroup.get('Project')).reduce((acc, proj) => [...acc, ...<TaskInstance[]>proj.get('Tasks')], [])
 
     if (filter) {
       return {
@@ -140,7 +162,7 @@ const querries = {
         id,
         {
           include: [
-            { model: models.Project, include: [models.ProjectRight] },
+            { model: models.Project },
             models.TaskAttachment,
             { model: models.User, as: 'assignedTos' },
             {
@@ -224,35 +246,18 @@ const querries = {
     ])
 
     const Task = mergeFragmentedModel(FragmentedTask)
-
-    const Project = <ProjectInstance>Task.get('Project');
-    //must right write of project
-    const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
-    const ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
-    if (ProjectRight === undefined || !ProjectRight.get('read')) {
-      throw InsufficientProjectAccessError;
-    }
+    await checkIfHasProjectRights(User.get('id'), id);
     return Task;
   },
 }
+
 const mutations = {
   addTask: async (root, args, { req }) => {
-    let { assignedTo: assignedTos, company, milestone, project, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, shortSubtasks, scheduled, ...params } = args;
-    const User = await checkResolver(req);
-    //check all Ids if exists
-    const pairsToCheck = [{ id: company, model: models.Company }, { id: project, model: models.Project }, { id: status, model: models.Status }];
-    (taskType !== undefined && taskType !== null) && pairsToCheck.push({ id: taskType, model: models.TaskType });
-    (requester !== undefined && requester !== null) && pairsToCheck.push({ id: requester, model: models.User });
-    (milestone !== undefined && milestone !== null) && pairsToCheck.push({ id: milestone, model: models.Milestone });
-    await idsDoExistsCheck(assignedTos, models.User);
-    await idsDoExistsCheck(tags, models.Tag);
-    await multipleIdDoesExistsCheck(pairsToCheck);
-
+    const project = args.project;
     const Project = await models.Project.findByPk(
       project,
       {
         include: [
-          models.ProjectRight,
           models.Milestone,
           {
             model: models.Tag,
@@ -262,29 +267,65 @@ const mutations = {
             model: models.Status,
             as: 'projectStatuses'
           },
+          {
+            model: models.ProjectGroup,
+            include: [models.User]
+          },
         ]
       }
     );
+    if (Project === undefined) {
+      throw createDoesNoExistsError('project', project);
+    }
+
+    const def = await Project.get('def');
+    args = applyFixedOnAttributes(def, args);
+
+    let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, shortSubtasks, scheduled, ...params } = args;
+    const User = await checkResolver(
+      req,
+      [],
+      false,
+      [
+        {
+          model: models.ProjectGroup,
+          include: [models.ProjectGroupRights],
+          where: {
+            ProjectId: project,
+          }
+        }
+      ]
+    );
+    const groupRights = (
+      (<RoleInstance>User.get('Role')).get('level') === 0 ?
+        allGroupRights :
+        (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('id') === project).get('ProjectGroupRight')).get()
+    )
+    //check all Ids if exists
+    const pairsToCheck = [{ id: company, model: models.Company }, { id: status, model: models.Status }];
+    (taskType !== undefined && taskType !== null) && pairsToCheck.push({ id: taskType, model: models.TaskType });
+    (requester !== undefined && requester !== null) && pairsToCheck.push({ id: requester, model: models.User });
+    (milestone !== undefined && milestone !== null) && pairsToCheck.push({ id: milestone, model: models.Milestone });
+    await idsDoExistsCheck(assignedTos, models.User);
+    await idsDoExistsCheck(tags, models.Tag);
+    await multipleIdDoesExistsCheck(pairsToCheck);
+    checkDefRequiredSatisfied(def, null, args);
+
     tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
     if (!(<StatusInstance[]>Project.get('projectStatuses')).some((Status) => Status.get('id') === status)) {
       throw createDoesNoExistsError('Status', status);
     }
-    //must right write of project
-    const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
-    const ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
-    if (ProjectRight === undefined || !ProjectRight.get('write')) {
-      throw InsufficientProjectAccessError;
-    }
+    //Rights and project def
+    checkIfCanEditTaskAttributes(User, def, project, args);
 
-    //assignedTo must be in project
-    if (assignedTos.some((assignedTo) => !ProjectRights.some((right) => right.get('UserId') === assignedTo))) {
-      throw createUserNotPartOfProjectError('assignedTo');
-    }
     if (assignedTos.length === 0) {
       throw TaskMustBeAssignedToAtLeastOneUser;
     }
+    const groupUsers = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
+      return [...acc, ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id'))]
+    }, [])
     //requester must be in project or project is open
-    if (requester && Project.get('lockedRequester') && !ProjectRights.some((right) => right.get('UserId') === requester)) {
+    if (requester && Project.get('lockedRequester') && !groupUsers.includes(requester)) {
       throw createUserNotPartOfProjectError('requester');
     }
 
@@ -293,40 +334,7 @@ const mutations = {
       throw MilestoneNotPartOfProject;
     }
 
-    //project def
-    const projectDef = await Project.get('def');
-    (['assignedTo', 'tag']).forEach((attribute) => {
-      if (projectDef[attribute].fixed) {
-        let values = projectDef[attribute].value.map((value) => value.get('id'));
-        //if is fixed, it must fit
-        if (
-          values.length !== args[attribute].length ||
-          args[attribute].some((argValue) => !values.includes(argValue))
-        ) {
-          throw createProjectFixedAttributeError(attribute);
-        }
-      }
-    });
 
-    (['overtime', 'pausal']).forEach((attribute) => {
-      if (projectDef[attribute].fixed) {
-        let value = projectDef[attribute].value;
-        //if is fixed, it must fit
-        if (value !== args[attribute]) {
-          throw createProjectFixedAttributeError(attribute);
-        }
-      }
-    });
-
-    (['company', 'requester', 'status', 'taskType']).forEach((attribute) => {
-      if (projectDef[attribute].fixed) {
-        let value = projectDef[attribute].value.get('id');
-        //if is fixed, it must fit
-        if (value !== args[attribute]) {
-          throw createProjectFixedAttributeError(attribute);
-        }
-      }
-    });
     const dates = extractDatesFromObject(params, dateNames);
     //status corresponds to data - closedate, pendingDate
     //createdby
@@ -394,10 +402,9 @@ const mutations = {
       }
     }
     //comments processing
-    const allowedInternal = (<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('internal');
     if (comments) {
       comments.forEach((comment) => {
-        if (comment.internal && !ProjectRight.get('internal') && !allowedInternal) {
+        if (comment.internal && !groupRights.internal) {
           throw InternalMessagesNotAllowed;
         }
       })
@@ -476,11 +483,99 @@ const mutations = {
   },
 
   updateTask: async (root, args, { req }) => {
-    let { id, assignedTo: assignedTos, company, milestone, project, requester, status, tags, taskType, repeat, ...params } = args;
+    const Task = <TaskInstance>await models.Task.findByPk(
+      args.id,
+      {
+        include: [
+          { model: models.Repeat },
+          { model: models.User, as: 'assignedTos', attributes: ['id'] },
+          { model: models.Tag },
+          { model: models.Status },
+          { model: models.Subtask },
+          { model: models.WorkTrip },
+          {
+            model: models.Project,
+            include: [
+              models.Milestone,
+              {
+                model: models.Tag,
+                as: 'tags'
+              },
+              {
+                model: models.Status,
+                as: 'projectStatuses'
+              },
+              {
+                model: models.ProjectGroup,
+                include: [models.User]
+              },
+            ]
+          }
+        ]
+      }
+    );
+    if (Task === undefined) {
+      throw createDoesNoExistsError('Task', args.id);
+    }
+    const User = await checkResolver(
+      req,
+      [],
+      false,
+      [
+        {
+          model: models.ProjectGroup,
+          include: [models.ProjectGroupRights],
+          where: {
+            ProjectId: [args.project, Task.get('ProjectId')],
+          }
+        }
+      ]
+    );
+    //Figure out project and if can change project
+    if (args.project !== undefined && args.project !== Task.get('ProjectId')) {
+      await checkIfHasProjectRights(User.get('id'), undefined, Task.get('ProjectId'), ['projectWrite']);
+      await checkIfHasProjectRights(User.get('id'), undefined, args.project, ['projectWrite']);
+    }
+    const project = args.project ? args.project : Task.get('ProjectId');
+    let Project = <ProjectInstance>Task.get('Project');
+    if (project && project !== Project.get('id')) {
+      Project = <ProjectInstance>await models.Project.findByPk(
+        project,
+        {
+          include: [
+            models.Milestone,
+            {
+              model: models.Tag,
+              as: 'tags'
+            },
+            {
+              model: models.Status,
+              as: 'projectStatuses'
+            },
+            {
+              model: models.ProjectGroup,
+              include: [models.User]
+            },
+          ],
+        }
+      );
+      if (Project === null) {
+        throw createDoesNoExistsError('Project', project)
+      }
+    }
+
+    const def = await Project.get('def');
+    args = applyFixedOnAttributes(def, args);
+
+    let { id, assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, repeat, ...params } = args;
     let repeatAction = { action: null, id: null };
     const dates = extractDatesFromObject(params, dateNames);
     params = { ...params, ...dates };
-    const User = await checkResolver(req);
+    const groupRights = (
+      (<RoleInstance>User.get('Role')).get('level') === 0 ?
+        allGroupRights :
+        (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('id') === project).get('ProjectGroupRight')).get()
+    )
     //if you send something it cant be null in this attributes, if undefined its ok
     if (
       company === null ||
@@ -490,7 +585,7 @@ const mutations = {
       throw TaskNotNullAttributesPresent;
     }
     //check all Ids if exists
-    const pairsToCheck = [{ id, model: models.Task }];
+    const pairsToCheck = [];
     (company !== undefined) && pairsToCheck.push({ id: company, model: models.Company });
     (project !== undefined) && pairsToCheck.push({ id: project, model: models.Project });
     (status !== undefined) && pairsToCheck.push({ id: status, model: models.Status });
@@ -499,59 +594,28 @@ const mutations = {
     (milestone !== undefined && milestone !== null) && pairsToCheck.push({ id: milestone, model: models.Milestone });
     await multipleIdDoesExistsCheck(pairsToCheck);
 
-    const Task = <TaskInstance>await models.Task.findByPk(
-      id,
+    checkDefRequiredSatisfied(
+      def,
       {
-        include: [
-          { model: models.Repeat },
-          { model: models.User, as: 'assignedTos', attributes: ['id'] },
-          { model: models.Status },
-          { model: models.Subtask },
-          { model: models.WorkTrip },
-          {
-            model: models.Project,
-            include: [
-              { model: models.ProjectRight },
-              { model: models.Milestone },
-              {
-                model: models.Tag,
-                as: 'tags'
-              }
-            ]
-          }
-        ]
-      }
+        assignedTo: (<UserInstance[]>Task.get('assignedTos')).map((User) => User.get('id')),
+        tags: (<TagInstance[]>Task.get('Tags')).map((Tag) => Tag.get('id')),
+        company: Task.get('CompanyId'),
+        requester: Task.get('RequesterId'),
+        status: Task.get('StatusId'),
+      },
+      args,
     );
 
-    let Project = <ProjectInstance>Task.get('Project');
+    //Rights and project def
+    checkIfCanEditTaskAttributes(User, def, project, args);
 
-    //must right write of project
-    let ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
-    let ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
-    if (ProjectRight === undefined || !ProjectRight.get('write')) {
-      throw InsufficientProjectAccessError;
-    }
-
-    if (project && project !== Project.get('id')) {
-      Project = <ProjectInstance>await models.Project.findByPk(
-        project,
-        {
-          include: [{ model: models.ProjectRight }, { model: models.Milestone }]
-        }
-      );
-      if (Project === null) {
-        throw createDoesNoExistsError('Project', project)
-      }
-      //must right write of project
-      ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
-      ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
-      if (ProjectRight === undefined || !ProjectRight.get('write')) {
-        throw InsufficientProjectAccessError
-      }
-    }
     if (tags) {
       tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
     }
+
+    const groupUsers = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
+      return [...acc, ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id'))]
+    }, [])
 
     let taskChangeMessages = [];
     let promises = [];
@@ -574,8 +638,8 @@ const mutations = {
         if (assignedTos.length === 0) {
           throw TaskMustBeAssignedToAtLeastOneUser;
         }
-        //assignedTo must be in project
-        assignedTos = assignedTos.filter((assignedTo) => ProjectRights.some((right) => right.get('UserId') === assignedTo));
+        //assignedTo must be in project group
+        assignedTos = assignedTos.filter((assignedTo) => groupUsers.includes(assignedTo));
         //all subtasks and worktrips must be assigned
         const Subtasks = <SubtaskInstance[]>await Task.get('Subtasks');
         const WorkTrips = <WorkTripInstance[]>await Task.get('WorkTrips');
@@ -593,14 +657,13 @@ const mutations = {
         await idsDoExistsCheck(tags, models.Tag);
         promises.push(Task.setTags(tags, { transaction }))
       }
-      if (requester && requester !== Task.get('requesterId')) {
-        //requester must be in project or project is open
-        if (Project.get('lockedRequester') && !ProjectRights.some((right) => right.get('UserId') === requester)) {
+      if (requester) {
+        if (requester !== Task.get('requesterId') && Project.get('lockedRequester') && !groupUsers.includes(requester)) {
           throw createUserNotPartOfProjectError('requester');
         }
         taskChangeMessages.push({
           type: 'requester',
-          originalValue: Task.get('RequesterId'),
+          originalValue: Task.get('requesterId'),
           newValue: requester,
           message: `Requester was changed from ${(<UserInstance>await Task.getRequester()).get('fullName')} to ${(await models.User.findByPk(requester)).get('fullName')}`,
         });
@@ -623,41 +686,6 @@ const mutations = {
       if (company) {
         promises.push(Task.setCompany(company, { transaction }))
       }
-
-      //project def
-      const projectDef = await Project.get('def');
-      (['assignedTo', 'tag']).forEach((attribute) => {
-        if (projectDef[attribute].fixed && args[attribute] !== undefined) {
-          let values = projectDef[attribute].value.map((value) => value.get('id'));
-          //if is fixed, it must fit
-          if (
-            values.length !== args[attribute].length ||
-            args[attribute].some((argValue) => !values.includes(argValue))
-          ) {
-            throw createProjectFixedAttributeError(attribute);
-          }
-        }
-      });
-
-      (['overtime', 'pausal']).forEach((attribute) => {
-        if (projectDef[attribute].fixed && args[attribute] !== undefined) {
-          let value = projectDef[attribute].value;
-          //if is fixed, it must fit
-          if (value !== args[attribute]) {
-            throw createProjectFixedAttributeError(attribute);
-          }
-        }
-      });
-
-      (['company', 'requester', 'status', 'taskType']).forEach((attribute) => {
-        if (projectDef[attribute].fixed && args[attribute] !== undefined) {
-          let value = projectDef[attribute].value.get('id');
-          //if is fixed, it must fit
-          if (value !== args[attribute]) {
-            throw createProjectFixedAttributeError(attribute);
-          }
-        }
-      });
 
       //status corresponds to data - closedate, pendingDate
       //createdby
@@ -797,20 +825,13 @@ const mutations = {
           { model: models.User, as: 'assignedTos', attributes: ['id'] },
           {
             model: models.Project,
-            include: [
-              { model: models.ProjectRight }
-            ]
           }
         ]
       }
     );
     const Project = <ProjectInstance>Task.get('Project');
-    //must right write of project
-    const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights'))
-    const ProjectRight = ProjectRights.find((right) => right.get('UserId') === User.get('id'));
-    if (ProjectRight === undefined || !ProjectRight.get('delete')) {
-      throw InsufficientProjectAccessError;
-    }
+    //must right to delete project
+    checkIfHasProjectRights(User.get('id'), undefined, Task.get('ProjectId'), ['deleteTasks'])
     repeatEvent.emit('delete', id);
     sendNotifications(User, [`Task was deleted.`], Task)
     pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'delete', data: Task, ids: [id] } });
@@ -938,16 +959,15 @@ const attributes = {
     async comments(task, body, { req, userID }) {
       const [
         SourceUser,
-        { internal },
+        { groupRights },
         Comments,
 
       ] = await Promise.all([
         checkResolver(req),
-        checkIfHasProjectRights(userID, task.get('id')),
+        checkIfHasProjectRights(userID, undefined, task.get('ProjectId'), ['viewComments']),
         getModelAttribute(task, 'Comments', 'getComments', { order: [['createdAt', 'DESC']] })
       ])
-      const AccessRights = <AccessRightsInstance>(<RoleInstance>SourceUser.get('Role')).get('AccessRight');
-      return Comments.filter((Comment) => Comment.get('isParent') && (!Comment.get('internal') || internal || AccessRights.get('internal')))
+      return Comments.filter((Comment) => Comment.get('isParent') && (!Comment.get('internal') || groupRights.internal))
     },
 
     async shortSubtasks(task) {
@@ -1004,15 +1024,15 @@ export async function sendNotifications(User, notifications, Task, assignedTos =
   sendEmail(
     `In task with id ${Task.get('id')} and current title ${Task.get('title')} was changed at ${moment().format('HH:mm DD.MM.YYYY')}.
     Recorded notifications by ${User === null ? 'system' : (`user ${User.get('fullName')}(${User.get('email')})`)} as follows:
-${
+    ${
     notifications.length === 0 ?
       `Non-specified change has happened.
       ` :
       notifications.reduce((acc, notification) => acc + ` ${notification}
-`, ``)
+      `, ``)
     }
-This is an automated message.If you don't wish to receive this kind of notification, please log in and change your profile setting.
-  `,
+    This is an automated message.If you don't wish to receive this kind of notification, please log in and change your profile setting.
+    `,
     "",
     `[${Task.get('id')}]Task ${Task.get('title')} was changed notification at ${moment().format('HH:mm DD.MM.YYYY')} `,
     Users.map((User) => User.get('email')),

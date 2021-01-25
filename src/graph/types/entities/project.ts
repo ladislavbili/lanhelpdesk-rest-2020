@@ -7,14 +7,14 @@ type Project {
   title: String!
   description: String!
   lockedRequester: Boolean!
-  projectRights: [ProjectRight]!
   def: ProjectDefaults!
   filters: [BasicFilter]
   milestones: [Milestone]!
   imaps: [Imap]!
-  right: ProjectRight!
+  right: ProjectGroupRights
   tags: [Tag]!
   statuses: [Status]!
+  groups: [ProjectGroup]!
 }
 
 type BasicProject {
@@ -25,14 +25,15 @@ type BasicProject {
   def: ProjectDefaults!
   filters: [BasicFilter]
   milestones: [Milestone]!
-  right: ProjectRight!
+  right: ProjectGroupRights!
   tags: [Tag]!
   statuses: [Status]!
+  groups: [ProjectGroup]!
 }
 
 type MyProject {
   project: BasicProject!
-  right: ProjectRight!
+  right: ProjectGroupRights!
   usersWithRights: [BasicUser]!
 }
 
@@ -50,17 +51,17 @@ addProject(
   title: String!,
   description: String!,
   lockedRequester: Boolean!,
-  projectRights: [ProjectRightInput]!,
   def: ProjectDefaultsInput!,
   tags: [NewTagInput]!,
   statuses: [NewStatusInput]!
+  groups: [ProjectGroupInput]!
+  userGroups: [UserGroupInput]!
 ): Project
 updateProject(
   id: Int!,
   title: String,
   description: String,
   lockedRequester: Boolean,
-  projectRights: [ProjectRightInput],
   def: ProjectDefaultsInput,
   deleteTags: [Int]!,
   updateTags: [TagUpdateInput]!,
@@ -68,6 +69,10 @@ updateProject(
   deleteStatuses: [Int]!,
   updateStatuses: [UpdateStatusInput]!,
   addStatuses: [NewStatusInput]!,
+  userGroups: [UserGroupUpdateInput]!,
+  addGroups: [ProjectGroupInput]!,
+  updateGroups: [ProjectGroupInput]!,
+  deleteGroups: [Int]!,
 ): Project
 deleteProject( id: Int!, newId: Int! ): Project
 addUserToProject( projectId: Int!, userId: Int! ): Project

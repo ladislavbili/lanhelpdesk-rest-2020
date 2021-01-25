@@ -11,6 +11,7 @@ import { MaterialQuerries } from './entities/material';
 import { MilestoneQuerries } from './entities/milestone';
 import { PricelistQuerries } from './entities/pricelist';
 import { ProjectQuerries } from './entities/project';
+import { ProjectGroupQuerries } from './entities/projectGroup';
 import { RoleQuerries } from './entities/role';
 import { ScheduledTaskQuerries } from './entities/scheduledTask';
 import { ShortSubtaskQuerries } from './entities/shortSubtask';
@@ -43,6 +44,7 @@ type Query {
   ${MilestoneQuerries}
   ${PricelistQuerries}
   ${ProjectQuerries}
+  ${ProjectGroupQuerries}
   ${RoleQuerries}
   ${ScheduledTaskQuerries}
   ${ShortSubtaskQuerries}

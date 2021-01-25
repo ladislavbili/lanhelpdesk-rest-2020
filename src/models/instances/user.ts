@@ -155,4 +155,6 @@ export function createUsersAssoc(models) {
   models.User.hasMany(models.InvoicedSubtask);
 
   models.User.hasMany(models.InvoicedAssignedTo);
+
+  models.User.belongsToMany(models.ProjectGroup, { through: 'user_belongs_to_group' });
 }

@@ -49,6 +49,8 @@ import defineInvoicedTags, { createInvoicedTagsAssoc } from './instances/invoice
 import defineInvoicedAssignedTos, { createInvoicedAssignedTosAssoc } from './instances/invoicedAssignedTo';
 import defineShortSubtasks, { createShortSubtasksAssoc } from './instances/shortSubtask';
 import defineScheduledTasks, { createScheduledTasksAssoc } from './instances/scheduledTask';
+import defineProjectGroups, { createProjectGroupsAssoc } from './instances/projectGroup';
+import defineProjectGroupRights, { createProjectGroupRightsAssoc } from './instances/projectGroupRights';
 
 
 /*
@@ -114,6 +116,8 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineInvoicedAssignedTos(sequelize);
   defineShortSubtasks(sequelize);
   defineScheduledTasks(sequelize);
+  defineProjectGroups(sequelize);
+  defineProjectGroupRights(sequelize);
 
   createRolesAssoc(models);
   createUsersAssoc(models);
@@ -164,9 +168,12 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createShortSubtasksAssoc(models);
   createScheduledTasksAssoc(models);
 
+  createProjectGroupsAssoc(models);
+  createProjectGroupRightsAssoc(models);
+
   //LOG FUNCTIONS
 
-  //logFunctionsOfModel(models.Project);
+  //logFunctionsOfModel(models.Task);
 
   if (ignoreUpdating) {
     return new Promise((resolve, reject) => resolve());

@@ -1,12 +1,12 @@
 import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
-import { multipleIdDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
+import { multipleIdDoesExistsCheck, checkIfHasProjectRightsOld, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {
   materials: async (root, { taskId }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser.get('id'), taskId);
+    await checkIfHasProjectRightsOld(SourceUser.get('id'), taskId);
     return models.Material.findAll({
       order: [
         ['order', 'ASC'],
@@ -22,7 +22,7 @@ const querries = {
 const mutations = {
   addMaterial: async (root, { task, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser.get('id'), task, 'write');
+    await checkIfHasProjectRightsOld(SourceUser.get('id'), task, 'write');
     return models.Material.create({
       TaskId: task,
       ...params,
@@ -35,7 +35,7 @@ const mutations = {
     if (Material === null) {
       throw createDoesNoExistsError('Material', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), Material.get('TaskId'), 'write');
+    await checkIfHasProjectRightsOld(SourceUser.get('id'), Material.get('TaskId'), 'write');
     return Material.update(params);
   },
 
@@ -45,7 +45,7 @@ const mutations = {
     if (Material === null) {
       throw createDoesNoExistsError('Material', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), Material.get('TaskId'), 'write');
+    await checkIfHasProjectRightsOld(SourceUser.get('id'), Material.get('TaskId'), 'write');
     return Material.destroy();
   },
 }

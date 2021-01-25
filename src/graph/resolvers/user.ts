@@ -471,6 +471,9 @@ const attributes = {
     async statuses(user) {
       return getModelAttribute(user, 'Statuses');
     },
+    async groups(user) {
+      return getModelAttribute(user, 'ProjectGroups');
+    },
   },
   BasicUser: {
     async company(user) {
