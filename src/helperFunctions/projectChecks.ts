@@ -238,7 +238,7 @@ export const checkIfChanged = async (attributes, Project) => {
 //TASK RELATED
 export const applyFixedOnAttributes = (def, args) => {
   (['assignedTo', 'tag']).forEach((key) => {
-    if (def[key].fixed) {
+    if (def[key].fixed && args[key]) {
       let values = def[key].value.map((value) => value.get('id'));
       if (
         values.length !== args[key].length ||
@@ -250,7 +250,7 @@ export const applyFixedOnAttributes = (def, args) => {
   });
 
   (['overtime', 'pausal']).forEach((key) => {
-    if (def[key].fixed) {
+    if (def[key].fixed && args[key]) {
       let value = def[key].value;
       if (value !== args[key]) {
         throw createProjectFixedAttributeError(key);
@@ -259,7 +259,7 @@ export const applyFixedOnAttributes = (def, args) => {
   });
 
   (['company', 'requester', 'status', 'taskType']).forEach((key) => {
-    if (def[key].fixed) {
+    if (def[key].fixed && args[key]) {
       let value = def[key].value.get('id');
       //if is fixed, it must fit
       if (value !== args[key]) {
@@ -303,7 +303,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
   const groupRights = (
     User.get('Role').get('level') === 0 ?
       allGroupRights :
-      User.get('ProjectGroups').find((ProjectGroup) => ProjectGroup.get('id') === projectId).get('ProjectGroupRight').get()
+      User.get('ProjectGroups').find((ProjectGroup) => ProjectGroup.get('ProjectId') === projectId).get('ProjectGroupRight').get()
   )
   //DEF ATTRIBUTES
 

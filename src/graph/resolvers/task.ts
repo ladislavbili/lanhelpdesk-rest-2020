@@ -299,7 +299,7 @@ const mutations = {
     const groupRights = (
       (<RoleInstance>User.get('Role')).get('level') === 0 ?
         allGroupRights :
-        (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('id') === project).get('ProjectGroupRight')).get()
+        (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('ProjectId') === project).get('ProjectGroupRight')).get()
     )
     //check all Ids if exists
     const pairsToCheck = [{ id: company, model: models.Company }, { id: status, model: models.Status }];
@@ -574,7 +574,7 @@ const mutations = {
     const groupRights = (
       (<RoleInstance>User.get('Role')).get('level') === 0 ?
         allGroupRights :
-        (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('id') === project).get('ProjectGroupRight')).get()
+        (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('ProjectId') === project).get('ProjectGroupRight')).get()
     )
     //if you send something it cant be null in this attributes, if undefined its ok
     if (
