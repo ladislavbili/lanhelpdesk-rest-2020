@@ -258,7 +258,7 @@ export const applyFixedOnAttributes = (def, args) => {
     }
   });
 
-  (['company', 'requester', 'status', 'taskType']).forEach((key) => {
+  (['company', 'requester', 'status']).forEach((key) => {
     if (def[key].fixed && args[key]) {
       let value = def[key].value.get('id');
       //if is fixed, it must fit
@@ -339,11 +339,12 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       throw createCantEditTaskAttributeError('tags');
     }
   }
+
   if (!groupRights.companyWrite && newAttrs.company !== undefined) {
     if (
       (
         !def.company.def ||
-        def.company.value.get('id') === newAttrs.company
+        def.company.value.get('id') !== newAttrs.company
       ) &&
       (
         orgAttrs === null ||
@@ -357,7 +358,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
     if (
       (
         !def.requester.def ||
-        def.requester.value.get('id') === newAttrs.requester
+        def.requester.value.get('id') !== newAttrs.requester
       ) &&
       (
         orgAttrs === null ||
@@ -371,7 +372,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
     if (
       (
         !def.status.def ||
-        def.status.value.get('id') === newAttrs.status
+        def.status.value.get('id') !== newAttrs.status
       ) &&
       (
         orgAttrs === null ||
@@ -495,7 +496,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       case 'text': {
         if (
           !groupRights[check.right] &&
-          newAttrs[check.key] !== undefined &&
+          newAttrs[check.key] &&
           (
             orgAttrs === null ||
             orgAttrs.get(check.key) !== newAttrs[check.key]
@@ -508,7 +509,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       case 'date': {
         if (
           !groupRights[check.right] &&
-          newAttrs[check.key] !== undefined &&
+          newAttrs[check.key] &&
           (
             orgAttrs === null ||
             !moment(orgAttrs.get(check.key)).isSame(parseInt(newAttrs[check.key]))
@@ -521,10 +522,10 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       case 'object': {
         if (
           !groupRights[check.right] &&
-          newAttrs[check.key] !== undefined &&
+          newAttrs[check.key] &&
           (
             orgAttrs === null ||
-            orgAttrs.get(check.orgKey) === newAttrs[check.key]
+            orgAttrs.get(check.orgKey) !== newAttrs[check.key]
           )
         ) {
           throw createCantEditTaskAttributeError(check.key);
@@ -535,6 +536,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
         if (
           !groupRights[check.right] &&
           newAttrs[check.key] !== undefined &&
+          newAttrs[check.key] !== null &&
           (
             orgAttrs === null ||
             orgAttrs.get(check.key) === newAttrs[check.key]
@@ -547,7 +549,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       case 'array': {
         if (
           !groupRights[check.right] &&
-          newAttrs[check.key] !== undefined &&
+          newAttrs[check.key] &&
           newAttrs[check.key].length !== 0
         ) {
           throw createCantEditTaskAttributeError(check.key);
@@ -557,8 +559,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       case 'repeat': {
         if (
           !groupRights[check.right] &&
-          newAttrs[check.key] !== undefined &&
-          newAttrs[check.key] !== null
+          newAttrs[check.key]
         ) {
           throw createCantEditTaskAttributeError(check.key);
         }
