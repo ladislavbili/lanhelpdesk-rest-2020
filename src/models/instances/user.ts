@@ -27,6 +27,7 @@ export interface UserInstance extends DefaultInstance {
   getRequesterTasks?: any;
   getSubtasks?: any;
   getWorkTrips?: any;
+  getProjectGroups?: any;
 }
 
 export default function defineUsers(sequelize: Sequelize) {

@@ -7,6 +7,9 @@ import {
 import { models, sequelize } from '@/models';
 import checkResolver from './checkResolver';
 import {
+  allGroupRights
+} from '@/configs/projectConstants';
+import {
   flattenObject,
   idsDoExistsCheck,
   multipleIdDoesExistsCheck,
@@ -49,12 +52,41 @@ const querries = {
     });
   },
   myProjects: async (root, args, { req, userID }) => {
-    const User = await checkResolver(
-      req,
-      [],
-      false,
-      [{
-        model: models.ProjectGroup,
+    const User = await checkResolver(req);
+    if ((<RoleInstance>User.get('Role')).get('level') === 0) {
+      await checkResolver(req, ["projects"]);
+      const Projects = <ProjectInstance[]>await models.Project.findAll({
+        include: [
+          models.Milestone,
+          {
+            model: models.Tag,
+            as: 'tags'
+          },
+          {
+            model: models.Status,
+            as: 'projectStatuses'
+          },
+          {
+            model: models.ProjectGroup,
+            include: [
+              {
+                model: models.User,
+              }
+            ]
+          }
+        ]
+      })
+      return Projects.map((Project) => (
+        {
+          right: allGroupRights,
+          project: Project,
+          usersWithRights: (<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, cur) => {
+            return [...acc, ...(<UserInstance[]>cur.get('Users'))]
+          }, [])
+        }
+      ))
+    } else {
+      const ProjectGroups = <ProjectGroupInstance[]>await User.getProjectGroups({
         include: [
           {
             model: models.Project,
@@ -80,19 +112,17 @@ const querries = {
           },
           models.ProjectGroupRights,
         ]
-      }
-      ]
-    );
-
-    return (<ProjectGroupInstance[]>User.get('ProjectGroups')).map((group) => (
-      {
-        right: group.get('ProjectGroupRight'),
-        project: group.get('Project'),
-        usersWithRights: (<ProjectGroupInstance[]>(<ProjectInstance>group.get('Project')).get('ProjectGroups')).reduce((acc, cur) => {
-          return [...acc, ...(<UserInstance[]>cur.get('Users'))]
-        }, [])
-      }
-    ))
+      });
+      return ProjectGroups.map((group) => (
+        {
+          right: group.get('ProjectGroupRight'),
+          project: group.get('Project'),
+          usersWithRights: (<ProjectGroupInstance[]>(<ProjectInstance>group.get('Project')).get('ProjectGroups')).reduce((acc, cur) => {
+            return [...acc, ...(<UserInstance[]>cur.get('Users'))]
+          }, [])
+        }
+      ))
+    }
   },
 }
 

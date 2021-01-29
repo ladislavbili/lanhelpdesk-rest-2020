@@ -74,6 +74,7 @@ const dateNames2 = [
 
 const querries = {
   tasks: async (root, { projectId, filterId, filter }, { req, userID }) => {
+    const User = await checkResolver(req);
     const mainWatch = new Stopwatch(true);
     let projectWhere = {};
     let taskWhere = {};
@@ -97,49 +98,39 @@ const querries = {
     }
 
     const checkUserWatch = new Stopwatch(true);
-    const User = await checkResolver(
-      req,
-      [],
-      false,
-      [
-        {
-          model: models.ProjectGroup,
-          include: [
-            models.ProjectGroupRights,
-            {
-              model: models.Project,
-              where: projectWhere,
-              required: true,
-              include: [
-                {
-                  model: models.Task,
-                  where: taskWhere,
-                  required: true,
-                  include: [
-                    { model: models.User, as: 'assignedTos' },
-                    models.Company,
-                    { model: models.User, as: 'createdBy' },
-                    models.Milestone,
-                    models.Project,
-                    { model: models.User, as: 'requester' },
-                    models.Status,
-                    models.Tag,
-                    models.TaskType,
-                    models.Repeat,
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    );
-
-    const checkUserTime = checkUserWatch.stop();
-    const manualWatch = new Stopwatch(true);
-    const tasks = (
-      (<ProjectGroupInstance[]>User.get('ProjectGroups'))
-        .reduce((acc, ProjectGroup) => {
+    let tasks = []
+    if ((<RoleInstance>User.get('Role')).get('level') !== 0) {
+      const ProjectGroups = <ProjectGroupInstance[]>await User.getProjectGroups({
+        include: [
+          models.ProjectGroupRights,
+          {
+            model: models.Project,
+            where: projectWhere,
+            required: true,
+            include: [
+              {
+                model: models.Task,
+                where: taskWhere,
+                required: true,
+                include: [
+                  { model: models.User, as: 'assignedTos' },
+                  models.Company,
+                  { model: models.User, as: 'createdBy' },
+                  models.Milestone,
+                  models.Project,
+                  { model: models.User, as: 'requester' },
+                  models.Status,
+                  models.Tag,
+                  models.TaskType,
+                  models.Repeat,
+                ]
+              }
+            ]
+          }
+        ]
+      })
+      tasks = (
+        ProjectGroups.reduce((acc, ProjectGroup) => {
           const proj = <ProjectInstance>ProjectGroup.get('Project');
           const userRights = (<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).get();
           return [
@@ -147,7 +138,31 @@ const querries = {
             ...(<TaskInstance[]>proj.get('Tasks')).filter((Task) => canViewTask(Task, User, userRights))
           ]
         }, [])
-    )
+      )
+    } else {
+      tasks = await models.Task.findAll({
+        where: taskWhere,
+        include: [
+          { model: models.User, as: 'assignedTos' },
+          models.Company,
+          { model: models.User, as: 'createdBy' },
+          models.Milestone,
+          {
+            model: models.Project,
+            where: projectWhere,
+            required: true,
+          },
+          { model: models.User, as: 'requester' },
+          models.Status,
+          models.Tag,
+          models.TaskType,
+          models.Repeat,
+        ]
+      })
+    }
+
+    const checkUserTime = checkUserWatch.stop();
+    const manualWatch = new Stopwatch(true);
 
     if (filter) {
       return {

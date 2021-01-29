@@ -226,9 +226,11 @@ export const canViewTask = (Task, User, groupRights, checkAdmin = false) => {
     (groupRights.companyTasks && Task.get('CompanyId') === User.get('CompanyId')) ||
     Task.get('RequesterId') === User.get('id') ||
     (<UserInstance[]>Task.get('assignedTos')).some((AssignedTo) => AssignedTo.get('id') === User.get('id')) ||
-    (checkAdmin && (<RoleInstance>User.get('Role')).get('level') === 0)
+    (checkAdmin && (<RoleInstance>User.get('Role')).get('level') === 0) ||
+    Task.get('createdById') === User.get('id')
   )
 }
+
 export const applyFixedOnAttributes = (def, args) => {
   (['assignedTo', 'tag']).forEach((key) => {
     if (def[key].fixed && args[key]) {
