@@ -334,7 +334,8 @@ const mutations = {
         allGroupRights :
         (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('ProjectId') === project).get('ProjectGroupRight')).get()
     )
-    if (!groupRights.addTask && (<RoleInstance>User.get('Role')).get('level') !== 0) {
+
+    if (!groupRights.addTasks && (<RoleInstance>User.get('Role')).get('level') !== 0) {
       addApolloError(
         'Project',
         CantCreateTasksError,
@@ -559,6 +560,7 @@ const mutations = {
     if (Task === undefined) {
       throw createDoesNoExistsError('Task', args.id);
     }
+
     const User = await checkResolver(
       req,
       [],
@@ -566,10 +568,11 @@ const mutations = {
       [
         {
           model: models.ProjectGroup,
-          include: [models.ProjectGroupRights],
+          required: false,
           where: {
-            ProjectId: [args.project, Task.get('ProjectId')],
-          }
+            ProjectId: [args.project, Task.get('ProjectId')].filter((id) => id),
+          },
+          include: [models.ProjectGroupRights],
         }
       ]
     );
@@ -1012,14 +1015,32 @@ const attributes = {
     async comments(task, body, { req, userID }) {
       const [
         SourceUser,
-        { groupRights },
         Comments,
 
       ] = await Promise.all([
-        checkResolver(req),
-        checkIfHasProjectRights(userID, undefined, task.get('ProjectId'), ['viewComments']),
+        checkResolver(
+          req,
+          [],
+          false,
+          [
+            {
+              model: models.ProjectGroup,
+              required: false,
+              where: {
+                ProjectId: task.get('ProjectId'),
+              },
+              include: [models.ProjectGroupRights],
+            }
+          ]
+        ),
         getModelAttribute(task, 'Comments', 'getComments', { order: [['createdAt', 'DESC']] })
       ])
+      const groupRights = (<RoleInstance>SourceUser.get('Role')).get('level') === 0 ?
+        allGroupRights :
+        (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>SourceUser.get('ProjectGroups'))[0].get('ProjectGroupRight')).get();
+      if (!groupRights.viewComments) {
+        return [];
+      }
       return Comments.filter((Comment) => Comment.get('isParent') && (!Comment.get('internal') || groupRights.internal))
     },
 

@@ -36,7 +36,7 @@ export const checkIfHasProjectRights = async (userId, taskId = undefined, projec
     projectID = Task.get('ProjectId');
   }
 
-  const User = await models.User.findByPk(userId, {
+  let User = await models.User.findByPk(userId, {
     include: [
       {
         model: models.ProjectGroup,
@@ -53,6 +53,18 @@ export const checkIfHasProjectRights = async (userId, taskId = undefined, projec
   })
 
   if (User === null) {
+    User = await models.User.findByPk(userId, {
+      include: [
+        {
+          model: models.Role,
+          include: [models.AccessRights]
+        }
+      ],
+    })
+    let Role = <RoleInstance>User.get('Role');
+    if (Role.get('level') === 0 || (<AccessRightsInstance>Role.get('AccessRight')).get('projects')) {
+      return { User, Role, groupRights: allGroupRights, Task };
+    }
     addApolloError(
       'Project',
       InsufficientProjectAccessError,
@@ -62,7 +74,7 @@ export const checkIfHasProjectRights = async (userId, taskId = undefined, projec
     throw InsufficientProjectAccessError;
   }
   let Role = <RoleInstance>User.get('Role');
-  if (rights.length === 0 || Role.get('level') === 0 || (<AccessRightsInstance>Role.get('AccessRight')).get('projects')) {
+  if (rights.length === 0) {
     return { User, Role, groupRights: allGroupRights, Task };
   }
   let groupRights = (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups'))[0].get('ProjectGroupRight')).get();
@@ -224,7 +236,7 @@ export const canViewTask = (Task, User, groupRights, checkAdmin = false) => {
   return (
     groupRights.allTasks ||
     (groupRights.companyTasks && Task.get('CompanyId') === User.get('CompanyId')) ||
-    Task.get('RequesterId') === User.get('id') ||
+    Task.get('requesterId') === User.get('id') ||
     (<UserInstance[]>Task.get('assignedTos')).some((AssignedTo) => AssignedTo.get('id') === User.get('id')) ||
     (checkAdmin && (<RoleInstance>User.get('Role')).get('level') === 0) ||
     Task.get('createdById') === User.get('id')

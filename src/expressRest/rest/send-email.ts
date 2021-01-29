@@ -70,10 +70,7 @@ export function sendEmail(app) {
     if (tos.some((address) => !isEmail(address))) {
       return res.send({ ok: false, error: createWrongEmailsError(tos.filter((address) => !isEmail(address))).message })
     }
-    console.log('emailResult');
-
     let emailResult = <EmailResultInstance>await sendEmailService(message, message, subject, tos, User.get('email'), files);
-    console.log(emailResult);
 
     let savedResult = { emailSend: true, emailError: null };
     if (emailResult.error) {

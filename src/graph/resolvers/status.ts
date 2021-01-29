@@ -20,7 +20,7 @@ deleteStatus( id: Int! ): Status
 
 const querries = {
   statusTemplates: async (root, args, { req }) => {
-    await checkResolver(req, ["statuses"]);
+    await checkResolver(req);
     return models.Status.findAll({
       order: [
         ['order', 'ASC'],

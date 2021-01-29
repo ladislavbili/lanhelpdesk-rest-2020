@@ -128,7 +128,7 @@ const querries = {
 
 const mutations = {
   addProject: async (root, { def, tags, statuses, groups, userGroups, ...attributes }, { req }) => {
-    await checkResolver(req, ["projects"]);
+    await checkResolver(req, ["addProjects"]);
     checkDefIntegrity(def);
     //check is there is an admin
     if (!groups.some((group) => (
@@ -206,7 +206,6 @@ const mutations = {
       userGroups.map((userGroup) => {
         let index = groups.findIndex((group) => group.id === userGroup.groupId);
         if (index !== -1) {
-          console.log('target group', newGroups);
 
           return newGroups[index].addUser(userGroup.userId)
         }

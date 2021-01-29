@@ -12,18 +12,11 @@ const querries = {
       return null;
     }
     await checkIfHasProjectRights(User.get('id'), undefined, Milestone.get('ProjectId'), ['milestoneRead']);
-    const Project = <ProjectInstance>Milestone.get('Project');
-    const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
-    if (ProjectRights === undefined || !ProjectRights.get('read')) {
-      return null;
-    }
     return Milestone;
   },
 }
 
 const mutations = {
-  //  addMilestone( title: String!, description: String!, startsAt: Int, endsAt: Int ): Milestone
-
   addMilestone: async (root, { projectId, ...args }, { req }) => {
     const User = await checkResolver(req);
     const dates = extractDatesFromObject(args, ['startsAt', 'endsAt']);
@@ -32,7 +25,6 @@ const mutations = {
     return models.Milestone.create({ ...args, ...dates, ProjectId: projectId });
   },
 
-  //  updateMilestone( id: Int!, title: String, description: String, startsAt: Int, endsAt: Int ): Milestone
   updateMilestone: async (root, { id, ...args }, { req }) => {
     const User = await checkResolver(req);
     const Milestone = await models.Milestone.findByPk(id);
@@ -46,7 +38,6 @@ const mutations = {
     return Milestone.update({ ...args, ...dates });
   },
 
-  //  deleteMilestone( id: Int! ): Milestone
   deleteMilestone: async (root, { id }, { req }) => {
     const User = await checkResolver(req);
     const Milestone = await models.Milestone.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
