@@ -7,8 +7,16 @@ import {
   SetRoleLevelTooLowError
 } from '@/configs/errors';
 import { models } from '@/models';
-import { UserInstance, RoleInstance, AccessRightsInstance, ImapInstance } from '@/models/instances';
-import { addApolloError, getModelAttribute } from '@/helperFunctions';
+import {
+  UserInstance,
+  RoleInstance,
+  AccessRightsInstance,
+  ImapInstance
+} from '@/models/instances';
+import {
+  addApolloError,
+  getModelAttribute
+} from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {

@@ -11,7 +11,6 @@ import {
   idsDoExistsCheck,
   multipleIdDoesExistsCheck,
   splitArrayByFilter,
-  addApolloError,
   getModelAttribute,
   checkIfHasProjectRights,
   checkDefIntegrity,

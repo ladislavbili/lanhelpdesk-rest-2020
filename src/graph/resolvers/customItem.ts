@@ -1,12 +1,12 @@
 import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
-import { checkIfHasProjectRightsOld, multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
+import { checkIfHasProjectRights, multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {
   customItems: async (root, { taskId }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), taskId);
+    await checkIfHasProjectRights(SourceUser.get('id'), taskId, undefined, ['vykazRead']);
     return models.CustomItem.findAll({
       order: [
         ['order', 'ASC'],
@@ -22,7 +22,7 @@ const querries = {
 const mutations = {
   addCustomItem: async (root, { task, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), task, 'write');
+    await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
     return models.CustomItem.create({
       TaskId: task,
       ...params,
@@ -35,7 +35,7 @@ const mutations = {
     if (CustomItem === null) {
       throw createDoesNoExistsError('CustomItem', id);
     }
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), CustomItem.get('TaskId'), 'write');
+    await checkIfHasProjectRights(SourceUser.get('id'), CustomItem.get('TaskId'), undefined, ['vykazWrite']);
     return CustomItem.update(params);
   },
 
@@ -45,7 +45,7 @@ const mutations = {
     if (CustomItem === null) {
       throw createDoesNoExistsError('CustomItem', id);
     }
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), CustomItem.get('TaskId'), 'write');
+    await checkIfHasProjectRights(SourceUser.get('id'), CustomItem.get('TaskId'), undefined, ['vykazWrite']);
     return CustomItem.destroy();
   },
 }

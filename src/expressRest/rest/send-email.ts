@@ -1,7 +1,7 @@
 import moment from 'moment';
 import { createDoesNoExistsError, InternalMessagesNotAllowed, createWrongEmailsError, EmailNoRecipientError } from '@/configs/errors';
 import checkResolver from '@/graph/resolvers/checkResolver';
-import { checkIfHasProjectRightsOld, checkType, getAttributes, isEmail } from '@/helperFunctions';
+import { checkIfHasProjectRights, checkType, getAttributes, isEmail } from '@/helperFunctions';
 import { models } from '@/models';
 import { AccessRightsInstance, RoleInstance, TaskInstance, CommentInstance } from '@/models/instances';
 import { EmailResultInstance } from '@/graph/resolvers/comment';
@@ -47,20 +47,19 @@ export function sendEmail(app) {
     let allowedInternal = false;
     try {
       User = await checkResolver({ headers: { authorization: token } }, ['mailViaComment']);
-      const checkData = await checkIfHasProjectRightsOld(User.get('id'), taskId);
+      const checkData = await checkIfHasProjectRights(User.get('id'), taskId, undefined, ['emails']);
       Task = checkData.Task;
-      allowedInternal = checkData.internal;
+      allowedInternal = checkData.groupRights.internal;
     } catch (err) {
       return res.send({ ok: false, error: err.message })
     }
 
     if (parentCommentId) {
-      const internalRight = (<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('internal');
       const ParentComment = await models.Comment.findByPk(parentCommentId);
       if (ParentComment === null || ParentComment.get('TaskId') !== taskId) {
         return res.send({ ok: false, error: createDoesNoExistsError('Parent comment', parentCommentId).message })
       }
-      if (ParentComment.get('internal') && !allowedInternal && !internalRight) {
+      if (ParentComment.get('internal') && !allowedInternal) {
         return res.send({ ok: false, error: InternalMessagesNotAllowed.message })
       }
     }

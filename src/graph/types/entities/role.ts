@@ -1,9 +1,26 @@
 import defaultAttributes from './defaultAttributes';
 const createAccessRights = (required) => {
-  return ['login', 'testSections', 'mailViaComment', 'vykazy', 'publicFilters', 'addProjects', 'viewVykaz', 'viewRozpocet', 'viewErrors', 'viewInternal',
-    'users', 'companies', 'pausals', 'projects', 'statuses', 'units', 'prices', 'suppliers', 'tags', 'invoices', 'roles', 'taskTypes', 'tripTypes', 'imaps', 'smtps'].reduce((acc, right) => {
-      return acc + `${right}: Boolean${(required ? '!' : '')}\n`;
-    }, '')
+  return [
+    'login',
+    'testSections',
+    'vykazy',
+    'publicFilters',
+    'addProjects',
+    'viewErrors',
+    'users',
+    'companies',
+    'pausals',
+    'projects',
+    'statuses',
+    'prices',
+    'roles',
+    'taskTypes',
+    'tripTypes',
+    'imaps',
+    'smtps',
+  ].reduce((acc, right) => {
+    return acc + `${right}: Boolean${(required ? '!' : '')}\n`;
+  }, '')
 }
 
 export const Role = `

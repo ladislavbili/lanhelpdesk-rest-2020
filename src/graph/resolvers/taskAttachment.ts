@@ -3,7 +3,7 @@ import { models } from '@/models';
 import { ProjectInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 import {
-  checkIfHasProjectRightsOld,
+  checkIfHasProjectRights,
   getModelAttribute,
 } from '@/helperFunctions';
 import fs from 'fs';
@@ -17,7 +17,7 @@ const mutations = {
     if (TaskAttachment === null) {
       throw createDoesNoExistsError('Task attachment', id);
     }
-    await checkIfHasProjectRightsOld(User.get('id'), TaskAttachment.get('TaskId'), 'write');
+    await checkIfHasProjectRights(User.get('id'), TaskAttachment.get('TaskId'), undefined, ['taskAttachmentsWrite']);
     try {
       fs.unlinkSync(<string>TaskAttachment.get('path'));
     } catch (err) {

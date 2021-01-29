@@ -60,11 +60,11 @@ export {
 export {
   checkDefIntegrity,
   checkIfHasProjectRights,
-  checkIfHasProjectRightsOld,
   checkDefRequiredSatisfied,
   checkIfChanged,
   checkIfCanEditTaskAttributes,
   applyFixedOnAttributes,
+  canViewTask,
 } from './projectChecks';
 
 export {

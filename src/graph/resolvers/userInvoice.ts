@@ -20,7 +20,7 @@ const dateNames = ['fromDate', 'toDate'];
 
 const querries = {
   getInvoiceUsers: async (root, args, { req }) => {
-    await checkResolver(req, ['vykazy', 'viewVykaz'], true);
+    await checkResolver(req, ['vykazy'], true);
     const { fromDate, toDate } = extractDatesFromObject(args, dateNames);
     const Users = <UserInstance[]>await models.User.findAll({
       order: [
@@ -60,7 +60,7 @@ const querries = {
     }))
   },
   getUserInvoice: async (root, { userId, ...args }, { req }) => {
-    await checkResolver(req, ['vykazy', 'viewVykaz'], true);
+    await checkResolver(req, ['vykazy'], true);
     const { fromDate, toDate } = extractDatesFromObject(args, dateNames);
     const [User, InvoicedTasks] = await Promise.all([
       models.User.findByPk(userId),

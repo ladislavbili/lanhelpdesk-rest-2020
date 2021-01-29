@@ -45,6 +45,9 @@ export const allGroupRights = {
   pausalInfo: true,
   taskTitleEdit: true,
   viewComments: true,
+  companyTasks: true,
+  allTasks: true,
+  addTasks: true,
   deleteTasks: true,
   important: true,
 }

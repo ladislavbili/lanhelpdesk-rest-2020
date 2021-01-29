@@ -1,10 +1,35 @@
 import { createDoesNoExistsError, CalendarEventCantEndBeforeStartingError } from '@/configs/errors';
 import { models } from '@/models';
-import { UserInstance, ProjectRightInstance, ProjectInstance, TaskInstance, CalendarEventInstance } from '@/models/instances';
-import { checkIfHasProjectRightsOld, filterObjectToFilter, extractDatesFromObject, multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
+import {
+  UserInstance,
+  ProjectInstance,
+  ProjectGroupInstance,
+  ProjectGroupRightsInstance,
+  TaskInstance,
+  CalendarEventInstance,
+} from '@/models/instances';
+import {
+  checkIfHasProjectRights,
+  filterObjectToFilter,
+  extractDatesFromObject,
+  multipleIdDoesExistsCheck,
+  getModelAttribute,
+  canViewTask,
+} from '@/helperFunctions';
 import { filterToWhere, filterByOneOf } from './task';
 import checkResolver from './checkResolver';
 import moment from 'moment';
+const dateNames = ['deadline', 'pendingDate', 'closeDate'];
+const dateNames2 = [
+  'closeDateFrom',
+  'closeDateTo',
+  'deadlineFrom',
+  'deadlineTo',
+  'pendingDateFrom',
+  'pendingDateTo',
+  'statusDateFrom',
+  'statusDateTo',
+];
 
 const querries = {
   calendarEvents: async (root, { projectId, filterId, filter }, { req, userID }) => {
@@ -25,17 +50,18 @@ const querries = {
       filter = filterObjectToFilter(await Filter.get('filter'));
     }
     if (filter) {
-      taskWhere = filterToWhere(filter, userID)
+      const dates = extractDatesFromObject(filter, dateNames2);
+      taskWhere = filterToWhere({ ...filter, ...dates }, userID)
     }
-
     const User = await checkResolver(
       req,
       [],
       false,
       [
         {
-          model: models.ProjectRight,
+          model: models.ProjectGroup,
           include: [
+            models.ProjectGroupRights,
             {
               model: models.Project,
               where: projectWhere,
@@ -46,9 +72,7 @@ const querries = {
                   where: taskWhere,
                   required: true,
                   include: [
-                    {
-                      model: models.CalendarEvent,
-                    },
+                    models.CalendarEvent,
                     {
                       model: models.User,
                       as: 'assignedTos',
@@ -61,8 +85,18 @@ const querries = {
         }
       ]
     );
+    const tasks = (
+      (<ProjectGroupInstance[]>User.get('ProjectGroups'))
+        .reduce((acc, ProjectGroup) => {
+          const proj = <ProjectInstance>ProjectGroup.get('Project');
+          const userRights = (<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).get();
+          return [
+            ...acc,
+            ...(<TaskInstance[]>proj.get('Tasks')).filter((Task) => canViewTask(Task, User, userRights))
+          ]
+        }, [])
+    )
 
-    const tasks = (<ProjectRightInstance[]>User.get('ProjectRights')).map((ProjectRight) => <ProjectInstance>ProjectRight.get('Project')).reduce((acc, proj) => [...acc, ...<TaskInstance[]>proj.get('Tasks')], [])
     if (filter) {
       return filterByOneOf(filter, User.get('id'), User.get('CompanyId'), tasks).reduce((acc, task) => [...acc, ...<CalendarEventInstance[]>task.get('CalendarEvents')], []);
     }
@@ -74,7 +108,7 @@ const mutations = {
   addCalendarEvent: async (root, { task, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { startsAt, endsAt } = extractDatesFromObject(params, ['startsAt', 'endsAt']);
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), task, 'write');
+    await checkIfHasProjectRights(SourceUser.get('id'), task);
     if (startsAt > endsAt) {
       throw CalendarEventCantEndBeforeStartingError;
     }
@@ -104,7 +138,7 @@ const mutations = {
     ) {
       throw CalendarEventCantEndBeforeStartingError;
     }
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), CalendarEvent.get('TaskId'), 'write');
+    await checkIfHasProjectRights(SourceUser.get('id'), CalendarEvent.get('TaskId'));
     return CalendarEvent.update(changes);
   },
 
@@ -114,7 +148,7 @@ const mutations = {
     if (CalendarEvent === null) {
       throw createDoesNoExistsError('CalendarEvent', id);
     }
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), CalendarEvent.get('TaskId'), 'write');
+    await checkIfHasProjectRights(SourceUser.get('id'), CalendarEvent.get('TaskId'));
     return CalendarEvent.destroy();
   },
 }

@@ -8,7 +8,7 @@ import {
   EmailAlreadySendError
 } from '@/configs/errors';
 import { models } from '@/models';
-import { checkIfHasProjectRightsOld, isEmail, getModelAttribute } from '@/helperFunctions';
+import { checkIfHasProjectRights, isEmail, getModelAttribute } from '@/helperFunctions';
 import { sendEmail } from '@/services/smtp'
 import { RoleInstance, AccessRightsInstance, TaskInstance, EmailTargetInstance, UserInstance, CommentAttachmentInstance } from '@/models/instances';
 import pathResolver from 'path';
@@ -24,8 +24,7 @@ export interface EmailResultInstance {
 const querries = {
   comments: async (root, { taskId }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const AccessRights = <AccessRightsInstance>(<RoleInstance>SourceUser.get('Role')).get('AccessRight');
-    const { internal } = await checkIfHasProjectRightsOld(SourceUser.get('id'), taskId);
+    const { groupRights } = await checkIfHasProjectRights(SourceUser.get('id'), taskId, undefined, ['viewComments']);
     return models.Comment.findAll({
       order: [
         ['createdAt', 'ASC'],
@@ -33,7 +32,7 @@ const querries = {
       where: {
         TaskId: taskId,
         internal: {
-          [Op.or]: [false, (internal || AccessRights.get('internal'))]
+          [Op.or]: [false, groupRights.internal]
         },
         isParent: true
       }
@@ -44,9 +43,8 @@ const querries = {
 const mutations = {
   addComment: async (root, { task, parentCommentId, internal, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const internalRight = (<AccessRightsInstance>(<RoleInstance>SourceUser.get('Role')).get('AccessRight')).get('internal');
-    const { internal: allowedInternal, Task } = await checkIfHasProjectRightsOld(SourceUser.get('id'), task);
-    if (internal && !allowedInternal && !internalRight) {
+    const { groupRights, Task } = await checkIfHasProjectRights(SourceUser.get('id'), task);
+    if (internal && !groupRights.internal) {
       throw InternalMessagesNotAllowed;
     }
     if (parentCommentId) {
@@ -54,7 +52,7 @@ const mutations = {
       if (ParentComment === null || ParentComment.get('TaskId') !== task) {
         throw createDoesNoExistsError('Parent comment', parentCommentId);
       }
-      if (ParentComment.get('internal') && !allowedInternal && !internalRight) {
+      if (ParentComment.get('internal') && !groupRights.internal) {
         throw InternalMessagesNotAllowed;
       }
     }
@@ -82,8 +80,8 @@ const mutations = {
   },
 
   sendEmail: async (root, { task, parentCommentId, message, subject, tos }, { req }) => {
-    const SourceUser = await checkResolver(req, ['mailViaComment']);
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), task);
+    const SourceUser = await checkResolver(req);
+    await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['emails']);
     if (parentCommentId) {
       const ParentComment = await models.Comment.findByPk(parentCommentId);
       if (ParentComment === null || ParentComment.get('TaskId') !== task) {
@@ -126,7 +124,7 @@ const mutations = {
     return NewComment;
   },
   resendEmail: async (root, { messageId }, { req }) => {
-    const SourceUser = await checkResolver(req, ['mailViaComment']);
+    const SourceUser = await checkResolver(req);
     const Comment = await models.Comment.findByPk(messageId, {
       include: [
         { model: models.User },
@@ -136,7 +134,7 @@ const mutations = {
     if (Comment === null) {
       throw createDoesNoExistsError('Comment', messageId);
     }
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), Comment.get('TaskId'));
+    await checkIfHasProjectRights(SourceUser.get('id'), Comment.get('TaskId'), undefined, ['emails']);
     if (!Comment.get('isEmail')) {
       throw CommentNotEmailError;
     }

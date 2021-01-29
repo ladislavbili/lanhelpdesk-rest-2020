@@ -1,6 +1,6 @@
 import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import { models, sequelize } from '@/models';
-import { checkIfHasProjectRightsOld, getModelAttribute, extractDatesFromObject } from '@/helperFunctions';
+import { checkIfHasProjectRights, getModelAttribute, extractDatesFromObject } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -9,7 +9,7 @@ const querries = {
 const mutations = {
   addScheduledTask: async (root, { task, ...attributes }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), task, 'write');
+    await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['scheduledWrite']);
     const dates = extractDatesFromObject(attributes, ['from', 'to']);
     return models.ScheduledTask.create({
       TaskId: task,
@@ -24,7 +24,7 @@ const mutations = {
     if (ScheduledTask === null) {
       throw createDoesNoExistsError('Scheduled task', id);
     }
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), ScheduledTask.get('TaskId'), 'write');
+    await checkIfHasProjectRights(SourceUser.get('id'), ScheduledTask.get('TaskId'), undefined, ['scheduledWrite']);
     return await ScheduledTask.destroy();
   },
 }

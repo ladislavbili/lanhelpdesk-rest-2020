@@ -1,16 +1,17 @@
 import { createDoesNoExistsError, NoAccessToThisProjectError } from '@/configs/errors';
 import { models } from '@/models';
 import { ProjectInstance, ProjectRightInstance } from '@/models/instances';
-import { extractDatesFromObject, getModelAttribute } from '@/helperFunctions';
+import { extractDatesFromObject, getModelAttribute, checkIfHasProjectRights } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {
   milestone: async (root, { id }, { req }) => {
     const User = await checkResolver(req);
-    const Milestone = await models.Milestone.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
+    const Milestone = await models.Milestone.findByPk(id);
     if (Milestone === null) {
       return null;
     }
+    await checkIfHasProjectRights(User.get('id'), undefined, Milestone.get('ProjectId'), ['milestoneRead']);
     const Project = <ProjectInstance>Milestone.get('Project');
     const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
     if (ProjectRights === undefined || !ProjectRights.get('read')) {
@@ -27,28 +28,20 @@ const mutations = {
     const User = await checkResolver(req);
     const dates = extractDatesFromObject(args, ['startsAt', 'endsAt']);
 
-    const Project = <ProjectInstance>await models.Project.findByPk(projectId, { include: [{ model: models.ProjectRight }] });
-    const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
-    if (ProjectRights === undefined || !ProjectRights.get('admin')) {
-      throw NoAccessToThisProjectError;
-    }
+    await checkIfHasProjectRights(User.get('id'), undefined, projectId, ['milestoneWrite']);
     return models.Milestone.create({ ...args, ...dates, ProjectId: projectId });
   },
 
   //  updateMilestone( id: Int!, title: String, description: String, startsAt: Int, endsAt: Int ): Milestone
   updateMilestone: async (root, { id, ...args }, { req }) => {
     const User = await checkResolver(req);
-    const Milestone = await models.Milestone.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
+    const Milestone = await models.Milestone.findByPk(id);
     if (Milestone === null) {
       throw createDoesNoExistsError('Milestone', id);
     }
     const dates = extractDatesFromObject(args, ['startsAt', 'endsAt']);
 
-    const Project = <ProjectInstance>Milestone.get('Project');
-    const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
-    if (ProjectRights === undefined || !ProjectRights.get('admin')) {
-      throw NoAccessToThisProjectError;
-    }
+    await checkIfHasProjectRights(User.get('id'), undefined, Milestone.get('ProjectId'), ['milestoneWrite']);
 
     return Milestone.update({ ...args, ...dates });
   },
@@ -60,12 +53,8 @@ const mutations = {
     if (Milestone === null) {
       throw createDoesNoExistsError('Milestone', id);
     }
-    const Project = <ProjectInstance>Milestone.get('Project');
-    const ProjectRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
-    if (ProjectRights === undefined || !ProjectRights.get('admin')) {
-      throw NoAccessToThisProjectError;
-    }
-    await models.Task.update({ pendingChangable: false }, { where: { pendingChangable: true, MilestoneId: id } });
+    await checkIfHasProjectRights(User.get('id'), undefined, Milestone.get('ProjectId'), ['milestoneWrite']);
+    await models.Task.update({ pendingChangable: true }, { where: { pendingChangable: false, MilestoneId: id } });
     return Milestone.destroy();
   },
 }

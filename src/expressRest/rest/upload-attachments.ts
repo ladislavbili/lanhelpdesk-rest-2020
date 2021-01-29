@@ -1,6 +1,6 @@
 import moment from 'moment';
 import checkResolver from '@/graph/resolvers/checkResolver';
-import { checkIfHasProjectRightsOld } from '@/helperFunctions';
+import { checkIfHasProjectRights } from '@/helperFunctions';
 
 export function uploadAttachments(app) {
   app.post('/upload-attachments', async function(req, res) {
@@ -22,7 +22,7 @@ export function uploadAttachments(app) {
     let Task = null;
     try {
       User = await checkResolver({ headers: { authorization: token } });
-      const checkData = await checkIfHasProjectRightsOld(User.get('id'), taskId, "write");
+      const checkData = await checkIfHasProjectRights(User.get('id'), taskId, undefined, ['taskAttachmentsWrite']);
       Task = checkData.Task;
     } catch (err) {
       return res.send({ ok: false, error: err.message })

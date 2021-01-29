@@ -6,7 +6,7 @@ type ErrorMessage {
   errorMessage: String!
   read: Boolean!
   source: String!
-  sourceId: Int!
+  sourceId: Int
   type: String!
   user: User
 }

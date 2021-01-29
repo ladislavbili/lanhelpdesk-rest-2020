@@ -17,7 +17,7 @@ const querries = {
     })
   },
   companiesWithInvoices: async (root, args, { req }) => {
-    await checkResolver(req, ['vykazy', 'viewVykaz'], true);
+    await checkResolver(req, ['vykazy'], true);
     const Companies = await models.Company.findAll({
       include: [{ model: models.TaskInvoice, required: true }]
     });

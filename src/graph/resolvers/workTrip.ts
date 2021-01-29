@@ -1,13 +1,13 @@
 import { createDoesNoExistsError, WorkTripNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import { TaskInstance, UserInstance, WorkTripInstance } from '@/models/instances';
-import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRightsOld, getModelAttribute } from '@/helperFunctions';
+import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
 const querries = {
   workTrips: async (root, { taskId }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), taskId);
+    await checkIfHasProjectRights(SourceUser.get('id'), taskId, undefined, ['vykazRead']);
     return models.WorkTrip.findAll({
       order: [
         ['order', 'ASC'],
@@ -23,7 +23,7 @@ const querries = {
 const mutations = {
   addWorkTrip: async (root, { task, type, assignedTo, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const Task = <TaskInstance>(await checkIfHasProjectRightsOld(SourceUser.get('id'), task, 'write')).Task;
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
     const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
     if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
       throw AssignedToUserNotSolvingTheTask;
@@ -43,7 +43,7 @@ const mutations = {
     if (WorkTrip === null) {
       throw createDoesNoExistsError('WorkTrip', id);
     }
-    const Task = <TaskInstance>(await checkIfHasProjectRightsOld(SourceUser.get('id'), WorkTrip.get('TaskId'), 'write')).Task;
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), WorkTrip.get('TaskId'), undefined, ['vykazWrite']);
     if (assignedTo !== undefined) {
       const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
       if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
@@ -82,7 +82,7 @@ const mutations = {
     if (WorkTrip === null) {
       throw createDoesNoExistsError('WorkTrip', id);
     }
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), WorkTrip.get('TaskId'), 'write');
+    await checkIfHasProjectRights(SourceUser.get('id'), WorkTrip.get('TaskId'), undefined, ['vykazWrite']);
     return WorkTrip.destroy();
   },
 }

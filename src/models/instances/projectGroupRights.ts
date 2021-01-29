@@ -48,6 +48,9 @@ export interface ProjectGroupRightsInstance extends DefaultInstance {
   pausalInfo: Boolean;
   taskTitleEdit: Boolean;
   viewComments: Boolean;
+  companyTasks: Boolean;
+  allTasks: Boolean;
+  addTasks: Boolean;
   deleteTasks: Boolean;
   important: Boolean;
 
@@ -283,6 +286,21 @@ export default function defineProjectGroupRights(sequelize: Sequelize) {
         defaultValue: false,
       },
       viewComments: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      companyTasks: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      allTasks: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      addTasks: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,

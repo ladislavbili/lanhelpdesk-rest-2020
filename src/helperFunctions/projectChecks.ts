@@ -19,6 +19,7 @@ import {
   ProjectGroupRightsInstance,
   RoleInstance,
   AccessRightsInstance,
+  UserInstance,
 } from '@/models/instances';
 
 export const checkIfHasProjectRights = async (userId, taskId = undefined, projectId = undefined, rights = []) => {
@@ -26,10 +27,9 @@ export const checkIfHasProjectRights = async (userId, taskId = undefined, projec
     throw InsufficientProjectAccessError;
   }
   let projectID = projectId;
+  let Task = null;
   if (projectID === undefined) {
-    const Task = await models.Task.findByPk(taskId, {
-      attributes: ['ProjectId']
-    });
+    Task = await models.Task.findByPk(taskId);
     if (Task === null) {
       throw createDoesNoExistsError('Task', taskId);
     }
@@ -63,11 +63,11 @@ export const checkIfHasProjectRights = async (userId, taskId = undefined, projec
   }
   let Role = <RoleInstance>User.get('Role');
   if (rights.length === 0 || Role.get('level') === 0 || (<AccessRightsInstance>Role.get('AccessRight')).get('projects')) {
-    return { User, Role, groupRights: allGroupRights };
+    return { User, Role, groupRights: allGroupRights, Task };
   }
   let groupRights = (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups'))[0].get('ProjectGroupRight')).get();
   if (rights.every((right) => groupRights[right])) {
-    return { User, Role, groupRights };
+    return { User, Role, groupRights, Task };
   }
   addApolloError(
     'Project',
@@ -76,22 +76,6 @@ export const checkIfHasProjectRights = async (userId, taskId = undefined, projec
     projectID
   );
   throw InsufficientProjectAccessError;
-}
-
-export const checkIfHasProjectRightsOld = async (userId, taskId, right = 'read') => {
-  const User = await models.User.findByPk(userId, { include: [{ model: models.ProjectRight }] })
-  const Task = await models.Task.findByPk(taskId);
-  if (Task === null) {
-    throw createDoesNoExistsError('Task', taskId);
-  }
-  const ProjectRight = (<ProjectRightInstance[]>User.get('ProjectRights')).find((ProjectRight) => ProjectRight.get('ProjectId') === Task.get('ProjectId'));
-  if (ProjectRight !== undefined) {
-  }
-  if (ProjectRight === undefined || !ProjectRight.get(right)) {
-    throw InsufficientProjectAccessError;
-  }
-
-  return { ProjectRight, Task, internal: ProjectRight.get('internal') };
 }
 
 export const checkDefIntegrity = (def) => {
@@ -236,6 +220,15 @@ export const checkIfChanged = async (attributes, Project) => {
 }
 
 //TASK RELATED
+export const canViewTask = (Task, User, groupRights, checkAdmin = false) => {
+  return (
+    groupRights.allTasks ||
+    (groupRights.companyTasks && Task.get('CompanyId') === User.get('CompanyId')) ||
+    Task.get('RequesterId') === User.get('id') ||
+    (<UserInstance[]>Task.get('assignedTos')).some((AssignedTo) => AssignedTo.get('id') === User.get('id')) ||
+    (checkAdmin && (<RoleInstance>User.get('Role')).get('level') === 0)
+  )
+}
 export const applyFixedOnAttributes = (def, args) => {
   (['assignedTo', 'tag']).forEach((key) => {
     if (def[key].fixed && args[key]) {

@@ -58,6 +58,9 @@ type ProjectGroupRights {
   pausalInfo: Boolean!
   taskTitleEdit: Boolean!
   viewComments: Boolean!
+  companyTasks: Boolean!
+  allTasks: Boolean!
+  addTasks: Boolean!
   deleteTasks: Boolean!
   important: Boolean!
 }
@@ -123,6 +126,9 @@ input ProjectGroupRightInput {
   pausalInfo: Boolean!
   taskTitleEdit: Boolean!
   viewComments: Boolean!
+  companyTasks: Boolean!
+  allTasks: Boolean!
+  addTasks: Boolean!
   deleteTasks: Boolean!
   important: Boolean!
 }

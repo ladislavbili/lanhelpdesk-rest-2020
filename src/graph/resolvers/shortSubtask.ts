@@ -1,6 +1,6 @@
 import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import { models, sequelize } from '@/models';
-import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRightsOld, getModelAttribute } from '@/helperFunctions';
+import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
 import { TaskInstance, ShortSubtaskInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 
@@ -10,7 +10,7 @@ const querries = {
 const mutations = {
   addShortSubtask: async (root, { task, ...attributes }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const Task = <TaskInstance>(await checkIfHasProjectRightsOld(SourceUser.get('id'), task, 'write')).Task;
+    await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['taskShortSubtasksWrite']);
     return models.ShortSubtask.create({
       TaskId: task,
       ...attributes,
@@ -23,7 +23,7 @@ const mutations = {
     if (ShortSubtask === null) {
       throw createDoesNoExistsError('Short subtask', id);
     }
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), ShortSubtask.get('TaskId'), 'write');
+    await checkIfHasProjectRights(SourceUser.get('id'), ShortSubtask.get('TaskId'), undefined, ['taskShortSubtasksWrite']);
     return ShortSubtask.update(args);
   },
 
@@ -33,7 +33,7 @@ const mutations = {
     if (ShortSubtask === null) {
       throw createDoesNoExistsError('Short subtask', id);
     }
-    await checkIfHasProjectRightsOld(SourceUser.get('id'), ShortSubtask.get('TaskId'), 'write');
+    await checkIfHasProjectRights(SourceUser.get('id'), ShortSubtask.get('TaskId'), undefined, ['taskShortSubtasksWrite']);
     return ShortSubtask.destroy();
   },
 }

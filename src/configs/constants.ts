@@ -1,4 +1,4 @@
-export const testing = true;
+export const testing = false;
 export const imaps = !testing;
 export const smtps = !testing;
 export const repeatTasks = false;

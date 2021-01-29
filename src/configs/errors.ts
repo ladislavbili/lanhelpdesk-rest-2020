@@ -81,11 +81,14 @@ export const ProjectNoAdminGroupWithUsers = new ApolloError("You can't create or
 export const ProjectNoNewStatus = new ApolloError("You can't create or edit this project! There is no new status.", "PROJECT_WITHOUT_NEW_STATUS");
 export const ProjectNoCloseStatus = new ApolloError("You can't create or edit this project! There is no close status.", "PROJECT_WITHOUT_CLOSE_STATUS");
 
+export const CantCreateTasksError = new ApolloError("You can't create task in this project!", "CANT_CREATE_TASK_IN_PROJECT");
+
 //filters
 export const NoAccessToThisProjectError = new ApolloError("You can't access this project.", "NO_ACCESS_TO_PROJECT");
 export const NoAccessToThisFilterError = new ApolloError("You can't access this filter.", "NO_ACCESS_TO_FILTER");
 
 //tasks
+export const CantViewTaskError = new ApolloError("You can't access this task.", "NO_ACCESS_TO_TASK");
 export const InsufficientProjectAccessError = new ApolloError("You don't have sufficient access in this project.", "INSUFFICIENT_ACCESS_PROJECT");
 export const createUserNotPartOfProjectError = (name): ApolloError => {
   return new ApolloError(`User passed in parameter ${name} is not part of the project, therefore can't be assigned to this parameter!`, 'USER_NOT_PART_OF_PROJECT');

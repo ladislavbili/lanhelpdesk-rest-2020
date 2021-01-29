@@ -10,7 +10,9 @@ import {
   TaskMustBeAssignedToAtLeastOneUser,
   AssignedToUserNotSolvingTheTask,
   InvalidTokenError,
-  CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError
+  CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError,
+  CantCreateTasksError,
+  CantViewTaskError
 } from '@/configs/errors';
 import {
   allGroupRights
@@ -46,6 +48,8 @@ import {
   checkDefRequiredSatisfied,
   checkIfCanEditTaskAttributes,
   applyFixedOnAttributes,
+  addApolloError,
+  canViewTask,
 } from '@/helperFunctions';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
@@ -69,7 +73,6 @@ const dateNames2 = [
 ];
 
 const querries = {
-
   tasks: async (root, { projectId, filterId, filter }, { req, userID }) => {
     const mainWatch = new Stopwatch(true);
     let projectWhere = {};
@@ -102,6 +105,7 @@ const querries = {
         {
           model: models.ProjectGroup,
           include: [
+            models.ProjectGroupRights,
             {
               model: models.Project,
               where: projectWhere,
@@ -130,9 +134,20 @@ const querries = {
         }
       ]
     );
+
     const checkUserTime = checkUserWatch.stop();
     const manualWatch = new Stopwatch(true);
-    const tasks = (<ProjectGroupInstance[]>User.get('ProjectGroups')).map((ProjectGroup) => <ProjectInstance>ProjectGroup.get('Project')).reduce((acc, proj) => [...acc, ...<TaskInstance[]>proj.get('Tasks')], [])
+    const tasks = (
+      (<ProjectGroupInstance[]>User.get('ProjectGroups'))
+        .reduce((acc, ProjectGroup) => {
+          const proj = <ProjectInstance>ProjectGroup.get('Project');
+          const userRights = (<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).get();
+          return [
+            ...acc,
+            ...(<TaskInstance[]>proj.get('Tasks')).filter((Task) => canViewTask(Task, User, userRights))
+          ]
+        }, [])
+    )
 
     if (filter) {
       return {
@@ -246,7 +261,10 @@ const querries = {
     ])
 
     const Task = mergeFragmentedModel(FragmentedTask)
-    await checkIfHasProjectRights(User.get('id'), id);
+    const { groupRights } = await checkIfHasProjectRights(User.get('id'), id);
+    if (!canViewTask(Task, User, groupRights, true)) {
+      throw CantViewTaskError;
+    }
     return Task;
   },
 }
@@ -301,6 +319,15 @@ const mutations = {
         allGroupRights :
         (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('ProjectId') === project).get('ProjectGroupRight')).get()
     )
+    if (!groupRights.addTask && (<RoleInstance>User.get('Role')).get('level') !== 0) {
+      addApolloError(
+        'Project',
+        CantCreateTasksError,
+        User.get('id'),
+        project
+      );
+      throw CantCreateTasksError;
+    }
     //check all Ids if exists
     const pairsToCheck = [{ id: company, model: models.Company }, { id: status, model: models.Status }];
     (taskType !== undefined && taskType !== null) && pairsToCheck.push({ id: taskType, model: models.TaskType });
@@ -531,6 +558,7 @@ const mutations = {
         }
       ]
     );
+
     //Figure out project and if can change project
     if (args.project !== undefined && args.project !== Task.get('ProjectId')) {
       await checkIfHasProjectRights(User.get('id'), undefined, Task.get('ProjectId'), ['projectWrite']);
@@ -576,6 +604,11 @@ const mutations = {
         allGroupRights :
         (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('ProjectId') === project).get('ProjectGroupRight')).get()
     )
+    //can you even open this task
+    if (!canViewTask(Task, User, groupRights, true)) {
+      throw CantViewTaskError;
+    }
+
     //if you send something it cant be null in this attributes, if undefined its ok
     if (
       company === null ||
@@ -831,9 +864,14 @@ const mutations = {
     );
     const Project = <ProjectInstance>Task.get('Project');
     //must right to delete project
-    checkIfHasProjectRights(User.get('id'), undefined, Task.get('ProjectId'), ['deleteTasks'])
+    const { groupRights } = await checkIfHasProjectRights(User.get('id'), undefined, Task.get('ProjectId'), ['deleteTasks']);
+    //can you even open this task
+    if (!canViewTask(Task, User, groupRights, true)) {
+      throw CantViewTaskError;
+    }
     repeatEvent.emit('delete', id);
     sendNotifications(User, [`Task was deleted.`], Task)
+
     pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'delete', data: Task, ids: [id] } });
     return Task.destroy();
   }
