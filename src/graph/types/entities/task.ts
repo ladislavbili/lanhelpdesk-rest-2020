@@ -112,10 +112,25 @@ enum EnumSubTaskChanged{
 
 ${createExecClass("Task", false)}
 ${createExecClass("Task", true)}
+
+enum EnumSortTaskKey {
+  id
+  title
+  status
+  requester
+  assignedTo
+  createdAt
+  deadline
+}
+
+input SortTasksInput {
+  key: EnumSortTaskKey!
+  asc: Boolean!
+}
 `
 
 export const TaskQuerries = `
-tasks( filterId: Int, projectId: Int, filter: FilterInput ): ExecTasks
+tasks( filterId: Int, projectId: Int, filter: FilterInput, sort: SortTasksInput ): ExecTasks
 task(id: Int!): Task
 `
 

@@ -17,7 +17,7 @@ const querries = {
   },
   errorMessageCount: async (root, args, { req }) => {
     await checkResolver(req, ["viewErrors"]);
-    return models.ErrorMessage.count()
+    return models.ErrorMessage.count({ where: { read: false } })
   },
 }
 
