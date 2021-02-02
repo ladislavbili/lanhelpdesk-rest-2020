@@ -1,5 +1,5 @@
 import { verifyRefToken, createAccessToken, createRefreshToken } from '@/configs/jwt';
-import { refTokenLifeTime } from '@/configs/constants';
+import { refCookieSettings } from '@/configs/constants';
 import moment from 'moment';
 import { models } from '@/models';
 import jwt_decode from 'jwt-decode';
@@ -8,10 +8,8 @@ export function refreshToken(app) {
   app.post('/refresh_token', async (req, res) => {
 
     //get refresh token
-    let refToken = req.cookies.jid;
-
+    let refToken = req.signedCookies.jid;
     if (!refToken) {
-
       return res.send({ ok: false, accessToken: '', error: 'no refresh token' })
     }
     let userData = null;
@@ -37,7 +35,7 @@ export function refreshToken(app) {
     res.cookie(
       'jid',
       await createRefreshToken(User, userData.loginKey),
-      { httpOnly: true, maxAge: refTokenLifeTime }
+      refCookieSettings
     );
     res.send({ ok: true, accessToken: await createAccessToken(User, userData.loginKey) })
   })

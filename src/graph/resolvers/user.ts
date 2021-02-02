@@ -3,6 +3,7 @@ import { sign } from 'jsonwebtoken';
 import jwt_decode from 'jwt-decode';
 import moment from 'moment';
 import { createAccessToken, createRefreshToken } from '@/configs/jwt';
+import { refCookieSettings } from '@/configs/constants';
 import { randomString, addApolloError, idsDoExistsCheck, getModelAttribute } from '@/helperFunctions';
 import {
   PasswordTooShort,
@@ -23,8 +24,6 @@ import {
 import { models } from '@/models';
 import { UserInstance, RoleInstance, ProjectInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
-
-const maxAge = 7 * 24 * 60 * 60 * 1000;
 
 const querries = {
   users: async (root, args, { req }) => {
@@ -162,7 +161,7 @@ const mutations = {
     res.cookie(
       'jid',
       await createRefreshToken(User, loginKey),
-      { httpOnly: true, maxAge }
+      refCookieSettings
     );
     return {
       user: User,
@@ -180,11 +179,16 @@ const mutations = {
   },
 
   //logoutUser: Boolean,
-  logoutUser: async (root, args, { req }) => {
+  logoutUser: async (root, args, { req, res }) => {
     const User = await checkResolver(req);
     const token = req.headers.authorization as String;
     const userData = jwt_decode(token.replace('Bearer ', ''));
     await models.Token.destroy({ where: { key: userData.loginKey } })
+    res.cookie(
+      'jid',
+      'clear',
+      { httpOnly: true, maxAge: 1 }
+    );
     return true
   },
 
@@ -199,7 +203,7 @@ const mutations = {
     res.cookie(
       'jid',
       await createRefreshToken(User, loginKey),
-      { httpOnly: true, maxAge }
+      refCookieSettings
     );
     return createAccessToken(User, loginKey)
   },
@@ -340,7 +344,7 @@ const mutations = {
     res.cookie(
       'jid',
       await createRefreshToken(User, loginKey),
-      { httpOnly: true, maxAge }
+      refCookieSettings
     );
     return {
       user: User,

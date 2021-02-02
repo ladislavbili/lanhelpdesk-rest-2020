@@ -30,7 +30,7 @@ export const startRest = () => {
   running = true;
   const server = ApolloServer;
   const app = express();
-  app.use(cookieParser());
+  app.use(cookieParser(process.env.COOKIE_SECRET));
   app.use(cors(corsOptions));
   app.use(fileUpload({
     createParentPath: true, preserveExtension: true, limits: { fileSize: 50 * 1024 * 1024 },
