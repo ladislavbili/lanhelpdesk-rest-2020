@@ -285,23 +285,6 @@ const querries = {
             models.Tag,
             models.TaskType,
             models.Repeat,
-            {
-              model: models.Comment,
-              include: [
-                models.User,
-                models.EmailTarget,
-                models.CommentAttachment,
-                {
-                  model: models.Comment,
-                  include: [
-                    models.User,
-                    models.EmailTarget,
-                    models.CommentAttachment,
-                    models.Comment,
-                  ]
-                }
-              ]
-            }
           ]
         }
       ),

@@ -22,15 +22,30 @@ export interface EmailResultInstance {
 }
 
 const querries = {
-  comments: async (root, { taskId }, { req }) => {
+  comments: async (root, { task }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const { groupRights } = await checkIfHasProjectRights(SourceUser.get('id'), taskId, undefined, ['viewComments']);
+    const { groupRights } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['viewComments']);
+
     return models.Comment.findAll({
       order: [
         ['createdAt', 'ASC'],
       ],
+      include: [
+        models.User,
+        models.EmailTarget,
+        models.CommentAttachment,
+        {
+          model: models.Comment,
+          include: [
+            models.User,
+            models.EmailTarget,
+            models.CommentAttachment,
+            models.Comment,
+          ]
+        }
+      ],
       where: {
-        TaskId: taskId,
+        TaskId: task,
         internal: {
           [Op.or]: [false, groupRights.internal]
         },
