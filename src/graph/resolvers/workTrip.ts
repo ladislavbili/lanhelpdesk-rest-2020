@@ -1,6 +1,6 @@
 import { createDoesNoExistsError, WorkTripNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import { models, sequelize } from '@/models';
-import { TaskInstance, UserInstance, WorkTripInstance } from '@/models/instances';
+import { TaskInstance, UserInstance, WorkTripInstance, TripTypeInstance } from '@/models/instances';
 import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
@@ -29,6 +29,18 @@ const mutations = {
       throw AssignedToUserNotSolvingTheTask;
     }
     await idDoesExistsCheck(type, models.TripType);
+    (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: SourceUser.get('id'),
+        TaskChangeMessages: [{
+          type: 'workTrip',
+          originalValue: null,
+          newValue: `${params.done},${params.quantity},${params.discount},${type},${assignedTo}`,
+          message: `Work trip was added.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    )
     return models.WorkTrip.create({
       TaskId: task,
       TripTypeId: type,
@@ -39,7 +51,8 @@ const mutations = {
 
   updateWorkTrip: async (root, { id, type, assignedTo, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const WorkTrip = <WorkTripInstance>await models.WorkTrip.findByPk(id);
+    const WorkTrip = <WorkTripInstance>await models.WorkTrip.findByPk(id, { include: [models.TripType] });
+    const originalValue = `${WorkTrip.get('done').toString()},${WorkTrip.get('quantity')},${WorkTrip.get('discount')},${(<TripTypeInstance>WorkTrip.get('TripType')).get('id')},${WorkTrip.get('UserId')}`;
     if (WorkTrip === null) {
       throw createDoesNoExistsError('WorkTrip', id);
     }
@@ -72,17 +85,42 @@ const mutations = {
       }
       promises.push(WorkTrip.update(params, { transaction: t }));
       await Promise.all(promises);
-    })
+    });
+    (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: SourceUser.get('id'),
+        TaskChangeMessages: [{
+          type: 'workTrip',
+          originalValue,
+          newValue: `${params.done},${params.quantity},${params.discount},${type},${assignedTo}`,
+          message: `Work trip ${(<TripTypeInstance>WorkTrip.get('TripType')).get('title')} was updated.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    )
     return WorkTrip.reload();
   },
 
   deleteWorkTrip: async (root, { id }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const WorkTrip = await models.WorkTrip.findByPk(id);
+    const WorkTrip = await models.WorkTrip.findByPk(id, { include: [models.TripType] });
     if (WorkTrip === null) {
       throw createDoesNoExistsError('WorkTrip', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), WorkTrip.get('TaskId'), undefined, ['vykazWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), WorkTrip.get('TaskId'), undefined, ['vykazWrite']);
+    const originalValue = `${WorkTrip.get('done').toString()},${WorkTrip.get('quantity')},${WorkTrip.get('discount')},${(<TripTypeInstance>WorkTrip.get('TripType')).get('id')},${WorkTrip.get('UserId')}`;
+    (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: SourceUser.get('id'),
+        TaskChangeMessages: [{
+          type: 'workTrip',
+          originalValue,
+          newValue: null,
+          message: `Work trip ${(<TripTypeInstance>WorkTrip.get('TripType')).get('title')} was deleted.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    )
     return WorkTrip.destroy();
   },
 }

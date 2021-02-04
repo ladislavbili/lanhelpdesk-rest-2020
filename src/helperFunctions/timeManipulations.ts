@@ -48,3 +48,7 @@ export const extractDatesFromObject = (data, dates, controlDates = true, ignoreU
   })
   return result;
 }
+
+export const timestampToString = (timestamp) => {
+  return moment(parseInt(timestamp)).format('HH:mm DD.MM.YYYY');
+}

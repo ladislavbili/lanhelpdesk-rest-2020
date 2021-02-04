@@ -1,6 +1,6 @@
 import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
-import { ProjectInstance } from '@/models/instances';
+import { ProjectInstance, TaskInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 import {
   checkIfHasProjectRights,
@@ -17,11 +17,23 @@ const mutations = {
     if (TaskAttachment === null) {
       throw createDoesNoExistsError('Task attachment', id);
     }
-    await checkIfHasProjectRights(User.get('id'), TaskAttachment.get('TaskId'), undefined, ['taskAttachmentsWrite']);
+    const { Task } = await checkIfHasProjectRights(User.get('id'), TaskAttachment.get('TaskId'), undefined, ['taskAttachmentsWrite']);
     try {
       fs.unlinkSync(<string>TaskAttachment.get('path'));
     } catch (err) {
     }
+    (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: User.get('id'),
+        TaskChangeMessages: [{
+          type: 'attachment',
+          originalValue: null,
+          newValue: null,
+          message: `Attachment ${TaskAttachment.get('filename')} was deleted.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    )
     return TaskAttachment.destroy();
   },
 }

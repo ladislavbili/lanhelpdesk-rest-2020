@@ -8,6 +8,7 @@ type TaskChange {
 }
 
 type TaskChangeMessage {
+  ${defaultAttributes}  
   type: String!
   originalValue: String
   newValue: String
@@ -16,6 +17,7 @@ type TaskChangeMessage {
 `
 
 export const TaskChangeQuerries = `
+taskChanges(taskId: Int!): [TaskChange]
 `
 
 export const TaskChangeMutations = `

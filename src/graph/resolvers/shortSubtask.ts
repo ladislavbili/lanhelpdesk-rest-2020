@@ -10,7 +10,19 @@ const querries = {
 const mutations = {
   addShortSubtask: async (root, { task, ...attributes }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['taskShortSubtasksWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['taskShortSubtasksWrite']);
+    (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: SourceUser.get('id'),
+        TaskChangeMessages: [{
+          type: 'shortSubtask',
+          originalValue: null,
+          newValue: `${attributes.title},${attributes.done}`,
+          message: `Short subtask ${attributes.title} was added.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    )
     return models.ShortSubtask.create({
       TaskId: task,
       ...attributes,
@@ -23,7 +35,19 @@ const mutations = {
     if (ShortSubtask === null) {
       throw createDoesNoExistsError('Short subtask', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), ShortSubtask.get('TaskId'), undefined, ['taskShortSubtasksWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), ShortSubtask.get('TaskId'), undefined, ['taskShortSubtasksWrite']);
+    (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: SourceUser.get('id'),
+        TaskChangeMessages: [{
+          type: 'shortSubtask',
+          originalValue: `${ShortSubtask.get('title')}${ShortSubtask.get('done')}`,
+          newValue: `${args.title ? args.title : ShortSubtask.get('title')},${args.done ? args.done : ShortSubtask.get('done')}`,
+          message: `Short subtask ${ShortSubtask.get('title')}${args.title && args.title !== ShortSubtask.get('title') ? `/${args.title}` : ''} was updated.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    )
     return ShortSubtask.update(args);
   },
 
@@ -33,7 +57,19 @@ const mutations = {
     if (ShortSubtask === null) {
       throw createDoesNoExistsError('Short subtask', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), ShortSubtask.get('TaskId'), undefined, ['taskShortSubtasksWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), ShortSubtask.get('TaskId'), undefined, ['taskShortSubtasksWrite']);
+    (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: SourceUser.get('id'),
+        TaskChangeMessages: [{
+          type: 'shortSubtask',
+          originalValue: `${ShortSubtask.get('title')}${ShortSubtask.get('done')}`,
+          newValue: null,
+          message: `Short subtask ${ShortSubtask.get('title')} was deleted.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    )
     return ShortSubtask.destroy();
   },
 }

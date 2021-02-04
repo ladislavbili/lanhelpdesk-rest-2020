@@ -2,6 +2,7 @@ import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
 import { multipleIdDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
+import { TaskInstance } from '@/models/instances';
 
 const querries = {
   materials: async (root, { taskId }, { req }) => {
@@ -22,7 +23,19 @@ const querries = {
 const mutations = {
   addMaterial: async (root, { task, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
+    (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: SourceUser.get('id'),
+        TaskChangeMessages: [{
+          type: 'material',
+          originalValue: null,
+          newValue: `${params.title},${params.done},${params.quantity},${params.price},${params.margin}`,
+          message: `Material ${params.title} was added.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    )
     return models.Material.create({
       TaskId: task,
       ...params,
@@ -35,7 +48,19 @@ const mutations = {
     if (Material === null) {
       throw createDoesNoExistsError('Material', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), Material.get('TaskId'), undefined, ['vykazWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), Material.get('TaskId'), undefined, ['vykazWrite']);
+    (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: SourceUser.get('id'),
+        TaskChangeMessages: [{
+          type: 'material',
+          originalValue: `${Material.get('title')},${Material.get('done')},${Material.get('quantity')},${Material.get('price')},${Material.get('margin')}`,
+          newValue: `${params.title},${params.done},${params.quantity},${params.price},${params.margin}`,
+          message: `Material ${Material.get('title')}${params.title && params.title !== Material.get('title') ? `/${params.title}` : ''} was updated.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    )
     return Material.update(params);
   },
 
@@ -45,7 +70,19 @@ const mutations = {
     if (Material === null) {
       throw createDoesNoExistsError('Material', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), Material.get('TaskId'), undefined, ['vykazWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), Material.get('TaskId'), undefined, ['vykazWrite']);
+    (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: SourceUser.get('id'),
+        TaskChangeMessages: [{
+          type: 'material',
+          originalValue: `${Material.get('title')},${Material.get('done')},${Material.get('quantity')},${Material.get('price')},${Material.get('margin')}`,
+          newValue: null,
+          message: `Material ${Material.get('title')} was deleted.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    )
     return Material.destroy();
   },
 }

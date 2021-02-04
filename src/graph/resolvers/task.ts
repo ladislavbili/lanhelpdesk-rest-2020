@@ -33,7 +33,9 @@ import {
   RoleInstance,
   SubtaskInstance,
   WorkTripInstance,
-  TagInstance
+  TagInstance,
+  TaskTypeInstance,
+  CompanyInstance
 } from '@/models/instances';
 import {
   idsDoExistsCheck,
@@ -50,6 +52,8 @@ import {
   applyFixedOnAttributes,
   addApolloError,
   canViewTask,
+  createChangeMessage,
+  createTaskAttributesChangeMessages,
 } from '@/helperFunctions';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
@@ -271,13 +275,6 @@ const querries = {
                     }
                   ]
                 },
-              ]
-            },
-            {
-              model: models.TaskChange,
-              include: [
-                models.User,
-                models.TaskChangeMessage
               ]
             },
             { model: models.User, as: 'createdBy' },
@@ -594,12 +591,17 @@ const mutations = {
       args.id,
       {
         include: [
-          { model: models.Repeat },
-          { model: models.User, as: 'assignedTos', attributes: ['id'] },
-          { model: models.Tag },
-          { model: models.Status },
-          { model: models.Subtask },
-          { model: models.WorkTrip },
+          models.Repeat,
+          { model: models.User, as: 'assignedTos' },
+          models.Tag,
+          models.Status,
+          models.Subtask,
+          models.WorkTrip,
+          models.TaskType,
+          models.Company,
+          models.Milestone,
+          { model: models.User, as: 'requester' },
+          models.Tag,
           {
             model: models.Project,
             include: [
@@ -640,6 +642,8 @@ const mutations = {
         }
       ]
     );
+
+    let taskChangeMessages = [];
 
     //Figure out project and if can change project
     if (args.project !== undefined && args.project !== Task.get('ProjectId')) {
@@ -732,17 +736,11 @@ const mutations = {
       return [...acc, ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id'))]
     }, [])
 
-    let taskChangeMessages = [];
     let promises = [];
 
     await sequelize.transaction(async (transaction) => {
       if (project && project !== (<ProjectInstance>Task.get('Project')).get('id')) {
-        taskChangeMessages.push({
-          type: 'project',
-          originalValue: Task.get('ProjectId'),
-          newValue: project,
-          message: `Project was changed from ${(<ProjectInstance>Task.get('Project')).get('title')} to ${Project.get('title')}`,
-        });
+        taskChangeMessages.push(await createChangeMessage('Project', models.Project, 'Project', project, Task.get('Project')));
         promises.push(Task.setProject(project, { transaction }));
         if (milestone === undefined || milestone === null) {
           promises.push(Task.setMilestone(null, { transaction }));
@@ -765,40 +763,36 @@ const mutations = {
         if (!allAssignedIds.every((id) => assignedTos.includes(id))) {
           throw CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError;
         }
-
+        taskChangeMessages.push(await createChangeMessage('AssignedTo', models.User, 'Assigned to users', assignedTos, Task.get('assignedTos'), 'fullName'));
         promises.push(Task.setAssignedTos(assignedTos, { transaction }))
       }
       if (tags) {
         await idsDoExistsCheck(tags, models.Tag);
+        taskChangeMessages.push(await createChangeMessage('Tags', models.Tag, 'Tags', tags, Task.get('Tags')));
         promises.push(Task.setTags(tags, { transaction }))
       }
       if (requester) {
         if (requester !== Task.get('requesterId') && Project.get('lockedRequester') && !groupUsers.includes(requester)) {
           throw createUserNotPartOfProjectError('requester');
         }
-        taskChangeMessages.push({
-          type: 'requester',
-          originalValue: Task.get('requesterId'),
-          newValue: requester,
-          message: `Requester was changed from ${(<UserInstance>await Task.getRequester()).get('fullName')} to ${(await models.User.findByPk(requester)).get('fullName')}`,
-        });
-
+        taskChangeMessages.push(await createChangeMessage('Requester', models.User, 'Requester', requester, Task.get('requester'), 'fullName'));
         promises.push(Task.setRequester(requester, { transaction }))
       }
 
-      if (milestone) {
+      if (milestone || milestone === null) {
         //milestone must be of project
-        if (!(<MilestoneInstance[]>Project.get('Milestones')).some((projectMilestone) => projectMilestone.get('id') === milestone)) {
+        if (milestone !== null && !(<MilestoneInstance[]>Project.get('Milestones')).some((projectMilestone) => projectMilestone.get('id') === milestone)) {
           throw MilestoneNotPartOfProject;
         }
+        taskChangeMessages.push(await createChangeMessage('Milestone', models.Milestone, 'Milestone', milestone, Task.get('Milestone')));
         promises.push(Task.setMilestone(milestone, { transaction }))
-      } else if (milestone === null) {
-        promises.push(Task.setMilestone(null, { transaction }))
       }
       if (taskType !== undefined) {
+        taskChangeMessages.push(await createChangeMessage('TaskType', models.TaskType, 'Task type', taskType, Task.get('TaskType')));
         promises.push(Task.setTaskType(taskType, { transaction }))
       }
       if (company) {
+        taskChangeMessages.push(await createChangeMessage('Company', models.Company, 'Company', company, Task.get('Company')));
         promises.push(Task.setCompany(company, { transaction }))
       }
 
@@ -817,12 +811,7 @@ const mutations = {
         const TaskStatus = <StatusInstance>Task.get('Status');
         const Status = await models.Status.findByPk(status);
         if (status !== TaskStatus.get('id')) {
-          taskChangeMessages.push({
-            type: 'status',
-            originalValue: TaskStatus.get('id'),
-            newValue: status,
-            message: `Status was changed from ${TaskStatus.get('title')} to ${Status.get('title')}`,
-          });
+          taskChangeMessages.push(await createChangeMessage('Status', models.Status, 'Status', company, Task.get('Status')));
           promises.push(Task.setStatus(status, { transaction }))
         }
         switch (Status.get('action')) {
@@ -836,6 +825,7 @@ const mutations = {
             } else {
               params.closeDate = parseInt(args.closeDate);
             }
+            taskChangeMessages.push(await createChangeMessage('CloseDate', null, 'Close date', params.closeDate, Task.get('closeDate')));
             params.statusChange = moment().valueOf();
             break;
           }
@@ -849,6 +839,7 @@ const mutations = {
             } else {
               params.closeDate = parseInt(args.closeDate);
             }
+            taskChangeMessages.push(await createChangeMessage('CloseDate', null, 'Close date', params.closeDate, Task.get('closeDate')));
             params.statusChange = moment().valueOf();
             break;
           }
@@ -864,14 +855,14 @@ const mutations = {
               params.pendingDate = dates.pendingDate;
               params.pendingChangable = args.pendingChangable;
             }
+            taskChangeMessages.push(await createChangeMessage('PendingDate', null, 'Pending date', params.pendingDate, Task.get('pendingDate')));
+            taskChangeMessages.push(await createChangeMessage('PendingChangable', null, 'Pending changable', params.pendingChangable, Task.get('pendingChangable')));
             params.statusChange = moment().valueOf()
             break;
           }
           default:
             break;
         }
-
-        promises.push(Task.setStatus(status, { transaction }))
       }
       //repeat processing
       if (repeat === null && (<RepeatInstance>Task.get('Repeat')) !== null) {
@@ -887,6 +878,10 @@ const mutations = {
           repeatAction = { action: 'add', id: null };
         }
       }
+      taskChangeMessages = [
+        ...taskChangeMessages,
+        ...(await createTaskAttributesChangeMessages(params, Task))
+      ]
       promises.push(
         Task.createTaskChange({
           UserId: User.get('id'),

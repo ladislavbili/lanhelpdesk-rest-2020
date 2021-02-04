@@ -78,7 +78,13 @@ export {
 } from './stringManipulations';
 
 export {
+  createChangeMessage,
+  createTaskAttributesChangeMessages,
+} from './taskProcessing';
+
+export {
   firstDateSameOrAfter,
   taskCheckDate,
   extractDatesFromObject,
+  timestampToString,
 } from './timeManipulations';

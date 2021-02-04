@@ -2,6 +2,7 @@ import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
 import { checkIfHasProjectRights, multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
+import { TaskInstance } from '@/models/instances';
 
 const querries = {
   customItems: async (root, { taskId }, { req }) => {
@@ -22,7 +23,19 @@ const querries = {
 const mutations = {
   addCustomItem: async (root, { task, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
+    (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: SourceUser.get('id'),
+        TaskChangeMessages: [{
+          type: 'customItem',
+          originalValue: null,
+          newValue: `${params.title},${params.done},${params.quantity},${params.price}`,
+          message: `Custom item ${params.title} was added.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    )
     return models.CustomItem.create({
       TaskId: task,
       ...params,
@@ -35,7 +48,19 @@ const mutations = {
     if (CustomItem === null) {
       throw createDoesNoExistsError('CustomItem', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), CustomItem.get('TaskId'), undefined, ['vykazWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), CustomItem.get('TaskId'), undefined, ['vykazWrite']);
+    (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: SourceUser.get('id'),
+        TaskChangeMessages: [{
+          type: 'customItem',
+          originalValue: `${CustomItem.get('title')},${CustomItem.get('done')},${CustomItem.get('quantity')},${CustomItem.get('price')}`,
+          newValue: `${params.title},${params.done},${params.quantity},${params.price}`,
+          message: `Custom item ${CustomItem.get('title')}${params.title && params.title !== CustomItem.get('title') ? `/${params.title}` : ''} was updated.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    )
     return CustomItem.update(params);
   },
 
@@ -45,7 +70,19 @@ const mutations = {
     if (CustomItem === null) {
       throw createDoesNoExistsError('CustomItem', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), CustomItem.get('TaskId'), undefined, ['vykazWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), CustomItem.get('TaskId'), undefined, ['vykazWrite']);
+    (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: SourceUser.get('id'),
+        TaskChangeMessages: [{
+          type: 'customItem',
+          originalValue: `${CustomItem.get('title')},${CustomItem.get('done')},${CustomItem.get('quantity')},${CustomItem.get('price')}`,
+          newValue: null,
+          message: `Custom item ${CustomItem.get('title')} was deleted.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    )
     return CustomItem.destroy();
   },
 }
