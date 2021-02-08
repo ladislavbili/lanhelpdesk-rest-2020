@@ -39,5 +39,7 @@ export function createTaskTypesAssoc(models) {
 
   models.TaskType.hasMany(models.Task);
 
+  models.TaskType.hasMany(models.RepeatTemplate);
+
   models.TaskType.hasMany(models.Subtask);
 }

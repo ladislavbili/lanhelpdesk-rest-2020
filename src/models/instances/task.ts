@@ -133,7 +133,7 @@ export function createTasksAssoc(models) {
 
   models.Task.belongsTo(models.TaskType);
 
-  models.Task.hasOne(models.Repeat, { onDelete: 'CASCADE' });
+  models.Task.belongsTo(models.Repeat);
 
   models.Task.hasMany(models.ShortSubtask, { onDelete: 'CASCADE' });
 

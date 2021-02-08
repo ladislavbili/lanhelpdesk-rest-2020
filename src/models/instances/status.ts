@@ -60,4 +60,5 @@ export function createStatusesAssoc(models) {
   models.Status.belongsTo(models.Project, { as: 'defStatus' });
 
   models.Status.hasMany(models.Task);
+  models.Status.hasMany(models.RepeatTemplate);
 }

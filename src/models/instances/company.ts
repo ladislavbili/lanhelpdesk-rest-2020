@@ -133,5 +133,7 @@ export function createCompaniesAssoc(models) {
 
   models.Company.hasMany(models.Task);
 
+  models.Company.hasMany(models.RepeatTemplate);
+
   models.Company.hasMany(models.TaskInvoice);
 }

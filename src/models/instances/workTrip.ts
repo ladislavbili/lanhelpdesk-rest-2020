@@ -50,7 +50,9 @@ export default function defineWorkTrips(sequelize: Sequelize) {
 }
 
 export function createWorkTripsAssoc(models) {
-  models.WorkTrip.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+  models.WorkTrip.belongsTo(models.Task);
+
+  models.WorkTrip.belongsTo(models.RepeatTemplate);
 
   models.WorkTrip.belongsTo(models.TripType);
 

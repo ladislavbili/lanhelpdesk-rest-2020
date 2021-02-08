@@ -28,6 +28,9 @@ import { TripTypeMutations } from './entities/tripType';
 import { UserMutations } from './entities/user';
 import { UserInvoiceMutations } from './entities/userInvoice';
 import { WorkTripMutations } from './entities/workTrip';
+import { RepeatMutations } from './entities/repeat';
+import { RepeatTemplateMutations } from './entities/repeatTemplate';
+import { RepeatTemplateAttachmentMutations } from './entities/repeatTemplateAttachment';
 
 export default `
 type Mutation {
@@ -61,5 +64,8 @@ type Mutation {
   ${UserMutations}
   ${UserInvoiceMutations}
   ${WorkTripMutations}
+  ${RepeatMutations}
+  ${RepeatTemplateMutations}
+  ${RepeatTemplateAttachmentMutations}
 }
 `

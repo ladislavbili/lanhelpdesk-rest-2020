@@ -15,7 +15,6 @@ import {
 } from '@/configs/errors';
 import {
   ProjectGroupInstance,
-  ProjectRightInstance,
   ProjectGroupRightsInstance,
   RoleInstance,
   AccessRightsInstance,

@@ -57,7 +57,6 @@ import {
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
-import { TASK_CHANGE } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
 import { Op } from 'sequelize';
@@ -936,90 +935,6 @@ const mutations = {
   }
 }
 
-const subscriptions = {
-  taskSubscription: {
-    subscribe: withFilter(
-      () => pubsub.asyncIterator(TASK_CHANGE),
-      async ({ taskSubscription }, { projectId, filterId, filter }, { userID }) => {
-        const User = <UserInstance>await models.User.findByPk(userID);
-        if (User === null) {
-          throw InvalidTokenError;
-        }
-        if (projectId) {
-          const Project = await models.Project.findByPk(projectId);
-          if (Project === null) {
-            throw createDoesNoExistsError('Project', projectId);
-          }
-        }
-        if (filterId) {
-          const Filter = await models.Filter.findByPk(filterId);
-          if (Filter === null) {
-            throw createDoesNoExistsError('Filter', filterId);
-          }
-          filter = filterObjectToFilter(await Filter.get('filter'));
-        }
-        const { type, data, ids } = taskSubscription;
-        if (type === 'delete') {
-          return true;
-        }
-        if (projectId && data.get('ProjectId') !== projectId) {
-          return false;
-        }
-
-        if (filter) {
-          const assignedToCorrect = (
-            (filter.assignedToCur && (await data.getAssignedTos()).some((AssignedUser) => AssignedUser.get('id') === User.get('id'))) ||
-            (!filter.assignedToCur && (filter.assignedTo === null || (await data.getAssignedTos()).some((AssignedUser) => AssignedUser.get('id') === filter.assignedTo)))
-          );
-          const requesterCorrect = (
-            (filter.requesterCur && data.get('requesterId') === User.get('id')) ||
-            (!filter.requesterCur && (filter.requester === null || filter.requester === data.get('requesterId')))
-          );
-          const companyCorrect = (
-            (filter.companyCur && data.get('CompanyId') === User.get('CompanyId')) ||
-            (!filter.companyCur && (filter.company === null || filter.company === data.get('CompanyId')))
-          );
-
-          let oneOfCheck = [];
-          let allCheck = [];
-          if (filter.oneOf.includes('assigned')) {
-            oneOfCheck.push(assignedToCorrect)
-          } else {
-            allCheck.push(assignedToCorrect)
-          }
-
-          if (filter.oneOf.includes('requester')) {
-            oneOfCheck.push(requesterCorrect)
-          } else {
-            allCheck.push(requesterCorrect)
-          }
-
-          if (filter.oneOf.includes('company')) {
-            oneOfCheck.push(companyCorrect)
-          } else {
-            allCheck.push(companyCorrect)
-          }
-          const oneOfCorrect = allCheck.every((bool) => bool) && (oneOfCheck.length === 0 || oneOfCheck.some((bool) => bool))
-
-          if (
-            !(
-              oneOfCorrect &&
-              (filter.taskType === null || filter.taskType === data.get('TaskTypeId')) &&
-              taskCheckDate(filter.statusDateFromNow, filter.statusDateFrom, filter.statusDateToNow, filter.statusDateTo, data.get('statusChange')) &&
-              taskCheckDate(filter.pendingDateFromNow, filter.pendingDateFrom, filter.pendingDateToNow, filter.pendingDateTo, data.get('pendingDate')) &&
-              taskCheckDate(filter.closeDateFromNow, filter.closeDateFrom, filter.closeDateToNow, filter.closeDateTo, data.get('closeDate')) &&
-              taskCheckDate(filter.deadlineFromNow, filter.deadlineFrom, filter.deadlineToNow, filter.deadlineTo, data.get('deadline'))
-            )
-          ) {
-            return false;
-          }
-        }
-        return true;
-      },
-    ),
-  }
-}
-
 const attributes = {
   Task: {
     async assignedTo(task) {
@@ -1122,7 +1037,6 @@ export default {
   attributes,
   mutations,
   querries,
-  subscriptions
 }
 
 export async function sendNotifications(User, notifications, Task, assignedTos = []) {

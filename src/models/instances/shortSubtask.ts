@@ -30,4 +30,5 @@ export default function defineShortSubtasks(sequelize: Sequelize) {
 
 export function createShortSubtasksAssoc(models) {
   models.ShortSubtask.belongsTo(models.Task);
+  models.ShortSubtask.belongsTo(models.RepeatTemplate);
 }

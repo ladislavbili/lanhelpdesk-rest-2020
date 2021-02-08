@@ -28,6 +28,9 @@ import { TripTypeQuerries } from './entities/tripType';
 import { UserQuerries } from './entities/user';
 import { UserInvoiceQuerries } from './entities/userInvoice';
 import { WorkTripQuerries } from './entities/workTrip';
+import { RepeatQuerries } from './entities/repeat';
+import { RepeatTemplateQuerries } from './entities/repeatTemplate';
+import { RepeatTemplateAttachmentQuerries } from './entities/repeatTemplateAttachment';
 
 export default `
 type Query {
@@ -61,5 +64,8 @@ type Query {
   ${UserQuerries}
   ${UserInvoiceQuerries}
   ${WorkTripQuerries}
+  ${RepeatQuerries}
+  ${RepeatTemplateQuerries}
+  ${RepeatTemplateAttachmentQuerries}
 }
 `

@@ -28,6 +28,9 @@ import { TripType } from './entities/tripType';
 import { User } from './entities/user';
 import { UserInvoice } from './entities/userInvoice';
 import { WorkTrip } from './entities/workTrip';
+import { Repeat } from './entities/repeat';
+import { RepeatTemplate } from './entities/repeatTemplate';
+import { RepeatTemplateAttachment } from './entities/repeatTemplateAttachment';
 
 export default `
 ${CalendarEvent}
@@ -60,6 +63,9 @@ ${TripType}
 ${User}
 ${UserInvoice}
 ${WorkTrip}
+${Repeat}
+${RepeatTemplate}
+${RepeatTemplateAttachment}
 
 type SecondaryTime{
   time: Float!

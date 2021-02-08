@@ -40,18 +40,6 @@ type Task {
   invoicedTasks: [InvoicedTask]!
 }
 
-type Repeat{
-  repeatEvery: String!
-  repeatInterval: EnumRepeatInterval!
-  startsAt: String!
-}
-
-input RepeatInput{
-  repeatEvery: String!
-  repeatInterval: EnumRepeatInterval!
-  startsAt: String!
-}
-
 input CommentInput{
   message: String!
   internal: Boolean!
@@ -93,12 +81,6 @@ input CustomItemInput{
   price: Float!
 }
 
-enum EnumRepeatInterval{
-  week
-  day
-  month
-}
-
 type TasksDifference{
   type: EnumSubTaskChanged!
   data: Task
@@ -135,9 +117,9 @@ task(id: Int!): Task
 `
 
 export const TaskMutations = `
-addTask( title: String!, important: Boolean, closeDate: String, assignedTo: [Int]!, company: Int!, deadline: String, description: String!, milestone: Int, overtime: Boolean!, pausal: Boolean!, pendingChangable: Boolean, pendingDate: String, project: Int!, requester: Int, status: Int!, tags: [Int]!, taskType: Int, repeat: RepeatInput, comments: [CommentInput], scheduled: [ScheduledTaskInput], shortSubtasks: [ShortSubtaskInput], subtasks: [SubtaskInput], workTrips: [WorkTripInput], materials: [MaterialInput], customItems: [CustomItemInput] ): Task
+addTask( title: String!, important: Boolean, closeDate: String, assignedTo: [Int]!, company: Int!, deadline: String, description: String!, milestone: Int, overtime: Boolean!, pausal: Boolean!, pendingChangable: Boolean, pendingDate: String, project: Int!, requester: Int, status: Int!, tags: [Int]!, taskType: Int, repeat: TaskRepeatInput, comments: [CommentInput], scheduled: [ScheduledTaskInput], shortSubtasks: [ShortSubtaskInput], subtasks: [SubtaskInput], workTrips: [WorkTripInput], materials: [MaterialInput], customItems: [CustomItemInput] ): Task
 
-updateTask( id: Int!, title: String, important: Boolean, closeDate: String, assignedTo: [Int], company: Int, deadline: String, description: String, milestone: Int, overtime: Boolean, pausal: Boolean, pendingChangable: Boolean, pendingDate: String, project: Int, requester: Int, status: Int, tags: [Int], taskType: Int, repeat: RepeatInput, invoiced: Boolean ): Task
+updateTask( id: Int!, title: String, important: Boolean, closeDate: String, assignedTo: [Int], company: Int, deadline: String, description: String, milestone: Int, overtime: Boolean, pausal: Boolean, pendingChangable: Boolean, pendingDate: String, project: Int, requester: Int, status: Int, tags: [Int], taskType: Int, invoiced: Boolean ): Task
 deleteTask( id: Int! ): Task
 `
 

@@ -1,8 +1,16 @@
 import { createDoesNoExistsError, NoAccessToThisProjectError, NoAccessToThisFilterError } from '@/configs/errors';
 import { models } from '@/models';
-import { FilterInstance, RoleInstance, ProjectRightInstance, AccessRightsInstance } from '@/models/instances';
+import { FilterInstance, RoleInstance, AccessRightsInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
-import { idDoesExistsCheck, idsDoExistsCheck, multipleIdDoesExistsCheck, splitArrayByFilter, extractDatesFromObject, getModelAttribute } from '@/helperFunctions';
+import {
+  idDoesExistsCheck,
+  idsDoExistsCheck,
+  multipleIdDoesExistsCheck,
+  splitArrayByFilter,
+  extractDatesFromObject,
+  getModelAttribute,
+  checkIfHasProjectRights,
+} from '@/helperFunctions';
 import { Op } from 'sequelize';
 const dateNames = ['statusDateFrom', 'statusDateTo', 'pendingDateFrom', 'pendingDateTo', 'closeDateFrom', 'closeDateTo', 'deadlineFrom', 'deadlineTo'];
 
@@ -132,11 +140,7 @@ const mutations = {
       if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
-      const userRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
-      if (userRights === undefined || !userRights.read) {
-        //cant work with project you have no rights to read
-        throw NoAccessToThisProjectError;
-      }
+      await checkIfHasProjectRights(User.get('id'), undefined, Project.get('id'))
     } else {
       projectId: null
     }
@@ -206,11 +210,7 @@ const mutations = {
       if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
-      const userRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
-      if (userRights === undefined || !userRights.read) {
-        //cant work with project you have no rights to read
-        throw NoAccessToThisProjectError;
-      }
+      await checkIfHasProjectRights(User.get('id'), undefined, Project.get('id'))
     } else {
       projectId: null
     }
@@ -272,11 +272,7 @@ const mutations = {
       if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
-      const userRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
-      if (userRights === undefined || !userRights.read) {
-        //cant work with project you have no rights to read
-        throw NoAccessToThisProjectError;
-      }
+      await checkIfHasProjectRights(User.get('id'), undefined, Project.get('id'))
     }
 
     //BUILDING changes
@@ -339,11 +335,7 @@ const mutations = {
       if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
-      const userRights = (<ProjectRightInstance[]>Project.get('ProjectRights')).find((right) => right.get('UserId') === User.get('id'));
-      if (userRights === undefined || !userRights.read) {
-        //cant work with project you have no rights to read
-        throw NoAccessToThisProjectError;
-      }
+      await checkIfHasProjectRights(User.get('id'), undefined, Project.get('id'))
     }
 
     //BUILDING changes

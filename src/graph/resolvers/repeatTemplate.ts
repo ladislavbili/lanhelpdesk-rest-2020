@@ -1,0 +1,69 @@
+import {
+  getModelAttribute,
+} from '@/helperFunctions';
+
+const querries = {
+}
+
+const mutations = {
+}
+
+const attributes = {
+  RepeatTemplate: {
+    async assignedTo(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'assignedTos');
+    },
+    async company(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'Company');
+    },
+    async createdBy(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'createdBy');
+    },
+    async milestone(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'Milestone');
+    },
+    async project(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'Project');
+    },
+    async requester(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'requester');
+    },
+    async status(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'Status');
+    },
+    async tags(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'Tags');
+    },
+    async taskType(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'TaskType');
+    },
+
+    async shortSubtasks(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'ShortSubtasks');
+    },
+    async scheduled(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'ScheduledTasks');
+    },
+    async subtasks(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'Subtasks');
+    },
+    async workTrips(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'WorkTrips');
+    },
+    async materials(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'Materials');
+    },
+    async customItems(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'CustomItems');
+    },
+    async repeatTemplateAttachments(task) {
+      return getModelAttribute(task, 'RepeatTemplateAttachments');
+    },
+  }
+};
+
+export default {
+  attributes,
+  mutations,
+  querries,
+}

@@ -40,7 +40,6 @@ export interface ProjectInstance extends DefaultInstance {
   defTaskTypeFixed: boolean;
   defTaskTypeRequired: boolean;
 
-  createProjectRight?: any;
   createTag?: any;
   createProjectStatus?: any;
   createProjectGroup?: any;
@@ -303,8 +302,6 @@ export default function defineProjects(sequelize: Sequelize) {
 export function createProjectsAssoc(models) {
   models.Project.hasMany(models.Imap, { foreignKey: { allowNull: false } });
 
-  models.Project.hasMany(models.ProjectRight, { onDelete: 'CASCADE' });
-
   models.Project.hasMany(models.Status, { as: { singular: 'projectStatus', plural: 'projectStatuses' } });
 
   models.Project.belongsToMany(models.User, { as: { singular: "defAssignedTo", plural: "defAssignedTos" }, through: 'project_def_assignedTos' });
@@ -326,6 +323,8 @@ export function createProjectsAssoc(models) {
   models.Project.hasMany(models.Milestone, { onDelete: 'CASCADE' });
 
   models.Project.hasMany(models.Task, { onDelete: 'CASCADE' });
+
+  models.Project.hasMany(models.RepeatTemplate, { onDelete: 'CASCADE' });
 
   models.Project.hasMany(models.ProjectGroup, { onDelete: 'CASCADE' });
 }

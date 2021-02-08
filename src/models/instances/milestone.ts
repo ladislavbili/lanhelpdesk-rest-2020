@@ -40,4 +40,5 @@ export function createMilestoneAssoc(models) {
   models.Milestone.belongsTo(models.Project, { foreignKey: { allowNull: false } });
 
   models.Milestone.hasMany(models.Task);
+  models.Milestone.hasMany(models.RepeatTemplate);
 }

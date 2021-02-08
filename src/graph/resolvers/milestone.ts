@@ -1,6 +1,6 @@
 import { createDoesNoExistsError, NoAccessToThisProjectError } from '@/configs/errors';
 import { models } from '@/models';
-import { ProjectInstance, ProjectRightInstance } from '@/models/instances';
+import { ProjectInstance } from '@/models/instances';
 import { extractDatesFromObject, getModelAttribute, checkIfHasProjectRights } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 

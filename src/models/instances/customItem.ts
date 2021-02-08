@@ -49,6 +49,9 @@ export default function defineCustomItems(sequelize: Sequelize) {
 }
 
 export function createCustomItemsAssoc(models) {
-  models.CustomItem.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+  models.CustomItem.belongsTo(models.Task);
+
+  models.CustomItem.belongsTo(models.RepeatTemplate);
+
   models.CustomItem.hasMany(models.InvoicedCustomItem);
 }

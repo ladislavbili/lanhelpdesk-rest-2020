@@ -61,7 +61,9 @@ export default function defineSubtasks(sequelize: Sequelize) {
 }
 
 export function createSubtasksAssoc(models) {
-  models.Subtask.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+  models.Subtask.belongsTo(models.Task);
+
+  models.Subtask.belongsTo(models.RepeatTemplate);
 
   models.Subtask.belongsTo(models.TaskType);
 

@@ -33,5 +33,6 @@ export default function defineRepeats(sequelize: Sequelize) {
 }
 
 export function createRepeatsAssoc(models) {
-  models.Repeat.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+  models.Repeat.hasMany(models.Task);
+  models.Repeat.hasOne(models.RepeatTemplate, { onDelete: 'CASCADE' });
 }

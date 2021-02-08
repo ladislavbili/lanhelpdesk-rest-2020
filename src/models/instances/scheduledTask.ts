@@ -29,5 +29,6 @@ export default function defineScheduledTasks(sequelize: Sequelize) {
 
 export function createScheduledTasksAssoc(models) {
   models.ScheduledTask.belongsTo(models.Task);
+  models.ScheduledTask.belongsTo(models.RepeatTemplate);
   models.ScheduledTask.belongsTo(models.User);
 }

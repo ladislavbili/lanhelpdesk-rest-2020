@@ -117,8 +117,6 @@ export function createUsersAssoc(models) {
 
   models.User.belongsToMany(models.Status, { through: 'user_set_statuses' });
 
-  models.User.hasMany(models.ProjectRight, { onDelete: 'CASCADE' });
-
   models.User.belongsToMany(models.Project, { as: { singular: "defAssignedTo", plural: "defAssignedTos" }, through: 'project_def_assignedTos' });
 
   models.User.hasMany(models.Project, { as: 'defRequester' });
@@ -127,18 +125,28 @@ export function createUsersAssoc(models) {
 
   models.User.hasMany(models.UserNotification);
 
+  //FILTER
   models.User.hasMany(models.Filter, { as: 'filterCreatedBy' });
 
   models.User.hasMany(models.Filter, { as: 'filterAssignedTo' });
 
   models.User.hasMany(models.Filter, { as: 'filterRequester' });
 
+  //TASK
   models.User.belongsToMany(models.Task, { as: { singular: "assignedToTask", plural: "assignedToTasks" }, through: 'task_assignedTo' });
 
   models.User.hasMany(models.Task, { as: 'createdTask' });
 
   models.User.hasMany(models.Task, { as: { singular: 'requesterTask', plural: 'requesterTasks' } });
 
+  //REPEAT TEMPLATE
+  models.User.belongsToMany(models.RepeatTemplate, { as: { singular: "assignedToRepeatTemplate", plural: "assignedToRepeatTemplates" }, through: 'repeat_template_assignedTo' });
+
+  models.User.hasMany(models.RepeatTemplate, { as: 'createdRepeatTemplate' });
+
+  models.User.hasMany(models.RepeatTemplate, { as: { singular: 'requesterRepeatTemplate', plural: 'requesterRepeatTemplates' } });
+
+  //TASK ATTRIBUTES
   models.User.hasMany(models.ScheduledTask, { onDelete: 'CASCADE' });
 
   models.User.hasMany(models.Subtask);
