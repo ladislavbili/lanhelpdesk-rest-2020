@@ -126,7 +126,6 @@ const querries = {
                   models.Status,
                   models.Tag,
                   models.TaskType,
-                  models.Repeat,
                 ]
               }
             ]
@@ -160,7 +159,6 @@ const querries = {
           models.Status,
           models.Tag,
           models.TaskType,
-          models.Repeat,
         ]
       })
     }
@@ -284,7 +282,6 @@ const querries = {
             models.Status,
             models.Tag,
             models.TaskType,
-            models.Repeat,
           ]
         }
       ),
@@ -555,7 +552,7 @@ const mutations = {
     }
 
     const NewTask = <TaskInstance>await models.Task.create(params, {
-      include: [models.Repeat, models.Comment, models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
+      include: [models.Comment, models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
     });
     await Promise.all([
       NewTask.setAssignedTos(assignedTos),
@@ -574,7 +571,6 @@ const mutations = {
       args.id,
       {
         include: [
-          models.Repeat,
           { model: models.User, as: 'assignedTos' },
           models.Tag,
           models.Status,
@@ -1051,7 +1047,7 @@ const attributes = {
       return getModelAttribute(task, 'TaskType');
     },
     async repeat(task) {
-      return getModelAttribute(task, 'Repeat');
+      return null;
     },
 
     async comments(task, body, { req, userID }) {
