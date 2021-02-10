@@ -5,6 +5,7 @@ export interface RepeatInstance extends DefaultInstance {
   repeatEvery: number;
   repeatInterval: string;
   startsAt: number;
+  active: boolean;
 }
 
 export default function defineRepeats(sequelize: Sequelize) {
@@ -22,6 +23,11 @@ export default function defineRepeats(sequelize: Sequelize) {
       startsAt: {
         type: DataTypes.DATE,
         allowNull: false,
+      },
+      active: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
       },
     },
     {

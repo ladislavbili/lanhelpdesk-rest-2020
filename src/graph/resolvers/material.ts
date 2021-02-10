@@ -2,7 +2,7 @@ import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
 import { multipleIdDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
-import { TaskInstance } from '@/models/instances';
+import { TaskInstance, RepeatTemplateInstance } from '@/models/instances';
 
 const querries = {
   materials: async (root, { taskId }, { req }) => {
@@ -85,12 +85,51 @@ const mutations = {
     )
     return Material.destroy();
   },
+
+  addRepeatTemplateMaterial: async (root, { repeatTemplate, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const RepeatTemplate = <RepeatTemplateInstance>await models.RepeatTemplate.findByPk(repeatTemplate);
+    if (RepeatTemplate === null) {
+      throw createDoesNoExistsError('Repeat template', repeatTemplate);
+    }
+
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['vykazWrite']);
+
+    return models.Material.create({
+      RepeatTemplateId: repeatTemplate,
+      ...params,
+    });
+  },
+
+  updateRepeatTemplateMaterial: async (root, { id, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const Material = await models.Material.findByPk(id, { include: [models.RepeatTemplate] });
+    if (Material === null) {
+      throw createDoesNoExistsError('Material', id);
+    }
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>Material.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    return Material.update(params);
+  },
+
+  deleteRepeatTemplateMaterial: async (root, { id }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const Material = await models.Material.findByPk(id, { include: [models.RepeatTemplate] });
+    if (Material === null) {
+      throw createDoesNoExistsError('Material', id);
+    }
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>Material.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    return Material.destroy();
+  },
+
 }
 
 const attributes = {
   Material: {
     async task(material) {
       return getModelAttribute(material, 'Task');
+    },
+    async repeatTemplate(material) {
+      return getModelAttribute(material, 'RepeatTemplate');
     },
     async invoicedData(material) {
       return getModelAttribute(material, 'InvoicedMaterials');

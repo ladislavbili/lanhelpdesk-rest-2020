@@ -26,6 +26,7 @@ import {
   ProjectGroupRightsInstance,
   StatusInstance,
   RepeatInstance,
+  RepeatTemplateInstance,
   UserInstance,
   CommentInstance,
   AccessRightsInstance,
@@ -358,6 +359,7 @@ const mutations = {
     args = applyFixedOnAttributes(def, args);
 
     let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, shortSubtasks, scheduled, ...params } = args;
+
     const User = await checkResolver(
       req,
       [],
@@ -365,6 +367,7 @@ const mutations = {
       [
         {
           model: models.ProjectGroup,
+          required: false,
           include: [models.ProjectGroupRights],
           where: {
             ProjectId: project,
@@ -387,6 +390,7 @@ const mutations = {
       );
       throw CantCreateTasksError;
     }
+
     //check all Ids if exists
     const pairsToCheck = [{ id: company, model: models.Company }, { id: status, model: models.Status }];
     (taskType !== undefined && taskType !== null) && pairsToCheck.push({ id: taskType, model: models.TaskType });
@@ -480,13 +484,6 @@ const mutations = {
       default:
         break;
     }
-    //repeat processing
-    if (repeat !== null && repeat !== undefined) {
-      params = {
-        ...params,
-        Repeat: { ...repeat, startsAt: parseInt(repeat.startsAt), repeatEvery: parseInt(repeat.repeatEvery) }
-      }
-    }
     //comments processing
     if (comments) {
       comments.forEach((comment) => {
@@ -552,6 +549,36 @@ const mutations = {
         }))
       }
     }
+    //repeat processing
+    if (repeat !== null && repeat !== undefined) {
+      const Repeat = <RepeatInstance>await models.Repeat.create(
+        {
+          repeatEvery: parseInt(repeat.repeatEvery),
+          repeatInterval: repeat.repeatInterval,
+          startsAt: parseInt(repeat.startsAt),
+          active: repeat.active,
+          RepeatTemplate: params,
+        },
+        {
+          include: [{
+            model: models.RepeatTemplate,
+            include: [
+              models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem
+            ]
+          }]
+        }
+      );
+      const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
+      await Promise.all([
+        RepeatTemplate.setAssignedTos(assignedTos),
+        RepeatTemplate.setTags(tags),
+      ])
+      repeatEvent.emit('add', Repeat);
+      params = {
+        ...params,
+        RepeatId: Repeat.get('id')
+      }
+    }
 
     const NewTask = <TaskInstance>await models.Task.create(params, {
       include: [models.Repeat, models.Comment, models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
@@ -560,9 +587,6 @@ const mutations = {
       NewTask.setAssignedTos(assignedTos),
       NewTask.setTags(tags),
     ])
-    if (repeat !== null && repeat !== undefined) {
-      repeatEvent.emit('add', await NewTask.get('Repeat'));
-    }
     sendNotifications(User, [`Task was created by ${User.get('fullName')}`], NewTask, assignedTos);
     pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'add', data: NewTask, ids: [] } });
     return NewTask;
@@ -573,7 +597,6 @@ const mutations = {
       args.id,
       {
         include: [
-          models.Repeat,
           { model: models.User, as: 'assignedTos' },
           models.Tag,
           models.Status,
@@ -663,8 +686,7 @@ const mutations = {
     const def = await Project.get('def');
     args = applyFixedOnAttributes(def, args);
 
-    let { id, assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, repeat, ...params } = args;
-    let repeatAction = { action: null, id: null };
+    let { id, assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, ...params } = args;
     const dates = extractDatesFromObject(params, dateNames);
     params = { ...params, ...dates };
     const groupRights = (
@@ -846,20 +868,7 @@ const mutations = {
             break;
         }
       }
-      //repeat processing
-      if (repeat === null && (<RepeatInstance>Task.get('Repeat')) !== null) {
-        promises.push((<RepeatInstance>Task.get('Repeat')).destroy({ transaction }));
-        repeatAction = { action: 'delete', id: (<RepeatInstance>Task.get('Repeat')).get('id') };
-      }
-      else if (repeat !== undefined && repeat !== null) {
-        if ((<RepeatInstance>Task.get('Repeat')) !== null) {
-          promises.push((<RepeatInstance>Task.get('Repeat')).update({ ...repeat, startsAt: parseInt(repeat.startsAt), repeatEvery: parseInt(repeat.repeatEvery) }, { transaction }));
-          repeatAction = { action: 'update', id: null };
-        } else {
-          promises.push(Task.createRepeat({ ...repeat, startsAt: parseInt(repeat.startsAt), repeatEvery: parseInt(repeat.repeatEvery) }, { transaction }));
-          repeatAction = { action: 'add', id: null };
-        }
-      }
+
       taskChangeMessages = [
         ...taskChangeMessages,
         ...(await createTaskAttributesChangeMessages(params, Task))
@@ -873,22 +882,7 @@ const mutations = {
       promises.push(Task.update(params, { transaction }));
       await Promise.all(promises);
     })
-    switch (repeatAction.action) {
-      case 'add': {
-        repeatEvent.emit('add', await Task.get('Repeat'));
-        break;
-      }
-      case 'update': {
-        repeatEvent.emit('update', await Task.get('Repeat'));
-        break;
-      }
-      case 'delete': {
-        repeatEvent.emit('delete', repeatAction.id);
-        break;
-      }
-      default:
-        break;
-    }
+
     let NewTask = await models.Task.findByPk(id, {
       include: [
         { model: models.User, as: 'assignedTos' },
@@ -900,7 +894,6 @@ const mutations = {
         models.Status,
         models.Tag,
         models.TaskType,
-        models.Repeat,
       ]
     })
     sendNotifications(User, taskChangeMessages.map((taskChange) => taskChange.message), NewTask);
@@ -928,7 +921,6 @@ const mutations = {
     if (!canViewTask(Task, User, groupRights, true)) {
       throw CantViewTaskError;
     }
-    repeatEvent.emit('delete', id);
     sendNotifications(User, [`Task was deleted.`], Task)
 
     pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'delete', data: Task, ids: [id] } });

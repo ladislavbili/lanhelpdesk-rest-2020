@@ -20,4 +20,7 @@ export const ScheduledTaskQuerries = `
 export const ScheduledTaskMutations = `
 addScheduledTask( from: String!, to: String!, UserId: Int!, task: Int! ): ScheduledTask
 deleteScheduledTask( id: Int! ): ScheduledTask
+
+addRepeatTemplateScheduledTask( from: String!, to: String!, UserId: Int!, repeatTemplate: Int! ): ScheduledTask
+deleteRepeatTemplateScheduledTask( id: Int! ): ScheduledTask
 `

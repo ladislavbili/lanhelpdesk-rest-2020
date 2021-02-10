@@ -2,7 +2,7 @@ import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
 import { checkIfHasProjectRights, multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
-import { TaskInstance } from '@/models/instances';
+import { TaskInstance, RepeatTemplateInstance } from '@/models/instances';
 
 const querries = {
   customItems: async (root, { taskId }, { req }) => {
@@ -85,6 +85,44 @@ const mutations = {
     )
     return CustomItem.destroy();
   },
+
+  addRepeatTemplateCustomItem: async (root, { repeatTemplate, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const RepeatTemplate = <RepeatTemplateInstance>await models.RepeatTemplate.findByPk(repeatTemplate);
+    if (RepeatTemplate === null) {
+      throw createDoesNoExistsError('Repeat template', repeatTemplate);
+    }
+
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['vykazWrite']);
+
+    return models.CustomItem.create({
+      RepeatTemplateId: repeatTemplate,
+      ...params,
+    });
+  },
+
+  updateRepeatTemplateCustomItem: async (root, { id, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const CustomItem = await models.CustomItem.findByPk(id, { include: [models.RepeatTemplate] });
+    if (CustomItem === null) {
+      throw createDoesNoExistsError('CustomItem', id);
+    }
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>CustomItem.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+
+    return CustomItem.update(params);
+  },
+
+  deleteRepeatTemplateCustomItem: async (root, { id }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const CustomItem = await models.CustomItem.findByPk(id, { include: [models.RepeatTemplate] });
+    if (CustomItem === null) {
+      throw createDoesNoExistsError('CustomItem', id);
+    }
+
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>CustomItem.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+
+    return CustomItem.destroy();
+  },
 }
 
 const attributes = {
@@ -94,6 +132,9 @@ const attributes = {
     },
     async invoicedData(customItem) {
       return getModelAttribute(customItem, 'InvoicedCustomItems');
+    },
+    async repeatTemplate(customItem) {
+      return getModelAttribute(customItem, 'RepeatTemplate');
     },
   }
 };

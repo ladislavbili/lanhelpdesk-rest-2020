@@ -28,6 +28,9 @@ import user from './user';
 import userInvoice from './userInvoice';
 import workTrip from './workTrip';
 import invoicedTask from './invoicedTask';
+import repeat from './repeat';
+import repeatTemplate from './repeatTemplate';
+import repeatTemplateAttachment from './repeatTemplateAttachment';
 
 const { PubSub } = require('apollo-server-express');
 export const pubsub = new PubSub();
@@ -66,6 +69,9 @@ export default {
     ...userInvoice.querries,
     ...workTrip.querries,
     ...invoicedTask.querries,
+    ...repeat.querries,
+    ...repeatTemplate.querries,
+    ...repeatTemplateAttachment.querries,
   },
 
   Mutation: {
@@ -100,6 +106,9 @@ export default {
     ...userInvoice.mutations,
     ...workTrip.mutations,
     ...invoicedTask.mutations,
+    ...repeat.mutations,
+    ...repeatTemplate.mutations,
+    ...repeatTemplateAttachment.mutations,
   },
   Subscription: {
     ...task.subscriptions,
@@ -136,4 +145,7 @@ export default {
   ...userInvoice.attributes,
   ...workTrip.attributes,
   ...invoicedTask.attributes,
+  ...repeat.attributes,
+  ...repeatTemplate.attributes,
+  ...repeatTemplateAttachment.attributes,
 };

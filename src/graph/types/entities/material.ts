@@ -8,7 +8,8 @@ type Material {
   quantity: Float!
   margin: Float!
   price: Float!
-  task: Task!
+  task: Task
+  repeatTemplate: RepeatTemplate
   invoicedData: [InvoicedMaterial]
 }
 `
@@ -21,4 +22,8 @@ export const MaterialMutations = `
 addMaterial( title: String!, order: Int!, done: Boolean!, quantity: Float!, margin: Float!, price: Float!, task: Int! ): Material
 updateMaterial( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, margin: Float, price: Float ): Material
 deleteMaterial( id: Int! ): Material
+
+addRepeatTemplateMaterial( title: String!, order: Int!, done: Boolean!, quantity: Float!, margin: Float!, price: Float!, repeatTemplate: Int! ): Material
+updateRepeatTemplateMaterial( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, margin: Float, price: Float ): Material
+deleteRepeatTemplateMaterial( id: Int! ): Material
 `

@@ -34,13 +34,13 @@ import {
   WorkTripInstance,
   TagInstance,
   TaskTypeInstance,
-  CompanyInstance
+  CompanyInstance,
+  RepeatTemplateInstance,
 } from '@/models/instances';
 import {
   idsDoExistsCheck,
   multipleIdDoesExistsCheck,
   filterObjectToFilter,
-  taskCheckDate,
   extractDatesFromObject,
   filterUnique,
   getModelAttribute,
@@ -51,8 +51,6 @@ import {
   applyFixedOnAttributes,
   addApolloError,
   canViewTask,
-  createChangeMessage,
-  createTaskAttributesChangeMessages,
 } from '@/helperFunctions';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
@@ -60,8 +58,6 @@ const { withFilter } = require('apollo-server-express');
 import checkResolver from './checkResolver';
 import moment from 'moment';
 import { Op } from 'sequelize';
-import Stopwatch from 'statman-stopwatch';
-import { sendEmail } from '@/services/smtp';
 const dateNames = ['deadline', 'pendingDate', 'closeDate'];
 const dateNames2 = [
   'closeDateFrom',
@@ -75,260 +71,167 @@ const dateNames2 = [
 ];
 
 const querries = {
-  tasks: async (root, { projectId, filterId, filter, sort }, { req, userID }) => {
+  repeats: async (root, args, { req, userID }) => {
     const User = await checkResolver(req);
-    const mainWatch = new Stopwatch(true);
-    let projectWhere = {};
-    let taskWhere = {};
-    if (projectId) {
-      const Project = await models.Project.findByPk(projectId);
-      if (Project === null) {
-        throw createDoesNoExistsError('Project', projectId);
-      }
-      projectWhere = { id: projectId }
-    }
-    if (filterId) {
-      const Filter = await models.Filter.findByPk(filterId);
-      if (Filter === null) {
-        throw createDoesNoExistsError('Filter', filterId);
-      }
-      filter = filterObjectToFilter(await Filter.get('filter'));
-    }
-    if (filter) {
-      const dates = extractDatesFromObject(filter, dateNames2);
-      taskWhere = filterToWhere({ ...filter, ...dates }, userID)
-    }
-
-    const checkUserWatch = new Stopwatch(true);
-    let tasks = []
+    let repeats = []
     if ((<RoleInstance>User.get('Role')).get('level') !== 0) {
       const ProjectGroups = <ProjectGroupInstance[]>await User.getProjectGroups({
         include: [
           models.ProjectGroupRights,
           {
             model: models.Project,
-            where: projectWhere,
             required: true,
             include: [
               {
-                model: models.Task,
-                where: taskWhere,
+                model: models.Repeat,
                 required: true,
                 include: [
-                  { model: models.User, as: 'assignedTos' },
-                  models.Company,
-                  { model: models.User, as: 'createdBy' },
-                  models.Milestone,
-                  models.Project,
-                  { model: models.User, as: 'requester' },
-                  models.Status,
-                  models.Tag,
-                  models.TaskType,
-                  models.Repeat,
+                  {
+                    model: models.RepeatTemplate,
+                    include: [
+                      { model: models.User, as: 'createdBy' },
+                      { model: models.User, as: 'assignedTos' },
+                      { model: models.User, as: 'requester' },
+                      models.Company,
+                      models.Milestone,
+                      models.Project,
+                      models.Status,
+                      models.Tag,
+                      models.TaskType,
+                    ]
+                  }
                 ]
               }
             ]
           }
         ]
       })
-      tasks = (
-        ProjectGroups.reduce((acc, ProjectGroup) => {
-          const proj = <ProjectInstance>ProjectGroup.get('Project');
-          const userRights = (<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).get();
-          return [
-            ...acc,
-            ...(<TaskInstance[]>proj.get('Tasks')).filter((Task) => canViewTask(Task, User, userRights))
-          ]
-        }, [])
-      )
-    } else {
-      tasks = await models.Task.findAll({
-        where: taskWhere,
-        include: [
-          { model: models.User, as: 'assignedTos' },
-          models.Company,
-          { model: models.User, as: 'createdBy' },
-          models.Milestone,
-          {
-            model: models.Project,
-            where: projectWhere,
-            required: true,
-          },
-          { model: models.User, as: 'requester' },
-          models.Status,
-          models.Tag,
-          models.TaskType,
-          models.Repeat,
+      return ProjectGroups.reduce((acc, ProjectGroup) => {
+        const proj = <ProjectInstance>ProjectGroup.get('Project');
+        const userRights = (<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).get();
+        return [
+          ...acc,
+          ...(<RepeatInstance[]>proj.get('Repeats')).filter((Repeat) => canViewTask(Repeat.get('RepeatTemplate'), User, userRights))
         ]
-      })
+      }, [])
     }
-
-    const checkUserTime = checkUserWatch.stop();
-    const manualWatch = new Stopwatch(true);
-    /* BACKEND SORT - replaced by frontend dynamic sort
-    let key = 'id';
-    let asc = true;
-    if (sort) {
-      key = sort.key;
-      asc = sort.asc;
-    }
-    let returnVal = asc ? 1 : -1;
-    //SORT
-    tasks.sort((Task1, Task2) => {
-      if (['id', 'title'].includes(key)) {
-        if (Task1.get(key) > Task2.get(key)) {
-          return returnVal;
-        } else if (Task2.get(key) > Task1.get(key)) {
-          return returnVal * -1;
-        }
-      } else if (['createdAt', 'deadline'].includes(key)) {
-        if (moment(Task1.get(key)).isAfter(Task2.get(key))) {
-          return returnVal
-        } else if (moment(Task2.get(key)).isAfter(Task1.get(key))) {
-          return returnVal * -1;
-        }
-      } else if (key === 'status') {
-        const Status1 = (<StatusInstance>Task1.get('Status'));
-        const Status2 = (<StatusInstance>Task2.get('Status'));
-        if (Status1.get('order') > Status2.get('order')) {
-          return returnVal
-        } else if (Status2.get('order') > Status1.get('order')) {
-          return returnVal * -1;
-        }
-      } else if (key === 'requester') {
-        const User1 = (<UserInstance>Task1.get('requester'));
-        const User2 = (<UserInstance>Task2.get('requester'));
-        if (User1.get('fullName') > User2.get('fullName')) {
-          return returnVal;
-        } else if (User2.get('fullName') > User1.get('fullName')) {
-          return returnVal * -1;
-        }
-      } else if (key === 'assignedTo') {
-        let Users1 = (<UserInstance[]>Task1.get('assignedTos')).map((User) => User.get('fullName')).sort((User1, User2) => User1 > User2 ? -1 : 1);
-        let Users2 = (<UserInstance[]>Task2.get('assignedTos')).map((User) => User.get('fullName')).sort((User1, User2) => User1 > User2 ? -1 : 1);
-        Users1.forEach((name, index) => {
-          if (index >= Users2.length) {
-            return returnVal;
-          }
-          if (Users2[index] !== name) {
-            return name > Users2[index] ? returnVal : returnVal * -1;
-          }
-        })
-        Users2.forEach((name, index) => {
-          if (index >= Users1.length) {
-            return returnVal * -1;
-          }
-          if (Users1[index] !== name) {
-            return name > Users1[index] ? returnVal * -1 : returnVal;
-          }
-        })
-      }
-      if (Task1.get('important') && !Task2.get('important')) {
-        return -1;
-      }
-
-      return 0;
-    });
-    */
-    if (filter) {
-      return {
-        tasks: filterByOneOf(filter, User.get('id'), User.get('CompanyId'), tasks),
-        execTime: mainWatch.stop(),
-        secondaryTimes: [
-          { source: 'User check', time: checkUserTime },
-          { source: 'Processing', time: manualWatch.stop() },
-        ]
-      };
-    }
-
-    return {
-      tasks,
-      execTime: mainWatch.stop(),
-      secondaryTimes: [
-        { source: 'User check', time: checkUserTime },
-        { source: 'Processing', time: manualWatch.stop() }
-      ]
-    };
-  },
-
-  task: async (root, { id }, { req }) => {
-    const User = await checkResolver(req);
-    const FragmentedTask = await Promise.all([
-      models.Task.findByPk(
-        id,
+    return models.Repeat.findAll({
+      include: [
         {
+          model: models.RepeatTemplate,
           include: [
-            { model: models.Project },
-            models.TaskAttachment,
             { model: models.User, as: 'assignedTos' },
-            {
-              model: models.Company,
-              include: [
-                {
-                  model: models.Pricelist,
-                  include: [
-                    {
-                      model: models.Price,
-                      include: [models.TaskType, models.TripType]
-                    }
-                  ]
-                },
-              ]
-            },
             { model: models.User, as: 'createdBy' },
-            models.Milestone,
-            models.Project,
             { model: models.User, as: 'requester' },
+            models.Company,
+            models.Milestone,
+            {
+              model: models.Project,
+              required: true,
+            },
             models.Status,
             models.Tag,
             models.TaskType,
             models.Repeat,
           ]
         }
-      ),
-      models.Task.findByPk(
+      ]
+    })
+  },
+
+  repeat: async (root, { id }, { req }) => {
+    if (!id) {
+      return null;
+    }
+    const User = await checkResolver(req);
+    const FragmentedRepeat = await Promise.all([
+      models.Repeat.findByPk(
         id,
         {
           include: [
-            models.ShortSubtask,
-            models.ScheduledTask,
             {
-              model: models.InvoicedTask,
-              include: [models.InvoicedTag, models.InvoicedAssignedTo]
-            },
-            {
-              model: models.Subtask,
-              include: [models.TaskType, models.InvoicedSubtask, { model: models.User, include: [models.Company] }]
-            },
-            {
-              model: models.WorkTrip,
-              include: [models.TripType, models.InvoicedTrip, { model: models.User, include: [models.Company] }]
-            },
-            {
-              model: models.Material,
-              include: [models.InvoicedMaterial],
-            },
-            {
-              model: models.CustomItem,
-              include: [models.InvoicedCustomItem],
-            },
+              model: models.RepeatTemplate,
+              include: [
+                { model: models.Project },
+                models.RepeatTemplateAttachment,
+                { model: models.User, as: 'assignedTos' },
+                {
+                  model: models.Company,
+                  include: [
+                    {
+                      model: models.Pricelist,
+                      include: [
+                        {
+                          model: models.Price,
+                          include: [models.TaskType, models.TripType]
+                        }
+                      ]
+                    },
+                  ]
+                },
+                { model: models.User, as: 'createdBy' },
+                models.Milestone,
+                models.Project,
+                { model: models.User, as: 'requester' },
+                models.Status,
+                models.Tag,
+                models.TaskType,
+                models.Repeat,
+              ]
+            }
           ]
+        }
+      ),
+      models.Repeat.findByPk(
+        id,
+        {
+          include: [
+            {
+              model: models.RepeatTemplate,
+              include: [
+                models.ShortSubtask,
+                models.ScheduledTask,
+                {
+                  model: models.Subtask,
+                  include: [models.TaskType, { model: models.User, include: [models.Company] }]
+                },
+                {
+                  model: models.WorkTrip,
+                  include: [models.TripType, { model: models.User, include: [models.Company] }]
+                },
+                {
+                  model: models.Material,
+                },
+                {
+                  model: models.CustomItem,
+                },
+              ]
+            }
+          ],
         }
       ),
     ])
 
-    const Task = mergeFragmentedModel(FragmentedTask)
-    const { groupRights } = await checkIfHasProjectRights(User.get('id'), id);
-    if (!canViewTask(Task, User, groupRights, true)) {
+    const RepeatTemplate = mergeFragmentedModel(FragmentedRepeat.map((Repeat) => Repeat.get('RepeatTemplate')))
+    const { groupRights } = await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['repeatRead']);
+    if (!canViewTask(RepeatTemplate, User, groupRights, true)) {
       throw CantViewTaskError;
     }
-    return Task;
+    return mergeFragmentedModel([
+      FragmentedRepeat[0],
+      {
+        repeatTemplate: RepeatTemplate
+      }
+    ]);
   },
 }
 
 const mutations = {
-  addTask: async (root, args, { req }) => {
+  addRepeat: async (root, { taskId, repeatEvery, repeatInterval, active, repeatTemplate: args, ...argDates }, { req }) => {
+
     const project = args.project;
+    repeatEvery = parseInt(repeatEvery);
+    const { startsAt } = extractDatesFromObject(argDates, ['startsAt']);
     const Project = await models.Project.findByPk(
       project,
       {
@@ -356,13 +259,14 @@ const mutations = {
     const def = await Project.get('def');
     args = applyFixedOnAttributes(def, args);
 
-    let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, shortSubtasks, scheduled, ...params } = args;
+    let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, subtasks, workTrips, materials, customItems, shortSubtasks, scheduled, ...params } = args;
     const User = await checkResolver(
       req,
       [],
       false,
       [
         {
+          required: false,
           model: models.ProjectGroup,
           include: [models.ProjectGroupRights],
           where: {
@@ -377,7 +281,7 @@ const mutations = {
         (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('ProjectId') === project).get('ProjectGroupRight')).get()
     )
 
-    if (!groupRights.addTasks && (<RoleInstance>User.get('Role')).get('level') !== 0) {
+    if (!groupRights.repeatWrite && (<RoleInstance>User.get('Role')).get('level') !== 0) {
       addApolloError(
         'Project',
         CantCreateTasksError,
@@ -426,15 +330,6 @@ const mutations = {
     params = {
       ...params,
       ...dates,
-      TaskChanges: [{
-        UserId: User.get('id'),
-        TaskChangeMessages: [{
-          type: 'task',
-          originalValue: null,
-          newValue: null,
-          message: `Task was created by ${User.get('fullName')}`,
-        }]
-      }],
       createdById: User.get('id'),
       CompanyId: company,
       ProjectId: project,
@@ -478,25 +373,6 @@ const mutations = {
       }
       default:
         break;
-    }
-    //repeat processing
-    if (repeat !== null && repeat !== undefined) {
-      params = {
-        ...params,
-        Repeat: { ...repeat, startsAt: parseInt(repeat.startsAt), repeatEvery: parseInt(repeat.repeatEvery) }
-      }
-    }
-    //comments processing
-    if (comments) {
-      comments.forEach((comment) => {
-        if (comment.internal && !groupRights.internal) {
-          throw InternalMessagesNotAllowed;
-        }
-      })
-      params = {
-        ...params,
-        Comments: comments.map((comment) => ({ ...comment, isParent: true, UserId: User.get('id') }))
-      }
     }
     //Subtask
     if (subtasks) {
@@ -552,62 +428,87 @@ const mutations = {
       }
     }
 
-    const NewTask = <TaskInstance>await models.Task.create(params, {
-      include: [models.Repeat, models.Comment, models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
-    });
-    await Promise.all([
-      NewTask.setAssignedTos(assignedTos),
-      NewTask.setTags(tags),
-    ])
-    if (repeat !== null && repeat !== undefined) {
-      repeatEvent.emit('add', await NewTask.get('Repeat'));
+    const NewRepeat = <RepeatInstance>await models.Repeat.create(
+      {
+        repeatEvery,
+        repeatInterval,
+        startsAt,
+        active,
+        RepeatTemplate: params,
+      },
+      {
+        include: [{
+          model: models.RepeatTemplate,
+          include: [
+            models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem
+          ]
+        }]
+      }
+    );
+    if (taskId) {
+      const Task = <TaskInstance>await models.Task.findByPk(taskId);
+      if (Task && Task.get('ProjectId') === project) {
+        Task.setRepeat(NewRepeat.get('id'));
+      }
     }
-    sendNotifications(User, [`Task was created by ${User.get('fullName')}`], NewTask, assignedTos);
-    pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'add', data: NewTask, ids: [] } });
-    return NewTask;
+
+    const NewRepeatTeplate = <RepeatTemplateInstance>await NewRepeat.get('RepeatTemplate');
+    await Promise.all([
+      NewRepeatTeplate.setAssignedTos(assignedTos),
+      NewRepeatTeplate.setTags(tags),
+    ])
+    repeatEvent.emit('add', NewRepeat);
+    return NewRepeat;
   },
 
-  updateTask: async (root, args, { req }) => {
-    const Task = <TaskInstance>await models.Task.findByPk(
-      args.id,
+  updateRepeat: async (root, { id, repeatEvery, repeatInterval, active, repeatTemplate: args, ...argDates }, { req }) => {
+    repeatEvery = parseInt(repeatEvery);
+    const { startsAt } = extractDatesFromObject(argDates, ['startsAt']);
+    const Repeat = <RepeatInstance>await models.Repeat.findByPk(
+      id,
       {
         include: [
-          models.Repeat,
-          { model: models.User, as: 'assignedTos' },
-          models.Tag,
-          models.Status,
-          models.Subtask,
-          models.WorkTrip,
-          models.TaskType,
-          models.Company,
-          models.Milestone,
-          { model: models.User, as: 'requester' },
-          models.Tag,
           {
-            model: models.Project,
+            model: models.RepeatTemplate,
             include: [
+              { model: models.User, as: 'assignedTos' },
+              models.Tag,
+              models.Status,
+              models.Subtask,
+              models.WorkTrip,
+              models.TaskType,
+              models.Company,
               models.Milestone,
+              { model: models.User, as: 'requester' },
+              models.Tag,
               {
-                model: models.Tag,
-                as: 'tags'
-              },
-              {
-                model: models.Status,
-                as: 'projectStatuses'
-              },
-              {
-                model: models.ProjectGroup,
-                include: [models.User]
-              },
+                model: models.Project,
+                include: [
+                  models.Milestone,
+                  {
+                    model: models.Tag,
+                    as: 'tags'
+                  },
+                  {
+                    model: models.Status,
+                    as: 'projectStatuses'
+                  },
+                  {
+                    model: models.ProjectGroup,
+                    include: [models.User]
+                  },
+                ]
+              }
             ]
           }
         ]
       }
     );
-    if (Task === undefined) {
-      throw createDoesNoExistsError('Task', args.id);
-    }
 
+    if (Repeat === undefined) {
+      throw createDoesNoExistsError('Repeat', id);
+    }
+    const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
     const User = await checkResolver(
       req,
       [],
@@ -617,22 +518,20 @@ const mutations = {
           model: models.ProjectGroup,
           required: false,
           where: {
-            ProjectId: [args.project, Task.get('ProjectId')].filter((id) => id),
+            ProjectId: [args.project, RepeatTemplate.get('ProjectId')].filter((id) => id),
           },
           include: [models.ProjectGroupRights],
         }
       ]
     );
 
-    let taskChangeMessages = [];
-
     //Figure out project and if can change project
-    if (args.project !== undefined && args.project !== Task.get('ProjectId')) {
-      await checkIfHasProjectRights(User.get('id'), undefined, Task.get('ProjectId'), ['projectWrite']);
+    if (args.project !== undefined && args.project !== RepeatTemplate.get('ProjectId')) {
+      await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['projectWrite']);
       await checkIfHasProjectRights(User.get('id'), undefined, args.project, ['projectWrite']);
     }
-    const project = args.project ? args.project : Task.get('ProjectId');
-    let Project = <ProjectInstance>Task.get('Project');
+    const project = args.project ? args.project : RepeatTemplate.get('ProjectId');
+    let Project = <ProjectInstance>RepeatTemplate.get('Project');
     if (project && project !== Project.get('id')) {
       Project = <ProjectInstance>await models.Project.findByPk(
         project,
@@ -662,8 +561,7 @@ const mutations = {
     const def = await Project.get('def');
     args = applyFixedOnAttributes(def, args);
 
-    let { id, assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, repeat, ...params } = args;
-    let repeatAction = { action: null, id: null };
+    let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, ...params } = args;
     const dates = extractDatesFromObject(params, dateNames);
     params = { ...params, ...dates };
     const groupRights = (
@@ -672,7 +570,7 @@ const mutations = {
         (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('ProjectId') === project).get('ProjectGroupRight')).get()
     )
     //can you even open this task
-    if (!canViewTask(Task, User, groupRights, true)) {
+    if (!canViewTask(RepeatTemplate, User, groupRights, true)) {
       throw CantViewTaskError;
     }
 
@@ -697,11 +595,11 @@ const mutations = {
     checkDefRequiredSatisfied(
       def,
       {
-        assignedTo: (<UserInstance[]>Task.get('assignedTos')).map((User) => User.get('id')),
-        tags: (<TagInstance[]>Task.get('Tags')).map((Tag) => Tag.get('id')),
-        company: Task.get('CompanyId'),
-        requester: Task.get('RequesterId'),
-        status: Task.get('StatusId'),
+        assignedTo: (<UserInstance[]>RepeatTemplate.get('assignedTos')).map((User) => User.get('id')),
+        tags: (<TagInstance[]>RepeatTemplate.get('Tags')).map((Tag) => Tag.get('id')),
+        company: RepeatTemplate.get('CompanyId'),
+        requester: RepeatTemplate.get('RequesterId'),
+        status: RepeatTemplate.get('StatusId'),
       },
       args,
     );
@@ -720,11 +618,10 @@ const mutations = {
     let promises = [];
 
     await sequelize.transaction(async (transaction) => {
-      if (project && project !== (<ProjectInstance>Task.get('Project')).get('id')) {
-        taskChangeMessages.push(await createChangeMessage('Project', models.Project, 'Project', project, Task.get('Project')));
-        promises.push(Task.setProject(project, { transaction }));
+      if (project && project !== (<ProjectInstance>RepeatTemplate.get('Project')).get('id')) {
+        promises.push(RepeatTemplate.setProject(project, { transaction }));
         if (milestone === undefined || milestone === null) {
-          promises.push(Task.setMilestone(null, { transaction }));
+          promises.push(RepeatTemplate.setMilestone(null, { transaction }));
         }
       }
       if (assignedTos) {
@@ -735,8 +632,8 @@ const mutations = {
         //assignedTo must be in project group
         assignedTos = assignedTos.filter((assignedTo) => groupUsers.includes(assignedTo));
         //all subtasks and worktrips must be assigned
-        const Subtasks = <SubtaskInstance[]>await Task.get('Subtasks');
-        const WorkTrips = <WorkTripInstance[]>await Task.get('WorkTrips');
+        const Subtasks = <SubtaskInstance[]>await RepeatTemplate.get('Subtasks');
+        const WorkTrips = <WorkTripInstance[]>await RepeatTemplate.get('WorkTrips');
         const allAssignedIds = [
           ...Subtasks.map((Subtask) => Subtask.get('UserId')),
           ...WorkTrips.map((WorkTrip) => WorkTrip.get('UserId')),
@@ -744,20 +641,17 @@ const mutations = {
         if (!allAssignedIds.every((id) => assignedTos.includes(id))) {
           throw CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError;
         }
-        taskChangeMessages.push(await createChangeMessage('AssignedTo', models.User, 'Assigned to users', assignedTos, Task.get('assignedTos'), 'fullName'));
-        promises.push(Task.setAssignedTos(assignedTos, { transaction }))
+        promises.push(RepeatTemplate.setAssignedTos(assignedTos, { transaction }))
       }
       if (tags) {
         await idsDoExistsCheck(tags, models.Tag);
-        taskChangeMessages.push(await createChangeMessage('Tags', models.Tag, 'Tags', tags, Task.get('Tags')));
-        promises.push(Task.setTags(tags, { transaction }))
+        promises.push(RepeatTemplate.setTags(tags, { transaction }))
       }
       if (requester) {
-        if (requester !== Task.get('requesterId') && Project.get('lockedRequester') && !groupUsers.includes(requester)) {
+        if (requester !== RepeatTemplate.get('requesterId') && Project.get('lockedRequester') && !groupUsers.includes(requester)) {
           throw createUserNotPartOfProjectError('requester');
         }
-        taskChangeMessages.push(await createChangeMessage('Requester', models.User, 'Requester', requester, Task.get('requester'), 'fullName'));
-        promises.push(Task.setRequester(requester, { transaction }))
+        promises.push(RepeatTemplate.setRequester(requester, { transaction }))
       }
 
       if (milestone || milestone === null) {
@@ -765,16 +659,13 @@ const mutations = {
         if (milestone !== null && !(<MilestoneInstance[]>Project.get('Milestones')).some((projectMilestone) => projectMilestone.get('id') === milestone)) {
           throw MilestoneNotPartOfProject;
         }
-        taskChangeMessages.push(await createChangeMessage('Milestone', models.Milestone, 'Milestone', milestone, Task.get('Milestone')));
-        promises.push(Task.setMilestone(milestone, { transaction }))
+        promises.push(RepeatTemplate.setMilestone(milestone, { transaction }))
       }
       if (taskType !== undefined) {
-        taskChangeMessages.push(await createChangeMessage('TaskType', models.TaskType, 'Task type', taskType, Task.get('TaskType')));
-        promises.push(Task.setTaskType(taskType, { transaction }))
+        promises.push(RepeatTemplate.setTaskType(taskType, { transaction }))
       }
       if (company) {
-        taskChangeMessages.push(await createChangeMessage('Company', models.Company, 'Company', company, Task.get('Company')));
-        promises.push(Task.setCompany(company, { transaction }))
+        promises.push(RepeatTemplate.setCompany(company, { transaction }))
       }
 
       //status corresponds to data - closedate, pendingDate
@@ -785,20 +676,19 @@ const mutations = {
           closeDate: null,
           pendingDate: null,
           pendingChangable: false,
-          statusChange: Task.get('statusChange'),
-          invoicedDate: Task.get('invoicedDate'),
+          statusChange: RepeatTemplate.get('statusChange'),
+          invoicedDate: RepeatTemplate.get('invoicedDate'),
         }
 
-        const TaskStatus = <StatusInstance>Task.get('Status');
+        const TaskStatus = <StatusInstance>RepeatTemplate.get('Status');
         const Status = await models.Status.findByPk(status);
         if (status !== TaskStatus.get('id')) {
-          taskChangeMessages.push(await createChangeMessage('Status', models.Status, 'Status', company, Task.get('Status')));
-          promises.push(Task.setStatus(status, { transaction }))
+          promises.push(RepeatTemplate.setStatus(status, { transaction }))
         }
         switch (Status.get('action')) {
           case 'CloseDate': {
             if (TaskStatus.get('action') === 'CloseDate' && !args.closeDate) {
-              params.closeDate = Task.get('closeDate');
+              params.closeDate = RepeatTemplate.get('closeDate');
               break;
             }
             if (args.closeDate === undefined) {
@@ -806,13 +696,12 @@ const mutations = {
             } else {
               params.closeDate = parseInt(args.closeDate);
             }
-            taskChangeMessages.push(await createChangeMessage('CloseDate', null, 'Close date', params.closeDate, Task.get('closeDate')));
             params.statusChange = moment().valueOf();
             break;
           }
           case 'CloseInvalid': {
             if (TaskStatus.get('action') === 'CloseInvalid' && !args.closeDate) {
-              params.closeDate = Task.get('closeDate');
+              params.closeDate = RepeatTemplate.get('closeDate');
               break;
             }
             if (args.closeDate === undefined) {
@@ -820,14 +709,13 @@ const mutations = {
             } else {
               params.closeDate = parseInt(args.closeDate);
             }
-            taskChangeMessages.push(await createChangeMessage('CloseDate', null, 'Close date', params.closeDate, Task.get('closeDate')));
             params.statusChange = moment().valueOf();
             break;
           }
           case 'PendingDate': {
             if (TaskStatus.get('action') === 'PendingDate' && !dates.pendingDate) {
-              params.pendingDate = Task.get('pendingDate');
-              params.pendingChangable = Task.get('pendingChangable');
+              params.pendingDate = RepeatTemplate.get('pendingDate');
+              params.pendingChangable = RepeatTemplate.get('pendingChangable');
               break;
             }
             if (dates.pendingDate === undefined || args.pendingChangable === undefined) {
@@ -836,8 +724,6 @@ const mutations = {
               params.pendingDate = dates.pendingDate;
               params.pendingChangable = args.pendingChangable;
             }
-            taskChangeMessages.push(await createChangeMessage('PendingDate', null, 'Pending date', params.pendingDate, Task.get('pendingDate')));
-            taskChangeMessages.push(await createChangeMessage('PendingChangable', null, 'Pending changable', params.pendingChangable, Task.get('pendingChangable')));
             params.statusChange = moment().valueOf()
             break;
           }
@@ -845,190 +731,70 @@ const mutations = {
             break;
         }
       }
+
       //repeat processing
-      if (repeat === null && (<RepeatInstance>Task.get('Repeat')) !== null) {
-        promises.push((<RepeatInstance>Task.get('Repeat')).destroy({ transaction }));
-        repeatAction = { action: 'delete', id: (<RepeatInstance>Task.get('Repeat')).get('id') };
+      let repeatAttrs = <any>{};
+      if (repeatEvery) {
+        repeatAttrs = { ...repeatAttrs, repeatEvery };
       }
-      else if (repeat !== undefined && repeat !== null) {
-        if ((<RepeatInstance>Task.get('Repeat')) !== null) {
-          promises.push((<RepeatInstance>Task.get('Repeat')).update({ ...repeat, startsAt: parseInt(repeat.startsAt), repeatEvery: parseInt(repeat.repeatEvery) }, { transaction }));
-          repeatAction = { action: 'update', id: null };
-        } else {
-          promises.push(Task.createRepeat({ ...repeat, startsAt: parseInt(repeat.startsAt), repeatEvery: parseInt(repeat.repeatEvery) }, { transaction }));
-          repeatAction = { action: 'add', id: null };
-        }
+      if (active !== undefined) {
+        repeatAttrs = { ...repeatAttrs, active };
       }
-      taskChangeMessages = [
-        ...taskChangeMessages,
-        ...(await createTaskAttributesChangeMessages(params, Task))
-      ]
-      promises.push(
-        Task.createTaskChange({
-          UserId: User.get('id'),
-          TaskChangeMessages: taskChangeMessages,
-        }, { transaction, include: [{ model: models.TaskChangeMessage }] })
-      );
-      promises.push(Task.update(params, { transaction }));
+      if (repeatInterval) {
+        repeatAttrs = { ...repeatAttrs, repeatInterval };
+      }
+      if (startsAt) {
+        repeatAttrs = { ...repeatAttrs, startsAt };
+      }
+      if (repeatEvery || repeatInterval || startsAt || active !== undefined) {
+        promises.push(Repeat.update(repeatAttrs, { transaction }));
+      }
+      promises.push(RepeatTemplate.update(params, { transaction }));
       await Promise.all(promises);
     })
-    switch (repeatAction.action) {
-      case 'add': {
-        repeatEvent.emit('add', await Task.get('Repeat'));
-        break;
-      }
-      case 'update': {
-        repeatEvent.emit('update', await Task.get('Repeat'));
-        break;
-      }
-      case 'delete': {
-        repeatEvent.emit('delete', repeatAction.id);
-        break;
-      }
-      default:
-        break;
+    await Repeat.reload();
+    if (repeatEvery || repeatInterval || startsAt || active !== undefined) {
+      repeatEvent.emit('update', Repeat);
     }
-    let NewTask = await models.Task.findByPk(id, {
-      include: [
-        { model: models.User, as: 'assignedTos' },
-        models.Company,
-        { model: models.User, as: 'createdBy' },
-        models.Milestone,
-        models.Project,
-        { model: models.User, as: 'requester' },
-        models.Status,
-        models.Tag,
-        models.TaskType,
-        models.Repeat,
-      ]
-    })
-    sendNotifications(User, taskChangeMessages.map((taskChange) => taskChange.message), NewTask);
-    pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'update', data: NewTask, ids: [] } });
-    return NewTask;
+    return Repeat;
   },
 
-  deleteTask: async (root, { id }, { req }) => {
+  deleteRepeat: async (root, { id }, { req }) => {
     const User = await checkResolver(req);
-    const Task = <TaskInstance>await models.Task.findByPk(
+    const Repeat = <RepeatInstance>await models.Repeat.findByPk(
       id,
       {
         include: [
-          { model: models.User, as: 'assignedTos', attributes: ['id'] },
           {
-            model: models.Project,
+            model: models.RepeatTemplate,
+            include: [
+              { model: models.User, as: 'assignedTos', attributes: ['id'] },
+              {
+                model: models.Project,
+              },
+            ]
           }
         ]
       }
     );
-    const Project = <ProjectInstance>Task.get('Project');
+    const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
+    const Project = <ProjectInstance>RepeatTemplate.get('Project');
     //must right to delete project
-    const { groupRights } = await checkIfHasProjectRights(User.get('id'), undefined, Task.get('ProjectId'), ['deleteTasks']);
+    const { groupRights } = await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['repeatWrite']);
     //can you even open this task
-    if (!canViewTask(Task, User, groupRights, true)) {
+    if (!canViewTask(RepeatTemplate, User, groupRights, true)) {
       throw CantViewTaskError;
     }
     repeatEvent.emit('delete', id);
-    sendNotifications(User, [`Task was deleted.`], Task)
-
-    pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'delete', data: Task, ids: [id] } });
-    return Task.destroy();
+    return Repeat.destroy();
   }
 }
 
 const attributes = {
-  Task: {
-    async assignedTo(task) {
-      return getModelAttribute(task, 'assignedTos');
-    },
-    async company(task) {
-      return getModelAttribute(task, 'Company');
-    },
-    async createdBy(task) {
-      return getModelAttribute(task, 'createdBy');
-    },
-    async milestone(task) {
-      return getModelAttribute(task, 'Milestone');
-    },
-    async project(task) {
-      return getModelAttribute(task, 'Project');
-    },
-    async requester(task) {
-      return getModelAttribute(task, 'requester');
-    },
-    async status(task) {
-      return getModelAttribute(task, 'Status');
-    },
-    async tags(task) {
-      return getModelAttribute(task, 'Tags');
-    },
-    async taskType(task) {
-      return getModelAttribute(task, 'TaskType');
-    },
-    async repeat(task) {
-      return getModelAttribute(task, 'Repeat');
-    },
+  Repeat: {
+    async repeatTemplate(repeat) {
 
-    async comments(task, body, { req, userID }) {
-      const [
-        SourceUser,
-        Comments,
-
-      ] = await Promise.all([
-        checkResolver(
-          req,
-          [],
-          false,
-          [
-            {
-              model: models.ProjectGroup,
-              required: false,
-              where: {
-                ProjectId: task.get('ProjectId'),
-              },
-              include: [models.ProjectGroupRights],
-            }
-          ]
-        ),
-        getModelAttribute(task, 'Comments', 'getComments', { order: [['createdAt', 'DESC']] })
-      ])
-      const groupRights = (<RoleInstance>SourceUser.get('Role')).get('level') === 0 ?
-        allGroupRights :
-        (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>SourceUser.get('ProjectGroups'))[0].get('ProjectGroupRight')).get();
-      if (!groupRights.viewComments) {
-        return [];
-      }
-      return Comments.filter((Comment) => Comment.get('isParent') && (!Comment.get('internal') || groupRights.internal))
-    },
-
-    async shortSubtasks(task) {
-      return getModelAttribute(task, 'ShortSubtasks');
-    },
-    async scheduled(task) {
-      return getModelAttribute(task, 'ScheduledTasks');
-    },
-    async subtasks(task) {
-      return getModelAttribute(task, 'Subtasks');
-    },
-    async workTrips(task) {
-      return getModelAttribute(task, 'WorkTrips');
-    },
-    async materials(task) {
-      return getModelAttribute(task, 'Materials');
-    },
-    async customItems(task) {
-      return getModelAttribute(task, 'CustomItems');
-    },
-    async calendarEvents(task) {
-      return getModelAttribute(task, 'CalendarEvents');
-    },
-    async taskChanges(task) {
-      return getModelAttribute(task, 'TaskChanges', 'getTaskChanges', { order: [['createdAt', 'DESC']] });
-    },
-    async taskAttachments(task) {
-      return getModelAttribute(task, 'TaskAttachments');
-    },
-    async invoicedTasks(task) {
-      return getModelAttribute(task, 'InvoicedTasks');
+      return getModelAttribute(repeat, 'RepeatTemplate');
     },
   }
 };
@@ -1037,218 +803,4 @@ export default {
   attributes,
   mutations,
   querries,
-}
-
-export async function sendNotifications(User, notifications, Task, assignedTos = []) {
-  const AssignedTos = Task.get('assignedTos');
-  const ids = [Task.get('requesterId'), ...(AssignedTos ? AssignedTos.map((assignedTo) => assignedTo.get('id')) : assignedTos)];
-  const uniqueIds = filterUnique(ids).filter((id) => User === null || User.get('id') !== id);
-  if (uniqueIds.length === 0) {
-    return;
-  }
-  const Users = await models.User.findAll({ where: { id: uniqueIds, receiveNotifications: true } });
-  if (Users.length === 0) {
-    return;
-  }
-  sendEmail(
-    `In task with id ${Task.get('id')} and current title ${Task.get('title')} was changed at ${moment().format('HH:mm DD.MM.YYYY')}.
-    Recorded notifications by ${User === null ? 'system' : (`user ${User.get('fullName')}(${User.get('email')})`)} as follows:
-    ${
-    notifications.length === 0 ?
-      `Non-specified change has happened.
-      ` :
-      notifications.reduce((acc, notification) => acc + ` ${notification}
-      `, ``)
-    }
-    This is an automated message.If you don't wish to receive this kind of notification, please log in and change your profile setting.
-    `,
-    "",
-    `[${Task.get('id')}]Task ${Task.get('title')} was changed notification at ${moment().format('HH:mm DD.MM.YYYY')} `,
-    Users.map((User) => User.get('email')),
-    'lanhelpdesk2019@gmail.com'
-  );
-
-}
-
-export function filterToWhere(filter, userId) {
-  let {
-    taskType,
-
-    statusDateFrom,
-    statusDateFromNow,
-    statusDateTo,
-    statusDateToNow,
-
-    pendingDateFrom,
-    pendingDateFromNow,
-    pendingDateTo,
-    pendingDateToNow,
-
-    closeDateFrom,
-    closeDateFromNow,
-    closeDateTo,
-    closeDateToNow,
-
-    deadlineFrom,
-    deadlineFromNow,
-    deadlineTo,
-    deadlineToNow,
-  } = filter;
-  let where = {};
-
-  if (taskType) {
-    where = {
-      ...where,
-      TaskTypeId: taskType
-    }
-  }
-
-
-
-  //STATUS DATE
-  let statusDateConditions = {};
-  if (statusDateFromNow) {
-    statusDateFrom = moment().toDate();
-  }
-  if (statusDateToNow) {
-    statusDateTo = moment().toDate();
-  }
-
-  if (statusDateFrom) {
-    statusDateConditions = { ...statusDateConditions, [Op.gte]: statusDateFrom }
-  }
-  if (statusDateTo) {
-    statusDateConditions = { ...statusDateConditions, [Op.lte]: statusDateTo }
-  }
-  if (statusDateFrom || statusDateTo) {
-    where = {
-      ...where,
-      statusChange: {
-        [Op.and]: statusDateConditions
-      }
-    }
-  }
-
-  //PENDING DATE
-  let pendingDateConditions = {};
-  if (pendingDateFromNow) {
-    pendingDateFrom = moment().toDate();
-  }
-  if (pendingDateToNow) {
-    pendingDateTo = moment().toDate();
-  }
-
-  if (pendingDateFrom) {
-    pendingDateConditions = { ...pendingDateConditions, [Op.gte]: pendingDateFrom }
-  }
-  if (pendingDateTo) {
-    pendingDateConditions = { ...pendingDateConditions, [Op.lte]: pendingDateTo }
-  }
-  if (pendingDateFrom || pendingDateTo) {
-    where = {
-      ...where,
-      pendingDate: {
-        [Op.and]: pendingDateConditions
-      }
-    }
-  }
-
-  //CLOSE DATE
-  let closeDateConditions = {};
-  if (closeDateFromNow) {
-    closeDateFrom = moment().toDate();
-  }
-  if (closeDateToNow) {
-    closeDateTo = moment().toDate();
-  }
-
-  if (closeDateFrom) {
-    closeDateConditions = { ...closeDateConditions, [Op.gte]: closeDateFrom }
-  }
-  if (closeDateTo) {
-    closeDateConditions = { ...closeDateConditions, [Op.lte]: closeDateTo }
-  }
-  if (closeDateFrom || closeDateTo) {
-    where = {
-      ...where,
-      closeDate: {
-        [Op.and]: closeDateConditions
-      }
-    }
-  }
-
-
-  //DEADLINE
-  let deadlineConditions = {};
-  if (deadlineFromNow) {
-    deadlineFrom = moment().toDate();
-  }
-  if (deadlineToNow) {
-    deadlineTo = moment().toDate();
-  }
-
-  if (deadlineFrom) {
-    deadlineConditions = { ...deadlineConditions, [Op.gte]: deadlineFrom }
-  }
-  if (deadlineTo) {
-    deadlineConditions = { ...deadlineConditions, [Op.lte]: deadlineTo }
-  }
-  if (deadlineFrom || deadlineTo) {
-    where = {
-      ...where,
-      deadline: {
-        [Op.and]: deadlineConditions
-      }
-    }
-  }
-
-  return where;
-}
-
-export function filterByOneOf(filter, userId, companyId, tasks) {
-  let {
-    assignedTo,
-    assignedToCur,
-    requester,
-    requesterCur,
-    company,
-    companyCur,
-    oneOf
-  } = filter;
-
-  if (assignedToCur) {
-    assignedTo = userId;
-  }
-  if (requesterCur) {
-    requester = userId;
-  }
-  if (companyCur) {
-    company = companyId;
-  }
-  return tasks.filter((task) => {
-    let oneOfConditions = [];
-    if (assignedTo) {
-      if (oneOf.includes('assigned')) {
-        oneOfConditions.push(task.get('assignedTos').some((user) => user.get('id') === assignedTo))
-      } else if (!task.get('assignedTos').some((user) => user.get('id') === assignedTo)) {
-        return false;
-      }
-    }
-    if (requester) {
-      if (oneOf.includes('requester')) {
-        oneOfConditions.push(task.get('requesterId') === requester)
-      } else if (task.get('requesterId') !== requester) {
-        return false;
-      }
-    }
-    if (company) {
-      if (oneOf.includes('company')) {
-        oneOfConditions.push(task.get('CompanyId') === company)
-      } else if (task.get('CompanyId') !== company) {
-        return false;
-      }
-    }
-    return oneOfConditions.length === 0 || oneOfConditions.every((cond) => cond);
-  })
-
 }

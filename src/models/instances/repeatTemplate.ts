@@ -22,6 +22,8 @@ export interface RepeatTemplateInstance extends DefaultInstance {
   closeDate: number; //X
   statusChange: number; //X
   //TaskType - X
+  createRepeatTemplateAttachment?: any;
+
   setStatus?: any;
   setCompany?: any;
   setTaskType?: any;

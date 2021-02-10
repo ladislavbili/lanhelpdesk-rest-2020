@@ -9,3 +9,4 @@ export * from './refresh_token';
 export * from './send-comment';
 export * from './send-email';
 export * from './upload-attachments';
+export * from './upload-repeat-template-attachments';

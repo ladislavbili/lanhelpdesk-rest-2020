@@ -1,6 +1,6 @@
 import { checkIfHasProjectRights } from '@/helperFunctions';
 import checkResolver from '@/graph/resolvers/checkResolver';
-import { AccessRightsInstance, RoleInstance, CommentInstance } from '@/models/instances';
+import { AccessRightsInstance, RoleInstance, CommentInstance, RepeatTemplateInstance, RepeatTemplateAttachmentInstance } from '@/models/instances';
 import { models } from '@/models';
 import fs from 'fs';
 import pathResolver from 'path';
@@ -21,6 +21,8 @@ export function getAttachments(app) {
     let checkResult = null;
     if (type === 'task') {
       checkResult = await checkTask(path, req);
+    } else if (type === 'repeatTemplate') {
+      checkResult = await checkRepeatTemplate(path, req);
     } else if (type === 'comment') {
       checkResult = await checkComment(path, req);
     } else {
@@ -47,6 +49,20 @@ async function checkTask(path, req) {
     const User = await checkResolver(req);
     await checkIfHasProjectRights(User.get('id'), TaskAttachment.get('TaskId'), undefined, ['taskAttachmentsRead']);
     return { ok: true, error: null, Attachment: TaskAttachment };
+  } catch (err) {
+    return { ok: false, error: err.message }
+  }
+}
+
+async function checkRepeatTemplate(path, req) {
+  const RepeatTemplateAttachment = <RepeatTemplateAttachmentInstance>await models.RepeatTemplateAttachment.findOne({ where: { path }, include: [models.RepeatTemplate] });
+  if (!RepeatTemplateAttachment) {
+    return { ok: false, error: `Attachment with path ${path} doesn't exists.` }
+  }
+  try {
+    const User = await checkResolver(req);
+    await checkIfHasProjectRights(User.get('id'), undefined, (<RepeatTemplateInstance>RepeatTemplateAttachment.get('RepeatTemplate')).get('ProjectId'), ['taskAttachmentsRead', 'repeatRead']);
+    return { ok: true, error: null, Attachment: RepeatTemplateAttachment };
   } catch (err) {
     return { ok: false, error: err.message }
   }

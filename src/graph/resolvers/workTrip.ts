@@ -1,6 +1,6 @@
 import { createDoesNoExistsError, WorkTripNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import { models, sequelize } from '@/models';
-import { TaskInstance, UserInstance, WorkTripInstance, TripTypeInstance } from '@/models/instances';
+import { TaskInstance, UserInstance, WorkTripInstance, TripTypeInstance, RepeatTemplateInstance } from '@/models/instances';
 import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
@@ -123,12 +123,101 @@ const mutations = {
     )
     return WorkTrip.destroy();
   },
+
+  addRepeatTemplateWorkTrip: async (root, { repeatTemplate, type, assignedTo, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const RepeatTemplate = <RepeatTemplateInstance>await models.RepeatTemplate.findByPk(
+      repeatTemplate,
+      { include: [{ model: models.User, as: 'assignedTos' }] }
+    );
+    if (RepeatTemplate === null) {
+      throw createDoesNoExistsError('Repeat template', repeatTemplate);
+    }
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['vykazWrite']);
+    const AssignedTos = <UserInstance[]>RepeatTemplate.get('assignedTos');
+    if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
+      throw AssignedToUserNotSolvingTheTask;
+    }
+    await idDoesExistsCheck(type, models.TripType);
+    return models.WorkTrip.create({
+      RepeatTemplateId: repeatTemplate,
+      TripTypeId: type,
+      UserId: assignedTo,
+      ...params,
+    });
+  },
+
+  updateRepeatTemplateWorkTrip: async (root, { id, type, assignedTo, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const WorkTrip = <WorkTripInstance>await models.WorkTrip.findByPk(
+      id,
+      {
+        include: [
+          models.TripType,
+          {
+            model: models.RepeatTemplate,
+            include: [
+              { model: models.User, as: 'assignedTos' }
+            ]
+          }
+        ],
+      }
+    );
+    if (WorkTrip === null) {
+      throw createDoesNoExistsError('WorkTrip', id);
+    }
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>WorkTrip.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    if (assignedTo !== undefined) {
+      const AssignedTos = <UserInstance[]>(<RepeatTemplateInstance>WorkTrip.get('RepeatTemplate')).get('assignedTos');
+      if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
+        throw AssignedToUserNotSolvingTheTask;
+      }
+    }
+    if (type === null || assignedTo === null) {
+      throw WorkTripNotNullAttributesPresent;
+    }
+    let pairs = [];
+    if (type !== undefined) {
+      pairs.push({ id: type, model: models.TripType })
+    }
+    if (assignedTo !== undefined) {
+      pairs.push({ id: assignedTo, model: models.User })
+    }
+    await multipleIdDoesExistsCheck(pairs);
+    await sequelize.transaction(async (t) => {
+      let promises = [];
+      if (type !== undefined) {
+        await idDoesExistsCheck(type, models.TripType);
+        promises.push(WorkTrip.setTripType(type, { transaction: t }));
+      }
+      if (assignedTo !== undefined) {
+        promises.push(WorkTrip.setUser(assignedTo, { transaction: t }));
+      }
+      promises.push(WorkTrip.update(params, { transaction: t }));
+      await Promise.all(promises);
+    });
+    return WorkTrip.reload();
+  },
+
+  deleteRepeatTemplateWorkTrip: async (root, { id }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const WorkTrip = await models.WorkTrip.findByPk(id, { include: [models.TripType, models.RepeatTemplate] });
+    if (WorkTrip === null) {
+      throw createDoesNoExistsError('WorkTrip', id);
+    }
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>WorkTrip.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    return WorkTrip.destroy();
+  },
+
 }
 
 const attributes = {
   WorkTrip: {
     async task(workTrip) {
       return getModelAttribute(workTrip, 'Task');
+    },
+    async repeatTemplate(workTrip) {
+      return getModelAttribute(workTrip, 'RepeatTemplate');
     },
     async type(workTrip) {
       return getModelAttribute(workTrip, 'TripType');

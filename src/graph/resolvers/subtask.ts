@@ -1,7 +1,7 @@
 import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
-import { TaskInstance, UserInstance, SubtaskInstance, TaskTypeInstance } from '@/models/instances';
+import { TaskInstance, UserInstance, SubtaskInstance, TaskTypeInstance, RepeatTemplateInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -123,12 +123,110 @@ const mutations = {
     )
     return Subtask.destroy();
   },
+
+  addRepeatTemplateSubtask: async (root, { repeatTemplate, type, assignedTo, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const RepeatTemplate = <RepeatTemplateInstance>await models.RepeatTemplate.findByPk(
+      repeatTemplate,
+      { include: [{ model: models.User, as: 'assignedTos' }] }
+    );
+    if (RepeatTemplate === null) {
+      throw createDoesNoExistsError('Repeat template', repeatTemplate);
+    }
+
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['vykazWrite']);
+    const AssignedTos = <UserInstance[]>RepeatTemplate.get('assignedTos');
+    if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
+      throw AssignedToUserNotSolvingTheTask;
+    }
+    await idDoesExistsCheck(type, models.TaskType);
+    return models.Subtask.create({
+      RepeatTemplateId: repeatTemplate,
+      TaskTypeId: type,
+      UserId: assignedTo,
+      ...params,
+    });
+  },
+
+  updateRepeatTemplateSubtask: async (root, { id, type, assignedTo, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const Subtask = <SubtaskInstance>await models.Subtask.findByPk(
+      id,
+      {
+        include: [
+          models.TaskType,
+          {
+            model: models.RepeatTemplate,
+            include: [
+              { model: models.User, as: 'assignedTos' }
+            ]
+          }
+        ]
+      }
+    );
+    if (Subtask === null) {
+      throw createDoesNoExistsError('Subtask', id);
+    }
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>Subtask.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    if (assignedTo !== undefined) {
+      const AssignedTos = <UserInstance[]>(<RepeatTemplateInstance>Subtask.get('RepeatTemplate')).get('assignedTos');
+      if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
+        throw AssignedToUserNotSolvingTheTask;
+      }
+    }
+    if (type === null || assignedTo === null) {
+      throw SubtaskNotNullAttributesPresent;
+    }
+    let pairs = [];
+    if (type !== undefined) {
+      pairs.push({ id: type, model: models.TaskType })
+    }
+    if (assignedTo !== undefined) {
+      pairs.push({ id: assignedTo, model: models.User })
+    }
+    await multipleIdDoesExistsCheck(pairs);
+    await sequelize.transaction(async (t) => {
+      let promises = [];
+      if (type !== undefined) {
+        await idDoesExistsCheck(type, models.TaskType);
+        promises.push(Subtask.setTaskType(type, { transaction: t }));
+      }
+      if (assignedTo !== undefined) {
+        promises.push(Subtask.setUser(assignedTo, { transaction: t }));
+      }
+      promises.push(Subtask.update(params, { transaction: t }));
+      await Promise.all(promises);
+    });
+    return Subtask.reload();
+  },
+
+  deleteRepeatTemplateSubtask: async (root, { id }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const Subtask = <SubtaskInstance>await models.Subtask.findByPk(
+      id,
+      {
+        include: [
+          models.TaskType,
+          models.RepeatTemplate
+        ]
+      }
+    );
+    if (Subtask === null) {
+      throw createDoesNoExistsError('Subtask', id);
+    }
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>Subtask.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    return Subtask.destroy();
+  },
+
 }
 
 const attributes = {
   Subtask: {
     async task(subtask) {
       return getModelAttribute(subtask, 'Task');
+    },
+    async repeatTemplate(subtask) {
+      return getModelAttribute(subtask, 'RepeatTemplate');
     },
     async type(subtask) {
       return getModelAttribute(subtask, 'TaskType');

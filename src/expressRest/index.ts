@@ -15,7 +15,8 @@ import {
   getAttachments,
   refreshToken,
   sendComment,
-  sendEmail
+  sendEmail,
+  uploadRepeatTemplateAttachments
 } from './rest';
 import {
   useHttps
@@ -44,6 +45,7 @@ export const startRest = () => {
   refreshToken(app);
   sendComment(app);
   sendEmail(app);
+  uploadRepeatTemplateAttachments(app);
   let httpServer = null;
   if (useHttps) {
     const credentials = {

@@ -1,7 +1,7 @@
 import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
-import { TaskInstance, ShortSubtaskInstance } from '@/models/instances';
+import { TaskInstance, ShortSubtaskInstance, RepeatTemplateInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -70,6 +70,41 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     )
+    return ShortSubtask.destroy();
+  },
+
+  addRepeatTemplateShortSubtask: async (root, { repeatTemplate, ...attributes }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const RepeatTemplate = <RepeatTemplateInstance>await models.RepeatTemplate.findByPk(repeatTemplate);
+    if (RepeatTemplate === null) {
+      throw createDoesNoExistsError('Repeat template', repeatTemplate);
+    }
+
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['taskShortSubtasksWrite']);
+
+    return models.ShortSubtask.create({
+      RepeatTemplateId: repeatTemplate,
+      ...attributes,
+    });
+  },
+
+  updateRepeatTemplateShortSubtask: async (root, { id, ...args }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const ShortSubtask = <ShortSubtaskInstance>await models.ShortSubtask.findByPk(id, { include: [models.RepeatTemplate] });
+    if (ShortSubtask === null) {
+      throw createDoesNoExistsError('Short subtask', id);
+    }
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>ShortSubtask.get('RepeatTemplate')).get('ProjectId'), ['taskShortSubtasksWrite']);
+    return ShortSubtask.update(args);
+  },
+
+  deleteRepeatTemplateShortSubtask: async (root, { id }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const ShortSubtask = await models.ShortSubtask.findByPk(id, { include: [models.RepeatTemplate] });
+    if (ShortSubtask === null) {
+      throw createDoesNoExistsError('Short subtask', id);
+    }
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>ShortSubtask.get('RepeatTemplate')).get('ProjectId'), ['taskShortSubtasksWrite']);
     return ShortSubtask.destroy();
   },
 }

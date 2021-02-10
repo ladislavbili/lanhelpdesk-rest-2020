@@ -2,7 +2,7 @@ import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUse
 import { models, sequelize } from '@/models';
 import { checkIfHasProjectRights, getModelAttribute, extractDatesFromObject, timestampToString } from '@/helperFunctions';
 import checkResolver from './checkResolver';
-import { UserInstance, TaskInstance } from '@/models/instances';
+import { UserInstance, TaskInstance, RepeatTemplateInstance } from '@/models/instances';
 
 const querries = {
 }
@@ -53,6 +53,39 @@ const mutations = {
     );
     return await ScheduledTask.destroy();
   },
+
+  addRepeatTemplateScheduledTask: async (root, { repeatTemplate, ...attributes }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const RepeatTemplate = <RepeatTemplateInstance>await models.RepeatTemplate.findByPk(
+      repeatTemplate,
+      { include: [{ model: models.User, as: 'assignedTos' }] }
+    );
+    if (RepeatTemplate === null) {
+      throw createDoesNoExistsError('Repeat template', repeatTemplate);
+    }
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['scheduledWrite']);
+    const AssignedTos = <UserInstance[]>RepeatTemplate.get('assignedTos');
+    if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === attributes.UserId)) {
+      throw AssignedToUserNotSolvingTheTask;
+    }
+    const dates = extractDatesFromObject(attributes, ['from', 'to']);
+    return models.ScheduledTask.create({
+      RepeatTemplateId: repeatTemplate,
+      ...attributes,
+      ...dates,
+    });
+  },
+
+  deleteRepeatTemplateScheduledTask: async (root, { id }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const ScheduledTask = await models.ScheduledTask.findByPk(id, { include: [models.User, models.RepeatTemplate] });
+    if (ScheduledTask === null) {
+      throw createDoesNoExistsError('Scheduled task', id);
+    }
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>ScheduledTask.get('RepeatTemplate')).get('ProjectId'), ['scheduledWrite']);
+    return await ScheduledTask.destroy();
+  },
+
 }
 
 const attributes = {

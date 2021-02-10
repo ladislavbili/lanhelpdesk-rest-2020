@@ -7,7 +7,8 @@ type CustomItem {
   done: Boolean!
   quantity: Float!
   price: Float!
-  task: Task!
+  task: Task
+  repeatTemplate: RepeatTemplate
   invoicedData: [InvoicedCustomItem]
 }
 `
@@ -20,4 +21,8 @@ export const CustomItemMutations = `
 addCustomItem( title: String!, order: Int!, done: Boolean!, quantity: Float!, price: Float!, task: Int! ): CustomItem
 updateCustomItem( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, price: Float ): CustomItem
 deleteCustomItem( id: Int! ): CustomItem
+
+addRepeatTemplateCustomItem( title: String!, order: Int!, done: Boolean!, quantity: Float!, price: Float!, repeatTemplate: Int! ): CustomItem
+updateRepeatTemplateCustomItem( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, price: Float ): CustomItem
+deleteRepeatTemplateCustomItem( id: Int! ): CustomItem
 `
