@@ -457,10 +457,14 @@ const mutations = {
     });
   },
 
-  //setTasklistLayout( : TasklistLayoutEnum! ): User
   setTasklistLayout: async (root, { tasklistLayout }, { req }) => {
     const User = await checkResolver(req);
     return User.update({ tasklistLayout: parseInt(tasklistLayout) });
+  },
+
+  setTaskLayout: async (root, { taskLayout }, { req }) => {
+    const User = await checkResolver(req);
+    return User.update({ taskLayout: parseInt(taskLayout) });
   },
 }
 

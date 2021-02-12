@@ -15,6 +15,8 @@ export interface UserInstance extends DefaultInstance {
 
   language: string;
   tasklistLayout: number;
+  taskLayout: number;
+
 
   setTags?: any;
   setRole?: any;
@@ -92,6 +94,11 @@ export default function defineUsers(sequelize: Sequelize) {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0
+      },
+      taskLayout: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 1
       },
     },
     {

@@ -270,7 +270,7 @@ export default function defineProjects(sequelize: Sequelize) {
       defTagRequired: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
-        defaultValue: true,
+        defaultValue: false,
       },
 
       defTaskTypeDef: {

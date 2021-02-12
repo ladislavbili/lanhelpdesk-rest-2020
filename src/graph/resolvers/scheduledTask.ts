@@ -1,4 +1,6 @@
-import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
+import {
+  createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask,
+} from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import { checkIfHasProjectRights, getModelAttribute, extractDatesFromObject, timestampToString } from '@/helperFunctions';
 import checkResolver from './checkResolver';
@@ -12,6 +14,13 @@ const mutations = {
     const SourceUser = await checkResolver(req);
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['scheduledWrite']);
     const TargetUser = <UserInstance>await models.User.findByPk(attributes.UserId);
+    if (TargetUser === null) {
+      throw createDoesNoExistsError('User', attributes.UserId);
+    }
+    const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
+    if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === attributes.UserId)) {
+      throw AssignedToUserNotSolvingTheTask;
+    }
     const dates = extractDatesFromObject(attributes, ['from', 'to']);
     (<TaskInstance>Task).createTaskChange(
       {

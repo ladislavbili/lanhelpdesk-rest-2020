@@ -52,3 +52,17 @@ export const extractDatesFromObject = (data, dates, controlDates = true, ignoreU
 export const timestampToString = (timestamp) => {
   return moment(parseInt(timestamp)).format('HH:mm DD.MM.YYYY');
 }
+
+const multipliers = {
+  day: 24 * 60,
+  week: 7 * 24 * 60,
+  month: 30 * 24 * 60,
+}
+
+export const getMinutes = (repeatEvery, repeatInterval) => {
+  let multiplier = multipliers[repeatInterval];
+  if (multiplier === undefined || repeatEvery === 0) {
+    return multipliers.day;
+  }
+  return multiplier * repeatEvery;
+}

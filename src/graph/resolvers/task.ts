@@ -54,6 +54,9 @@ import {
   canViewTask,
   createChangeMessage,
   createTaskAttributesChangeMessages,
+  sendNotifications,
+  filterToWhere,
+  filterByOneOf,
 } from '@/helperFunctions';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
@@ -61,7 +64,6 @@ const { withFilter } = require('apollo-server-express');
 import { TASK_CHANGE } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
-import { Op } from 'sequelize';
 import Stopwatch from 'statman-stopwatch';
 import { sendEmail } from '@/services/smtp';
 const dateNames = ['deadline', 'pendingDate', 'closeDate'];
@@ -815,7 +817,7 @@ const mutations = {
         const TaskStatus = <StatusInstance>Task.get('Status');
         const Status = await models.Status.findByPk(status);
         if (status !== TaskStatus.get('id')) {
-          taskChangeMessages.push(await createChangeMessage('Status', models.Status, 'Status', company, Task.get('Status')));
+          taskChangeMessages.push(await createChangeMessage('Status', models.Status, 'Status', status, Task.get('Status')));
           promises.push(Task.setStatus(status, { transaction }))
         }
         switch (Status.get('action')) {
@@ -1115,218 +1117,4 @@ export default {
   mutations,
   querries,
   subscriptions
-}
-
-export async function sendNotifications(User, notifications, Task, assignedTos = []) {
-  const AssignedTos = Task.get('assignedTos');
-  const ids = [Task.get('requesterId'), ...(AssignedTos ? AssignedTos.map((assignedTo) => assignedTo.get('id')) : assignedTos)];
-  const uniqueIds = filterUnique(ids).filter((id) => User === null || User.get('id') !== id);
-  if (uniqueIds.length === 0) {
-    return;
-  }
-  const Users = await models.User.findAll({ where: { id: uniqueIds, receiveNotifications: true } });
-  if (Users.length === 0) {
-    return;
-  }
-  sendEmail(
-    `In task with id ${Task.get('id')} and current title ${Task.get('title')} was changed at ${moment().format('HH:mm DD.MM.YYYY')}.
-    Recorded notifications by ${User === null ? 'system' : (`user ${User.get('fullName')}(${User.get('email')})`)} as follows:
-    ${
-    notifications.length === 0 ?
-      `Non-specified change has happened.
-      ` :
-      notifications.reduce((acc, notification) => acc + ` ${notification}
-      `, ``)
-    }
-    This is an automated message.If you don't wish to receive this kind of notification, please log in and change your profile setting.
-    `,
-    "",
-    `[${Task.get('id')}]Task ${Task.get('title')} was changed notification at ${moment().format('HH:mm DD.MM.YYYY')} `,
-    Users.map((User) => User.get('email')),
-    'lanhelpdesk2019@gmail.com'
-  );
-
-}
-
-export function filterToWhere(filter, userId) {
-  let {
-    taskType,
-
-    statusDateFrom,
-    statusDateFromNow,
-    statusDateTo,
-    statusDateToNow,
-
-    pendingDateFrom,
-    pendingDateFromNow,
-    pendingDateTo,
-    pendingDateToNow,
-
-    closeDateFrom,
-    closeDateFromNow,
-    closeDateTo,
-    closeDateToNow,
-
-    deadlineFrom,
-    deadlineFromNow,
-    deadlineTo,
-    deadlineToNow,
-  } = filter;
-  let where = {};
-
-  if (taskType) {
-    where = {
-      ...where,
-      TaskTypeId: taskType
-    }
-  }
-
-
-
-  //STATUS DATE
-  let statusDateConditions = {};
-  if (statusDateFromNow) {
-    statusDateFrom = moment().toDate();
-  }
-  if (statusDateToNow) {
-    statusDateTo = moment().toDate();
-  }
-
-  if (statusDateFrom) {
-    statusDateConditions = { ...statusDateConditions, [Op.gte]: statusDateFrom }
-  }
-  if (statusDateTo) {
-    statusDateConditions = { ...statusDateConditions, [Op.lte]: statusDateTo }
-  }
-  if (statusDateFrom || statusDateTo) {
-    where = {
-      ...where,
-      statusChange: {
-        [Op.and]: statusDateConditions
-      }
-    }
-  }
-
-  //PENDING DATE
-  let pendingDateConditions = {};
-  if (pendingDateFromNow) {
-    pendingDateFrom = moment().toDate();
-  }
-  if (pendingDateToNow) {
-    pendingDateTo = moment().toDate();
-  }
-
-  if (pendingDateFrom) {
-    pendingDateConditions = { ...pendingDateConditions, [Op.gte]: pendingDateFrom }
-  }
-  if (pendingDateTo) {
-    pendingDateConditions = { ...pendingDateConditions, [Op.lte]: pendingDateTo }
-  }
-  if (pendingDateFrom || pendingDateTo) {
-    where = {
-      ...where,
-      pendingDate: {
-        [Op.and]: pendingDateConditions
-      }
-    }
-  }
-
-  //CLOSE DATE
-  let closeDateConditions = {};
-  if (closeDateFromNow) {
-    closeDateFrom = moment().toDate();
-  }
-  if (closeDateToNow) {
-    closeDateTo = moment().toDate();
-  }
-
-  if (closeDateFrom) {
-    closeDateConditions = { ...closeDateConditions, [Op.gte]: closeDateFrom }
-  }
-  if (closeDateTo) {
-    closeDateConditions = { ...closeDateConditions, [Op.lte]: closeDateTo }
-  }
-  if (closeDateFrom || closeDateTo) {
-    where = {
-      ...where,
-      closeDate: {
-        [Op.and]: closeDateConditions
-      }
-    }
-  }
-
-
-  //DEADLINE
-  let deadlineConditions = {};
-  if (deadlineFromNow) {
-    deadlineFrom = moment().toDate();
-  }
-  if (deadlineToNow) {
-    deadlineTo = moment().toDate();
-  }
-
-  if (deadlineFrom) {
-    deadlineConditions = { ...deadlineConditions, [Op.gte]: deadlineFrom }
-  }
-  if (deadlineTo) {
-    deadlineConditions = { ...deadlineConditions, [Op.lte]: deadlineTo }
-  }
-  if (deadlineFrom || deadlineTo) {
-    where = {
-      ...where,
-      deadline: {
-        [Op.and]: deadlineConditions
-      }
-    }
-  }
-
-  return where;
-}
-
-export function filterByOneOf(filter, userId, companyId, tasks) {
-  let {
-    assignedTo,
-    assignedToCur,
-    requester,
-    requesterCur,
-    company,
-    companyCur,
-    oneOf
-  } = filter;
-
-  if (assignedToCur) {
-    assignedTo = userId;
-  }
-  if (requesterCur) {
-    requester = userId;
-  }
-  if (companyCur) {
-    company = companyId;
-  }
-  return tasks.filter((task) => {
-    let oneOfConditions = [];
-    if (assignedTo) {
-      if (oneOf.includes('assigned')) {
-        oneOfConditions.push(task.get('assignedTos').some((user) => user.get('id') === assignedTo))
-      } else if (!task.get('assignedTos').some((user) => user.get('id') === assignedTo)) {
-        return false;
-      }
-    }
-    if (requester) {
-      if (oneOf.includes('requester')) {
-        oneOfConditions.push(task.get('requesterId') === requester)
-      } else if (task.get('requesterId') !== requester) {
-        return false;
-      }
-    }
-    if (company) {
-      if (oneOf.includes('company')) {
-        oneOfConditions.push(task.get('CompanyId') === company)
-      } else if (task.get('CompanyId') !== company) {
-        return false;
-      }
-    }
-    return oneOfConditions.length === 0 || oneOfConditions.every((cond) => cond);
-  })
-
 }

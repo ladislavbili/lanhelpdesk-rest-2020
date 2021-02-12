@@ -26,7 +26,7 @@ enum EnumRepeatInterval{
 `
 
 export const RepeatQuerries = `
-repeats: [Repeat!]
+repeats( projectId: Int ): [Repeat!]
 repeat( id: Int ): Repeat
 `
 

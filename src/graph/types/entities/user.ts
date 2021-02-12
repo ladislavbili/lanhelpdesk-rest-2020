@@ -13,6 +13,7 @@ type User {
   signature: String
   language: LanguageEnum!
   tasklistLayout: Int!
+  taskLayout: Int!
   role: BasicRole!
   company: BasicCompany!
   statuses: [Status]!
@@ -75,6 +76,7 @@ logoutUser: Boolean
 logoutAll: String
 setUserStatuses( ids: [Int]! ): User
 setTasklistLayout( tasklistLayout: Int! ): User
+setTaskLayout( taskLayout: Int! ): User
 updateProfile( username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String, language: LanguageEnum ): UserData,
 deleteUser( id: Int!, taskPairs: [TaskPairInput]!, subtaskPairs: [SubtaskPairInput]!, workTripPairs: [WorkTripPairInput]! ): User
 `

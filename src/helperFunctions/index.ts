@@ -80,6 +80,9 @@ export {
 export {
   createChangeMessage,
   createTaskAttributesChangeMessages,
+  sendNotifications,
+  filterToWhere,
+  filterByOneOf,
 } from './taskProcessing';
 
 export {
@@ -87,4 +90,5 @@ export {
   taskCheckDate,
   extractDatesFromObject,
   timestampToString,
+  getMinutes,
 } from './timeManipulations';

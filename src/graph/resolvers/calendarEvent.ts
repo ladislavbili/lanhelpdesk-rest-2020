@@ -15,8 +15,9 @@ import {
   multipleIdDoesExistsCheck,
   getModelAttribute,
   canViewTask,
+  filterToWhere,
+  filterByOneOf,
 } from '@/helperFunctions';
-import { filterToWhere, filterByOneOf } from './task';
 import checkResolver from './checkResolver';
 import moment from 'moment';
 const dateNames = ['deadline', 'pendingDate', 'closeDate'];

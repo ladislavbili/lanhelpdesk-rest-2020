@@ -71,9 +71,16 @@ const dateNames2 = [
 ];
 
 const querries = {
-  repeats: async (root, args, { req, userID }) => {
+  repeats: async (root, { projectId }, { req, userID }) => {
+
     const User = await checkResolver(req);
     let repeats = []
+    let templateWhere = <any>{}
+    if (projectId) {
+      templateWhere = {
+        ProjectId: projectId
+      }
+    }
     if ((<RoleInstance>User.get('Role')).get('level') !== 0) {
       const ProjectGroups = <ProjectGroupInstance[]>await User.getProjectGroups({
         include: [
@@ -83,23 +90,17 @@ const querries = {
             required: true,
             include: [
               {
-                model: models.Repeat,
-                required: true,
+                model: models.RepeatTemplate,
                 include: [
-                  {
-                    model: models.RepeatTemplate,
-                    include: [
-                      { model: models.User, as: 'createdBy' },
-                      { model: models.User, as: 'assignedTos' },
-                      { model: models.User, as: 'requester' },
-                      models.Company,
-                      models.Milestone,
-                      models.Project,
-                      models.Status,
-                      models.Tag,
-                      models.TaskType,
-                    ]
-                  }
+                  { model: models.User, as: 'createdBy' },
+                  { model: models.User, as: 'assignedTos' },
+                  { model: models.User, as: 'requester' },
+                  models.Company,
+                  models.Milestone,
+                  models.Project,
+                  models.Status,
+                  models.Tag,
+                  models.TaskType,
                 ]
               }
             ]
@@ -111,7 +112,7 @@ const querries = {
         const userRights = (<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).get();
         return [
           ...acc,
-          ...(<RepeatInstance[]>proj.get('Repeats')).filter((Repeat) => canViewTask(Repeat.get('RepeatTemplate'), User, userRights))
+          ...(<RepeatInstance[]>proj.get('RepeatTemplates')).filter((RepeatTemplate) => canViewTask(RepeatTemplate, User, userRights))
         ]
       }, [])
     }
@@ -119,6 +120,8 @@ const querries = {
       include: [
         {
           model: models.RepeatTemplate,
+          required: true,
+          where: templateWhere,
           include: [
             { model: models.User, as: 'assignedTos' },
             { model: models.User, as: 'createdBy' },
@@ -753,6 +756,7 @@ const mutations = {
       await Promise.all(promises);
     })
     await Repeat.reload();
+
     if (repeatEvery || repeatInterval || startsAt || active !== undefined) {
       repeatEvent.emit('update', Repeat);
     }

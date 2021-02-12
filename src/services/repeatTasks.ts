@@ -2,7 +2,21 @@ import TriggerableTimer from '@/services/components/triggerableTimer';
 import { models } from '@/models';
 import moment from 'moment';
 import events from 'events';
-import { TaskInstance } from '@/models/instances';
+import { timestampToString, getMinutes, sendNotifications } from '@/helperFunctions';
+import {
+  TaskInstance,
+  RepeatInstance,
+  RepeatTemplateInstance,
+  RepeatTemplateAttachmentInstance,
+  UserInstance,
+  TagInstance,
+  ShortSubtaskInstance,
+  ScheduledTaskInstance,
+  SubtaskInstance,
+  WorkTripInstance,
+  MaterialInstance,
+  CustomItemInstance,
+} from '@/models/instances';
 import { pubsub } from '@/graph/resolvers';
 import { TASK_CHANGE } from '@/configs/subscriptions';
 import { repeatTasks } from '@/configs/constants';
@@ -10,42 +24,49 @@ import { repeatTasks } from '@/configs/constants';
 export const repeatEvent = new events.EventEmitter();
 
 let timers = [];
-export default function start() {
+export default async function start() {
+  if (!repeatTasks) {
+    console.log(`Repeats are disabled!`);
+    return;
+  }
   repeatEvent.on('add', addRepeat)
   repeatEvent.on('update', updateRepeat)
   repeatEvent.on('delete', deleteRepeat)
-  models.Repeat.findAll().then((repeatResponse) => {
-    console.log('repeatsLoaded', repeatResponse.length);
-    repeatResponse.forEach((repeat) => addRepeat(repeat));
-  });
+
+  const Repeats = <RepeatInstance[]>await models.Repeat.findAll({ where: { active: true } })
+  console.log(`Repeats are active and currently starting ${Repeats.length} repeats.`);
+  Repeats.forEach((Repeat) => addRepeat(Repeat));
 }
 
-async function addRepeat(repeat) {
-  console.log('addingRepeat');
+async function addRepeat(Repeat) {
+  const { repeatEvery, repeatInterval, startsAt, id } = Repeat.get();
+  console.log(`New repeat that triggers every ${getMinutes(repeatEvery, repeatInterval)} minutes`);
 
-  const { repeatEvery, repeatInterval, startsAt, id } = repeat.get();
   timers.push(
     new TriggerableTimer(
-      moment(startsAt).valueOf(),
+      id,
+      startsAt.getTime(),
       getMinutes(repeatEvery, repeatInterval),
-      [() => addTask(repeat)], () => { timers = timers.filter((existingTimer) => existingTimer.id !== id) },
-      id
+      [() => addTask(id)],
     )
   );
 }
 
-async function updateRepeat(repeat) {
+async function updateRepeat(Repeat) {
   console.log('updating repeat');
-  const { repeatEvery, repeatInterval, startsAt, id } = repeat.get();
-  const timer = timers.find((existingTimer) => existingTimer.id === id);
-  timer.stopTimer();
-  timer.setTimer(moment(startsAt).valueOf(), getMinutes(repeatEvery, repeatInterval), [() => addTask(repeat)])
-  timer.restart();
+  const { repeatEvery, repeatInterval, startsAt, active, id } = Repeat.get();
+  if (active) {
+    const timer = timers.find((existingTimer) => existingTimer.id === id);
+    timer.stopTimer();
+    timer.setTimer(startsAt.valueOf(), getMinutes(repeatEvery, repeatInterval));
+    timer.restart();
+  } else {
+    deleteRepeat(id);
+  }
 }
 
 async function deleteRepeat(id) {
   console.log('deleting repeat');
-
   const timer = timers.find((existingTimer) => existingTimer.id === id);
   if (timer !== undefined) {
     timers = timers.filter((existingTimer) => existingTimer.id !== id);
@@ -53,182 +74,124 @@ async function deleteRepeat(id) {
   }
 }
 
-function getMinutes(repeatEvery, repeatInterval) {
-  let multiplier = multipliers[repeatInterval];
-  if (multiplier === undefined || repeatEvery === 0) {
-    return 24 * 60;
-  }
-  return multiplier * repeatEvery;
-}
-
-const multipliers = {
-  day: 24 * 60,
-  week: 7 * 24 * 60,
-  month: 30 * 24 * 60,
-}
-
-async function addTask(repeat) {
+async function addTask(id) {
   if (!repeatTasks) {
     return;
   }
-  console.log('add Task 1');
-  const OriginalTask = await repeat.getTask({
-    include: [
-      { model: models.Repeat },
-      { model: models.Status },
-      { model: models.Subtask },
-      { model: models.WorkTrip },
-      { model: models.Material },
-      { model: models.CustomItem },
-      { model: models.Tag },
-      {
-        model: models.User,
-        as: 'assignedTos'
-      },
-      {
-        model: models.Project,
-        include: [
-          { model: models.ProjectRight },
-          { model: models.Milestone }
-        ]
-      },
-    ]
-  });
-  console.log(repeat.get('id'), repeat.get('TaskId'), OriginalTask.get().id);
+  const Repeat = <RepeatInstance>await models.Repeat.findByPk(
+    id,
+    {
+      include: [
+        {
+          model: models.RepeatTemplate,
+          include: [
+            models.RepeatTemplateAttachment,
+            models.ShortSubtask,
+            models.ScheduledTask,
+            models.Subtask,
+            models.WorkTrip,
+            models.Material,
+            models.CustomItem,
+            models.Tag,
+            {
+              model: models.User,
+              as: 'assignedTos'
+            }
+          ]
+        },
+      ]
+    }
+  );
+  if (!Repeat) {
+    console.log(`Broken repeat ${id}. Couldn't be loaded.`);
+  }
+  const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
 
-
-  console.log('add Task 2');
-
-  const {
-    title,
-    important,
-    closeDate,
-    deadline,
-    description,
-    overtime,
-    pasual,
-    pendingChangable,
-    pendingDate,
-    invoicedDate,
-    CompanyId,
-    createdById,
-    UserId,
-    MilestoneId,
-    ProjectId,
-    requesterId,
-    StatusId,
-    TaskTypeId,
-  } = OriginalTask.get();
-  const OriginalRepeat = OriginalTask.get('Repeat');
-  console.log('get of repeat');
-  const originalRepeatData = OriginalRepeat.get();
-
-  const OriginalSubtasks = OriginalTask.get('Subtasks');
-  console.log('get of subtask');
-  const originalSubtasksData = OriginalSubtasks.map((Subtask) => Subtask.get());
-
-  const OriginalWorkTrips = OriginalTask.get('WorkTrips');
-  console.log('get of worktrips');
-  const originalWorkTripsData = OriginalWorkTrips.map((WorkTrip) => WorkTrip.get());
-
-  const OriginalMaterials = OriginalTask.get('Materials');
-  console.log('get of materials');
-  const originalMaterialsData = OriginalMaterials.map((Material) => Material.get());
-
-  const OriginalCustomItems = OriginalTask.get('CustomItems');
-  console.log('get of custom items');
-  const originalCustomItemsData = OriginalCustomItems.map((CustomItem) => CustomItem.get());
-
-  console.log('get of tags');
-  const orginalTagIds = OriginalTask.get('Tags').map((tag) => tag.id)
-  const orginalAssignedToIds = OriginalTask.get('assignedTos').map((user) => user.id)
   let params = {
-    title,
-    important,
-    closeDate,
-    deadline,
-    description,
-    overtime,
-    pasual,
-    pendingChangable,
-    pendingDate,
+    //DIRECT PARAMS
+    title: RepeatTemplate.get('title'),
+    important: RepeatTemplate.get('important'),
+    description: RepeatTemplate.get('description'),
+    overtime: RepeatTemplate.get('overtime'),
+    pausal: RepeatTemplate.get('pausal'),
+    //DATES
+    deadline: RepeatTemplate.get('deadline'),
+    closeDate: RepeatTemplate.get('closeDate'),
+    pendingDate: RepeatTemplate.get('pendingDate'),
+    pendingChangable: RepeatTemplate.get('pendingChangable'),
     statusChange: moment().valueOf(),
-    invoicedDate,
-    CompanyId,
-    createdById,
-    UserId,
-    MilestoneId,
-    ProjectId,
-    requesterId,
-    StatusId,
-    TaskTypeId,
+    invoicedDate: null,
+
     TaskChanges: [{
       UserId: null,
       TaskChangeMessages: [{
-        type: 'repeat',
+        type: 'task',
         originalValue: null,
         newValue: null,
-        message: `Task was created by repeating API`,
+        message: `Task was created by task repeat.`,
       }]
     }],
-    Repeat: {
-      startsAt: originalRepeatData.startsAt,
-      repeatEvery: originalRepeatData.repeatEvery,
-      repeatInterval: originalRepeatData.repeatInterval
-    },
-
-    Subtasks: originalSubtasksData.map((subtask) => ({
-      title: subtask.title,
-      order: subtask.order,
-      done: subtask.done,
-      quantity: subtask.quantity,
-      discount: subtask.discount,
-      TaskTypeId: subtask.TaskTypeId,
-      UserId: subtask.UserId
+    //ID PARAMS
+    createdById: null,
+    CompanyId: RepeatTemplate.get('CompanyId'),
+    ProjectId: RepeatTemplate.get('ProjectId'),
+    MilestoneId: RepeatTemplate.get('MilestoneId'),
+    requesterId: RepeatTemplate.get('requesterId'),
+    TaskTypeId: RepeatTemplate.get('TaskTypeId'),
+    StatusId: RepeatTemplate.get('StatusId'),
+    RepeatId: id,
+    //EXTERNAL DATA
+    ShortSubtasks: (<ShortSubtaskInstance[]>RepeatTemplate.get('ShortSubtasks')).map((ShortSubtask) => ({
+      title: ShortSubtask.get('title'),
+      done: ShortSubtask.get('done'),
     })),
-    WorkTrips: originalWorkTripsData.map((workTrip) => ({
-      order: workTrip.order,
-      done: workTrip.done,
-      quantity: workTrip.quantity,
-      discount: workTrip.discount,
-      TripTypeId: workTrip.TripTypeId,
-      UserId: workTrip.UserId
+    ScheduledTasks: (<ScheduledTaskInstance[]>RepeatTemplate.get('ScheduledTasks')).map((ScheduledTask) => ({
+      UserId: ScheduledTask.get('UserId'),
+      from: ScheduledTask.get('from'),
+      to: ScheduledTask.get('to'),
     })),
-    Materials: originalMaterialsData.map((material) => ({
-      title: material.title,
-      order: material.order,
-      done: material.done,
-      quantity: material.quantity,
-      margin: material.margin,
-      price: material.price,
+    Subtasks: (<SubtaskInstance[]>RepeatTemplate.get('Subtasks')).map((Subtask) => ({
+      title: Subtask.get('title'),
+      order: Subtask.get('order'),
+      done: Subtask.get('done'),
+      quantity: Subtask.get('quantity'),
+      discount: Subtask.get('discount'),
+      UserId: Subtask.get('UserId'),
+      TaskTypeId: Subtask.get('TaskTypeId'),
     })),
-    CustomItems: originalCustomItemsData.map((customItem) => ({
-      title: customItem.title,
-      order: customItem.order,
-      done: customItem.done,
-      quantity: customItem.quantity,
-      price: customItem.price,
+    WorkTrips: (<WorkTripInstance[]>RepeatTemplate.get('WorkTrips')).map((WorkTrip) => ({
+      order: WorkTrip.get('order'),
+      done: WorkTrip.get('done'),
+      quantity: WorkTrip.get('quantity'),
+      discount: WorkTrip.get('discount'),
+      UserId: WorkTrip.get('UserId'),
+      TripTypeId: WorkTrip.get('TripTypeId'),
+    })),
+    Materials: (<MaterialInstance[]>RepeatTemplate.get('Materials')).map((Material) => ({
+      title: Material.get('title'),
+      order: Material.get('order'),
+      done: Material.get('done'),
+      quantity: Material.get('quantity'),
+      margin: Material.get('margin'),
+      price: Material.get('price'),
+    })),
+    CustomItems: (<CustomItemInstance[]>RepeatTemplate.get('CustomItems')).map((CustomItem) => ({
+      title: CustomItem.get('title'),
+      order: CustomItem.get('order'),
+      done: CustomItem.get('done'),
+      quantity: CustomItem.get('quantity'),
+      price: CustomItem.get('price'),
     })),
   }
-
+  //adding data
   const NewTask = <TaskInstance>await models.Task.create(params, {
-    include: [
-      { model: models.Repeat },
-      { model: models.Comment },
-      { model: models.Subtask },
-      { model: models.WorkTrip },
-      { model: models.Material },
-      { model: models.CustomItem }, {
-        model: models.TaskChange,
-        include: [
-          { model: models.TaskChangeMessage }
-        ]
-      }
-    ]
+    include: [models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, models.TaskAttachment, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
   });
-  await NewTask.setAssignedTos(orginalTagIds);
-  await NewTask.setTags(orginalAssignedToIds);
-  addRepeat(await NewTask.getRepeat());
+  await Promise.all([
+    NewTask.setAssignedTos((<UserInstance[]>RepeatTemplate.get('assignedTos')).map((User) => User.get('id'))),
+    NewTask.setTags((<TagInstance[]>RepeatTemplate.get('Tags')).map((Tag) => Tag.get('id'))),
+  ])
+  sendNotifications(null, [`Task was created by repeat.`], NewTask, (<UserInstance[]>RepeatTemplate.get('assignedTos')).map((User) => User.get('id')));
   pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'add', data: NewTask, ids: [] } });
-  await repeat.destroy();
+  return;
 }
