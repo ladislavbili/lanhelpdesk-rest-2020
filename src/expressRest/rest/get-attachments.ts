@@ -12,11 +12,12 @@ export function getAttachments(app) {
   //load if task has access
   app.get('/get-attachments', async function(req, res) {
     if (!req.query) {
-      return res.send({ ok: false, error: 'no parameters' })
+      return res.status(412).send({ ok: false, error: 'no parameters' })
     }
+
     const { path, type } = req.query;
     if (!path || !type) {
-      return res.send({ ok: false, error: 'Some parameters path or type missing' })
+      return res.status(412).send({ ok: false, error: 'Some parameters path or type missing' })
     }
     let checkResult = null;
     if (type === 'task') {
@@ -26,15 +27,15 @@ export function getAttachments(app) {
     } else if (type === 'comment') {
       checkResult = await checkComment(path, req);
     } else {
-      return res.send({ ok: false, error: 'Wrong attachment type (task/comment)' });
+      return res.status(412).send({ ok: false, error: 'Wrong attachment type (task/comment)' });
     }
 
     if (!checkResult.ok) {
-      return res.send({ ok: false, error: checkResult.error });
+      return res.status(404).send({ ok: false, error: checkResult.error });
     }
     if (!fs.existsSync(path)) {
       checkResult.Attachment.destroy();
-      return res.send({ ok: false, error: 'Attachment was deleted from the server.' })
+      return res.status(404).send({ ok: false, error: 'Attachment was deleted from the server.' })
     }
     res.sendFile(pathResolver.join(__dirname, `../../../${path}`));
   });
