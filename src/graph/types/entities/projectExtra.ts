@@ -7,6 +7,7 @@ type ProjectDefaults {
   requester: ProjectRequester!
   status: ProjectStatus!
   tag: ProjectTag!
+  type: ProjectTaskType!
 }
 
 type ProjectAssignedTo {
@@ -58,6 +59,13 @@ type ProjectTag {
   value: [Tag],
 }
 
+type ProjectTaskType {
+  def: Boolean!,
+  fixed: Boolean!,
+  required: Boolean!,
+  value: TaskType,
+}
+
 input ProjectDefaultsInput {
   assignedTo: ProjectAssignedToUpdate!
   company: ProjectCompanyUpdate!
@@ -66,6 +74,7 @@ input ProjectDefaultsInput {
   requester: ProjectRequesterUpdate!
   status: ProjectStatusUpdate!
   tag: ProjectTagUpdate!
+  type: ProjectTaskTypeUpdate!
 }
 
 input ProjectAssignedToUpdate {
@@ -115,5 +124,12 @@ input ProjectTagUpdate {
   fixed: Boolean!,
   required: Boolean!,
   value: [Int],
+}
+
+input ProjectTaskTypeUpdate {
+  def: Boolean!,
+  fixed: Boolean!,
+  required: Boolean!,
+  value: Int,
 }
 `

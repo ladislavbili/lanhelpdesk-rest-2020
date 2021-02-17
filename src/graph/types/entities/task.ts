@@ -114,6 +114,7 @@ input SortTasksInput {
 export const TaskQuerries = `
 tasks( filterId: Int, projectId: Int, filter: FilterInput, sort: SortTasksInput ): ExecTasks
 task(id: Int!): Task
+getNumberOfTasks( projectId: Int! ): Int!
 `
 
 export const TaskMutations = `

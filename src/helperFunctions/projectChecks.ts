@@ -61,6 +61,7 @@ export const checkIfHasProjectRights = async (userId, taskId = undefined, projec
       ],
     })
     let Role = <RoleInstance>User.get('Role');
+
     if (Role.get('level') === 0 || (<AccessRightsInstance>Role.get('AccessRight')).get('projects')) {
       return { User, Role, groupRights: allGroupRights, Task };
     }
@@ -72,11 +73,15 @@ export const checkIfHasProjectRights = async (userId, taskId = undefined, projec
     );
     throw InsufficientProjectAccessError;
   }
+
   let Role = <RoleInstance>User.get('Role');
-  if (rights.length === 0) {
-    return { User, Role, groupRights: allGroupRights, Task };
-  }
   let groupRights = (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups'))[0].get('ProjectGroupRight')).get();
+  if (rights.length === 0) {
+    return { User, Role, groupRights, Task };
+  }
+  if (Role.get('level') === 0 || (<AccessRightsInstance>Role.get('AccessRight')).get('projects')) {
+    return { User, Role, groupRights, Task };
+  }
   if (rights.every((right) => groupRights[right])) {
     return { User, Role, groupRights, Task };
   }
@@ -90,7 +95,7 @@ export const checkIfHasProjectRights = async (userId, taskId = undefined, projec
 }
 
 export const checkDefIntegrity = (def) => {
-  const { assignedTo, company, overtime, pausal, requester, status, tag } = def;
+  const { assignedTo, company, overtime, pausal, requester, status, tag, type } = def;
   if (
     !assignedTo.required ||
     !company.required ||
@@ -99,7 +104,7 @@ export const checkDefIntegrity = (def) => {
     !status.required
   ) {
     throw new ApolloError(
-      'Right now only tags and requester can be not required.',
+      'Right now only tags, task type and requester can be not required.',
       'PROJECT_DEF_INTEGRITY'
     );
   }
@@ -131,6 +136,10 @@ export const checkDefIntegrity = (def) => {
     throw new ApolloError('In default values, requester is set to be fixed, but is not set to default value.', 'PROJECT_DEF_INTEGRITY');
   }
 
+  if (type.fixed && !type.def) {
+    throw new ApolloError('In default values, type is set to be fixed, but is not set to default value.', 'PROJECT_DEF_INTEGRITY');
+  }
+
   if (status.fixed && !status.def) {
     throw new ApolloError('In default values, status is set to be fixed, but is not set to default value.', 'PROJECT_DEF_INTEGRITY');
   } else if (status.fixed && (status.value === null)) {
@@ -142,20 +151,12 @@ export const checkDefIntegrity = (def) => {
   }
 }
 
-const checkedAttributes = [
-  'assignedTo',
-  'tags',
-  'company',
-  'requester',
-  'status',
-];
-
 const checkSingleAttribute = (newAttr, oldAttr) => {
   return ['def', 'fixed', 'required'].some((key) => newAttr[key] !== oldAttr[key]);
 };
 
 const checkAllAttributes = (newAttrs, oldAttrs) => {
-  return ['assignedTo', 'company', 'overtime', 'pausal', 'requester', 'status', 'tag'].some((key) => checkSingleAttribute(newAttrs[key], oldAttrs[key]));
+  return ['assignedTo', 'company', 'overtime', 'pausal', 'requester', 'status', 'tag', 'type'].some((key) => checkSingleAttribute(newAttrs[key], oldAttrs[key]));
 }
 
 const checkAttributeValue = (newAttr, oldAttr) => {
@@ -219,6 +220,7 @@ export const checkIfChanged = async (attributes, Project) => {
     origDef.tag.value.length !== newDef.tag.value.length ||
     checkAttributeValue(newDef.company, origDef.company) ||
     checkAttributeValue(newDef.requester, origDef.requester) ||
+    checkAttributeValue(newDef.type, origDef.type) ||
     checkAttributeValue(newDef.status, origDef.status) ||
     origDef.status.value !== newDef.status.value ||
     origDef.overtime.value !== newDef.overtime.value ||
@@ -242,7 +244,13 @@ export const canViewTask = (Task, User, groupRights, checkAdmin = false) => {
   )
 }
 
-export const applyFixedOnAttributes = (def, args) => {
+export const applyFixedOnAttributes = (defaults, args) => {
+
+  const def = {
+    ...(<any>defaults),
+    taskType: (<any>defaults).type
+  };
+
   (['assignedTo', 'tag']).forEach((key) => {
     if (def[key].fixed && args[key]) {
       let values = def[key].value.map((value) => value.get('id'));
@@ -264,7 +272,7 @@ export const applyFixedOnAttributes = (def, args) => {
     }
   });
 
-  (['company', 'requester', 'status']).forEach((key) => {
+  (['company', 'requester', 'status', 'taskType']).forEach((key) => {
     if (def[key].fixed && args[key]) {
       let value = def[key].value.get('id');
       //if is fixed, it must fit
@@ -275,6 +283,15 @@ export const applyFixedOnAttributes = (def, args) => {
   });
   return args;
 }
+
+const checkedAttributes = [
+  'assignedTo',
+  'tags',
+  'company',
+  'requester',
+  'taskType',
+  'status',
+];
 export const checkDefRequiredSatisfied = (def, originalData, newData) => {
   let mergedData = newData;
   if (originalData) {
@@ -284,7 +301,7 @@ export const checkDefRequiredSatisfied = (def, originalData, newData) => {
       return mergedData;
     }, {});
   }
-  def = { ...def, tags: def.tag };
+  def = { ...def, tags: def.tag, taskType: def.type };
   checkedAttributes.forEach((key) => {
     if (['assignedTo', 'tags'].includes(key)) {
       if (def[key].required && mergedData[key].length === 0) {
@@ -374,6 +391,20 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       throw createCantEditTaskAttributeError('requester');
     }
   }
+  if (!groupRights.typeWrite && newAttrs.taskType !== undefined) {
+    if (
+      (
+        !def.type.def ||
+        def.type.value.get('id') !== newAttrs.taskType
+      ) &&
+      (
+        orgAttrs === null ||
+        orgAttrs.get('TaskTypeId') !== newAttrs.taskType
+      )
+    ) {
+      throw createCantEditTaskAttributeError('task type');
+    }
+  }
   if (!groupRights.statusWrite && newAttrs.status !== undefined) {
     if (
       (
@@ -388,10 +419,10 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       throw createCantEditTaskAttributeError('status');
     }
   }
+
   if (!groupRights.overtimeWrite && newAttrs.overtime !== undefined) {
     if (
       (
-        !def.overtime.def ||
         def.overtime.value !== newAttrs.overtime
       ) &&
       (
@@ -402,10 +433,10 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       throw createCantEditTaskAttributeError('overtime');
     }
   }
+
   if (!groupRights.pausalWrite && newAttrs.pausal !== undefined) {
     if (
       (
-        !def.pausal.def ||
         def.pausal.value !== newAttrs.pausal
       ) &&
       (
@@ -451,21 +482,10 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       orgKey: 'MilestoneId'
     },
     {
-      key: 'taskType',
-      type: 'object',
-      right: 'typeWrite',
-      orgKey: 'TaskTypeId'
-    },
-    {
       key: 'project',
-      type: 'object',
+      type: 'project',
       right: 'projectWrite',
       orgKey: 'ProjectId'
-    },
-    {
-      key: 'pendingChangable',
-      type: 'boolean',
-      right: 'milestoneWrite',
     },
     {
       key: 'scheduled',
@@ -533,6 +553,17 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
             orgAttrs === null ||
             orgAttrs.get(check.orgKey) !== newAttrs[check.key]
           )
+        ) {
+          throw createCantEditTaskAttributeError(check.key);
+        }
+        break;
+      }
+      case 'project': {
+        if (
+          !groupRights[check.right] &&
+          newAttrs[check.key] &&
+          orgAttrs !== null &&
+          orgAttrs.get(check.orgKey) !== newAttrs[check.key]
         ) {
           throw createCantEditTaskAttributeError(check.key);
         }

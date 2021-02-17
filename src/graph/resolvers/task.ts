@@ -328,6 +328,12 @@ const querries = {
     }
     return Task;
   },
+
+  getNumberOfTasks: async (root, { projectId }, { req }) => {
+    const User = await checkResolver(req);
+    await checkIfHasProjectRights(User.get('id'), undefined, projectId, ['projectWrite']);
+    return models.Task.count({ where: { ProjectId: projectId } })
+  },
 }
 
 const mutations = {

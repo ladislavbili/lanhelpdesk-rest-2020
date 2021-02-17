@@ -141,7 +141,7 @@ export default function defineProjects(sequelize: Sequelize) {
               required: this.get('defTagRequired'),
               value: tag
             },
-            taskType: {
+            type: {
               def: this.get('defTaskTypeDef'),
               fixed: this.get('defTaskTypeFixed'),
               required: this.get('defTaskTypeRequired'),
@@ -286,7 +286,7 @@ export default function defineProjects(sequelize: Sequelize) {
       defTaskTypeRequired: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
-        defaultValue: true,
+        defaultValue: false,
       },
 
     },

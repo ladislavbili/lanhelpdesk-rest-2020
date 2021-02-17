@@ -130,6 +130,7 @@ const mutations = {
   addProject: async (root, { def, tags, statuses, groups, userGroups, ...attributes }, { req }) => {
     await checkResolver(req, ["addProjects"]);
     checkDefIntegrity(def);
+    let defInput = def;
     //check is there is an admin
     if (!groups.some((group) => (
       group.rights.projectPrimaryRead &&
@@ -146,30 +147,40 @@ const mutations = {
     if (!statuses.some((status) => status.action === 'CloseDate')) {
       throw ProjectNoCloseStatus;
     }
-    let assignedTos = def.assignedTo.value;
-    let company = def.company.value;
-    let requester = def.requester.value;
-    let fakeTagIds = def.tag.value.filter((fakeID) => tags.some((tag) => tag.id === fakeID));
-    let fakeStatusId = statuses.some((status) => status.id === def.status.value) ? def.status.value : null;
+    let assignedTos = defInput.assignedTo.value;
+    let company = defInput.company.value;
+    let requester = defInput.requester.value;
+    let taskType = defInput.type.value;
+    let fakeTagIds = defInput.tag.value.filter((fakeID) => tags.some((tag) => tag.id === fakeID));
+    let fakeStatusId = statuses.some((status) => status.id === defInput.status.value) ? defInput.status.value : null;
 
     await idsDoExistsCheck(assignedTos, models.User);
     await multipleIdDoesExistsCheck([
       { model: models.Company, id: company },
       { model: models.User, id: requester },
+      { model: models.TaskType, id: taskType },
     ].filter((pair) => pair.id !== null));
 
-    delete def.assignedTo['value'];
-    delete def.company['value'];
-    delete def.requester['value'];
-    delete def.status['value'];
-    delete def.tag['value'];
+    delete defInput.assignedTo['value'];
+    delete defInput.company['value'];
+    delete defInput.requester['value'];
+    delete defInput.type['value'];
+    delete defInput.status['value'];
+    delete defInput.tag['value'];
     //def map to object
-    let newDef = flattenObject(def, 'def');
+    defInput = {
+      ...defInput,
+      taskType: defInput.type,
+    }
+    let newDef = flattenObject(defInput, 'def');
+
 
     const newProject = <ProjectInstance>await models.Project.create({
       ...attributes,
+      ...newDef,
       defCompanyId: company,
       defRequesterId: requester,
+      defTaskTypeId: taskType,
     });
     await newProject.setDefAssignedTos(assignedTos === null ? [] : assignedTos);
     const newGroups = <ProjectGroupInstance[]>await Promise.all(
@@ -222,7 +233,7 @@ const mutations = {
     const User = await checkResolver(req);
     const {
       id,
-      def: defInput,
+      def,
       deleteTags,
       updateTags,
       addTags,
@@ -235,6 +246,7 @@ const mutations = {
       deleteGroups,
       ...attributes
     } = allAttributes;
+    let defInput = { ...def };
     const Project = <ProjectInstance>await models.Project.findByPk(id, {
       include: [
         {
@@ -265,6 +277,7 @@ const mutations = {
       let assignedTos = defInput.assignedTo.value;
       let company = defInput.company.value;
       let requester = defInput.requester.value;
+      let taskType = defInput.type.value;
       let status = defInput.status.value;
       let tags = defInput.tag.value;
       await idsDoExistsCheck(assignedTos, models.User);
@@ -272,6 +285,7 @@ const mutations = {
       await multipleIdDoesExistsCheck([
         { model: models.Company, id: company },
         { model: models.User, id: requester },
+        { model: models.TaskType, id: taskType },
         { model: models.Status, id: defInput.status.value !== null && defInput.status.value > 0 ? defInput.status.value : null },
       ].filter((pair) => pair.id !== null));
     }
@@ -312,19 +326,26 @@ const mutations = {
       let assignedTos = defInput.assignedTo.value;
       let company = defInput.company.value;
       let requester = defInput.requester.value;
+      let taskType = defInput.type.value;
       let status = defInput.status.value;
       let tags = defInput.tag.value;
       delete defInput.assignedTo['value'];
       delete defInput.company['value'];
       delete defInput.requester['value'];
+      delete defInput.type['value'];
       delete defInput.status['value'];
       delete defInput.tag['value'];
       //def map to object
+      defInput = {
+        ...defInput,
+        taskType: defInput.type,
+      }
       const def = flattenObject(defInput, 'def');
       extraAttributes = {
         ...def,
         defCompanyId: company,
         defRequesterId: requester,
+        defTaskTypeId: taskType,
       }
       promises.push(Project.setDefAssignedTos(assignedTos === null ? [] : assignedTos));
       if (status < 0) {
