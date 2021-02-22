@@ -27,6 +27,7 @@ import { TaskType } from './entities/taskType';
 import { TripType } from './entities/tripType';
 import { User } from './entities/user';
 import { UserInvoice } from './entities/userInvoice';
+import { UserNotification } from './entities/userNotification';
 import { WorkTrip } from './entities/workTrip';
 import { Repeat } from './entities/repeat';
 import { RepeatTemplate } from './entities/repeatTemplate';
@@ -62,6 +63,7 @@ ${TaskType}
 ${TripType}
 ${User}
 ${UserInvoice}
+${UserNotification}
 ${WorkTrip}
 ${Repeat}
 ${RepeatTemplate}

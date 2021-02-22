@@ -191,10 +191,13 @@ async function addTask(id) {
   const NewTask = <TaskInstance>await models.Task.create(params, {
     include: [models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, models.TaskAttachment, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
   });
+
   await Promise.all([
     NewTask.setAssignedTos((<UserInstance[]>RepeatTemplate.get('assignedTos')).map((User) => User.get('id'))),
     NewTask.setTags((<TagInstance[]>RepeatTemplate.get('Tags')).map((Tag) => Tag.get('id'))),
   ])
+
+
   //Duplicate Attachments
   if (!fs.existsSync('files')) {
     fs.mkdirSync('files');
@@ -206,19 +209,25 @@ async function addTask(id) {
     fs.mkdirSync(`files/task-attachments/${NewTask.get('id')}`);
   }
   const newFolderPath = `files/task-attachments/${NewTask.get('id')}/${moment().valueOf()}`;
-  (<RepeatTemplateInstance[]>RepeatTemplate.get('RepeatTemplateAttachments')).map((Attachment, index) => {
-    const newFilePath = `${newFolderPath}${index}-${Attachment.get('filename')}`;
-    fs.createReadStream(<string>Attachment.get('path')).pipe(fs.createWriteStream(newFilePath));
-    return NewTask.createTaskAttachment(
-      {
-        filename: Attachment.get('filename'),
-        mimetype: Attachment.get('mimetype'),
-        encoding: Attachment.get('encoding'),
-        size: Attachment.get('size'),
-        path: newFilePath,
+  (<RepeatTemplateInstance[]>RepeatTemplate.get('RepeatTemplateAttachments'))
+    .filter((Attachment) => fs.existsSync(<string>Attachment.get('path')))
+    .map((Attachment, index) => {
+      try {
+        const newFilePath = `${newFolderPath}${index}-${Attachment.get('filename')}`;
+        fs.createReadStream(<string>Attachment.get('path')).pipe(fs.createWriteStream(newFilePath));
+        return NewTask.createTaskAttachment(
+          {
+            filename: Attachment.get('filename'),
+            mimetype: Attachment.get('mimetype'),
+            encoding: Attachment.get('encoding'),
+            size: Attachment.get('size'),
+            path: newFilePath,
+          }
+        )
+      } catch (err) {
+        console.log(err);
       }
-    )
-  })
+    })
 
 
   sendNotifications(null, [`Task was created by repeat.`], NewTask, (<UserInstance[]>RepeatTemplate.get('assignedTos')).map((User) => User.get('id')));

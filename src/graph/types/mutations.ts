@@ -27,6 +27,7 @@ import { TaskTypeMutations } from './entities/taskType';
 import { TripTypeMutations } from './entities/tripType';
 import { UserMutations } from './entities/user';
 import { UserInvoiceMutations } from './entities/userInvoice';
+import { UserNotificationMutations } from './entities/userNotification';
 import { WorkTripMutations } from './entities/workTrip';
 import { RepeatMutations } from './entities/repeat';
 import { RepeatTemplateMutations } from './entities/repeatTemplate';
@@ -63,6 +64,7 @@ type Mutation {
   ${TripTypeMutations}
   ${UserMutations}
   ${UserInvoiceMutations}
+  ${UserNotificationMutations}
   ${WorkTripMutations}
   ${RepeatMutations}
   ${RepeatTemplateMutations}

@@ -1,9 +1,10 @@
 import moment from 'moment';
-import { createDoesNoExistsError, InternalMessagesNotAllowed } from '@/configs/errors';
 import checkResolver from '@/graph/resolvers/checkResolver';
+import { createDoesNoExistsError, InternalMessagesNotAllowed } from '@/configs/errors';
 import { checkIfHasProjectRights, checkType, getAttributes } from '@/helperFunctions';
 import { models } from '@/models';
 import { AccessRightsInstance, RoleInstance, TaskInstance, CommentInstance } from '@/models/instances';
+import { sendNotificationToUsers } from '@/graph/resolvers/userNotification';
 
 export function sendComment(app) {
   app.post('/send-comment', async function(req, res) {
@@ -49,8 +50,9 @@ export function sendComment(app) {
     if (internal && !allowedInternal) {
       return res.send({ ok: false, error: InternalMessagesNotAllowed.message })
     }
+    let ParentComment = null;
     if (parentCommentId) {
-      const ParentComment = await models.Comment.findByPk(parentCommentId);
+      ParentComment = await models.Comment.findByPk(parentCommentId, { include: [models.User, { model: models.Comment, include: [models.User] }] });
       if (ParentComment === null || ParentComment.get('TaskId') !== taskId) {
         return res.send({ ok: false, error: createDoesNoExistsError('Parent comment', parentCommentId).message })
       }
@@ -88,6 +90,33 @@ export function sendComment(app) {
         path: `files/comment-attachments/${taskId}/${NewComment.get('id')}/${timestamp}-${file.name}`,
       }));
     }
+    let notificationMessage = `
+      ${message}
+    `;
+    if (ParentComment) {
+      notificationMessage += `
+      -----Older messages-----
+      ${ParentComment.get('Comments').map((Comment) => `
+      ${Comment.get('User').get('fullName')} created comment at ${moment(Comment.get('createdAt')).format('HH:mm DD.MM.YYYY')}
+
+      ${Comment.get('comment')}
+      ------------------------
+      `)}
+      ${ParentComment.get('User').get('fullName')} created comment at ${moment(ParentComment.get('createdAt')).format('HH:mm DD.MM.YYYY')}
+      ${ParentComment.get('comment')}
+      `
+    }
+    sendNotificationToUsers(
+      {
+        subject: `New comment at ${moment().format('HH:mm DD.MM.YYYY')}.`,
+        message: notificationMessage,
+        read: false,
+        createdById: User.get('id'),
+        TaskId: Task.get('id'),
+      },
+      User.get('id'),
+      Task,
+    )
     return res.send({ ok: true, error: null, comment: NewComment.get() });
   });
 }

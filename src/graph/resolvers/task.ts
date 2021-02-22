@@ -58,6 +58,7 @@ import {
   filterToWhere,
   filterByOneOf,
 } from '@/helperFunctions';
+import { sendNotificationToUsers } from '@/graph/resolvers/userNotification';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
@@ -875,6 +876,17 @@ const mutations = {
           default:
             break;
         }
+        sendNotificationToUsers(
+          {
+            subject: `Status was changed from ${TaskStatus.get('title')} to ${Status.get('title')}.`,
+            message: `Status was changed from ${TaskStatus.get('title')} to ${Status.get('title')} at ${moment().format('HH:mm DD.MM.YYYY')} in task currently named ${Task.get('id')}:${Task.get('title')}.`,
+            read: false,
+            createdById: User.get('id'),
+            TaskId: Task.get('id'),
+          },
+          User.get('id'),
+          Task,
+        )
       }
 
       taskChangeMessages = [

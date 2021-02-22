@@ -27,6 +27,7 @@ import { TaskTypeQuerries } from './entities/taskType';
 import { TripTypeQuerries } from './entities/tripType';
 import { UserQuerries } from './entities/user';
 import { UserInvoiceQuerries } from './entities/userInvoice';
+import { UserNotificationQuerries } from './entities/userNotification';
 import { WorkTripQuerries } from './entities/workTrip';
 import { RepeatQuerries } from './entities/repeat';
 import { RepeatTemplateQuerries } from './entities/repeatTemplate';
@@ -63,6 +64,7 @@ type Query {
   ${TripTypeQuerries}
   ${UserQuerries}
   ${UserInvoiceQuerries}
+  ${UserNotificationQuerries}
   ${WorkTripQuerries}
   ${RepeatQuerries}
   ${RepeatTemplateQuerries}

@@ -13,6 +13,7 @@ import { sendEmail } from '@/services/smtp'
 import { RoleInstance, AccessRightsInstance, TaskInstance, EmailTargetInstance, UserInstance, CommentAttachmentInstance } from '@/models/instances';
 import pathResolver from 'path';
 import { Op } from 'sequelize';
+import { sendNotificationToUsers } from './userNotification';
 import checkResolver from './checkResolver';
 import fs from 'fs';
 
@@ -91,6 +92,19 @@ const mutations = {
         }]
       }, { include: [{ model: models.TaskChangeMessage }] });
     }
+    /*
+    sendNotificationToUsers(
+      {
+        subject
+      message
+      read
+      createdById: SourceUser.get('id'),
+      task: Task.get('id'),
+      },
+      SourceUser.get('id'),
+      Task,
+    )
+    */
     return NewComment;
   },
 
