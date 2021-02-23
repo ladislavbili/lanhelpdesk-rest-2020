@@ -36,6 +36,12 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     )
+    if (params.approved) {
+      params = {
+        ...params,
+        MaterialApprovedById: SourceUser.get('id')
+      }
+    }
     return models.Material.create({
       TaskId: task,
       ...params,
@@ -48,16 +54,42 @@ const mutations = {
     if (Material === null) {
       throw createDoesNoExistsError('Material', id);
     }
+    let TaskChangeMessages = [
+      {
+        type: 'material',
+        originalValue: `${Material.get('title')},${Material.get('done')},${Material.get('quantity')},${Material.get('price')},${Material.get('margin')}`,
+        newValue: `${params.title},${params.done},${params.quantity},${params.price},${params.margin}`,
+        message: `Material ${Material.get('title')}${params.title && params.title !== Material.get('title') ? `/${params.title}` : ''} was updated.`,
+      }
+    ]
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), Material.get('TaskId'), undefined, ['vykazWrite']);
+    if (params.approved === false && Material.get('approved') === true) {
+      params = {
+        ...params,
+        MaterialApprovedById: null,
+      }
+      TaskChangeMessages.push({
+        type: 'material',
+        originalValue: `${!params.approved}`,
+        newValue: `${params.approved}`,
+        message: `Material ${Material.get('title')}${params.title && params.title !== Material.get('title') ? `/${params.title}` : ''} was set as not approved by ${SourceUser.get('fullName')}(${SourceUser.get('email')}).`,
+      })
+    } else if (params.approved === true && Material.get('approved') === false) {
+      params = {
+        ...params,
+        MaterialApprovedById: SourceUser.get('id')
+      }
+      TaskChangeMessages.push({
+        type: 'material',
+        originalValue: `${!params.approved}`,
+        newValue: `${params.approved}`,
+        message: `Material ${Material.get('title')}${params.title && params.title !== Material.get('title') ? `/${params.title}` : ''} was set as approved by ${SourceUser.get('fullName')}(${SourceUser.get('email')}).`,
+      })
+    }
     (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
-        TaskChangeMessages: [{
-          type: 'material',
-          originalValue: `${Material.get('title')},${Material.get('done')},${Material.get('quantity')},${Material.get('price')},${Material.get('margin')}`,
-          newValue: `${params.title},${params.done},${params.quantity},${params.price},${params.margin}`,
-          message: `Material ${Material.get('title')}${params.title && params.title !== Material.get('title') ? `/${params.title}` : ''} was updated.`,
-        }],
+        TaskChangeMessages,
       },
       { include: [models.TaskChangeMessage] }
     )
@@ -94,7 +126,12 @@ const mutations = {
     }
 
     await checkIfHasProjectRights(SourceUser.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['vykazWrite']);
-
+    if (params.approved) {
+      params = {
+        ...params,
+        MaterialApprovedById: SourceUser.get('id')
+      }
+    }
     return models.Material.create({
       RepeatTemplateId: repeatTemplate,
       ...params,
@@ -108,6 +145,17 @@ const mutations = {
       throw createDoesNoExistsError('Material', id);
     }
     await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>Material.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    if (params.approved === false && Material.get('approved') === true) {
+      params = {
+        ...params,
+        MaterialApprovedById: null,
+      }
+    } else if (params.approved === true && Material.get('approved') === false) {
+      params = {
+        ...params,
+        MaterialApprovedById: SourceUser.get('id')
+      }
+    }
     return Material.update(params);
   },
 
@@ -127,6 +175,9 @@ const attributes = {
   Material: {
     async task(material) {
       return getModelAttribute(material, 'Task');
+    },
+    async approvedBy(material) {
+      return getModelAttribute(material, 'MaterialApprovedBy');
     },
     async repeatTemplate(material) {
       return getModelAttribute(material, 'RepeatTemplate');

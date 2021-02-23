@@ -41,6 +41,12 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     )
+    if (params.approved) {
+      params = {
+        ...params,
+        SubtaskApprovedById: SourceUser.get('id'),
+      }
+    }
     return models.Subtask.create({
       TaskId: task,
       TaskTypeId: type,
@@ -52,10 +58,16 @@ const mutations = {
   updateSubtask: async (root, { id, type, assignedTo, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const Subtask = <SubtaskInstance>await models.Subtask.findByPk(id, { include: [models.TaskType] });
-    const originalValue = `${Subtask.get('title')}${Subtask.get('done').toString()},${Subtask.get('quantity')},${Subtask.get('discount')},${(<TaskTypeInstance>Subtask.get('TaskType')).get('id')},${Subtask.get('UserId')}`;
     if (Subtask === null) {
       throw createDoesNoExistsError('Subtask', id);
     }
+    const originalValue = `${Subtask.get('title')}${Subtask.get('done').toString()},${Subtask.get('quantity')},${Subtask.get('discount')},${(<TaskTypeInstance>Subtask.get('TaskType')).get('id')},${Subtask.get('UserId')}`;
+    let TaskChangeMessages = [{
+      type: 'subtask',
+      originalValue,
+      newValue: `${params.title},${params.done},${params.quantity},${params.discount},${type},${assignedTo}`,
+      message: `Subtask ${Subtask.get('title')}${params.title !== Subtask.get('title') ? `/${params.title}` : ''} was updated.`,
+    }]
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), Subtask.get('TaskId'), undefined, ['vykazWrite']);
     if (assignedTo !== undefined) {
       const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
@@ -83,18 +95,36 @@ const mutations = {
       if (assignedTo !== undefined) {
         promises.push(Subtask.setUser(assignedTo, { transaction: t }));
       }
+      if (params.approved === false && Subtask.get('approved') === true) {
+        params = {
+          ...params,
+          SubtaskApprovedById: null,
+        }
+        TaskChangeMessages.push({
+          type: 'subtask',
+          originalValue: `${!params.approved}`,
+          newValue: `${params.approved}`,
+          message: `Subtask ${Subtask.get('title')}${params.title !== Subtask.get('title') ? `/${params.title}` : ''} was set as not approved by ${SourceUser.get('fullName')}(${SourceUser.get('email')}).`,
+        })
+      } else if (params.approved === true && Subtask.get('approved') === false) {
+        params = {
+          ...params,
+          SubtaskApprovedById: SourceUser.get('id')
+        }
+        TaskChangeMessages.push({
+          type: 'subtask',
+          originalValue: `${!params.approved}`,
+          newValue: `${params.approved}`,
+          message: `Subtask ${Subtask.get('title')}${params.title !== Subtask.get('title') ? `/${params.title}` : ''} was set as approved by ${SourceUser.get('fullName')}(${SourceUser.get('email')}).`,
+        })
+      }
       promises.push(Subtask.update(params, { transaction: t }));
       await Promise.all(promises);
     });
     (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
-        TaskChangeMessages: [{
-          type: 'subtask',
-          originalValue,
-          newValue: `${params.title},${params.done},${params.quantity},${params.discount},${type},${assignedTo}`,
-          message: `Subtask ${Subtask.get('title')}${params.title !== Subtask.get('title') ? `/${params.title}` : ''} was updated.`,
-        }],
+        TaskChangeMessages,
       },
       { include: [models.TaskChangeMessage] }
     )
@@ -140,6 +170,12 @@ const mutations = {
       throw AssignedToUserNotSolvingTheTask;
     }
     await idDoesExistsCheck(type, models.TaskType);
+    if (params.approved) {
+      params = {
+        ...params,
+        SubtaskApprovedById: SourceUser.get('id'),
+      }
+    }
     return models.Subtask.create({
       RepeatTemplateId: repeatTemplate,
       TaskTypeId: type,
@@ -194,6 +230,17 @@ const mutations = {
       if (assignedTo !== undefined) {
         promises.push(Subtask.setUser(assignedTo, { transaction: t }));
       }
+      if (params.approved === false && Subtask.get('approved') === true) {
+        params = {
+          ...params,
+          SubtaskApprovedById: null,
+        }
+      } else if (params.approved === true && Subtask.get('approved') === false) {
+        params = {
+          ...params,
+          SubtaskApprovedById: SourceUser.get('id')
+        }
+      }
       promises.push(Subtask.update(params, { transaction: t }));
       await Promise.all(promises);
     });
@@ -224,6 +271,9 @@ const attributes = {
   Subtask: {
     async task(subtask) {
       return getModelAttribute(subtask, 'Task');
+    },
+    async approvedBy(subtask) {
+      return getModelAttribute(subtask, 'SubtaskApprovedBy');
     },
     async repeatTemplate(subtask) {
       return getModelAttribute(subtask, 'RepeatTemplate');

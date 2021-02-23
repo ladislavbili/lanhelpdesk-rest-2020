@@ -5,6 +5,7 @@ export interface CustomItemInstance extends DefaultInstance {
   title: string;
   order: number;
   done: boolean;
+  approved: boolean;
   quantity: number;
   price: number;
 }
@@ -25,6 +26,11 @@ export default function defineCustomItems(sequelize: Sequelize) {
         defaultValue: 0
       },
       done: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      approved: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
@@ -50,6 +56,8 @@ export default function defineCustomItems(sequelize: Sequelize) {
 
 export function createCustomItemsAssoc(models) {
   models.CustomItem.belongsTo(models.Task);
+
+  models.CustomItem.belongsTo(models.User, { as: 'ItemApprovedBy' });
 
   models.CustomItem.belongsTo(models.RepeatTemplate);
 

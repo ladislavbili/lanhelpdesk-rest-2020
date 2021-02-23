@@ -154,6 +154,8 @@ async function addTask(id) {
       to: ScheduledTask.get('to'),
     })),
     Subtasks: (<SubtaskInstance[]>RepeatTemplate.get('Subtasks')).map((Subtask) => ({
+      approved: Subtask.get('approved'),
+      SubtaskApprovedById: Subtask.get('SubtaskApprovedById'),
       title: Subtask.get('title'),
       order: Subtask.get('order'),
       done: Subtask.get('done'),
@@ -163,6 +165,8 @@ async function addTask(id) {
       TaskTypeId: Subtask.get('TaskTypeId'),
     })),
     WorkTrips: (<WorkTripInstance[]>RepeatTemplate.get('WorkTrips')).map((WorkTrip) => ({
+      approved: WorkTrip.get('approved'),
+      TripApprovedById: WorkTrip.get('TripApprovedById'),
       order: WorkTrip.get('order'),
       done: WorkTrip.get('done'),
       quantity: WorkTrip.get('quantity'),
@@ -171,6 +175,8 @@ async function addTask(id) {
       TripTypeId: WorkTrip.get('TripTypeId'),
     })),
     Materials: (<MaterialInstance[]>RepeatTemplate.get('Materials')).map((Material) => ({
+      approved: Material.get('approved'),
+      MaterialApprovedById: Material.get('MaterialApprovedById'),
       title: Material.get('title'),
       order: Material.get('order'),
       done: Material.get('done'),
@@ -179,6 +185,8 @@ async function addTask(id) {
       price: Material.get('price'),
     })),
     CustomItems: (<CustomItemInstance[]>RepeatTemplate.get('CustomItems')).map((CustomItem) => ({
+      approved: CustomItem.get('approved'),
+      ItemApprovedById: CustomItem.get('ItemApprovedById'),
       title: CustomItem.get('title'),
       order: CustomItem.get('order'),
       done: CustomItem.get('done'),

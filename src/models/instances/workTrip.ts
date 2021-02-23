@@ -5,6 +5,7 @@ export interface WorkTripInstance extends DefaultInstance {
 
   order: number;
   done: boolean;
+  approved: boolean;
   quantity: number;
   discount: number;
   //task
@@ -26,6 +27,11 @@ export default function defineWorkTrips(sequelize: Sequelize) {
         defaultValue: 0
       },
       done: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      approved: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
@@ -57,6 +63,8 @@ export function createWorkTripsAssoc(models) {
   models.WorkTrip.belongsTo(models.TripType);
 
   models.WorkTrip.belongsTo(models.User);
+
+  models.WorkTrip.belongsTo(models.User, { as: 'TripApprovedBy' });
 
   models.WorkTrip.hasMany(models.InvoicedTrip);
 }

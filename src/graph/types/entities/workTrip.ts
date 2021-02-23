@@ -4,6 +4,8 @@ type WorkTrip {
   ${defaultAttributes}
   order: Int!
   done: Boolean!
+  approved: Boolean!
+  approvedBy: User
   quantity: Float!
   discount: Float!
   task: Task
@@ -19,11 +21,11 @@ workTrips(taskId: Int!): [WorkTrip]
 `
 
 export const WorkTripMutations = `
-addWorkTrip( order: Int!, done: Boolean!, quantity: Float!, discount: Float!, task: Int!, type: Int!, assignedTo: Int! ): WorkTrip
-updateWorkTrip( id: Int!, order: Int, done: Boolean, quantity: Float, discount: Float, type: Int, assignedTo: Int ): WorkTrip
+addWorkTrip( order: Int!, done: Boolean!, quantity: Float!, discount: Float!, task: Int!, type: Int!, assignedTo: Int!, approved: Boolean ): WorkTrip
+updateWorkTrip( id: Int!, order: Int, done: Boolean, quantity: Float, discount: Float, type: Int, assignedTo: Int, approved: Boolean ): WorkTrip
 deleteWorkTrip( id: Int! ): WorkTrip
 
-addRepeatTemplateWorkTrip( order: Int!, done: Boolean!, quantity: Float!, discount: Float!, repeatTemplate: Int!, type: Int!, assignedTo: Int! ): WorkTrip
-updateRepeatTemplateWorkTrip( id: Int!, order: Int, done: Boolean, quantity: Float, discount: Float, type: Int, assignedTo: Int ): WorkTrip
+addRepeatTemplateWorkTrip( order: Int!, done: Boolean!, quantity: Float!, discount: Float!, repeatTemplate: Int!, type: Int!, assignedTo: Int!, approved: Boolean ): WorkTrip
+updateRepeatTemplateWorkTrip( id: Int!, order: Int, done: Boolean, quantity: Float, discount: Float, type: Int, assignedTo: Int, approved: Boolean ): WorkTrip
 deleteRepeatTemplateWorkTrip( id: Int! ): WorkTrip
 `

@@ -5,6 +5,8 @@ type Material {
   title: String!
   order: Int!
   done: Boolean!
+  approved: Boolean!
+  approvedBy: User
   quantity: Float!
   margin: Float!
   price: Float!
@@ -19,11 +21,11 @@ materials(taskId: Int!): [Material]
 `
 
 export const MaterialMutations = `
-addMaterial( title: String!, order: Int!, done: Boolean!, quantity: Float!, margin: Float!, price: Float!, task: Int! ): Material
-updateMaterial( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, margin: Float, price: Float ): Material
+addMaterial( title: String!, order: Int!, done: Boolean!, quantity: Float!, margin: Float!, price: Float!, task: Int!, approved: Boolean ): Material
+updateMaterial( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, margin: Float, price: Float, approved: Boolean ): Material
 deleteMaterial( id: Int! ): Material
 
-addRepeatTemplateMaterial( title: String!, order: Int!, done: Boolean!, quantity: Float!, margin: Float!, price: Float!, repeatTemplate: Int! ): Material
-updateRepeatTemplateMaterial( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, margin: Float, price: Float ): Material
+addRepeatTemplateMaterial( title: String!, order: Int!, done: Boolean!, quantity: Float!, margin: Float!, price: Float!, repeatTemplate: Int!, approved: Boolean ): Material
+updateRepeatTemplateMaterial( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, margin: Float, price: Float, approved: Boolean ): Material
 deleteRepeatTemplateMaterial( id: Int! ): Material
 `

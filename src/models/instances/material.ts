@@ -5,6 +5,7 @@ export interface MaterialInstance extends DefaultInstance {
   title: string;
   order: number;
   done: boolean;
+  approved: boolean;
   quantity: number;
   margin: number;
   price: number;
@@ -24,6 +25,11 @@ export default function defineMaterials(sequelize: Sequelize) {
         defaultValue: 0
       },
       done: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      approved: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
@@ -54,6 +60,8 @@ export default function defineMaterials(sequelize: Sequelize) {
 
 export function createMaterialsAssoc(models) {
   models.Material.belongsTo(models.Task);
+
+  models.Material.belongsTo(models.User, { as: 'MaterialApprovedBy' });
 
   models.Material.belongsTo(models.RepeatTemplate);
 

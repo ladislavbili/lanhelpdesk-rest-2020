@@ -36,6 +36,12 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     )
+    if (params.approved) {
+      params = {
+        ...params,
+        ItemApprovedById: SourceUser.get('id')
+      }
+    }
     return models.CustomItem.create({
       TaskId: task,
       ...params,
@@ -49,15 +55,41 @@ const mutations = {
       throw createDoesNoExistsError('CustomItem', id);
     }
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), CustomItem.get('TaskId'), undefined, ['vykazWrite']);
+    let TaskChangeMessages = [
+      {
+        type: 'customItem',
+        originalValue: `${CustomItem.get('title')},${CustomItem.get('done')},${CustomItem.get('quantity')},${CustomItem.get('price')}`,
+        newValue: `${params.title},${params.done},${params.quantity},${params.price}`,
+        message: `Custom item ${CustomItem.get('title')}${params.title && params.title !== CustomItem.get('title') ? `/${params.title}` : ''} was updated.`,
+      }
+    ]
+    if (params.approved === false && CustomItem.get('approved') === true) {
+      params = {
+        ...params,
+        ItemApprovedById: null,
+      }
+      TaskChangeMessages.push({
+        type: 'customItem',
+        originalValue: `${!params.approved}`,
+        newValue: `${params.approved}`,
+        message: `Custom item ${CustomItem.get('title')}${params.title && params.title !== CustomItem.get('title') ? `/${params.title}` : ''} was set as not approved by ${SourceUser.get('fullName')}(${SourceUser.get('email')}).`,
+      })
+    } else if (params.approved === true && CustomItem.get('approved') === false) {
+      params = {
+        ...params,
+        ItemApprovedById: SourceUser.get('id')
+      }
+      TaskChangeMessages.push({
+        type: 'customItem',
+        originalValue: `${!params.approved}`,
+        newValue: `${params.approved}`,
+        message: `Custom item ${CustomItem.get('title')}${params.title && params.title !== CustomItem.get('title') ? `/${params.title}` : ''} was set as approved by ${SourceUser.get('fullName')}(${SourceUser.get('email')}).`,
+      })
+    }
     (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
-        TaskChangeMessages: [{
-          type: 'customItem',
-          originalValue: `${CustomItem.get('title')},${CustomItem.get('done')},${CustomItem.get('quantity')},${CustomItem.get('price')}`,
-          newValue: `${params.title},${params.done},${params.quantity},${params.price}`,
-          message: `Custom item ${CustomItem.get('title')}${params.title && params.title !== CustomItem.get('title') ? `/${params.title}` : ''} was updated.`,
-        }],
+        TaskChangeMessages,
       },
       { include: [models.TaskChangeMessage] }
     )
@@ -94,7 +126,12 @@ const mutations = {
     }
 
     await checkIfHasProjectRights(SourceUser.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['vykazWrite']);
-
+    if (params.approved) {
+      params = {
+        ...params,
+        ItemApprovedById: SourceUser.get('id')
+      }
+    }
     return models.CustomItem.create({
       RepeatTemplateId: repeatTemplate,
       ...params,
@@ -108,7 +145,17 @@ const mutations = {
       throw createDoesNoExistsError('CustomItem', id);
     }
     await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>CustomItem.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
-
+    if (params.approved === false && CustomItem.get('approved') === true) {
+      params = {
+        ...params,
+        ItemApprovedById: null,
+      }
+    } else if (params.approved === true && CustomItem.get('approved') === false) {
+      params = {
+        ...params,
+        ItemApprovedById: SourceUser.get('id')
+      }
+    }
     return CustomItem.update(params);
   },
 
@@ -129,6 +176,9 @@ const attributes = {
   CustomItem: {
     async task(customItem) {
       return getModelAttribute(customItem, 'Task');
+    },
+    async approvedBy(customItem) {
+      return getModelAttribute(customItem, 'ItemApprovedBy');
     },
     async invoicedData(customItem) {
       return getModelAttribute(customItem, 'InvoicedCustomItems');

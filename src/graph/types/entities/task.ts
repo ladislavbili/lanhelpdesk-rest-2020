@@ -49,6 +49,7 @@ input SubtaskInput{
   title: String!
   order: Int!
   done: Boolean!
+  approved: Boolean
   quantity: Float!
   discount: Float!
   type: Int!
@@ -58,6 +59,7 @@ input SubtaskInput{
 input WorkTripInput{
   order: Int!
   done: Boolean!
+  approved: Boolean
   quantity: Float!
   discount: Float!
   type: Int!
@@ -68,6 +70,7 @@ input MaterialInput{
   title: String!
   order: Int!
   done: Boolean!
+  approved: Boolean
   quantity: Float!
   margin: Float!
   price: Float!
@@ -77,6 +80,7 @@ input CustomItemInput{
   title: String!
   order: Int!
   done: Boolean!
+  approved: Boolean
   quantity: Float!
   price: Float!
 }

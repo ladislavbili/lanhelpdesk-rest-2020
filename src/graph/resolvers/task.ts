@@ -513,7 +513,11 @@ const mutations = {
       await idsDoExistsCheck(subtasks.map((subtask) => subtask.type), models.TaskType);
       params = {
         ...params,
-        Subtasks: subtasks.map((subtask) => ({ ...subtask, UserId: subtask.assignedTo, TaskTypeId: subtask.type }))
+        Subtasks: subtasks.map((subtask) => (
+          subtask.approved ?
+            { ...subtask, UserId: subtask.assignedTo, TaskTypeId: subtask.type, SubtaskApprovedById: User.get('id') } :
+            { ...subtask, UserId: subtask.assignedTo, TaskTypeId: subtask.type }
+        ))
       }
     }
     //WorkTrip
@@ -524,21 +528,25 @@ const mutations = {
       await idsDoExistsCheck(workTrips.map((workTrip) => workTrip.type), models.TripType);
       params = {
         ...params,
-        WorkTrips: workTrips.map((workTrip) => ({ ...workTrip, UserId: workTrip.assignedTo, TripTypeId: workTrip.type }))
+        WorkTrips: workTrips.map((workTrip) => (
+          workTrip.approved ?
+            { ...workTrip, UserId: workTrip.assignedTo, TripTypeId: workTrip.type, TripApprovedById: User.get('id') } :
+            { ...workTrip, UserId: workTrip.assignedTo, TripTypeId: workTrip.type }
+        ))
       }
     }
     //Material
     if (materials) {
       params = {
         ...params,
-        Materials: materials
+        Materials: materials.map((material) => material.approved ? { ...material, MaterialApprovedById: User.get('id') } : material)
       }
     }
     //CustomItem
     if (customItems) {
       params = {
         ...params,
-        CustomItems: customItems
+        CustomItems: customItems.map((customItem) => customItem.approved ? { ...customItem, ItemApprovedById: User.get('id') } : customItem)
       }
     }
     //Short Subtasks

@@ -41,6 +41,12 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     )
+    if (params.approved) {
+      params = {
+        ...params,
+        TripApprovedById: SourceUser.get('id'),
+      }
+    }
     return models.WorkTrip.create({
       TaskId: task,
       TripTypeId: type,
@@ -52,10 +58,18 @@ const mutations = {
   updateWorkTrip: async (root, { id, type, assignedTo, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const WorkTrip = <WorkTripInstance>await models.WorkTrip.findByPk(id, { include: [models.TripType] });
-    const originalValue = `${WorkTrip.get('done').toString()},${WorkTrip.get('quantity')},${WorkTrip.get('discount')},${(<TripTypeInstance>WorkTrip.get('TripType')).get('id')},${WorkTrip.get('UserId')}`;
     if (WorkTrip === null) {
       throw createDoesNoExistsError('WorkTrip', id);
     }
+    const originalValue = `${WorkTrip.get('done').toString()},${WorkTrip.get('quantity')},${WorkTrip.get('discount')},${(<TripTypeInstance>WorkTrip.get('TripType')).get('id')},${WorkTrip.get('UserId')}`;
+    let TaskChangeMessages = [
+      {
+        type: 'workTrip',
+        originalValue,
+        newValue: `${params.done},${params.quantity},${params.discount},${type},${assignedTo}`,
+        message: `Work trip ${(<TripTypeInstance>WorkTrip.get('TripType')).get('title')} was updated.`,
+      }
+    ];
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), WorkTrip.get('TaskId'), undefined, ['vykazWrite']);
     if (assignedTo !== undefined) {
       const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
@@ -83,18 +97,36 @@ const mutations = {
       if (assignedTo !== undefined) {
         promises.push(WorkTrip.setUser(assignedTo, { transaction: t }));
       }
+      if (params.approved === false && WorkTrip.get('approved') === true) {
+        params = {
+          ...params,
+          TripApprovedById: null,
+        }
+        TaskChangeMessages.push({
+          type: 'workTrip',
+          originalValue: `${!params.approved}`,
+          newValue: `${params.approved}`,
+          message: `Work trip ${(<TripTypeInstance>WorkTrip.get('TripType')).get('title')} was set as not approved by ${SourceUser.get('fullName')}(${SourceUser.get('email')}).`,
+        })
+      } else if (params.approved === true && WorkTrip.get('approved') === false) {
+        params = {
+          ...params,
+          TripApprovedById: SourceUser.get('id')
+        }
+        TaskChangeMessages.push({
+          type: 'workTrip',
+          originalValue: `${!params.approved}`,
+          newValue: `${params.approved}`,
+          message: `Work trip ${(<TripTypeInstance>WorkTrip.get('TripType')).get('title')} was set as approved by ${SourceUser.get('fullName')}(${SourceUser.get('email')}).`,
+        })
+      }
       promises.push(WorkTrip.update(params, { transaction: t }));
       await Promise.all(promises);
     });
     (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
-        TaskChangeMessages: [{
-          type: 'workTrip',
-          originalValue,
-          newValue: `${params.done},${params.quantity},${params.discount},${type},${assignedTo}`,
-          message: `Work trip ${(<TripTypeInstance>WorkTrip.get('TripType')).get('title')} was updated.`,
-        }],
+        TaskChangeMessages,
       },
       { include: [models.TaskChangeMessage] }
     )
@@ -139,6 +171,13 @@ const mutations = {
       throw AssignedToUserNotSolvingTheTask;
     }
     await idDoesExistsCheck(type, models.TripType);
+    if (params.approved) {
+      params = {
+        ...params,
+        TripApprovedById: SourceUser.get('id'),
+      }
+    }
+
     return models.WorkTrip.create({
       RepeatTemplateId: repeatTemplate,
       TripTypeId: type,
@@ -193,6 +232,17 @@ const mutations = {
       if (assignedTo !== undefined) {
         promises.push(WorkTrip.setUser(assignedTo, { transaction: t }));
       }
+      if (params.approved === false && WorkTrip.get('approved') === true) {
+        params = {
+          ...params,
+          TripApprovedById: null,
+        }
+      } else if (params.approved === true && WorkTrip.get('approved') === false) {
+        params = {
+          ...params,
+          TripApprovedById: SourceUser.get('id')
+        }
+      }
       promises.push(WorkTrip.update(params, { transaction: t }));
       await Promise.all(promises);
     });
@@ -215,6 +265,9 @@ const attributes = {
   WorkTrip: {
     async task(workTrip) {
       return getModelAttribute(workTrip, 'Task');
+    },
+    async approvedBy(worktrip) {
+      return getModelAttribute(worktrip, 'TripApprovedBy');
     },
     async repeatTemplate(workTrip) {
       return getModelAttribute(workTrip, 'RepeatTemplate');

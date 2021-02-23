@@ -6,6 +6,7 @@ export interface SubtaskInstance extends DefaultInstance {
   title: string;
   order: number;
   done: boolean;
+  approved: boolean;
   quantity: number;
   discount: number;
   invoiced: boolean;
@@ -31,6 +32,11 @@ export default function defineSubtasks(sequelize: Sequelize) {
         defaultValue: 0
       },
       done: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      approved: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
@@ -68,6 +74,8 @@ export function createSubtasksAssoc(models) {
   models.Subtask.belongsTo(models.TaskType);
 
   models.Subtask.belongsTo(models.User);
+
+  models.Subtask.belongsTo(models.User, { as: 'SubtaskApprovedBy' });
 
   models.Subtask.hasMany(models.InvoicedSubtask);
 }
