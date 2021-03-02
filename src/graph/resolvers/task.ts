@@ -33,9 +33,12 @@ import {
   RoleInstance,
   SubtaskInstance,
   WorkTripInstance,
+  MaterialInstance,
+  CustomItemInstance,
   TagInstance,
   TaskTypeInstance,
-  CompanyInstance
+  CompanyInstance,
+  TaskMetadataInstance
 } from '@/models/instances';
 import {
   idsDoExistsCheck,
@@ -129,6 +132,10 @@ const querries = {
                   models.Status,
                   models.Tag,
                   models.TaskType,
+                  {
+                    model: models.TaskMetadata,
+                    as: 'TaskMetadata'
+                  },
                   models.Repeat,
                 ]
               }
@@ -288,6 +295,10 @@ const querries = {
             models.Tag,
             models.TaskType,
             models.Repeat,
+            {
+              model: models.TaskMetadata,
+              as: 'TaskMetadata'
+            },
           ]
         }
       ),
@@ -432,7 +443,54 @@ const mutations = {
     if (milestone && !(<MilestoneInstance[]>Project.get('Milestones')).some((projectMilestone) => projectMilestone.get('id') === milestone)) {
       throw MilestoneNotPartOfProject;
     }
+    let subtasksApproved = 0;
+    let subtasksPending = 0;
+    let tripsApproved = 0;
+    let tripsPending = 0;
+    let materialsApproved = 0;
+    let materialsPending = 0;
+    let itemsApproved = 0;
+    let itemsPending = 0;
 
+    if (subtasks) {
+      subtasks.map((subtask) => {
+        if (subtask.approved || Project.get('autoApproved')) {
+          subtasksApproved += parseFloat(<any>subtask.quantity);
+        } else {
+          subtasksPending += parseFloat(<any>subtask.quantity);
+        }
+      })
+    }
+
+    if (workTrips) {
+      workTrips.map((trip) => {
+        if (trip.approved || Project.get('autoApproved')) {
+          tripsApproved += parseFloat(<any>trip.quantity);
+        } else {
+          tripsPending += parseFloat(<any>trip.quantity);
+        }
+      })
+    }
+
+    if (materials) {
+      materials.map((material) => {
+        if (material.approved || Project.get('autoApproved')) {
+          materialsApproved += parseFloat(<any>material.quantity);
+        } else {
+          materialsPending += parseFloat(<any>material.quantity);
+        }
+      })
+    }
+
+    if (customItems) {
+      customItems.map((customItem) => {
+        if (customItem.approved || Project.get('autoApproved')) {
+          itemsApproved += parseFloat(<any>customItem.quantity);
+        } else {
+          itemsPending += parseFloat(<any>customItem.quantity);
+        }
+      })
+    }
 
     const dates = extractDatesFromObject(params, dateNames);
     //status corresponds to data - closedate, pendingDate
@@ -449,6 +507,16 @@ const mutations = {
           message: `Task was created by ${User.get('fullName')}`,
         }]
       }],
+      TaskMetadata: {
+        subtasksApproved,
+        subtasksPending,
+        tripsApproved,
+        tripsPending,
+        materialsApproved,
+        materialsPending,
+        itemsApproved,
+        itemsPending,
+      },
       createdById: User.get('id'),
       CompanyId: company,
       ProjectId: project,
@@ -598,7 +666,21 @@ const mutations = {
     }
 
     const NewTask = <TaskInstance>await models.Task.create(params, {
-      include: [models.Repeat, models.Comment, models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
+      include: [
+        models.Repeat,
+        models.Comment,
+        models.ScheduledTask,
+        models.ShortSubtask,
+        models.Subtask,
+        models.WorkTrip,
+        models.Material,
+        models.CustomItem,
+        {
+          model: models.TaskMetadata,
+          as: 'TaskMetadata'
+        },
+        { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }
+      ]
     });
     await Promise.all([
       NewTask.setAssignedTos(assignedTos),
@@ -622,6 +704,10 @@ const mutations = {
           models.TaskType,
           models.Company,
           models.Milestone,
+          {
+            model: models.TaskMetadata,
+            as: 'TaskMetadata'
+          },
           { model: models.User, as: 'requester' },
           models.Tag,
           {
@@ -674,6 +760,7 @@ const mutations = {
     }
     const project = args.project ? args.project : Task.get('ProjectId');
     let Project = <ProjectInstance>Task.get('Project');
+    let OriginalProject = <ProjectInstance>Task.get('Project');
     if (project && project !== Project.get('id')) {
       Project = <ProjectInstance>await models.Project.findByPk(
         project,
@@ -760,11 +847,81 @@ const mutations = {
     let promises = [];
 
     await sequelize.transaction(async (transaction) => {
-      if (project && project !== (<ProjectInstance>Task.get('Project')).get('id')) {
+      if (project && project !== Task.get('ProjectId')) {
         taskChangeMessages.push(await createChangeMessage('Project', models.Project, 'Project', project, Task.get('Project')));
         promises.push(Task.setProject(project, { transaction }));
         if (milestone === undefined || milestone === null) {
           promises.push(Task.setMilestone(null, { transaction }));
+        }
+        //Update metadata
+        if (Project.get('autoApproved') !== OriginalProject.get('autoApproved')) {
+          const Metadata = <TaskMetadataInstance>Task.get('TaskMetadata');
+          if (Project.get('autoApproved')) {
+            Metadata.update({
+              subtasksApproved: Metadata.get('subtasksApproved') + Metadata.get('subtasksPending'),
+              subtasksPending: 0,
+              tripsApproved: Metadata.get('tripsApproved') + Metadata.get('tripsPending'),
+              tripsPending: 0,
+              materialsApproved: Metadata.get('materialsApproved') + Metadata.get('materialsPending'),
+              materialsPending: 0,
+              itemsApproved: Metadata.get('itemsApproved') + Metadata.get('itemsPending'),
+              itemsPending: 0,
+            }, { transaction })
+          } else {
+            Metadata.update(
+              {
+                subtasksApproved: (<SubtaskInstance[]>Task.get('Subtasks')).reduce((acc, cur) => {
+                  if (cur.approved) {
+                    return acc + cur.quantity;
+                  }
+                  return acc;
+                }, 0),
+                subtasksPending: (<SubtaskInstance[]>Task.get('Subtasks')).reduce((acc, cur) => {
+                  if (cur.approved) {
+                    return acc;
+                  }
+                  return acc + cur.quantity;
+                }, 0),
+                tripsApproved: (<WorkTripInstance[]>Task.get('WorkTrips')).reduce((acc, cur) => {
+                  if (cur.approved) {
+                    return acc + cur.quantity;
+                  }
+                  return acc;
+                }, 0),
+                tripsPending: (<WorkTripInstance[]>Task.get('WorkTrips')).reduce((acc, cur) => {
+                  if (cur.approved) {
+                    return acc;
+                  }
+                  return acc + cur.quantity;
+                }, 0),
+                materialsApproved: (<MaterialInstance[]>Task.get('Materials')).reduce((acc, cur) => {
+                  if (cur.approved) {
+                    return acc + cur.quantity;
+                  }
+                  return acc;
+                }, 0),
+                materialsPending: (<MaterialInstance[]>Task.get('Materials')).reduce((acc, cur) => {
+                  if (cur.approved) {
+                    return acc;
+                  }
+                  return acc + cur.quantity;
+                }, 0),
+                itemsApproved: (<CustomItemInstance[]>Task.get('CustomItems')).reduce((acc, cur) => {
+                  if (cur.approved) {
+                    return acc + cur.quantity;
+                  }
+                  return acc;
+                }, 0),
+                itemsPending: (<CustomItemInstance[]>Task.get('CustomItems')).reduce((acc, cur) => {
+                  if (cur.approved) {
+                    return acc;
+                  }
+                  return acc + cur.quantity;
+                }, 0),
+              },
+              { transaction }
+            )
+          }
         }
       }
       if (assignedTos) {
@@ -1071,6 +1228,9 @@ const attributes = {
     },
     async repeat(task) {
       return getModelAttribute(task, 'Repeat');
+    },
+    async metadata(task) {
+      return getModelAttribute(task, 'TaskMetadata');
     },
 
     async comments(task, body, { req, userID }) {

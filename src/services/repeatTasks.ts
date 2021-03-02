@@ -17,6 +17,7 @@ import {
   WorkTripInstance,
   MaterialInstance,
   CustomItemInstance,
+  ProjectInstance,
 } from '@/models/instances';
 import { pubsub } from '@/graph/resolvers';
 import { TASK_CHANGE } from '@/configs/subscriptions';
@@ -96,6 +97,11 @@ async function addTask(id) {
             models.Material,
             models.CustomItem,
             models.Tag,
+            models.Project,
+            {
+              model: models.TaskMetadata,
+              as: 'TaskMetadata'
+            },
             {
               model: models.User,
               as: 'assignedTos'
@@ -109,7 +115,7 @@ async function addTask(id) {
     console.log(`Broken repeat ${id}. Couldn't be loaded.`);
   }
   const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
-
+  const Project = <ProjectInstance>RepeatTemplate.get('Project');
   let params = {
     //DIRECT PARAMS
     title: RepeatTemplate.get('title'),
@@ -193,11 +199,61 @@ async function addTask(id) {
       quantity: CustomItem.get('quantity'),
       price: CustomItem.get('price'),
     })),
+    TaskMetadata: {
+      subtasksApproved: (<SubtaskInstance[]>RepeatTemplate.get('Subtasks')).reduce((acc, cur) => {
+        if (cur.approved || Project.get('autoApproved')) {
+          return acc + cur.quantity;
+        }
+        return acc;
+      }, 0),
+      subtasksPending: (<SubtaskInstance[]>RepeatTemplate.get('Subtasks')).reduce((acc, cur) => {
+        if (cur.approved || Project.get('autoApproved')) {
+          return acc;
+        }
+        return acc + cur.quantity;
+      }, 0),
+      tripsApproved: (<WorkTripInstance[]>RepeatTemplate.get('WorkTrips')).reduce((acc, cur) => {
+        if (cur.approved || Project.get('autoApproved')) {
+          return acc + cur.quantity;
+        }
+        return acc;
+      }, 0),
+      tripsPending: (<WorkTripInstance[]>RepeatTemplate.get('WorkTrips')).reduce((acc, cur) => {
+        if (cur.approved || Project.get('autoApproved')) {
+          return acc;
+        }
+        return acc + cur.quantity;
+      }, 0),
+      materialsApproved: (<MaterialInstance[]>RepeatTemplate.get('Materials')).reduce((acc, cur) => {
+        if (cur.approved || Project.get('autoApproved')) {
+          return acc + cur.quantity;
+        }
+        return acc;
+      }, 0),
+      materialsPending: (<MaterialInstance[]>RepeatTemplate.get('Materials')).reduce((acc, cur) => {
+        if (cur.approved || Project.get('autoApproved')) {
+          return acc;
+        }
+        return acc + cur.quantity;
+      }, 0),
+      itemsApproved: (<CustomItemInstance[]>RepeatTemplate.get('CustomItems')).reduce((acc, cur) => {
+        if (cur.approved || Project.get('autoApproved')) {
+          return acc + cur.quantity;
+        }
+        return acc;
+      }, 0),
+      itemsPending: (<CustomItemInstance[]>RepeatTemplate.get('CustomItems')).reduce((acc, cur) => {
+        if (cur.approved || Project.get('autoApproved')) {
+          return acc;
+        }
+        return acc + cur.quantity;
+      }, 0),
+    }
   }
 
   //adding data
   const NewTask = <TaskInstance>await models.Task.create(params, {
-    include: [models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, models.TaskAttachment, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
+    include: [models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, models.TaskAttachment, models.TaskMetadata, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
   });
 
   await Promise.all([

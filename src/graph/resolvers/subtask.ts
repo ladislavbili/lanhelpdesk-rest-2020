@@ -1,7 +1,15 @@
 import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
-import { TaskInstance, UserInstance, SubtaskInstance, TaskTypeInstance, RepeatTemplateInstance } from '@/models/instances';
+import {
+  TaskInstance,
+  UserInstance,
+  SubtaskInstance,
+  TaskTypeInstance,
+  RepeatTemplateInstance,
+  TaskMetadataInstance,
+  ProjectInstance,
+} from '@/models/instances';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -24,8 +32,16 @@ const mutations = {
   addSubtask: async (root, { task, type, assignedTo, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
-    const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
-    if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
+    const [
+      AssignedTos,
+      TaskMetadata,
+      Project,
+    ] = await Promise.all([
+      Task.getAssignedTos(),
+      Task.getTaskMetadata(),
+      Task.getProject()
+    ])
+    if (!(<UserInstance[]>AssignedTos).some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
       throw AssignedToUserNotSolvingTheTask;
     }
     await idDoesExistsCheck(type, models.TaskType);
@@ -47,6 +63,15 @@ const mutations = {
         SubtaskApprovedById: SourceUser.get('id'),
       }
     }
+    if (params.approved || (<ProjectInstance>Project).get('autoApproved')) {
+      (<TaskMetadataInstance>TaskMetadata).update({
+        subtasksApproved: (<TaskMetadataInstance>TaskMetadata).get('subtasksApproved') + parseFloat(<any>params.quantity)
+      })
+    } else {
+      (<TaskMetadataInstance>TaskMetadata).update({
+        subtasksPending: (<TaskMetadataInstance>TaskMetadata).get('subtasksPending') + parseFloat(<any>params.quantity)
+      })
+    }
     return models.Subtask.create({
       TaskId: task,
       TaskTypeId: type,
@@ -57,10 +82,32 @@ const mutations = {
 
   updateSubtask: async (root, { id, type, assignedTo, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const Subtask = <SubtaskInstance>await models.Subtask.findByPk(id, { include: [models.TaskType] });
+    const Subtask = <SubtaskInstance>await models.Subtask.findByPk(id, {
+      include: [
+        models.TaskType,
+        {
+          model: models.Task,
+          include: [
+            models.Project,
+            {
+              model: models.TaskMetadata,
+              as: 'TaskMetadata'
+            },
+            {
+              model: models.User,
+              as: 'assignedTos'
+            }
+          ]
+        }
+      ]
+    });
     if (Subtask === null) {
       throw createDoesNoExistsError('Subtask', id);
     }
+    const Task = <TaskInstance>Subtask.get('Task');
+    const Project = <ProjectInstance>Task.get('Project');
+    const AssignedTos = <UserInstance[]>Task.get('assignedTos');
+    const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
     const originalValue = `${Subtask.get('title')}${Subtask.get('done').toString()},${Subtask.get('quantity')},${Subtask.get('discount')},${(<TaskTypeInstance>Subtask.get('TaskType')).get('id')},${Subtask.get('UserId')}`;
     let TaskChangeMessages = [{
       type: 'subtask',
@@ -68,9 +115,8 @@ const mutations = {
       newValue: `${params.title},${params.done},${params.quantity},${params.discount},${type},${assignedTo}`,
       message: `Subtask ${Subtask.get('title')}${params.title !== Subtask.get('title') ? `/${params.title}` : ''} was updated.`,
     }]
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), Subtask.get('TaskId'), undefined, ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Task.get('ProjectId'), ['vykazWrite']);
     if (assignedTo !== undefined) {
-      const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
       if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
         throw AssignedToUserNotSolvingTheTask;
       }
@@ -118,6 +164,36 @@ const mutations = {
           message: `Subtask ${Subtask.get('title')}${params.title !== Subtask.get('title') ? `/${params.title}` : ''} was set as approved by ${SourceUser.get('fullName')}(${SourceUser.get('email')}).`,
         })
       }
+      //Metadata update
+      if ((params.approved !== undefined && params.approved !== null) || params.quantity) {
+        let subtasksApproved = parseFloat(<any>TaskMetadata.get('subtasksApproved'));
+        let subtasksPending = parseFloat(<any>TaskMetadata.get('subtasksPending'));
+        //Delete first
+        if (Project.get('autoApproved') || Subtask.get('approved')) {
+          subtasksApproved -= parseFloat(<any>Subtask.get('quantity'));
+        } else {
+          subtasksPending -= parseFloat(<any>Subtask.get('quantity'));
+        }
+        //Add new
+        if (Project.get('autoApproved') || params.approved === true || (params.approved !== false && Subtask.get('approved'))) {
+          if (params.quantity) {
+            subtasksApproved += parseFloat(<any>params.quantity);
+          } else {
+            subtasksApproved += parseFloat(<any>Subtask.get('quantity'));
+          }
+        } else {
+          if (params.quantity) {
+            subtasksPending += parseFloat(<any>params.quantity);
+          } else {
+            subtasksPending += parseFloat(<any>Subtask.get('quantity'));
+          }
+        }
+        //Update
+        TaskMetadata.update({
+          subtasksApproved,
+          subtasksPending
+        }, { transaction: t })
+      }
       promises.push(Subtask.update(params, { transaction: t }));
       await Promise.all(promises);
     });
@@ -133,11 +209,29 @@ const mutations = {
 
   deleteSubtask: async (root, { id }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const Subtask = await models.Subtask.findByPk(id, { include: [models.TaskType] });
+    const Subtask = await models.Subtask.findByPk(id, {
+      include: [
+        models.TaskType,
+        {
+          model: models.Task,
+          include: [
+            models.Project,
+            {
+              model: models.TaskMetadata,
+              as: 'TaskMetadata'
+            },
+          ]
+        }
+      ]
+    });
     if (Subtask === null) {
       throw createDoesNoExistsError('Subtask', id);
     }
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), Subtask.get('TaskId'), undefined, ['vykazWrite']);
+    const Task = <TaskInstance>Subtask.get('Task');
+    const Project = <ProjectInstance>Task.get('Project');
+    const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
+
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
     const originalValue = `${Subtask.get('title')}${Subtask.get('done').toString()},${Subtask.get('quantity')},${Subtask.get('discount')},${(<TaskTypeInstance>Subtask.get('TaskType')).get('id')},${Subtask.get('UserId')}`;
     (<TaskInstance>Task).createTaskChange(
       {
@@ -151,6 +245,15 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     )
+    if (Project.get('autoApproved') || Subtask.get('approved')) {
+      TaskMetadata.update({
+        subtasksApproved: parseFloat(<any>TaskMetadata.get('subtasksApproved')) - parseFloat(<any>Subtask.get('quantity'))
+      })
+    } else {
+      TaskMetadata.update({
+        subtasksPending: parseFloat(<any>TaskMetadata.get('subtasksPending')) - parseFloat(<any>Subtask.get('quantity'))
+      })
+    }
     return Subtask.destroy();
   },
 

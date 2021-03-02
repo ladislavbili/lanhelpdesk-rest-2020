@@ -1,7 +1,8 @@
 import { startRest } from '@/expressREST';
 import { updateModels, models } from '@/models';
 import startServices from '@/services';
-//import addDefaultData from '@/configs/addDefaultData';
+import { createTaskMetadata, addDefaultDatabaseData } from '@/helperfunctions';
+
 import dotenv from 'dotenv';
 dotenv.config();
 const ignoreUpdating = true;

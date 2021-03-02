@@ -52,6 +52,7 @@ import defineShortSubtasks, { createShortSubtasksAssoc } from './instances/short
 import defineScheduledTasks, { createScheduledTasksAssoc } from './instances/scheduledTask';
 import defineProjectGroups, { createProjectGroupsAssoc } from './instances/projectGroup';
 import defineProjectGroupRights, { createProjectGroupRightsAssoc } from './instances/projectGroupRights';
+import defineTaskMetadata, { createTaskMetadataAssoc } from './instances/taskMetadata';
 
 
 /*
@@ -120,6 +121,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineScheduledTasks(sequelize);
   defineProjectGroups(sequelize);
   defineProjectGroupRights(sequelize);
+  defineTaskMetadata(sequelize);
 
   createRolesAssoc(models);
   createUsersAssoc(models);
@@ -173,10 +175,11 @@ export const updateModels = (ignoreUpdating: Boolean) => {
 
   createProjectGroupsAssoc(models);
   createProjectGroupRightsAssoc(models);
+  createTaskMetadataAssoc(models);
 
   //LOG FUNCTIONS
 
-  //logFunctionsOfModel(models.Task);
+  //logFunctionsOfModel(models.Project);
 
   if (ignoreUpdating) {
     return new Promise((resolve, reject) => resolve());

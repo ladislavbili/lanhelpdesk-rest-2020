@@ -1,8 +1,35 @@
+import {
+  models
+} from '@/models';
 import { hash } from 'bcrypt';
-import { models } from '@/models';
 import { randomString } from '@/helperFunctions';
+import {
+  TaskInstance,
+} from '@/models/instances';
 
-export default async function addDefaultData() {
+export const createTaskMetadata = async () => {
+  const tasks = <TaskInstance[]>await models.Task.findAll({
+    include: [{
+      model: models.TaskMetadata,
+      as: 'TaskMetadata'
+    }]
+  });
+
+  tasks.filter((task) => !task.get('TaskMetadata')).forEach((task) => {
+    task.createTaskMetadata({
+      subtasksApproved: 0,
+      subtasksPending: 0,
+      tripsApproved: 0,
+      tripsPending: 0,
+      materialsApproved: 0,
+      materialsPending: 0,
+      itemsApproved: 0,
+      itemsPending: 0,
+    })
+  })
+}
+
+export const addDefaultDatabaseData = async () => {
   /*
   await models.Role.truncate({cascade: true});
   await models.Company.truncate({cascade: true});
@@ -11,6 +38,18 @@ export default async function addDefaultData() {
   const Role = await createRole();
   const Company = await createCompany();
   defaultUsers(Role.get('id'), Company.get('id')).forEach((user) => addUser(user));
+}
+
+export const addUser = async ({ password, roleId, companyId, language, ...targetUserData }) => {
+  const hashedPassword = await hash(password, 12);
+  return models.User.create({
+    ...targetUserData,
+    password: hashedPassword,
+    tokenKey: randomString(),
+    RoleId: roleId,
+    CompanyId: companyId,
+    language: language ? language : 'sk',
+  })
 }
 
 async function createRole() {
@@ -35,17 +74,6 @@ async function createCompany() {
   });
 }
 
-export async function addUser({ password, roleId, companyId, language, ...targetUserData }) {
-  const hashedPassword = await hash(password, 12);
-  return models.User.create({
-    ...targetUserData,
-    password: hashedPassword,
-    tokenKey: randomString(),
-    RoleId: roleId,
-    CompanyId: companyId,
-    language: language ? language : 'sk',
-  })
-}
 
 function defaultUsers(roleId, companyId) {
   return [

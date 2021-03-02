@@ -2,7 +2,12 @@ import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
 import { checkIfHasProjectRights, multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
-import { TaskInstance, RepeatTemplateInstance } from '@/models/instances';
+import {
+  TaskInstance,
+  RepeatTemplateInstance,
+  TaskMetadataInstance,
+  ProjectInstance,
+} from '@/models/instances';
 
 const querries = {
   customItems: async (root, { taskId }, { req }) => {
@@ -24,6 +29,13 @@ const mutations = {
   addCustomItem: async (root, { task, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
+    const [
+      TaskMetadata,
+      Project,
+    ] = await Promise.all([
+      Task.getTaskMetadata(),
+      Task.getProject(),
+    ]);
     (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -36,6 +48,15 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     )
+    if (params.approved || (<ProjectInstance>Project).get('autoApproved')) {
+      (<TaskMetadataInstance>TaskMetadata).update({
+        itemsApproved: (<TaskMetadataInstance>TaskMetadata).get('itemsApproved') + params.quantity
+      })
+    } else {
+      (<TaskMetadataInstance>TaskMetadata).update({
+        itemsPending: (<TaskMetadataInstance>TaskMetadata).get('itemsPending') + params.quantity
+      })
+    }
     if (params.approved) {
       params = {
         ...params,
@@ -50,11 +71,27 @@ const mutations = {
 
   updateCustomItem: async (root, { id, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const CustomItem = await models.CustomItem.findByPk(id);
+    const CustomItem = await models.CustomItem.findByPk(id, {
+      include: [
+        {
+          model: models.Task,
+          include: [
+            models.Project,
+            {
+              model: models.TaskMetadata,
+              as: 'TaskMetadata'
+            },
+          ]
+        }
+      ]
+    });
     if (CustomItem === null) {
       throw createDoesNoExistsError('CustomItem', id);
     }
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), CustomItem.get('TaskId'), undefined, ['vykazWrite']);
+    const Task = <TaskInstance>CustomItem.get('Task');
+    const Project = <ProjectInstance>Task.get('Project');
+    const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
     let TaskChangeMessages = [
       {
         type: 'customItem',
@@ -93,16 +130,62 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     )
+    //Metadata update
+    if ((params.approved !== undefined && params.approved !== null) || params.quantity) {
+      let itemsApproved = parseFloat(<any>TaskMetadata.get('itemsApproved'));
+      let itemsPending = parseFloat(<any>TaskMetadata.get('itemsPending'));
+      //Delete first
+      if (Project.get('autoApproved') || CustomItem.get('approved')) {
+        itemsApproved -= parseFloat(<any>CustomItem.get('quantity'));
+      } else {
+        itemsPending -= parseFloat(<any>CustomItem.get('quantity'));
+      }
+      //Add new
+      if (Project.get('autoApproved') || params.approved === true || (params.approved !== false && CustomItem.get('approved'))) {
+        if (params.quantity) {
+          itemsApproved += parseFloat(<any>params.quantity);
+        } else {
+          itemsApproved += parseFloat(<any>CustomItem.get('quantity'));
+        }
+      } else {
+        if (params.quantity) {
+          itemsPending += parseFloat(<any>params.quantity);
+        } else {
+          itemsPending += parseFloat(<any>CustomItem.get('quantity'));
+        }
+      }
+      //Update
+      TaskMetadata.update({
+        itemsApproved,
+        itemsPending
+      })
+    }
     return CustomItem.update(params);
   },
 
   deleteCustomItem: async (root, { id }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const CustomItem = await models.CustomItem.findByPk(id);
+    const CustomItem = await models.CustomItem.findByPk(id, {
+      include: [
+        {
+          model: models.Task,
+          include: [
+            models.Project,
+            {
+              model: models.TaskMetadata,
+              as: 'TaskMetadata'
+            },
+          ]
+        }
+      ]
+    });
     if (CustomItem === null) {
       throw createDoesNoExistsError('CustomItem', id);
     }
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), CustomItem.get('TaskId'), undefined, ['vykazWrite']);
+    const Task = <TaskInstance>CustomItem.get('Task');
+    const Project = <ProjectInstance>Task.get('Project');
+    const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
     (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -115,6 +198,15 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     )
+    if (Project.get('autoApproved') || CustomItem.get('approved')) {
+      TaskMetadata.update({
+        itemsApproved: parseFloat(<any>TaskMetadata.get('itemsApproved')) - parseFloat(<any>CustomItem.get('quantity'))
+      })
+    } else {
+      TaskMetadata.update({
+        itemsPending: parseFloat(<any>TaskMetadata.get('itemsPending')) - parseFloat(<any>CustomItem.get('quantity'))
+      })
+    }
     return CustomItem.destroy();
   },
 

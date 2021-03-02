@@ -13,6 +13,12 @@ export {
 } from './benchmark';
 
 export {
+  createTaskMetadata,
+  addDefaultDatabaseData,
+  addUser,
+} from './database';
+
+export {
   isEmail,
 } from './emailCheck';
 

@@ -30,7 +30,7 @@ export const createTaskAttributesChangeMessages = async (args, Task) => {
 export const createChangeMessage = async (type, model, name, newValue, OriginalItem, attribute = 'title') => {
   if (['TaskType', 'Company', 'Milestone', 'Requester', 'Project', 'Status'].includes(type)) {
     let NewItem = await model.findByPk(newValue);
-    if (!NewItem) {
+    if (!NewItem && newValue !== null) {
       throw createDoesNoExistsError(model.name, newValue);
     }
 
@@ -51,7 +51,7 @@ export const createChangeMessage = async (type, model, name, newValue, OriginalI
   } else if (['CloseDate', 'PendingDate', 'deadline'].includes(type)) {
     return {
       type,
-      originalValue: OriginalItem,
+      originalValue: OriginalItem.getTime(),
       newValue: newValue,
       message: `${name} were changed from ${OriginalItem ? timestampToString(OriginalItem) : 'none'} to ${newValue ? timestampToString(newValue) : 'none'}.`,
     }

@@ -5,8 +5,7 @@ import stripHtml from 'html2plaintext';
 import { sendEmail } from '../smtp/sendEmail';
 import { TaskInstance, ProjectInstance } from '@/models/instances';
 import { models } from '@/models';
-import { addUser } from '@/configs/addData';
-import { randomString } from '@/helperFunctions';
+import { randomString, addUser } from '@/helperFunctions';
 import moment from 'moment';
 import fs from 'fs';
 

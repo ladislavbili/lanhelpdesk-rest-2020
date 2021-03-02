@@ -1,6 +1,14 @@
 import { createDoesNoExistsError, WorkTripNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import { models, sequelize } from '@/models';
-import { TaskInstance, UserInstance, WorkTripInstance, TripTypeInstance, RepeatTemplateInstance } from '@/models/instances';
+import {
+  TaskInstance,
+  UserInstance,
+  WorkTripInstance,
+  TripTypeInstance,
+  RepeatTemplateInstance,
+  TaskMetadataInstance,
+  ProjectInstance,
+} from '@/models/instances';
 import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 
@@ -24,8 +32,16 @@ const mutations = {
   addWorkTrip: async (root, { task, type, assignedTo, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
-    const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
-    if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
+    const [
+      AssignedTos,
+      TaskMetadata,
+      Project,
+    ] = await Promise.all([
+      Task.getAssignedTos(),
+      Task.getTaskMetadata(),
+      Task.getProject()
+    ])
+    if (!(<UserInstance[]>AssignedTos).some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
       throw AssignedToUserNotSolvingTheTask;
     }
     await idDoesExistsCheck(type, models.TripType);
@@ -47,6 +63,15 @@ const mutations = {
         TripApprovedById: SourceUser.get('id'),
       }
     }
+    if (params.approved || (<ProjectInstance>Project).get('autoApproved')) {
+      (<TaskMetadataInstance>TaskMetadata).update({
+        tripsApproved: (<TaskMetadataInstance>TaskMetadata).get('tripsApproved') + params.quantity
+      })
+    } else {
+      (<TaskMetadataInstance>TaskMetadata).update({
+        tripsPending: (<TaskMetadataInstance>TaskMetadata).get('tripsPending') + params.quantity
+      })
+    }
     return models.WorkTrip.create({
       TaskId: task,
       TripTypeId: type,
@@ -57,10 +82,32 @@ const mutations = {
 
   updateWorkTrip: async (root, { id, type, assignedTo, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const WorkTrip = <WorkTripInstance>await models.WorkTrip.findByPk(id, { include: [models.TripType] });
+    const WorkTrip = <WorkTripInstance>await models.WorkTrip.findByPk(id, {
+      include: [
+        models.TripType,
+        {
+          model: models.Task,
+          include: [
+            models.Project,
+            {
+              model: models.TaskMetadata,
+              as: 'TaskMetadata'
+            },
+            {
+              model: models.User,
+              as: 'assignedTos'
+            }
+          ]
+        }
+      ]
+    });
     if (WorkTrip === null) {
       throw createDoesNoExistsError('WorkTrip', id);
     }
+    const Task = <TaskInstance>WorkTrip.get('Task');
+    const Project = <ProjectInstance>Task.get('Project');
+    const AssignedTos = <UserInstance[]>Task.get('assignedTos');
+    const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
     const originalValue = `${WorkTrip.get('done').toString()},${WorkTrip.get('quantity')},${WorkTrip.get('discount')},${(<TripTypeInstance>WorkTrip.get('TripType')).get('id')},${WorkTrip.get('UserId')}`;
     let TaskChangeMessages = [
       {
@@ -70,9 +117,8 @@ const mutations = {
         message: `Work trip ${(<TripTypeInstance>WorkTrip.get('TripType')).get('title')} was updated.`,
       }
     ];
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), WorkTrip.get('TaskId'), undefined, ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Task.get('ProjectId'), ['vykazWrite']);
     if (assignedTo !== undefined) {
-      const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
       if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
         throw AssignedToUserNotSolvingTheTask;
       }
@@ -120,6 +166,37 @@ const mutations = {
           message: `Work trip ${(<TripTypeInstance>WorkTrip.get('TripType')).get('title')} was set as approved by ${SourceUser.get('fullName')}(${SourceUser.get('email')}).`,
         })
       }
+      //Metadata update
+      if ((params.approved !== undefined && params.approved !== null) || params.quantity) {
+        let tripsApproved = TaskMetadata.get('tripsApproved');
+        let tripsPending = TaskMetadata.get('tripsPending');
+        //Delete first
+        if (Project.get('autoApproved') || WorkTrip.get('approved')) {
+          tripsApproved -= WorkTrip.get('quantity');
+        } else {
+          tripsPending -= WorkTrip.get('quantity');
+        }
+        //Add new
+        if (Project.get('autoApproved') || params.approved === true || (params.approved !== false && WorkTrip.get('approved'))) {
+          if (params.quantity) {
+            tripsApproved += params.quantity;
+          } else {
+            tripsApproved += WorkTrip.get('quantity');
+          }
+        } else {
+          if (params.quantity) {
+            tripsPending += params.quantity;
+          } else {
+            tripsPending += WorkTrip.get('quantity');
+          }
+        }
+        //Update
+        TaskMetadata.update({
+          tripsApproved,
+          tripsPending
+        }, { transaction: t })
+      }
+
       promises.push(WorkTrip.update(params, { transaction: t }));
       await Promise.all(promises);
     });
@@ -135,11 +212,29 @@ const mutations = {
 
   deleteWorkTrip: async (root, { id }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const WorkTrip = await models.WorkTrip.findByPk(id, { include: [models.TripType] });
+    const WorkTrip = await models.WorkTrip.findByPk(id, {
+      include: [
+        models.TripType,
+        {
+          model: models.Task,
+          include: [
+            models.Project,
+            {
+              model: models.TaskMetadata,
+              as: 'TaskMetadata'
+            },
+          ]
+        }
+      ]
+    });
     if (WorkTrip === null) {
       throw createDoesNoExistsError('WorkTrip', id);
     }
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), WorkTrip.get('TaskId'), undefined, ['vykazWrite']);
+    const Task = <TaskInstance>WorkTrip.get('Task');
+    const Project = <ProjectInstance>Task.get('Project');
+    const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
+
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
     const originalValue = `${WorkTrip.get('done').toString()},${WorkTrip.get('quantity')},${WorkTrip.get('discount')},${(<TripTypeInstance>WorkTrip.get('TripType')).get('id')},${WorkTrip.get('UserId')}`;
     (<TaskInstance>Task).createTaskChange(
       {
@@ -153,6 +248,15 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     )
+    if (Project.get('autoApproved') || WorkTrip.get('approved')) {
+      TaskMetadata.update({
+        tripsApproved: TaskMetadata.get('tripsApproved') - (<number>WorkTrip.get('quantity'))
+      })
+    } else {
+      TaskMetadata.update({
+        tripsPending: TaskMetadata.get('tripsPending') - (<number>WorkTrip.get('quantity'))
+      })
+    }
     return WorkTrip.destroy();
   },
 

@@ -51,6 +51,7 @@ export interface ProjectInstance extends DefaultInstance {
   getDefStatus?: any;
   getDefTags?: any;
   getDefTaskType?: any;
+  getTasks?: any;
 
   setDefAssignedTos?: any;
   setDefTags?: any;

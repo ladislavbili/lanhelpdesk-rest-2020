@@ -44,6 +44,8 @@ export interface TaskInstance extends DefaultInstance {
   createTaskChange?: any;
   createRepeat?: any;
   createTaskAttachment?: any;
+  createTaskMetadata?: any;
+  getTaskMetadata?: any;
 }
 
 export default function defineTasks(sequelize: Sequelize) {
@@ -119,6 +121,8 @@ export function createTasksAssoc(models) {
   models.Task.belongsToMany(models.User, { as: { singular: "assignedTo", plural: "assignedTos" }, through: 'task_assignedTo' });
 
   models.Task.belongsTo(models.Company, { foreignKey: { allowNull: false } });
+
+  models.Task.hasOne(models.TaskMetadata, { onDelete: 'CASCADE', as: "TaskMetadata", foreignKey: { name: 'TaskId', allowNull: false } });
 
   models.Task.belongsTo(models.User, { as: 'createdBy' });
 

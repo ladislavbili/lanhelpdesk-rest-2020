@@ -2,7 +2,12 @@ import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
 import { multipleIdDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
-import { TaskInstance, RepeatTemplateInstance } from '@/models/instances';
+import {
+  TaskInstance,
+  RepeatTemplateInstance,
+  TaskMetadataInstance,
+  ProjectInstance,
+} from '@/models/instances';
 
 const querries = {
   materials: async (root, { taskId }, { req }) => {
@@ -24,6 +29,13 @@ const mutations = {
   addMaterial: async (root, { task, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
+    const [
+      TaskMetadata,
+      Project,
+    ] = await Promise.all([
+      Task.getTaskMetadata(),
+      Task.getProject(),
+    ]);
     (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -36,6 +48,15 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     )
+    if (params.approved || (<ProjectInstance>Project).get('autoApproved')) {
+      (<TaskMetadataInstance>TaskMetadata).update({
+        materialsApproved: (<TaskMetadataInstance>TaskMetadata).get('materialsApproved') + params.quantity
+      })
+    } else {
+      (<TaskMetadataInstance>TaskMetadata).update({
+        materialsPending: (<TaskMetadataInstance>TaskMetadata).get('materialsPending') + params.quantity
+      })
+    }
     if (params.approved) {
       params = {
         ...params,
@@ -50,10 +71,26 @@ const mutations = {
 
   updateMaterial: async (root, { id, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const Material = await models.Material.findByPk(id);
+    const Material = await models.Material.findByPk(id, {
+      include: [
+        {
+          model: models.Task,
+          include: [
+            models.Project,
+            {
+              model: models.TaskMetadata,
+              as: 'TaskMetadata'
+            },
+          ]
+        }
+      ]
+    });
     if (Material === null) {
       throw createDoesNoExistsError('Material', id);
     }
+    const Task = <TaskInstance>Material.get('Task');
+    const Project = <ProjectInstance>Task.get('Project');
+    const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
     let TaskChangeMessages = [
       {
         type: 'material',
@@ -62,7 +99,7 @@ const mutations = {
         message: `Material ${Material.get('title')}${params.title && params.title !== Material.get('title') ? `/${params.title}` : ''} was updated.`,
       }
     ]
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), Material.get('TaskId'), undefined, ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
     if (params.approved === false && Material.get('approved') === true) {
       params = {
         ...params,
@@ -93,16 +130,63 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     )
+    //Metadata update
+    if ((params.approved !== undefined && params.approved !== null) || params.quantity) {
+      let materialsApproved = parseFloat(<any>TaskMetadata.get('materialsApproved'));
+      let materialsPending = parseFloat(<any>TaskMetadata.get('materialsPending'));
+      //Delete first
+      if (Project.get('autoApproved') || Material.get('approved')) {
+        materialsApproved -= parseFloat(<any>Material.get('quantity'));
+      } else {
+        materialsPending -= parseFloat(<any>Material.get('quantity'));
+      }
+      //Add new
+      if (Project.get('autoApproved') || params.approved === true || (params.approved !== false && Material.get('approved'))) {
+        if (params.quantity) {
+          materialsApproved += parseFloat(<any>params.quantity);
+        } else {
+          materialsApproved += parseFloat(<any>Material.get('quantity'));
+        }
+      } else {
+        if (params.quantity) {
+          materialsPending += parseFloat(<any>params.quantity);
+        } else {
+          materialsPending += parseFloat(<any>Material.get('quantity'));
+        }
+      }
+      //Update
+      TaskMetadata.update({
+        materialsApproved,
+        materialsPending
+      })
+    }
+
     return Material.update(params);
   },
 
   deleteMaterial: async (root, { id }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const Material = await models.Material.findByPk(id);
+    const Material = await models.Material.findByPk(id, {
+      include: [
+        {
+          model: models.Task,
+          include: [
+            models.Project,
+            {
+              model: models.TaskMetadata,
+              as: 'TaskMetadata'
+            },
+          ]
+        }
+      ]
+    });
     if (Material === null) {
       throw createDoesNoExistsError('Material', id);
     }
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), Material.get('TaskId'), undefined, ['vykazWrite']);
+    const Task = <TaskInstance>Material.get('Task');
+    const Project = <ProjectInstance>Task.get('Project');
+    const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
+    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
     (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -115,6 +199,15 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     )
+    if (Project.get('autoApproved') || Material.get('approved')) {
+      TaskMetadata.update({
+        materialsApproved: parseFloat(<any>TaskMetadata.get('materialsApproved')) - parseFloat(<any>Material.get('quantity'))
+      })
+    } else {
+      TaskMetadata.update({
+        materialsPending: parseFloat(<any>TaskMetadata.get('materialsPending')) - parseFloat(<any>Material.get('quantity'))
+      })
+    }
     return Material.destroy();
   },
 

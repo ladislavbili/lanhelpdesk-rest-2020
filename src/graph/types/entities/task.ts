@@ -27,6 +27,7 @@ type Task {
   invoiced: Boolean!
 
   repeat: Repeat
+  metadata: TaskMetadata!
   comments: [Comment]!
   scheduled: [ScheduledTask]!
   shortSubtasks: [ShortSubtask]!

@@ -19,7 +19,23 @@ import {
   checkDefIntegrity,
   checkIfChanged,
 } from '@/helperFunctions';
-import { ProjectInstance, RoleInstance, AccessRightsInstance, TaskInstance, ImapInstance, TagInstance, StatusInstance, ProjectGroupInstance, ProjectGroupRightsInstance, UserInstance } from '@/models/instances';
+import {
+  ProjectInstance,
+  RoleInstance,
+  AccessRightsInstance,
+  TaskInstance,
+  TaskMetadataInstance,
+  SubtaskInstance,
+  WorkTripInstance,
+  MaterialInstance,
+  CustomItemInstance,
+  ImapInstance,
+  TagInstance,
+  StatusInstance,
+  ProjectGroupInstance,
+  ProjectGroupRightsInstance,
+  UserInstance
+} from '@/models/instances';
 import { pubsub } from './index';
 import { TASK_CHANGE } from '@/configs/subscriptions';
 import { ApolloError } from 'apollo-server-express';
@@ -436,6 +452,72 @@ const mutations = {
         }
       }
     })
+
+    //update autoApproved metadata
+    if (attributes.autoApproved === true && !Project.get('autoApproved')) {
+      const Tasks = <TaskInstance[]>await Project.getTasks({
+        include: [{ model: models.TaskMetadata, as: 'TaskMetadata' }]
+      });
+      Tasks.forEach((Task) => {
+        const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
+        TaskMetadata.update({
+          subtasksApproved: parseInt(<any>TaskMetadata.get('subtasksApproved')) + parseInt(<any>TaskMetadata.get('subtasksPending')),
+          subtasksPending: 0,
+          tripsApproved: parseInt(<any>TaskMetadata.get('tripsApproved')) + parseInt(<any>TaskMetadata.get('tripsPending')),
+          tripsPending: 0,
+          materialsApproved: parseInt(<any>TaskMetadata.get('materialsApproved')) + parseInt(<any>TaskMetadata.get('materialsPending')),
+          materialsPending: 0,
+          itemsApproved: parseInt(<any>TaskMetadata.get('itemsApproved')) + parseInt(<any>TaskMetadata.get('itemsPending')),
+          itemsPending: 0,
+        })
+      })
+    } else if (attributes.autoApproved === false && Project.get('autoApproved')) {
+      const Tasks = <TaskInstance[]>await Project.getTasks({
+        include: [{ model: models.TaskMetadata, as: 'TaskMetadata' }, models.Subtask, models.WorkTrip, models.Material, models.CustomItem]
+      });
+      Tasks.forEach((Task) => {
+        const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
+        let body = {
+          subtasksApproved: 0,
+          subtasksPending: 0,
+          tripsApproved: 0,
+          tripsPending: 0,
+          materialsApproved: 0,
+          materialsPending: 0,
+          itemsApproved: 0,
+          itemsPending: 0,
+        };
+        (<SubtaskInstance[]>Task.get('Subtasks')).forEach((Subtask) => {
+          if (Subtask.approved) {
+            body.subtasksApproved += parseFloat(<any>Subtask.get('quantity'))
+          } else {
+            body.subtasksPending += parseFloat(<any>Subtask.get('quantity'))
+          }
+        });
+        (<WorkTripInstance[]>Task.get('WorkTrips')).forEach((WorkTrip) => {
+          if (WorkTrip.approved) {
+            body.tripsApproved += parseFloat(<any>WorkTrip.get('quantity'))
+          } else {
+            body.tripsPending += parseFloat(<any>WorkTrip.get('quantity'))
+          }
+        });
+        (<MaterialInstance[]>Task.get('Materials')).forEach((Material) => {
+          if (Material.approved) {
+            body.materialsApproved += parseFloat(<any>Material.get('quantity'))
+          } else {
+            body.materialsPending += parseFloat(<any>Material.get('quantity'))
+          }
+        });
+        (<CustomItemInstance[]>Task.get('CustomItems')).forEach((CustomItem) => {
+          if (CustomItem.approved) {
+            body.itemsApproved += parseFloat(<any>CustomItem.get('quantity'))
+          } else {
+            body.itemsPending += parseFloat(<any>CustomItem.get('quantity'))
+          }
+        });
+        TaskMetadata.update(body)
+      })
+    }
 
     promises.push(Project.update({ ...attributes, ...extraAttributes }));
     await Promise.all(promises);
