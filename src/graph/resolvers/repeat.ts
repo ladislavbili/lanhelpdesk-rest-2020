@@ -59,16 +59,6 @@ import checkResolver from './checkResolver';
 import moment from 'moment';
 import { Op } from 'sequelize';
 const dateNames = ['deadline', 'pendingDate', 'closeDate'];
-const dateNames2 = [
-  'closeDateFrom',
-  'closeDateTo',
-  'deadlineFrom',
-  'deadlineTo',
-  'pendingDateFrom',
-  'pendingDateTo',
-  'statusDateFrom',
-  'statusDateTo',
-];
 
 const querries = {
   repeats: async (root, { projectId }, { req, userID }) => {
@@ -92,29 +82,48 @@ const querries = {
               {
                 model: models.RepeatTemplate,
                 include: [
-                  { model: models.User, as: 'createdBy' },
-                  { model: models.User, as: 'assignedTos' },
-                  { model: models.User, as: 'requester' },
-                  models.Company,
-                  models.Milestone,
-                  models.Project,
-                  models.Status,
-                  models.Tag,
-                  models.TaskType,
+                  {
+                    model: models.Repeat,
+                    include: [
+                      {
+                        model: models.RepeatTemplate,
+                        include: [
+                          { model: models.User, as: 'createdBy' },
+                          { model: models.User, as: 'assignedTos' },
+                          { model: models.User, as: 'requester' },
+                          models.Company,
+                          models.Milestone,
+                          models.Project,
+                          models.Status,
+                          models.Tag,
+                          models.TaskType,
+                        ]
+                      }
+                    ]
+                  }
                 ]
               }
             ]
           }
         ]
       })
-      return ProjectGroups.reduce((acc, ProjectGroup) => {
-        const proj = <ProjectInstance>ProjectGroup.get('Project');
+
+      const Repeats = ProjectGroups.reduce((acc, ProjectGroup) => {
+        const Project = <ProjectInstance>ProjectGroup.get('Project');
         const userRights = (<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).get();
+
         return [
           ...acc,
-          ...(<RepeatInstance[]>proj.get('RepeatTemplates')).filter((RepeatTemplate) => canViewTask(RepeatTemplate, User, userRights))
+          ...(<RepeatInstance[]>
+            (<RepeatTemplateInstance[]>Project.get('RepeatTemplates'))
+              .map((RepeatTemplate) => RepeatTemplate.get('Repeat'))
+          ).filter((Repeat) => {
+            const Template = Repeat.get('RepeatTemplate');
+            return canViewTask(Template, User, userRights)
+          })
         ]
       }, [])
+
     }
     return models.Repeat.findAll({
       include: [

@@ -354,9 +354,14 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
         !newAttrs.tags.every((id) => def.tag.value.some((value) => value.get('id') === id))
       ) &&
       (
-        orgAttrs === null ||
-        orgAttrs.get('Tags').length !== newAttrs.length ||
-        !orgAttrs.get('Tags').map((Tag) => Tag.get('id')).every((id) => newAttrs.tags.includes(id))
+        (
+          orgAttrs === null &&
+          newAttrs.tags.length !== 0
+        ) ||
+        orgAttrs !== null && (
+          orgAttrs.get('Tags').length !== newAttrs.tags.length ||
+          !orgAttrs.get('Tags').map((Tag) => Tag.get('id')).every((id) => newAttrs.tags.includes(id))
+        )
       )
     ) {
       throw createCantEditTaskAttributeError('tags');
