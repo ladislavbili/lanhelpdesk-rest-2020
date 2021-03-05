@@ -633,6 +633,7 @@ const mutations = {
     ])
     sendNotifications(User, [`Task was created by ${User.get('fullName')}`], NewTask, assignedTos);
     pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'add', data: NewTask, ids: [] } });
+    NewTask.rights = groupRights;
     return NewTask;
   },
 
@@ -1013,7 +1014,7 @@ const mutations = {
       await Promise.all(promises);
     })
 
-    let NewTask = await models.Task.findByPk(id, {
+    let NewTask = <TaskInstance>await models.Task.findByPk(id, {
       include: [
         { model: models.User, as: 'assignedTos' },
         models.Company,
@@ -1026,6 +1027,7 @@ const mutations = {
         models.TaskType,
       ]
     })
+    NewTask.rights = groupRights;
     sendNotifications(User, taskChangeMessages.map((taskChange) => taskChange.message), NewTask);
     pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'update', data: NewTask, ids: [] } });
     return NewTask;

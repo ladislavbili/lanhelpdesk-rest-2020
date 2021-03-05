@@ -51,7 +51,7 @@ export const createChangeMessage = async (type, model, name, newValue, OriginalI
   } else if (['CloseDate', 'PendingDate', 'deadline'].includes(type)) {
     return {
       type,
-      originalValue: OriginalItem.getTime(),
+      originalValue: OriginalItem ? OriginalItem.getTime() : null,
       newValue: newValue,
       message: `${name} were changed from ${OriginalItem ? timestampToString(OriginalItem) : 'none'} to ${newValue ? timestampToString(newValue) : 'none'}.`,
     }

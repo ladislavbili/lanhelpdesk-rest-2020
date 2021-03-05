@@ -76,6 +76,9 @@ export const checkIfHasProjectRights = async (userId, taskId = undefined, projec
 
   let Role = <RoleInstance>User.get('Role');
   let groupRights = (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups'))[0].get('ProjectGroupRight')).get();
+  if (Role.get('level') === 0) {
+    groupRights = allGroupRights;
+  }
   if (rights.length === 0) {
     return { User, Role, groupRights, Task };
   }
