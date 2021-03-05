@@ -146,6 +146,8 @@ export function createUsersAssoc(models) {
 
   models.User.hasMany(models.Task, { as: { singular: 'requesterTask', plural: 'requesterTasks' } });
 
+  models.User.hasMany(models.TasklistColumnPreference, { onDelete: 'CASCADE', as: { singular: "TasklistColumnPreference", plural: "TasklistColumnPreferences" }, foreignKey: { name: 'UserId', allowNull: false } });
+
   //REPEAT TEMPLATE
   models.User.belongsToMany(models.RepeatTemplate, { as: { singular: "assignedToRepeatTemplate", plural: "assignedToRepeatTemplates" }, through: 'repeat_template_assignedTo' });
 

@@ -22,6 +22,7 @@ import task from './task';
 import taskAttachment from './taskAttachment';
 import taskChange from './taskChange';
 import taskInvoice from './taskInvoice';
+import tasklistColumnPreference from './tasklistColumnPreference';
 import taskType from './taskType';
 import tripType from './tripType';
 import user from './user';
@@ -64,6 +65,7 @@ export default {
     ...taskAttachment.querries,
     ...taskChange.querries,
     ...taskInvoice.querries,
+    ...tasklistColumnPreference.querries,
     ...taskType.querries,
     ...tripType.querries,
     ...user.querries,
@@ -102,6 +104,7 @@ export default {
     ...taskAttachment.mutations,
     ...taskChange.mutations,
     ...taskInvoice.mutations,
+    ...tasklistColumnPreference.mutations,
     ...taskType.mutations,
     ...tripType.mutations,
     ...user.mutations,
@@ -143,6 +146,7 @@ export default {
   ...taskType.attributes,
   ...taskChange.attributes,
   ...taskInvoice.attributes,
+  ...tasklistColumnPreference.attributes,
   ...tripType.attributes,
   ...user.attributes,
   ...userInvoice.attributes,

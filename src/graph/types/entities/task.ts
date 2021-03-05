@@ -5,10 +5,10 @@ export const Task = `
 type Task {
   ${defaultAttributes}
   title: String!
-  important: Boolean!,
+  important: Boolean!
   closeDate: String
   assignedTo: [BasicUser]!
-  company: Company!
+  company: Company
   createdBy: BasicUser
   deadline: String
   invoicedDate: String
@@ -18,9 +18,9 @@ type Task {
   pausal: Boolean!
   pendingChangable: Boolean!
   pendingDate: String
-  project: Project!
+  project: Project
   requester: BasicUser
-  status: Status!
+  status: Status
   statusChange: String!
   tags: [Tag]!
   taskType: TaskType

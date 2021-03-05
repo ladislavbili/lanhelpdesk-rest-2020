@@ -331,6 +331,8 @@ export function createProjectsAssoc(models) {
 
   models.Project.hasMany(models.Task, { onDelete: 'CASCADE' });
 
+  models.Project.hasMany(models.TasklistColumnPreference, { onDelete: 'CASCADE', as: { singular: "TasklistColumnPreference", plural: "TasklistColumnPreferences" }, foreignKey: { name: 'ProjectId', allowNull: true } });
+
   models.Project.hasMany(models.RepeatTemplate, { onDelete: 'CASCADE' });
 
   models.Project.hasMany(models.ProjectGroup, { onDelete: 'CASCADE' });

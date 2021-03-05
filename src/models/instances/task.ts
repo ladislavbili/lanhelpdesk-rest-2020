@@ -46,6 +46,8 @@ export interface TaskInstance extends DefaultInstance {
   createTaskAttachment?: any;
   createTaskMetadata?: any;
   getTaskMetadata?: any;
+
+  rights?: any;
 }
 
 export default function defineTasks(sequelize: Sequelize) {

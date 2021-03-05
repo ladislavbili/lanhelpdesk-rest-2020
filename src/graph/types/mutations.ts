@@ -23,6 +23,7 @@ import { TaskMutations } from './entities/task';
 import { TaskAttachmentMutations } from './entities/taskAttachment';
 import { TaskChangeMutations } from './entities/taskChange';
 import { TaskInvoiceMutations } from './entities/taskInvoice';
+import { TasklistColumnPreferenceMutations } from './entities/tasklistColumnPreference';
 import { TaskMetadataMutations } from './entities/taskMetadata';
 import { TaskTypeMutations } from './entities/taskType';
 import { TripTypeMutations } from './entities/tripType';
@@ -61,6 +62,7 @@ type Mutation {
   ${TaskAttachmentMutations}
   ${TaskChangeMutations}
   ${TaskInvoiceMutations}
+  ${TasklistColumnPreferenceMutations}
   ${TaskMetadataMutations}
   ${TaskTypeMutations}
   ${TripTypeMutations}

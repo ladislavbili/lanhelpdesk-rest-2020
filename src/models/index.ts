@@ -53,6 +53,7 @@ import defineScheduledTasks, { createScheduledTasksAssoc } from './instances/sch
 import defineProjectGroups, { createProjectGroupsAssoc } from './instances/projectGroup';
 import defineProjectGroupRights, { createProjectGroupRightsAssoc } from './instances/projectGroupRights';
 import defineTaskMetadata, { createTaskMetadataAssoc } from './instances/taskMetadata';
+import defineTasklistColumnPreferences, { createTasklistColumnPreferencesAssoc } from './instances/taskListColumnPreference';
 
 
 /*
@@ -122,6 +123,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineProjectGroups(sequelize);
   defineProjectGroupRights(sequelize);
   defineTaskMetadata(sequelize);
+  defineTasklistColumnPreferences(sequelize);
 
   createRolesAssoc(models);
   createUsersAssoc(models);
@@ -176,6 +178,8 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createProjectGroupsAssoc(models);
   createProjectGroupRightsAssoc(models);
   createTaskMetadataAssoc(models);
+  createTasklistColumnPreferencesAssoc(models);
+
 
   //LOG FUNCTIONS
 

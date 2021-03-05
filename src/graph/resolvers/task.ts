@@ -149,12 +149,17 @@ const querries = {
           const userRights = (<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).get();
           return [
             ...acc,
-            ...(<TaskInstance[]>proj.get('Tasks')).filter((Task) => canViewTask(Task, User, userRights))
+            ...(<TaskInstance[]>proj.get('Tasks'))
+              .filter((Task) => canViewTask(Task, User, userRights))
+              .map((Task) => {
+                Task.rights = userRights;
+                return Task;
+              })
           ]
         }, [])
       )
     } else {
-      tasks = await models.Task.findAll({
+      tasks = (<TaskInstance[]>await models.Task.findAll({
         where: taskWhere,
         include: [
           { model: models.User, as: 'assignedTos' },
@@ -172,76 +177,15 @@ const querries = {
           models.TaskType,
           models.Repeat,
         ]
-      })
+      }))
+        .map((Task) => {
+          Task.rights = allGroupRights;
+          return Task;
+        })
     }
 
     const checkUserTime = checkUserWatch.stop();
     const manualWatch = new Stopwatch(true);
-    /* BACKEND SORT - replaced by frontend dynamic sort
-    let key = 'id';
-    let asc = true;
-    if (sort) {
-      key = sort.key;
-      asc = sort.asc;
-    }
-    let returnVal = asc ? 1 : -1;
-    //SORT
-    tasks.sort((Task1, Task2) => {
-      if (['id', 'title'].includes(key)) {
-        if (Task1.get(key) > Task2.get(key)) {
-          return returnVal;
-        } else if (Task2.get(key) > Task1.get(key)) {
-          return returnVal * -1;
-        }
-      } else if (['createdAt', 'deadline'].includes(key)) {
-        if (moment(Task1.get(key)).isAfter(Task2.get(key))) {
-          return returnVal
-        } else if (moment(Task2.get(key)).isAfter(Task1.get(key))) {
-          return returnVal * -1;
-        }
-      } else if (key === 'status') {
-        const Status1 = (<StatusInstance>Task1.get('Status'));
-        const Status2 = (<StatusInstance>Task2.get('Status'));
-        if (Status1.get('order') > Status2.get('order')) {
-          return returnVal
-        } else if (Status2.get('order') > Status1.get('order')) {
-          return returnVal * -1;
-        }
-      } else if (key === 'requester') {
-        const User1 = (<UserInstance>Task1.get('requester'));
-        const User2 = (<UserInstance>Task2.get('requester'));
-        if (User1.get('fullName') > User2.get('fullName')) {
-          return returnVal;
-        } else if (User2.get('fullName') > User1.get('fullName')) {
-          return returnVal * -1;
-        }
-      } else if (key === 'assignedTo') {
-        let Users1 = (<UserInstance[]>Task1.get('assignedTos')).map((User) => User.get('fullName')).sort((User1, User2) => User1 > User2 ? -1 : 1);
-        let Users2 = (<UserInstance[]>Task2.get('assignedTos')).map((User) => User.get('fullName')).sort((User1, User2) => User1 > User2 ? -1 : 1);
-        Users1.forEach((name, index) => {
-          if (index >= Users2.length) {
-            return returnVal;
-          }
-          if (Users2[index] !== name) {
-            return name > Users2[index] ? returnVal : returnVal * -1;
-          }
-        })
-        Users2.forEach((name, index) => {
-          if (index >= Users1.length) {
-            return returnVal * -1;
-          }
-          if (Users1[index] !== name) {
-            return name > Users1[index] ? returnVal * -1 : returnVal;
-          }
-        })
-      }
-      if (Task1.get('important') && !Task2.get('important')) {
-        return -1;
-      }
-
-      return 0;
-    });
-    */
     if (filter) {
       return {
         tasks: filterByOneOf(filter, User.get('id'), User.get('CompanyId'), tasks),
@@ -333,11 +277,12 @@ const querries = {
       ),
     ])
 
-    const Task = mergeFragmentedModel(FragmentedTask)
+    let Task = mergeFragmentedModel(FragmentedTask)
     const { groupRights } = await checkIfHasProjectRights(User.get('id'), id);
     if (!canViewTask(Task, User, groupRights, true)) {
       throw CantViewTaskError;
     }
+    Task.rights = groupRights;
     return Task;
   },
 
@@ -1200,33 +1145,60 @@ const subscriptions = {
 const attributes = {
   Task: {
     async assignedTo(task) {
+      if (!task.rights.assignedRead) {
+        return [];
+      }
       return getModelAttribute(task, 'assignedTos');
     },
     async company(task) {
+      if (!task.rights.companyRead) {
+        return null;
+      }
       return getModelAttribute(task, 'Company');
     },
     async createdBy(task) {
       return getModelAttribute(task, 'createdBy');
     },
     async milestone(task) {
+      if (!task.rights.milestoneRead) {
+        return null;
+      }
       return getModelAttribute(task, 'Milestone');
     },
     async project(task) {
+      if (!task.rights.projectRead) {
+        return null;
+      }
       return getModelAttribute(task, 'Project');
     },
     async requester(task) {
+      if (!task.rights.requesterRead) {
+        return null;
+      }
       return getModelAttribute(task, 'requester');
     },
     async status(task) {
+      if (!task.rights.statusRead) {
+        return null;
+      }
       return getModelAttribute(task, 'Status');
     },
     async tags(task) {
+      if (!task.rights.tagsRead) {
+        return [];
+      }
       return getModelAttribute(task, 'Tags');
     },
     async taskType(task) {
+      if (!task.rights.typeRead) {
+        return null;
+      }
       return getModelAttribute(task, 'TaskType');
     },
     async repeat(task) {
+      if (!task.rights.repeatRead) {
+        return null;
+      }
       return getModelAttribute(task, 'Repeat');
     },
     async metadata(task) {
@@ -1234,6 +1206,9 @@ const attributes = {
     },
 
     async comments(task, body, { req, userID }) {
+      if (!task.rights.viewComments) {
+        return [];
+      }
       const [
         SourceUser,
         Comments,
@@ -1266,30 +1241,54 @@ const attributes = {
     },
 
     async shortSubtasks(task) {
+      if (!task.rights.taskShortSubtasksRead) {
+        return [];
+      }
       return getModelAttribute(task, 'ShortSubtasks');
     },
     async scheduled(task) {
+      if (!task.rights.scheduledRead) {
+        return [];
+      }
       return getModelAttribute(task, 'ScheduledTasks');
     },
     async subtasks(task) {
+      if (!task.rights.rozpocetRead && !task.rights.vykazRead) {
+        return [];
+      }
       return getModelAttribute(task, 'Subtasks');
     },
     async workTrips(task) {
+      if (!task.rights.rozpocetRead && !task.rights.vykazRead) {
+        return [];
+      }
       return getModelAttribute(task, 'WorkTrips');
     },
     async materials(task) {
+      if (!task.rights.rozpocetRead && !task.rights.vykazRead) {
+        return [];
+      }
       return getModelAttribute(task, 'Materials');
     },
     async customItems(task) {
+      if (!task.rights.rozpocetRead && !task.rights.vykazRead) {
+        return [];
+      }
       return getModelAttribute(task, 'CustomItems');
     },
     async calendarEvents(task) {
       return getModelAttribute(task, 'CalendarEvents');
     },
     async taskChanges(task) {
+      if (!task.rights.history) {
+        return [];
+      }
       return getModelAttribute(task, 'TaskChanges', 'getTaskChanges', { order: [['createdAt', 'DESC']] });
     },
     async taskAttachments(task) {
+      if (!task.rights.taskAttachmentsRead) {
+        return [];
+      }
       return getModelAttribute(task, 'TaskAttachments');
     },
     async invoicedTasks(task) {
@@ -1304,3 +1303,69 @@ export default {
   querries,
   subscriptions
 }
+
+/* BACKEND SORT - replaced by frontend dynamic sort
+let key = 'id';
+let asc = true;
+if (sort) {
+  key = sort.key;
+  asc = sort.asc;
+}
+let returnVal = asc ? 1 : -1;
+//SORT
+tasks.sort((Task1, Task2) => {
+  if (['id', 'title'].includes(key)) {
+    if (Task1.get(key) > Task2.get(key)) {
+      return returnVal;
+    } else if (Task2.get(key) > Task1.get(key)) {
+      return returnVal * -1;
+    }
+  } else if (['createdAt', 'deadline'].includes(key)) {
+    if (moment(Task1.get(key)).isAfter(Task2.get(key))) {
+      return returnVal
+    } else if (moment(Task2.get(key)).isAfter(Task1.get(key))) {
+      return returnVal * -1;
+    }
+  } else if (key === 'status') {
+    const Status1 = (<StatusInstance>Task1.get('Status'));
+    const Status2 = (<StatusInstance>Task2.get('Status'));
+    if (Status1.get('order') > Status2.get('order')) {
+      return returnVal
+    } else if (Status2.get('order') > Status1.get('order')) {
+      return returnVal * -1;
+    }
+  } else if (key === 'requester') {
+    const User1 = (<UserInstance>Task1.get('requester'));
+    const User2 = (<UserInstance>Task2.get('requester'));
+    if (User1.get('fullName') > User2.get('fullName')) {
+      return returnVal;
+    } else if (User2.get('fullName') > User1.get('fullName')) {
+      return returnVal * -1;
+    }
+  } else if (key === 'assignedTo') {
+    let Users1 = (<UserInstance[]>Task1.get('assignedTos')).map((User) => User.get('fullName')).sort((User1, User2) => User1 > User2 ? -1 : 1);
+    let Users2 = (<UserInstance[]>Task2.get('assignedTos')).map((User) => User.get('fullName')).sort((User1, User2) => User1 > User2 ? -1 : 1);
+    Users1.forEach((name, index) => {
+      if (index >= Users2.length) {
+        return returnVal;
+      }
+      if (Users2[index] !== name) {
+        return name > Users2[index] ? returnVal : returnVal * -1;
+      }
+    })
+    Users2.forEach((name, index) => {
+      if (index >= Users1.length) {
+        return returnVal * -1;
+      }
+      if (Users1[index] !== name) {
+        return name > Users1[index] ? returnVal * -1 : returnVal;
+      }
+    })
+  }
+  if (Task1.get('important') && !Task2.get('important')) {
+    return -1;
+  }
+
+  return 0;
+});
+*/
