@@ -15,8 +15,8 @@ import {
   multipleIdDoesExistsCheck,
   getModelAttribute,
   canViewTask,
-  filterToWhere,
-  filterByOneOf,
+  filterToTaskWhere,
+  getAssignedTosWhere,
 } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
@@ -52,7 +52,10 @@ const querries = {
     }
     if (filter) {
       const dates = extractDatesFromObject(filter, dateNames2);
-      taskWhere = filterToWhere({ ...filter, ...dates }, userID)
+      const SimpleUser = <UserInstance>await models.User.findByPk(userID, { attributes: ['id', 'CompanyId'] })
+      if (SimpleUser) {
+        taskWhere = filterToTaskWhere({ ...filter, ...dates }, userID, SimpleUser.get('CompanyId'))
+      }
     }
     const User = await checkResolver(
       req,
@@ -77,7 +80,13 @@ const querries = {
                     {
                       model: models.User,
                       as: 'assignedTos',
-                    }
+                    },
+                    {
+                      model: models.User,
+                      as: 'assignedTosFilter',
+                      attributes: ['id'],
+                      where: getAssignedTosWhere(filter, userID),
+                    },
                   ]
                 }
               ]
@@ -97,10 +106,6 @@ const querries = {
           ]
         }, [])
     )
-
-    if (filter) {
-      return filterByOneOf(filter, User.get('id'), User.get('CompanyId'), tasks).reduce((acc, task) => [...acc, ...<CalendarEventInstance[]>task.get('CalendarEvents')], []);
-    }
     return tasks.reduce((acc, task) => [...acc, ...<CalendarEventInstance[]>task.get('CalendarEvents')], []);
   },
 }

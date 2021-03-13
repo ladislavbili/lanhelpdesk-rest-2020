@@ -10,7 +10,10 @@ const querries = {
     const SourceUser = await checkResolver(req);
     await checkIfHasProjectRights(SourceUser.get('id'), taskId, undefined, ['history']);
     return models.TaskChange.findAll({
-      include: [models.TaskChangeMessage],
+      include: [
+        models.TaskChangeMessage,
+        models.User,
+      ],
       where: {
         TaskId: taskId
       }

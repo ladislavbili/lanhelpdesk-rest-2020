@@ -87,8 +87,9 @@ export {
   createChangeMessage,
   createTaskAttributesChangeMessages,
   sendNotifications,
-  filterToWhere,
-  filterByOneOf,
+  filterToTaskWhere,
+  getAssignedTosWhere,
+  transformSortToQuery,
 } from './taskProcessing';
 
 export {

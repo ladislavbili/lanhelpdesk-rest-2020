@@ -122,6 +122,8 @@ export function createTasksAssoc(models) {
 
   models.Task.belongsToMany(models.User, { as: { singular: "assignedTo", plural: "assignedTos" }, through: 'task_assignedTo' });
 
+  models.Task.belongsToMany(models.User, { as: { singular: "assignedToFilter", plural: "assignedTosFilter" }, through: 'task_assignedTo' });
+
   models.Task.belongsTo(models.Company, { foreignKey: { allowNull: false } });
 
   models.Task.hasOne(models.TaskMetadata, { onDelete: 'CASCADE', as: "TaskMetadata", foreignKey: { name: 'TaskId', allowNull: false } });

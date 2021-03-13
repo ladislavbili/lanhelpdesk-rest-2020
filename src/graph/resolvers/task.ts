@@ -18,6 +18,7 @@ import {
   allGroupRights
 } from '@/configs/projectConstants';
 import { models, sequelize } from '@/models';
+import { Op } from 'sequelize';
 import {
   TaskInstance,
   MilestoneInstance,
@@ -58,8 +59,9 @@ import {
   createChangeMessage,
   createTaskAttributesChangeMessages,
   sendNotifications,
-  filterToWhere,
-  filterByOneOf,
+  filterToTaskWhere,
+  getAssignedTosWhere,
+  transformSortToQuery,
 } from '@/helperFunctions';
 import { sendNotificationToUsers } from '@/graph/resolvers/userNotification';
 import { repeatEvent } from '@/services/repeatTasks';
@@ -84,8 +86,12 @@ const dateNames2 = [
 
 const querries = {
   tasks: async (root, { projectId, filterId, filter, sort }, { req, userID }) => {
-    const User = await checkResolver(req);
+    const sortBy = sort ? transformSortToQuery(sort) : [['id', 'DESC']];
     const mainWatch = new Stopwatch(true);
+    const checkUserWatch = new Stopwatch(true);
+    const User = await checkResolver(req);
+    const checkUserTime = checkUserWatch.stop();
+
     let projectWhere = {};
     let taskWhere = {};
     if (projectId) {
@@ -104,105 +110,134 @@ const querries = {
     }
     if (filter) {
       const dates = extractDatesFromObject(filter, dateNames2);
-      taskWhere = filterToWhere({ ...filter, ...dates }, userID)
+      taskWhere = filterToTaskWhere({ ...filter, ...dates }, userID, User.get('CompanyId'))
     }
 
-    const checkUserWatch = new Stopwatch(true);
     let tasks = []
+    const taskIncludes = [
+      {
+        model: models.User,
+        as: 'assignedTos',
+        order: <any>[
+          ['name', !sort || sort.asc ? 'ASC' : 'DESC'],
+          ['surname', !sort || sort.asc ? 'ASC' : 'DESC'],
+        ],
+      },
+      {
+        model: models.User,
+        as: 'assignedTosFilter',
+        attributes: ['id'],
+        where: getAssignedTosWhere(filter, userID),
+      },
+      models.Company,
+      { model: models.User, as: 'createdBy' },
+      models.Milestone,
+      { model: models.User, as: 'requester' },
+      models.Status,
+      models.Tag,
+      models.TaskType,
+      models.Repeat,
+      {
+        model: models.TaskMetadata,
+        as: 'TaskMetadata'
+      },
+    ];
+    const databaseWatch = new Stopwatch(true);
+    let databaseTime = 0;
     if ((<RoleInstance>User.get('Role')).get('level') !== 0) {
-      const ProjectGroups = <ProjectGroupInstance[]>await User.getProjectGroups({
+      tasks = (<TaskInstance[]>await models.Task.findAll({
         include: [
-          models.ProjectGroupRights,
+          ...taskIncludes,
           {
             model: models.Project,
-            where: projectWhere,
             required: true,
+            where: {
+              ...projectWhere,
+
+            },
             include: [
               {
-                model: models.Task,
-                where: taskWhere,
+                model: models.ProjectGroup,
                 required: true,
                 include: [
-                  { model: models.User, as: 'assignedTos' },
-                  models.Company,
-                  { model: models.User, as: 'createdBy' },
-                  models.Milestone,
-                  models.Project,
-                  { model: models.User, as: 'requester' },
-                  models.Status,
-                  models.Tag,
-                  models.TaskType,
                   {
-                    model: models.TaskMetadata,
-                    as: 'TaskMetadata'
+                    model: models.ProjectGroupRights,
+                    required: true
                   },
-                  models.Repeat,
+                  {
+                    model: models.User,
+                    required: true,
+                    where: {
+                      id: userID
+                    }
+                  }
                 ]
               }
             ]
-          }
-        ]
-      })
-      tasks = (
-        ProjectGroups.reduce((acc, ProjectGroup) => {
-          const proj = <ProjectInstance>ProjectGroup.get('Project');
-          const userRights = (<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).get();
-          return [
-            ...acc,
-            ...(<TaskInstance[]>proj.get('Tasks'))
-              .filter((Task) => canViewTask(Task, User, userRights))
-              .map((Task) => {
-                Task.rights = userRights;
-                return Task;
-              })
+          },
+        ],
+        order: [
+          ['important', 'DESC'],
+          ...<any>sortBy,
+        ],
+        where: {
+          ...taskWhere,
+          [Op.or]: [
+            {
+              createdById: userID,
+            },
+            {
+              requesterId: userID,
+            },
+            {
+              '$assignedTosFilter.id$': userID,
+            },
+            {
+              '$Project.ProjectGroups.ProjectGroupRight.allTasks$': true,
+            },
+            {
+              '$Project.ProjectGroups.ProjectGroupRight.companyTasks$': true,
+              CompanyId: User.get('CompanyId')
+            },
           ]
-        }, [])
-      )
+        },
+      })).map((Task) => {
+        const Project = <ProjectInstance>Task.get('Project');
+        const Groups = <ProjectGroupInstance[]>Project.get('ProjectGroups');
+        const GroupRight = <ProjectGroupRightsInstance>Groups[0].get('ProjectGroupRight');
+        Task.rights = GroupRight.get();
+        return Task;
+      })
     } else {
       tasks = (<TaskInstance[]>await models.Task.findAll({
         where: taskWhere,
+        order: [
+          ['important', 'DESC'],
+          ...<any>sortBy,
+        ],
         include: [
-          { model: models.User, as: 'assignedTos' },
-          models.Company,
-          { model: models.User, as: 'createdBy' },
-          models.Milestone,
+          ...taskIncludes,
           {
             model: models.Project,
             where: projectWhere,
             required: true,
           },
-          { model: models.User, as: 'requester' },
-          models.Status,
-          models.Tag,
-          models.TaskType,
-          models.Repeat,
-        ]
+        ],
       }))
         .map((Task) => {
           Task.rights = allGroupRights;
           return Task;
         })
     }
+    databaseTime = databaseWatch.stop()
 
-    const checkUserTime = checkUserWatch.stop();
-    const manualWatch = new Stopwatch(true);
-    if (filter) {
-      return {
-        tasks: filterByOneOf(filter, User.get('id'), User.get('CompanyId'), tasks),
-        execTime: mainWatch.stop(),
-        secondaryTimes: [
-          { source: 'User check', time: checkUserTime },
-          { source: 'Processing', time: manualWatch.stop() },
-        ]
-      };
-    }
 
     return {
       tasks,
       execTime: mainWatch.stop(),
       secondaryTimes: [
         { source: 'User check', time: checkUserTime },
-        { source: 'Processing', time: manualWatch.stop() }
+        { source: 'Database', time: databaseTime },
       ]
     };
   },
@@ -258,19 +293,19 @@ const querries = {
             },
             {
               model: models.Subtask,
-              include: [models.TaskType, models.InvoicedSubtask, { model: models.User, include: [models.Company] }]
+              include: [models.TaskType, models.InvoicedSubtask, { model: models.User, as: 'SubtaskApprovedBy' }, { model: models.User, include: [models.Company] }]
             },
             {
               model: models.WorkTrip,
-              include: [models.TripType, models.InvoicedTrip, { model: models.User, include: [models.Company] }]
+              include: [models.TripType, models.InvoicedTrip, { model: models.User, as: 'TripApprovedBy' }, { model: models.User, include: [models.Company] }]
             },
             {
               model: models.Material,
-              include: [models.InvoicedMaterial],
+              include: [models.InvoicedMaterial, { model: models.User, as: 'MaterialApprovedBy' }],
             },
             {
               model: models.CustomItem,
-              include: [models.InvoicedCustomItem],
+              include: [models.InvoicedCustomItem, { model: models.User, as: 'ItemApprovedBy' }],
             },
           ]
         }
@@ -1305,69 +1340,3 @@ export default {
   querries,
   subscriptions
 }
-
-/* BACKEND SORT - replaced by frontend dynamic sort
-let key = 'id';
-let asc = true;
-if (sort) {
-  key = sort.key;
-  asc = sort.asc;
-}
-let returnVal = asc ? 1 : -1;
-//SORT
-tasks.sort((Task1, Task2) => {
-  if (['id', 'title'].includes(key)) {
-    if (Task1.get(key) > Task2.get(key)) {
-      return returnVal;
-    } else if (Task2.get(key) > Task1.get(key)) {
-      return returnVal * -1;
-    }
-  } else if (['createdAt', 'deadline'].includes(key)) {
-    if (moment(Task1.get(key)).isAfter(Task2.get(key))) {
-      return returnVal
-    } else if (moment(Task2.get(key)).isAfter(Task1.get(key))) {
-      return returnVal * -1;
-    }
-  } else if (key === 'status') {
-    const Status1 = (<StatusInstance>Task1.get('Status'));
-    const Status2 = (<StatusInstance>Task2.get('Status'));
-    if (Status1.get('order') > Status2.get('order')) {
-      return returnVal
-    } else if (Status2.get('order') > Status1.get('order')) {
-      return returnVal * -1;
-    }
-  } else if (key === 'requester') {
-    const User1 = (<UserInstance>Task1.get('requester'));
-    const User2 = (<UserInstance>Task2.get('requester'));
-    if (User1.get('fullName') > User2.get('fullName')) {
-      return returnVal;
-    } else if (User2.get('fullName') > User1.get('fullName')) {
-      return returnVal * -1;
-    }
-  } else if (key === 'assignedTo') {
-    let Users1 = (<UserInstance[]>Task1.get('assignedTos')).map((User) => User.get('fullName')).sort((User1, User2) => User1 > User2 ? -1 : 1);
-    let Users2 = (<UserInstance[]>Task2.get('assignedTos')).map((User) => User.get('fullName')).sort((User1, User2) => User1 > User2 ? -1 : 1);
-    Users1.forEach((name, index) => {
-      if (index >= Users2.length) {
-        return returnVal;
-      }
-      if (Users2[index] !== name) {
-        return name > Users2[index] ? returnVal : returnVal * -1;
-      }
-    })
-    Users2.forEach((name, index) => {
-      if (index >= Users1.length) {
-        return returnVal * -1;
-      }
-      if (Users1[index] !== name) {
-        return name > Users1[index] ? returnVal * -1 : returnVal;
-      }
-    })
-  }
-  if (Task1.get('important') && !Task2.get('important')) {
-    return -1;
-  }
-
-  return 0;
-});
-*/

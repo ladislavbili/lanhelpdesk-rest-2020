@@ -64,6 +64,14 @@ const querries = {
           model: models.Status,
           as: 'projectStatuses'
         },
+        {
+          model: models.ProjectGroup,
+          include: [
+            models.User,
+            models.ProjectGroupRights
+          ]
+        },
+
       ]
     });
   },

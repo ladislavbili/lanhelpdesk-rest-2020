@@ -13,15 +13,32 @@ import { UserNotificationInstance, UserInstance } from '@/models/instances';
 
 const querries = {
   userNotifications: async (root, { limit }, { req }) => {
+    let includeLimit = {};
     if (limit) {
-      const User = await checkResolver(req, [], false, [{
-        model: models.UserNotification, limit, order: [
-          ['id', 'DESC'],
-        ],
-      }]);
-      return User.get('UserNotifications');
+      includeLimit['limit'] = limit;
     }
-    const User = await checkResolver(req, [], false, [models.UserNotification]);
+    const User = await checkResolver(
+      req,
+      [],
+      false,
+      [
+        {
+          model: models.UserNotification,
+          ...includeLimit,
+          order: [
+            ['id', 'DESC'],
+          ],
+          include: [
+            models.User,
+            {
+              model: models.User,
+              as: 'createdBy'
+            },
+            models.Task,
+          ]
+        }
+      ]
+    );
     return User.get('UserNotifications');
   },
 

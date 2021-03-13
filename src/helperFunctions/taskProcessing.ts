@@ -26,7 +26,6 @@ export const createTaskAttributesChangeMessages = async (args, Task) => {
   )).filter((response) => response !== null)
 }
 
-
 export const createChangeMessage = async (type, model, name, newValue, OriginalItem, attribute = 'title') => {
   if (['TaskType', 'Company', 'Milestone', 'Requester', 'Project', 'Status'].includes(type)) {
     let NewItem = await model.findByPk(newValue);
@@ -109,185 +108,124 @@ export const sendNotifications = async (User, notifications, Task, assignedTos =
   );
 }
 
-export const filterToWhere = (filter, userId) => {
-  let {
-    taskType,
-
-    statusDateFrom,
-    statusDateFromNow,
-    statusDateTo,
-    statusDateToNow,
-
-    pendingDateFrom,
-    pendingDateFromNow,
-    pendingDateTo,
-    pendingDateToNow,
-
-    closeDateFrom,
-    closeDateFromNow,
-    closeDateTo,
-    closeDateToNow,
-
-    deadlineFrom,
-    deadlineFromNow,
-    deadlineTo,
-    deadlineToNow,
-  } = filter;
+export const filterToTaskWhere = (filter, userId, companyId) => {
   let where = {};
 
-  if (taskType) {
-    where = {
-      ...where,
-      TaskTypeId: taskType
+  //attributes
+  [
+    {
+      key: 'TaskTypeId',
+      value: filter.taskType,
+    },
+    {
+      key: 'CompanyId',
+      value: filter.companyCur ? companyId : filter.company,
+    },
+    {
+      key: 'requesterId',
+      value: filter.requesterCur ? userId : filter.requester,
+    },
+  ].forEach((attribute) => {
+    if (attribute.value) {
+      where[attribute.key] = attribute.value
     }
-  }
+  });
 
+  //dates
+  [
+    {
+      target: 'statusChange',
+      fromNow: filter.statusDateFromNow,
+      toNow: filter.statusDateToNow,
+      from: filter.statusDateFrom,
+      to: filter.statusDateTo,
+    },
+    {
+      target: 'pendingDate',
+      fromNow: filter.pendingDateFromNow,
+      toNow: filter.pendingDateToNow,
+      from: filter.pendingDateFrom,
+      to: filter.pendingDateTo,
+    },
+    {
+      target: 'closeDate',
+      fromNow: filter.closeDateFromNow,
+      toNow: filter.closeDateToNow,
+      from: filter.closeDateFrom,
+      to: filter.closeDateTo,
+    },
+    {
+      target: 'deadline',
+      fromNow: filter.deadlineFromNow,
+      toNow: filter.deadlineToNow,
+      from: filter.deadlineFrom,
+      to: filter.deadlineTo,
+    },
+  ].forEach((dateFilter) => {
+    let {
+      target,
+      fromNow,
+      toNow,
+      from,
+      to
+    } = dateFilter;
+    let condition = {};
+    if (fromNow) {
+      from = moment().toDate();
+    }
+    if (toNow) {
+      to = moment().toDate();
+    }
 
-
-  //STATUS DATE
-  let statusDateConditions = {};
-  if (statusDateFromNow) {
-    statusDateFrom = moment().toDate();
-  }
-  if (statusDateToNow) {
-    statusDateTo = moment().toDate();
-  }
-
-  if (statusDateFrom) {
-    statusDateConditions = { ...statusDateConditions, [Op.gte]: statusDateFrom }
-  }
-  if (statusDateTo) {
-    statusDateConditions = { ...statusDateConditions, [Op.lte]: statusDateTo }
-  }
-  if (statusDateFrom || statusDateTo) {
-    where = {
-      ...where,
-      statusChange: {
-        [Op.and]: statusDateConditions
+    if (from) {
+      condition = { ...condition, [Op.gte]: from }
+    }
+    if (to) {
+      condition = { ...condition, [Op.lte]: to }
+    }
+    if (from || to) {
+      where[target] = {
+        [Op.and]: condition
       }
     }
-  }
-
-  //PENDING DATE
-  let pendingDateConditions = {};
-  if (pendingDateFromNow) {
-    pendingDateFrom = moment().toDate();
-  }
-  if (pendingDateToNow) {
-    pendingDateTo = moment().toDate();
-  }
-
-  if (pendingDateFrom) {
-    pendingDateConditions = { ...pendingDateConditions, [Op.gte]: pendingDateFrom }
-  }
-  if (pendingDateTo) {
-    pendingDateConditions = { ...pendingDateConditions, [Op.lte]: pendingDateTo }
-  }
-  if (pendingDateFrom || pendingDateTo) {
-    where = {
-      ...where,
-      pendingDate: {
-        [Op.and]: pendingDateConditions
-      }
-    }
-  }
-
-  //CLOSE DATE
-  let closeDateConditions = {};
-  if (closeDateFromNow) {
-    closeDateFrom = moment().toDate();
-  }
-  if (closeDateToNow) {
-    closeDateTo = moment().toDate();
-  }
-
-  if (closeDateFrom) {
-    closeDateConditions = { ...closeDateConditions, [Op.gte]: closeDateFrom }
-  }
-  if (closeDateTo) {
-    closeDateConditions = { ...closeDateConditions, [Op.lte]: closeDateTo }
-  }
-  if (closeDateFrom || closeDateTo) {
-    where = {
-      ...where,
-      closeDate: {
-        [Op.and]: closeDateConditions
-      }
-    }
-  }
-
-
-  //DEADLINE
-  let deadlineConditions = {};
-  if (deadlineFromNow) {
-    deadlineFrom = moment().toDate();
-  }
-  if (deadlineToNow) {
-    deadlineTo = moment().toDate();
-  }
-
-  if (deadlineFrom) {
-    deadlineConditions = { ...deadlineConditions, [Op.gte]: deadlineFrom }
-  }
-  if (deadlineTo) {
-    deadlineConditions = { ...deadlineConditions, [Op.lte]: deadlineTo }
-  }
-  if (deadlineFrom || deadlineTo) {
-    where = {
-      ...where,
-      deadline: {
-        [Op.and]: deadlineConditions
-      }
-    }
-  }
-
+  });
   return where;
 }
 
-export const filterByOneOf = (filter, userId, companyId, tasks) => {
-  let {
-    assignedTo,
-    assignedToCur,
-    requester,
-    requesterCur,
-    company,
-    companyCur,
-    oneOf
-  } = filter;
+export const getAssignedTosWhere = (filter, userId) => {
+  const id = filter.assignedToCur ? userId : filter.assignedTo;
+  if (id) {
+    return {
+      id
+    }
+  }
+  return {}
+}
 
-  if (assignedToCur) {
-    assignedTo = userId;
-  }
-  if (requesterCur) {
-    requester = userId;
-  }
-  if (companyCur) {
-    company = companyId;
-  }
-  return tasks.filter((task) => {
-    let oneOfConditions = [];
-    if (assignedTo) {
-      if (oneOf.includes('assigned')) {
-        oneOfConditions.push(task.get('assignedTos').some((user) => user.get('id') === assignedTo))
-      } else if (!task.get('assignedTos').some((user) => user.get('id') === assignedTo)) {
-        return false;
-      }
-    }
-    if (requester) {
-      if (oneOf.includes('requester')) {
-        oneOfConditions.push(task.get('requesterId') === requester)
-      } else if (task.get('requesterId') !== requester) {
-        return false;
-      }
-    }
-    if (company) {
-      if (oneOf.includes('company')) {
-        oneOfConditions.push(task.get('CompanyId') === company)
-      } else if (task.get('CompanyId') !== company) {
-        return false;
-      }
-    }
-    return oneOfConditions.length === 0 || oneOfConditions.every((cond) => cond);
-  })
+export const transformSortToQuery = (sort) => {
+  const last = sort.asc ? 'ASC' : 'DESC';
+  switch (sort.key) {
 
+    case 'assignedTo': {
+      return [
+        ['assignedTos', 'name', last],
+        ['assignedTos', 'surname', last]
+      ];
+    }
+    case 'status': {
+      return [['Status', 'order', last]];
+    }
+    case 'requester': {
+      return [
+        ['requester', 'name', last],
+        ['requester', 'surname', last]
+      ];
+    }
+    case 'id': case 'title': case 'deadline': case 'createdAt': {
+      return [[sort.key, last]];
+    }
+    default: {
+      return [['id', last]];
+    }
+  }
 }
