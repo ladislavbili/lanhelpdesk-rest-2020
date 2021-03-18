@@ -34,12 +34,12 @@ enum OneOfEnum {
 
 type filter {
   assignedToCur: Boolean!
-  assignedTo: BasicUser
+  assignedTos: [BasicUser]
   requesterCur: Boolean!
-  requester: BasicUser
+  requesters: [BasicUser]
   companyCur: Boolean!
-  company: BasicCompany
-  taskType: TaskType
+  companies: [BasicCompany]
+  taskTypes: [TaskType]
   oneOf: [OneOfEnum]!
 
   statusDateFrom: String
@@ -58,16 +58,34 @@ type filter {
   deadlineFromNow: Boolean!
   deadlineTo: String
   deadlineToNow: Boolean!
+  scheduledFrom: String
+  scheduledFromNow: Boolean!
+  scheduledTo: String
+  scheduledToNow: Boolean!
+  createdAtFrom: String
+  createdAtFromNow: Boolean!
+  createdAtTo: String
+  createdAtToNow: Boolean!
+
+  important: BooleanSelectEnum
+  invoiced: BooleanSelectEnum
+  pausal: BooleanSelectEnum
+  overtime: BooleanSelectEnum
+}
+
+enum BooleanSelectEnum {
+  yes
+  no
 }
 
 input FilterInput {
   assignedToCur: Boolean!
-  assignedTo: Int
+  assignedTos: [Int]
   requesterCur: Boolean!
-  requester: Int
+  requesters: [Int]
   companyCur: Boolean!
-  company: Int
-  taskType: Int
+  companies: [Int]
+  taskTypes: [Int]
   oneOf: [OneOfEnum]!
 
   statusDateFrom: String
@@ -86,6 +104,19 @@ input FilterInput {
   deadlineFromNow: Boolean!
   deadlineTo: String
   deadlineToNow: Boolean!
+  scheduledFrom: String
+  scheduledFromNow: Boolean!
+  scheduledTo: String
+  scheduledToNow: Boolean!
+  createdAtFrom: String
+  createdAtFromNow: Boolean!
+  createdAtTo: String
+  createdAtToNow: Boolean!
+
+  important: BooleanSelectEnum
+  invoiced: BooleanSelectEnum
+  pausal: BooleanSelectEnum
+  overtime: BooleanSelectEnum
 }
 `
 

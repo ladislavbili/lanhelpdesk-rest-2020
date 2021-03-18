@@ -12,7 +12,7 @@ import {
   checkIfHasProjectRights,
 } from '@/helperFunctions';
 import { Op } from 'sequelize';
-const dateNames = ['statusDateFrom', 'statusDateTo', 'pendingDateFrom', 'pendingDateTo', 'closeDateFrom', 'closeDateTo', 'deadlineFrom', 'deadlineTo'];
+const dateNames = ['statusDateFrom', 'statusDateTo', 'pendingDateFrom', 'pendingDateTo', 'closeDateFrom', 'closeDateTo', 'deadlineFrom', 'deadlineTo', 'scheduledFrom', 'scheduledTo', 'createdAtFrom', 'createdAtTo'];
 
 const querries = {
   myFilters: async (root, args, { req }) => {
@@ -66,13 +66,14 @@ const querries = {
         throw createDoesNoExistsError('Filter', id);
       }
       return Filter;
-    } else {
-      const Filter = await models.Filter.findByPk(id);
-      if (Filter === null) {
-        throw createDoesNoExistsError('Filter', id);
-      }
-      return Filter;
     }
+
+    const Filter = await models.Filter.findByPk(id);
+    if (Filter === null) {
+      throw createDoesNoExistsError('Filter', id);
+    }
+    return Filter;
+
   },
 
   publicFilters: async (root, args, { req }) => {
@@ -146,9 +147,20 @@ const mutations = {
     }
 
     //Filter
-    const { assignedTo, requester, company, taskType, oneOf, ...directFilterParams } = filter;
-    const checkPairs = [{ model: models.User, id: assignedTo }, { model: models.User, id: requester }, { model: models.Company, id: company }, { model: models.TaskType, id: taskType }].filter((pair) => pair.id !== undefined && pair.id !== null);
-    await multipleIdDoesExistsCheck(checkPairs);
+    const { assignedTos, requesters, companies, taskTypes, oneOf, important, invoiced, pausal, overtime, ...directFilterParams } = filter;
+    await Promise.all([
+      idsDoExistsCheck(assignedTos, models.User),
+      idsDoExistsCheck(requesters, models.User),
+      idsDoExistsCheck(companies, models.Company),
+      idsDoExistsCheck(taskTypes, models.TaskType),
+    ])
+
+    const boolAttributes = {
+      important: important === null ? null : important === 'yes',
+      invoiced: invoiced === null ? null : invoiced === 'yes',
+      pausal: pausal === null ? null : pausal === 'yes',
+      overtime: overtime === null ? null : overtime === 'yes',
+    }
 
     if (pub) {
       await idsDoExistsCheck(roles, models.Role);
@@ -158,11 +170,8 @@ const mutations = {
           order,
           ProjectId: projectId,
           filterCreatedById: User.get('id'),
-          filterAssignedToId: assignedTo ? assignedTo : null,
-          filterRequesterId: requester ? requester : null,
-          filterCompanyId: company ? company : null,
-          filterTaskTypeId: taskType ? taskType : null,
           ...directFilterParams,
+          ...boolAttributes,
           ...dates,
           pub: true,
           FilterOneOfs: oneOf.map((item) => ({ input: item })),
@@ -171,19 +180,22 @@ const mutations = {
           include: [{ model: models.FilterOneOf }]
         }
       );
-      newFilter.setRoles(roles);
+      await Promise.all([
+        newFilter.setRoles(roles),
+        newFilter.setFilterAssignedTos(assignedTos ? assignedTos : []),
+        newFilter.setFilterRequesters(requesters ? requesters : []),
+        newFilter.setFilterCompanies(companies ? companies : []),
+        newFilter.setFilterTaskTypes(taskTypes ? taskTypes : []),
+      ])
       return newFilter;
     }
-    return models.Filter.create(
+    const newFilter = <FilterInstance>await models.Filter.create(
       {
         ...args,
         ProjectId: projectId,
         filterCreatedById: User.get('id'),
-        filterAssignedToId: assignedTo ? assignedTo : null,
-        filterRequesterId: requester ? requester : null,
-        filterCompanyId: company ? company : null,
-        filterTaskTypeId: taskType ? taskType : null,
         ...directFilterParams,
+        ...boolAttributes,
         pub: false,
         FilterOneOfs: oneOf.map((item) => ({ input: item })),
       },
@@ -191,6 +203,14 @@ const mutations = {
         include: [{ model: models.FilterOneOf }]
       }
     );
+    await Promise.all([
+      newFilter.setFilterAssignedTos(assignedTos ? assignedTos : []),
+      newFilter.setFilterRequesters(requesters ? requesters : []),
+      newFilter.setFilterCompanies(companies ? companies : []),
+      newFilter.setFilterTaskTypes(taskTypes ? taskTypes : []),
+    ])
+    return newFilter;
+
   },
 
   addPublicFilter: async (root, { roles, filter, order, projectId, ...args }, { req }) => {
@@ -216,28 +236,42 @@ const mutations = {
     }
 
     //Filter
-    const { assignedTo, requester, company, taskType, oneOf, ...directFilterParams } = filter;
-    const checkPairs = [{ model: models.User, id: assignedTo }, { model: models.User, id: requester }, { model: models.Company, id: company }, { model: models.TaskType, id: taskType }].filter((pair) => pair.id !== undefined && pair.id !== null);
-    await multipleIdDoesExistsCheck(checkPairs);
+    const { assignedTos, requesters, companies, taskTypes, oneOf, important, invoiced, pausal, overtime, ...directFilterParams } = filter;
+    await Promise.all([
+      idsDoExistsCheck(assignedTos, models.User),
+      idsDoExistsCheck(requesters, models.User),
+      idsDoExistsCheck(companies, models.Company),
+      idsDoExistsCheck(taskTypes, models.TaskType),
+      idsDoExistsCheck(roles, models.Role),
+    ])
 
-    await idsDoExistsCheck(roles, models.Role);
-    const newFilter = <FilterInstance>await models.Filter.create({
-      ...args,
-      order,
-      ProjectId: projectId,
-      filterCreatedById: User.get('id'),
-      filterAssignedToId: assignedTo ? assignedTo : null,
-      filterRequesterId: requester ? requester : null,
-      filterCompanyId: company ? company : null,
-      filterTaskTypeId: taskType ? taskType : null,
-      ...directFilterParams,
-      ...dates,
-      pub: true,
-      FilterOneOfs: oneOf.map((item) => ({ input: item })),
-    }, {
+    const boolAttributes = {
+      important: important === null ? null : important === 'yes',
+      invoiced: invoiced === null ? null : invoiced === 'yes',
+      pausal: pausal === null ? null : pausal === 'yes',
+      overtime: overtime === null ? null : overtime === 'yes',
+    }
+
+    const newFilter = <FilterInstance>await models.Filter.create(
+      {
+        ...args,
+        ProjectId: projectId,
+        filterCreatedById: User.get('id'),
+        ...directFilterParams,
+        ...boolAttributes,
+        pub: false,
+        FilterOneOfs: oneOf.map((item) => ({ input: item })),
+      },
+      {
         include: [{ model: models.FilterOneOf }]
-      });
-    await newFilter.setRoles(roles);
+      }
+    );
+    await Promise.all([
+      newFilter.setFilterAssignedTos(assignedTos ? assignedTos : []),
+      newFilter.setFilterRequesters(requesters ? requesters : []),
+      newFilter.setFilterCompanies(companies ? companies : []),
+      newFilter.setFilterTaskTypes(taskTypes ? taskTypes : []),
+    ])
     return newFilter;
   },
 
@@ -280,15 +314,27 @@ const mutations = {
     let promises = [];
     if (filter) {
       //Filter
-      const { assignedTo, requester, company, taskType, oneOf: oneOfs, ...directFilterParams } = filter;
+      const { assignedTos, requesters, companies, taskTypes, important, invoiced, pausal, overtime, oneOf: oneOfs, ...directFilterParams } = filter;
       const dates = extractDatesFromObject(filter, dateNames);
-      const checkPairs = [{ model: models.User, id: assignedTo }, { model: models.User, id: requester }, { model: models.Company, id: company }, { model: models.TaskType, id: taskType }].filter((pair) => pair.id !== undefined && pair.id !== null);
-      await multipleIdDoesExistsCheck(checkPairs);
-      changes = { ...directFilterParams, ...dates };
-      assignedTo !== undefined && promises.push(Filter.setFilterAssignedTo(assignedTo));
-      requester !== undefined && promises.push(Filter.setFilterRequester(requester));
-      company !== undefined && promises.push(Filter.setFilterCompany(company));
-      taskType !== undefined && promises.push(Filter.setFilterTaskType(taskType));
+      await Promise.all([
+        idsDoExistsCheck(assignedTos, models.User),
+        idsDoExistsCheck(requesters, models.User),
+        idsDoExistsCheck(companies, models.Company),
+        idsDoExistsCheck(taskTypes, models.TaskType),
+        idsDoExistsCheck(roles, models.Role),
+      ])
+
+      const boolAttributes = {
+        important: (important === null || important === undefined) ? important : important === 'yes',
+        invoiced: (invoiced === null || invoiced === undefined) ? invoiced : invoiced === 'yes',
+        pausal: (pausal === null || pausal === undefined) ? pausal : pausal === 'yes',
+        overtime: (overtime === null || overtime === undefined) ? overtime : overtime === 'yes',
+      }
+      changes = { ...directFilterParams, ...dates, ...boolAttributes };
+      assignedTos !== undefined && promises.push(Filter.setFilterAssignedTos(assignedTos));
+      requesters !== undefined && promises.push(Filter.setFilterRequesters(requesters));
+      companies !== undefined && promises.push(Filter.setFilterCompanies(companies));
+      taskTypes !== undefined && promises.push(Filter.setFilterTaskTypes(taskTypes));
       //One of
       const [existingOneOfs, deletedOneOfs] = splitArrayByFilter(Filter.get('FilterOneOfs'), ((filterOneOf) => oneOfs.some((oneOf) => oneOf === filterOneOf.get('input'))));
       const newOneOfs = oneOfs.filter((oneOf) => !existingOneOfs.some((filterOneOf) => filterOneOf.get('input') === oneOf))
@@ -342,16 +388,27 @@ const mutations = {
     let changes = {};
     let promises = [];
     if (filter) {
-      //Filter
-      const { assignedTo, requester, company, taskType, oneOf: oneOfs, ...directFilterParams } = filter;
+      const { assignedTos, requesters, companies, taskTypes, important, invoiced, pausal, overtime, oneOf: oneOfs, ...directFilterParams } = filter;
       const dates = extractDatesFromObject(filter, dateNames);
-      const checkPairs = [{ model: models.User, id: assignedTo }, { model: models.User, id: requester }, { model: models.Company, id: company }, { model: models.TaskType, id: taskType }].filter((pair) => pair.id !== undefined && pair.id !== null);
-      await multipleIdDoesExistsCheck(checkPairs);
-      changes = { ...directFilterParams, ...dates };
-      assignedTo !== undefined && promises.push(Filter.setFilterAssignedTo(assignedTo));
-      requester !== undefined && promises.push(Filter.setFilterRequester(requester));
-      company !== undefined && promises.push(Filter.setFilterCompany(company));
-      taskType !== undefined && promises.push(Filter.setFilterTaskType(taskType));
+      await Promise.all([
+        idsDoExistsCheck(assignedTos, models.User),
+        idsDoExistsCheck(requesters, models.User),
+        idsDoExistsCheck(companies, models.Company),
+        idsDoExistsCheck(taskTypes, models.TaskType),
+        idsDoExistsCheck(roles, models.Role),
+      ])
+
+      const boolAttributes = {
+        important: (important === null || important === undefined) ? important : important === 'yes',
+        invoiced: (invoiced === null || invoiced === undefined) ? invoiced : invoiced === 'yes',
+        pausal: (pausal === null || pausal === undefined) ? pausal : pausal === 'yes',
+        overtime: (overtime === null || overtime === undefined) ? overtime : overtime === 'yes',
+      }
+      changes = { ...directFilterParams, ...dates, ...boolAttributes };
+      assignedTos !== undefined && promises.push(Filter.setFilterAssignedTos(assignedTos));
+      requesters !== undefined && promises.push(Filter.setFilterRequesters(requesters));
+      companies !== undefined && promises.push(Filter.setFilterCompanies(companies));
+      taskTypes !== undefined && promises.push(Filter.setFilterTaskTypes(taskTypes));
       //One of
       const [existingOneOfs, deletedOneOfs] = splitArrayByFilter(Filter.get('FilterOneOfs'), ((filterOneOf) => oneOfs.some((oneOf) => oneOf === filterOneOf.get('input'))));
       const newOneOfs = oneOfs.filter((oneOf) => !existingOneOfs.some((filterOneOf) => filterOneOf.get('input') === oneOf))

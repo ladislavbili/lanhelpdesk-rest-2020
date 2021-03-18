@@ -4,7 +4,6 @@ import { timestampToString } from './timeManipulations';
 import { filterUnique } from './arrayManipulations';
 import { models } from '@/models';
 import { sendEmail } from '@/services/smtp';
-import { Op } from 'sequelize';
 
 export const createTaskAttributesChangeMessages = async (args, Task) => {
   return (<any[]>await Promise.all(
@@ -106,100 +105,6 @@ export const sendNotifications = async (User, notifications, Task, assignedTos =
     Users.map((User) => User.get('email')),
     'lanhelpdesk2019@gmail.com'
   );
-}
-
-export const filterToTaskWhere = (filter, userId, companyId) => {
-  let where = {};
-
-  //attributes
-  [
-    {
-      key: 'TaskTypeId',
-      value: filter.taskType,
-    },
-    {
-      key: 'CompanyId',
-      value: filter.companyCur ? companyId : filter.company,
-    },
-    {
-      key: 'requesterId',
-      value: filter.requesterCur ? userId : filter.requester,
-    },
-  ].forEach((attribute) => {
-    if (attribute.value) {
-      where[attribute.key] = attribute.value
-    }
-  });
-
-  //dates
-  [
-    {
-      target: 'statusChange',
-      fromNow: filter.statusDateFromNow,
-      toNow: filter.statusDateToNow,
-      from: filter.statusDateFrom,
-      to: filter.statusDateTo,
-    },
-    {
-      target: 'pendingDate',
-      fromNow: filter.pendingDateFromNow,
-      toNow: filter.pendingDateToNow,
-      from: filter.pendingDateFrom,
-      to: filter.pendingDateTo,
-    },
-    {
-      target: 'closeDate',
-      fromNow: filter.closeDateFromNow,
-      toNow: filter.closeDateToNow,
-      from: filter.closeDateFrom,
-      to: filter.closeDateTo,
-    },
-    {
-      target: 'deadline',
-      fromNow: filter.deadlineFromNow,
-      toNow: filter.deadlineToNow,
-      from: filter.deadlineFrom,
-      to: filter.deadlineTo,
-    },
-  ].forEach((dateFilter) => {
-    let {
-      target,
-      fromNow,
-      toNow,
-      from,
-      to
-    } = dateFilter;
-    let condition = {};
-    if (fromNow) {
-      from = moment().toDate();
-    }
-    if (toNow) {
-      to = moment().toDate();
-    }
-
-    if (from) {
-      condition = { ...condition, [Op.gte]: from }
-    }
-    if (to) {
-      condition = { ...condition, [Op.lte]: to }
-    }
-    if (from || to) {
-      where[target] = {
-        [Op.and]: condition
-      }
-    }
-  });
-  return where;
-}
-
-export const getAssignedTosWhere = (filter, userId) => {
-  const id = filter.assignedToCur ? userId : filter.assignedTo;
-  if (id) {
-    return {
-      id
-    }
-  }
-  return {}
 }
 
 export const transformSortToQuery = (sort) => {

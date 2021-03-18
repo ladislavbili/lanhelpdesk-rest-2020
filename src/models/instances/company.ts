@@ -129,7 +129,7 @@ export function createCompaniesAssoc(models) {
 
   models.Company.hasMany(models.Project, { as: 'defCompany' });
 
-  models.Company.hasMany(models.Filter, { as: 'filterCompany' });
+  models.Company.belongsToMany(models.Filter, { as: { singular: "filterCompany", plural: "filterCompanies" }, through: 'filter_company' });
 
   models.Company.hasMany(models.Task);
 

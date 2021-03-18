@@ -135,9 +135,9 @@ export function createUsersAssoc(models) {
   //FILTER
   models.User.hasMany(models.Filter, { as: 'filterCreatedBy' });
 
-  models.User.hasMany(models.Filter, { as: 'filterAssignedTo' });
+  models.User.belongsToMany(models.Filter, { as: { singular: "filterAssignedTo", plural: "filterAssignedTos" }, through: 'filter_assignedTo' });
 
-  models.User.hasMany(models.Filter, { as: 'filterRequester' });
+  models.User.belongsToMany(models.Filter, { as: { singular: "filterRequester", plural: "filterRequesters" }, through: 'filter_requester' });
 
   //TASK
   models.User.belongsToMany(models.Task, { as: { singular: "assignedToTask", plural: "assignedToTasks" }, through: 'task_assignedTo' });

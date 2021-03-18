@@ -114,10 +114,27 @@ input SortTasksInput {
   key: EnumSortTaskKey!
   asc: Boolean!
 }
+
+input StringFilterInput {
+  id: String
+  status: String
+  title: String
+  requester: String
+  company: String
+  createdAt: String
+  deadline: String
+  project: String
+  taskType: String
+  milestone: String
+  assignedTo: String
+  tags: String
+  overtime: String
+  pausal: String
+}
 `
 
 export const TaskQuerries = `
-tasks( filterId: Int, projectId: Int, filter: FilterInput, sort: SortTasksInput ): ExecTasks
+tasks( projectId: Int, filter: FilterInput, sort: SortTasksInput, search: String, stringFilter: StringFilterInput ): ExecTasks
 task(id: Int!): Task
 getNumberOfTasks( projectId: Int! ): Int!
 `
@@ -130,5 +147,5 @@ deleteTask( id: Int! ): Task
 `
 
 export const TaskSubscriptions = `
-  taskSubscription( projectId: Int, filterId: Int, filter: FilterInput ): TasksDifference
+  taskSubscription( projectId: Int, filter: FilterInput ): TasksDifference
 `

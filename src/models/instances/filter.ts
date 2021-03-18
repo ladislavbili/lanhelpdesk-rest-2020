@@ -36,18 +36,34 @@ export interface FilterInstance extends DefaultInstance {
   deadlineTo: number;
   deadlineToNow: boolean;
 
-  getFilterAssignedTo?: any;
-  getFilterRequester?: any;
-  getFilterCompany?: any;
-  getFilterTaskType?: any;
+  scheduledFrom: number;
+  scheduledFromNow: boolean;
+  scheduledTo: number;
+  scheduledToNow: boolean;
+
+  createdAtFrom: number;
+  createdAtFromNow: boolean;
+  createdAtTo: number;
+  createdAtToNow: boolean;
+
+  important: boolean;
+  invoiced: boolean;
+  pausal: boolean;
+  overtime: boolean;
+
+  getFilterRequesters?: any;
+  getFilterCompanies?: any;
+  getFilterTaskTypes?: any;
+  getFilterAssignedTos?: any;
   getFilterOneOfs?: any;
   getFilterCreatedBy?: any;
+  getFilterOfProject?: any;
 
   setRoles?: any;
-  setFilterAssignedTo?: any;
-  setFilterRequester?: any;
-  setFilterCompany?: any;
-  setFilterTaskType?: any;
+  setFilterAssignedTos?: any;
+  setFilterRequesters?: any;
+  setFilterCompanies?: any;
+  setFilterTaskTypes?: any;
   setFilterOneOfs?: any;
   setFilterOfProject?: any;
 
@@ -93,27 +109,31 @@ export default function defineFilter(sequelize: Sequelize) {
         type: DataTypes.VIRTUAL,
         async get() {
           const [
-            assignedTo,
-            requester,
-            company,
-            taskType,
+            assignedTos,
+            requesters,
+            companies,
+            taskTypes,
             oneOfResponse,
           ] = await Promise.all([
-            this.getFilterAssignedTo(),
-            this.getFilterRequester(),
-            this.getFilterCompany(),
-            this.getFilterTaskType(),
+            this.getFilterAssignedTos(),
+            this.getFilterRequesters(),
+            this.getFilterCompanies(),
+            this.getFilterTaskTypes(),
             this.getFilterOneOfs(),
           ]);
 
           return {
             assignedToCur: this.get('assignedToCur'),
-            assignedTo,
+            assignedTos,
             requesterCur: this.get('requesterCur'),
-            requester,
+            requesters,
             companyCur: this.get('companyCur'),
-            company,
-            taskType,
+            companies,
+            taskTypes,
+            important: this.get('important') === null ? null : (this.get('important') ? 'yes' : 'no'),
+            invoiced: this.get('invoiced') === null ? null : (this.get('invoiced') ? 'yes' : 'no'),
+            pausal: this.get('pausal') === null ? null : (this.get('pausal') ? 'yes' : 'no'),
+            overtime: this.get('overtime') === null ? null : (this.get('overtime') ? 'yes' : 'no'),
             oneOf: oneOfResponse.map((oneOf) => oneOf.get('input')),
 
             statusDateFrom: this.get('statusDateFrom'),
@@ -135,6 +155,17 @@ export default function defineFilter(sequelize: Sequelize) {
             deadlineFromNow: this.get('deadlineFromNow'),
             deadlineTo: this.get('deadlineTo'),
             deadlineToNow: this.get('deadlineToNow'),
+
+            scheduledFrom: this.get('scheduledFrom'),
+            scheduledFromNow: this.get('scheduledFromNow'),
+            scheduledTo: this.get('scheduledTo'),
+            scheduledToNow: this.get('scheduledToNow'),
+
+            createdAtFrom: this.get('createdAtFrom'),
+            createdAtFromNow: this.get('createdAtFromNow'),
+            createdAtTo: this.get('createdAtTo'),
+            createdAtToNow: this.get('createdAtToNow'),
+
           }
         }
       },
@@ -231,6 +262,64 @@ export default function defineFilter(sequelize: Sequelize) {
         defaultValue: false,
       },
 
+      scheduledFrom: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      scheduledFromNow: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      scheduledTo: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      scheduledToNow: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+
+      createdAtFrom: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      createdAtFromNow: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      createdAtTo: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      createdAtToNow: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+
+      important: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: null,
+      },
+      invoiced: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: null,
+      },
+      pausal: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: null,
+      },
+      overtime: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: null,
+      },
     },
     {
       //OPTIONS
@@ -245,13 +334,13 @@ export function createFilterAssoc(models) {
 
   models.Filter.hasMany(models.FilterOneOf, { onDelete: 'CASCADE' });
 
-  models.Filter.belongsTo(models.User, { as: 'filterAssignedTo' });
+  models.Filter.belongsToMany(models.User, { as: { singular: "filterAssignedTo", plural: "filterAssignedTos" }, through: 'filter_assignedTo' });
 
-  models.Filter.belongsTo(models.User, { as: 'filterRequester' });
+  models.Filter.belongsToMany(models.User, { as: { singular: "filterRequester", plural: "filterRequesters" }, through: 'filter_requester' });
 
-  models.Filter.belongsTo(models.Company, { as: 'filterCompany' });
+  models.Filter.belongsToMany(models.Company, { as: { singular: "filterCompany", plural: "filterCompanies" }, through: 'filter_company' });
 
-  models.Filter.belongsTo(models.TaskType, { as: 'filterTaskType' });
+  models.Filter.belongsToMany(models.TaskType, { as: { singular: "filterTaskType", plural: "filterTaskTypes" }, through: 'filter_task_type' });
 
   models.Filter.belongsTo(models.Project, { as: 'filterOfProject' });
 

@@ -44,7 +44,6 @@ import {
 import {
   idsDoExistsCheck,
   multipleIdDoesExistsCheck,
-  filterObjectToFilter,
   taskCheckDate,
   extractDatesFromObject,
   filterUnique,
@@ -60,8 +59,8 @@ import {
   createTaskAttributesChangeMessages,
   sendNotifications,
   filterToTaskWhere,
-  getAssignedTosWhere,
   transformSortToQuery,
+  stringFilterToTaskWhere,
 } from '@/helperFunctions';
 import { sendNotificationToUsers } from '@/graph/resolvers/userNotification';
 import { repeatEvent } from '@/services/repeatTasks';
@@ -82,14 +81,19 @@ const dateNames2 = [
   'pendingDateTo',
   'statusDateFrom',
   'statusDateTo',
+  'createdAtFrom',
+  'createdAtTo',
+  'scheduledFrom',
+  'scheduledTo',
 ];
 
 const querries = {
-  tasks: async (root, { projectId, filterId, filter, sort }, { req, userID }) => {
+  tasks: async (root, { projectId, filter, sort, search, stringFilter }, { req, userID }) => {
     const sortBy = sort ? transformSortToQuery(sort) : [['id', 'DESC']];
     const mainWatch = new Stopwatch(true);
     const checkUserWatch = new Stopwatch(true);
     const User = await checkResolver(req);
+    const isAdmin = (<RoleInstance>User.get('Role')).get('level') === 0;
     const checkUserTime = checkUserWatch.stop();
 
     let projectWhere = {};
@@ -101,19 +105,41 @@ const querries = {
       }
       projectWhere = { id: projectId }
     }
-    if (filterId) {
-      const Filter = await models.Filter.findByPk(filterId);
-      if (Filter === null) {
-        throw createDoesNoExistsError('Filter', filterId);
-      }
-      filter = filterObjectToFilter(await Filter.get('filter'));
-    }
     if (filter) {
       const dates = extractDatesFromObject(filter, dateNames2);
       taskWhere = filterToTaskWhere({ ...filter, ...dates }, userID, User.get('CompanyId'))
     }
 
-    let tasks = []
+    if (search || stringFilter) {
+      taskWhere = {
+        ...taskWhere,
+        ...stringFilterToTaskWhere(search, stringFilter),
+      }
+    }
+    if (!isAdmin) {
+      taskWhere = {
+        ...taskWhere,
+        [Op.or]: [
+          {
+            createdById: userID,
+          },
+          {
+            requesterId: userID,
+          },
+          {
+            '$assignedTosFilter.id$': userID,
+          },
+          {
+            '$Project.ProjectGroups.ProjectGroupRight.allTasks$': true,
+          },
+          {
+            '$Project.ProjectGroups.ProjectGroupRight.companyTasks$': true,
+            CompanyId: User.get('CompanyId')
+          },
+        ]
+      }
+    }
+
     const taskIncludes = [
       {
         model: models.User,
@@ -126,8 +152,11 @@ const querries = {
       {
         model: models.User,
         as: 'assignedTosFilter',
+        attributes: ['id', 'name', 'surname'],
+      },
+      {
+        model: models.ScheduledTask,
         attributes: ['id'],
-        where: getAssignedTosWhere(filter, userID),
       },
       models.Company,
       { model: models.User, as: 'createdBy' },
@@ -135,72 +164,51 @@ const querries = {
       { model: models.User, as: 'requester' },
       models.Status,
       models.Tag,
+      { model: models.Tag, as: 'tagsFilter', attributes: ['id', 'title'] },
       models.TaskType,
       models.Repeat,
       {
         model: models.TaskMetadata,
         as: 'TaskMetadata'
       },
-    ];
-    const databaseWatch = new Stopwatch(true);
-    let databaseTime = 0;
-    if ((<RoleInstance>User.get('Role')).get('level') !== 0) {
-      tasks = (<TaskInstance[]>await models.Task.findAll({
+      {
+        model: models.Project,
+        required: true,
+        where: projectWhere,
         include: [
-          ...taskIncludes,
           {
-            model: models.Project,
-            required: true,
-            where: {
-              ...projectWhere,
-
-            },
+            model: models.ProjectGroup,
+            required: !isAdmin,
             include: [
               {
-                model: models.ProjectGroup,
-                required: true,
-                include: [
-                  {
-                    model: models.ProjectGroupRights,
-                    required: true
-                  },
-                  {
-                    model: models.User,
-                    required: true,
-                    where: {
-                      id: userID
-                    }
-                  }
-                ]
+                model: models.ProjectGroupRights,
+                required: !isAdmin
+              },
+              {
+                model: models.User,
+                required: !isAdmin,
+                where: {
+                  id: userID
+                }
               }
             ]
-          },
-        ],
+          }
+        ]
+      },
+    ];
+
+    let tasks = []
+
+    let databaseTime = 0;
+    const databaseWatch = new Stopwatch(true);
+    if (!isAdmin) {
+      tasks = (<TaskInstance[]>await models.Task.findAll({
+        where: taskWhere,
         order: [
           ['important', 'DESC'],
           ...<any>sortBy,
         ],
-        where: {
-          ...taskWhere,
-          [Op.or]: [
-            {
-              createdById: userID,
-            },
-            {
-              requesterId: userID,
-            },
-            {
-              '$assignedTosFilter.id$': userID,
-            },
-            {
-              '$Project.ProjectGroups.ProjectGroupRight.allTasks$': true,
-            },
-            {
-              '$Project.ProjectGroups.ProjectGroupRight.companyTasks$': true,
-              CompanyId: User.get('CompanyId')
-            },
-          ]
-        },
+        include: taskIncludes,
       })).map((Task) => {
         const Project = <ProjectInstance>Task.get('Project');
         const Groups = <ProjectGroupInstance[]>Project.get('ProjectGroups');
@@ -215,14 +223,7 @@ const querries = {
           ['important', 'DESC'],
           ...<any>sortBy,
         ],
-        include: [
-          ...taskIncludes,
-          {
-            model: models.Project,
-            where: projectWhere,
-            required: true,
-          },
-        ],
+        include: taskIncludes,
       }))
         .map((Task) => {
           Task.rights = allGroupRights;
@@ -1099,7 +1100,7 @@ const subscriptions = {
   taskSubscription: {
     subscribe: withFilter(
       () => pubsub.asyncIterator(TASK_CHANGE),
-      async ({ taskSubscription }, { projectId, filterId, filter }, { userID }) => {
+      async ({ taskSubscription }, { projectId, filter }, { userID }) => {
         const User = <UserInstance>await models.User.findByPk(userID);
         if (User === null) {
           throw InvalidTokenError;
@@ -1109,13 +1110,6 @@ const subscriptions = {
           if (Project === null) {
             throw createDoesNoExistsError('Project', projectId);
           }
-        }
-        if (filterId) {
-          const Filter = await models.Filter.findByPk(filterId);
-          if (Filter === null) {
-            throw createDoesNoExistsError('Filter', filterId);
-          }
-          filter = filterObjectToFilter(await Filter.get('filter'));
         }
         const { type, data, ids } = taskSubscription;
         if (type === 'delete') {

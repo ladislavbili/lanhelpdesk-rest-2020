@@ -97,7 +97,7 @@ export default class TriggerableTimer {
     //otherwise return half of the current waiting time
     return { timeout: ~~(this.timeLeft / 2), shouldTrigger: false };
   }
-  //TODO ak novy timeleft je vacsi ako predosly, trigger
+  //ak novy timeleft je vacsi ako predosly, trigger
   runTimeout() {
     if (this.timeLeft === null) {
       this.timeLeft = this.getRemainingTime();

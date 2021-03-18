@@ -140,6 +140,8 @@ export function createTasksAssoc(models) {
 
   models.Task.belongsToMany(models.Tag, { through: 'task_has_tags' });
 
+  models.Task.belongsToMany(models.Tag, { as: { singular: "tagFilter", plural: "tagsFilter" }, through: 'task_has_tags' });
+
   models.Task.belongsTo(models.TaskType);
 
   models.Task.belongsTo(models.Repeat);

@@ -16,7 +16,6 @@ import {
   getModelAttribute,
   canViewTask,
   filterToTaskWhere,
-  getAssignedTosWhere,
 } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
@@ -85,7 +84,6 @@ const querries = {
                       model: models.User,
                       as: 'assignedTosFilter',
                       attributes: ['id'],
-                      where: getAssignedTosWhere(filter, userID),
                     },
                   ]
                 }

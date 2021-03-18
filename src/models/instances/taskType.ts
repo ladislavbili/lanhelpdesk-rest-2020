@@ -35,7 +35,7 @@ export function createTaskTypesAssoc(models) {
 
   models.TaskType.hasMany(models.Project, { as: 'defTaskType' });
 
-  models.TaskType.hasMany(models.Filter, { as: 'filterTaskType' });
+  models.TaskType.belongsToMany(models.Filter, { as: { singular: "filterTaskType", plural: "filterTaskTypes" }, through: 'filter_task_type' });
 
   models.TaskType.hasMany(models.Task);
 

@@ -29,6 +29,8 @@ export {
 
 export {
   filterObjectToFilter,
+  filterToTaskWhere,
+  stringFilterToTaskWhere,
 } from './filter';
 
 export {
@@ -87,8 +89,6 @@ export {
   createChangeMessage,
   createTaskAttributesChangeMessages,
   sendNotifications,
-  filterToTaskWhere,
-  getAssignedTosWhere,
   transformSortToQuery,
 } from './taskProcessing';
 
