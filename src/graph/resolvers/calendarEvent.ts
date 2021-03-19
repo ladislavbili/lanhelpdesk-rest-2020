@@ -72,10 +72,18 @@ const querries = {
               include: [
                 {
                   model: models.Task,
-                  where: taskWhere,
                   required: true,
                   include: [
                     models.CalendarEvent,
+                    {
+                      model: models.Project,
+                      attributes: ['id'],
+                      include: [{
+                        model: models.ProjectGroup,
+                        attributes: ['id'],
+                        includes: [models.ProjectGroupRights]
+                      }]
+                    },
                     {
                       model: models.User,
                       as: 'assignedTos',
@@ -93,6 +101,7 @@ const querries = {
         }
       ]
     );
+
     const tasks = (
       (<ProjectGroupInstance[]>User.get('ProjectGroups'))
         .reduce((acc, ProjectGroup) => {
