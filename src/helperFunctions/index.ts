@@ -77,7 +77,7 @@ export {
 
 export {
   getModelAttribute,
-  mergeFragmentedModel
+  mergeFragmentedModel,
 } from './sequelizeFunctions';
 
 export {
@@ -91,6 +91,13 @@ export {
   sendNotifications,
   transformSortToQuery,
 } from './taskProcessing';
+
+export {
+  transformSortToQueryString,
+  generateTasksSQL,
+  filterToTaskWhereSQL,
+  stringFilterToTaskWhereSQL,
+} from './tasksSQL'
 
 export {
   firstDateSameOrAfter,

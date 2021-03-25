@@ -4,7 +4,8 @@ import DefaultInstance from './defaultInstance';
 export interface TaskInstance extends DefaultInstance {
   title: string;
   important: boolean;
-  //assignedTo []
+  assignedTos: any;
+  Tags: any;
   //tags
   //company - X
   //createdBy - X

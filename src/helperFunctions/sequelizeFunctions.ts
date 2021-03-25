@@ -5,8 +5,19 @@ import {
 let loadTimer = 0;
 
 export const getModelAttribute = (item, attribute, globalAttribute = null, parameters = null) => {
-  if (item.get(attribute) !== undefined) {
+  if (item.get && item.get(attribute) !== undefined) {
     return item.get(attribute);
+  }
+
+  if (item[attribute]) {
+    let data = item[attribute];
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (Object.keys(data).some((key) => data[key] !== null && data[key] !== undefined)) {
+      return data;
+    }
+    return null;
   }
 
   console.log('============================');

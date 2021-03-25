@@ -596,17 +596,27 @@ const attributes = {
       return getModelAttribute(project, 'projectStatuses');
     },
     async right(project, _, { userID }, __) {
-      const Groups = await project.getProjectGroups({
-        attributes: ['id', 'title'],
-        include: [
-          { model: models.ProjectGroupRights, attributes: { exclude: ['ProjectGroupId', 'updatedAt', 'createdAt', 'id'] } },
-          { model: models.User, where: { id: userID } }
-        ]
-      });
-      if (Groups.length === 1) {
-        return Groups[0].get('ProjectGroupRight').get();
+      if (project.getProjectGroups) {
+        const Groups = await project.getProjectGroups({
+          attributes: ['id', 'title'],
+          include: [
+            { model: models.ProjectGroupRights, attributes: { exclude: ['ProjectGroupId', 'updatedAt', 'createdAt', 'id'] } },
+            { model: models.User, where: { id: userID } }
+          ]
+        });
+        if (Groups.length === 1) {
+          return Groups[0].get('ProjectGroupRight').get();
+        }
+        return null;
+      } else {
+        if (project.ProjectGroupRight) {
+          if (Object.keys(project.ProjectGroupRight).some((key) => project.ProjectGroupRight[key] !== null && project.ProjectGroupRight[key] !== undefined)) {
+            return project.ProjectGroupRight;
+          }
+          return null;
+        }
+        return null;
       }
-      return null;
     },
     async groups(project) {
       return getModelAttribute(project, 'ProjectGroups');

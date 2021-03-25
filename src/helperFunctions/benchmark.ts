@@ -1,10 +1,11 @@
-export function createExecClass(name, singular) {
+export function createExecClass(name, singular, additionalValues = "") {
   if (singular) {
     return `
     type Exec${name}{
       ${name.toLowerCase()}: ${name}
       execTime: Float
       secondaryTimes: [SecondaryTime]
+      ${additionalValues}
     }
     `
   }
@@ -13,6 +14,7 @@ export function createExecClass(name, singular) {
     ${name.toLowerCase()}s: [${name}]
     execTime: Float
     secondaryTimes: [SecondaryTime]
+    ${additionalValues}
   }
   `
 }

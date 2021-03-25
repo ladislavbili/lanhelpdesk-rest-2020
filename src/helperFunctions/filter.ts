@@ -1,6 +1,7 @@
 import moment from 'moment';
 import { Op, Sequelize } from 'sequelize';
 import { capitalizeFirstLetter } from './stringManipulations';
+import { allStringFilters } from '@/configs/taskConstants';
 
 export const filterObjectToFilter = (Filter) => ({
   assignedToCur: Filter.assignedToCur,
@@ -259,29 +260,6 @@ const getScheduledWhere = (filter) => {
     ]
   }
 }
-
-const allStringFilters = [
-  'id',
-  'title',
-
-  'overtime',
-  'pausal',
-
-  'deadline',
-  'createdAt',
-
-  'status',
-  'company',
-  'project',
-  'taskType',
-  'milestone',
-
-  'requester',
-
-
-  'assignedTo',
-  'tags',
-]
 
 export const stringFilterToTaskWhere = (search, stringFilter) => {
   let where = {};

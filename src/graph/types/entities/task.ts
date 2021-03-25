@@ -97,7 +97,7 @@ enum EnumSubTaskChanged{
   update
 }
 
-${createExecClass("Task", false)}
+${createExecClass("Task", false, 'count: Int!')}
 ${createExecClass("Task", true)}
 
 enum EnumSortTaskKey {
@@ -134,7 +134,24 @@ input StringFilterInput {
 `
 
 export const TaskQuerries = `
-tasks( projectId: Int, filter: FilterInput, sort: SortTasksInput, search: String, stringFilter: StringFilterInput ): ExecTasks
+tasks(
+  projectId: Int
+  filter: FilterInput
+  sort: SortTasksInput
+  search: String
+  stringFilter: StringFilterInput
+  limit: Int
+  page: Int
+): ExecTasks
+ttasks(
+  projectId: Int
+  filter: FilterInput
+  sort: SortTasksInput
+  search: String
+  stringFilter: StringFilterInput
+  limit: Int
+  page: Int
+): ExecTasks
 task(id: Int!): Task
 getNumberOfTasks( projectId: Int! ): Int!
 `

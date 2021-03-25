@@ -18,7 +18,7 @@ import {
   allGroupRights
 } from '@/configs/projectConstants';
 import { models, sequelize } from '@/models';
-import { Op } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import {
   TaskInstance,
   MilestoneInstance,
@@ -59,8 +59,13 @@ import {
   createTaskAttributesChangeMessages,
   sendNotifications,
   filterToTaskWhere,
+  filterToTaskWhereSQL,
   transformSortToQuery,
+  transformSortToQueryString,
   stringFilterToTaskWhere,
+  stringFilterToTaskWhereSQL,
+  generateTasksSQL,
+
 } from '@/helperFunctions';
 import { sendNotificationToUsers } from '@/graph/resolvers/userNotification';
 import { repeatEvent } from '@/services/repeatTasks';
@@ -88,7 +93,8 @@ const dateNames2 = [
 ];
 
 const querries = {
-  tasks: async (root, { projectId, filter, sort, search, stringFilter }, { req, userID }) => {
+
+  ttasks: async (root, { projectId, filter, sort, search, stringFilter, limit, page }, { req, userID }) => {
     const sortBy = sort ? transformSortToQuery(sort) : [['id', 'DESC']];
     const mainWatch = new Stopwatch(true);
     const checkUserWatch = new Stopwatch(true);
@@ -197,19 +203,36 @@ const querries = {
       },
     ];
 
-    let tasks = []
+    if (!page) {
+      page = 1;
+    }
 
+    let tasks = []
+    let count = 0;
     let databaseTime = 0;
     const databaseWatch = new Stopwatch(true);
+    const limitVariables = (
+      limit ?
+        {
+          offset: (page - 1) * limit,
+          limit,
+        } :
+        {}
+    )
+
+    const response = <any>await models.Task.findAndCountAll({
+      order: [
+        ['important', 'DESC'],
+        ...<any>sortBy,
+      ],
+      where: taskWhere,
+      ...limitVariables,
+      include: taskIncludes,
+      distinct: true,
+      subQuery: false,
+    });
     if (!isAdmin) {
-      tasks = (<TaskInstance[]>await models.Task.findAll({
-        where: taskWhere,
-        order: [
-          ['important', 'DESC'],
-          ...<any>sortBy,
-        ],
-        include: taskIncludes,
-      })).map((Task) => {
+      tasks = (<TaskInstance[]>response.rows).map((Task) => {
         const Project = <ProjectInstance>Task.get('Project');
         const Groups = <ProjectGroupInstance[]>Project.get('ProjectGroups');
         const GroupRight = <ProjectGroupRightsInstance>Groups[0].get('ProjectGroupRight');
@@ -217,24 +240,110 @@ const querries = {
         return Task;
       })
     } else {
-      tasks = (<TaskInstance[]>await models.Task.findAll({
-        where: taskWhere,
-        order: [
-          ['important', 'DESC'],
-          ...<any>sortBy,
-        ],
-        include: taskIncludes,
-      }))
-        .map((Task) => {
-          Task.rights = allGroupRights;
-          return Task;
-        })
+      tasks = (<TaskInstance[]>response.rows).map((Task) => {
+        Task.rights = allGroupRights;
+        return Task;
+      })
     }
     databaseTime = databaseWatch.stop()
-
-
+    count = response.count;
     return {
       tasks,
+      count,
+      execTime: mainWatch.stop(),
+      secondaryTimes: [
+        { source: 'User check', time: checkUserTime },
+        { source: 'Database', time: databaseTime },
+      ]
+    };
+  },
+
+  tasks: async (root, { projectId, filter, sort, search, stringFilter, limit, page }, { req, userID }) => {
+    const mainOrderBy = sort ? transformSortToQueryString(sort, true) : '"Task"."important" DESC, "Task"."id" DESC';
+    const secondaryOrderBy = sort ? transformSortToQueryString(sort, false) : '"TaskData"."important" DESC, "TaskData"."id" DESC';
+
+    const mainWatch = new Stopwatch(true);
+    const checkUserWatch = new Stopwatch(true);
+    const User = await checkResolver(req);
+    const isAdmin = (<RoleInstance>User.get('Role')).get('level') === 0;
+    const checkUserTime = checkUserWatch.stop();
+    if (projectId) {
+      const Project = await models.Project.findByPk(projectId);
+      if (Project === null) {
+        throw createDoesNoExistsError('Project', projectId);
+      }
+    }
+    let taskWhere = [];
+    if (filter) {
+      const dates = extractDatesFromObject(filter, dateNames2);
+      taskWhere = filterToTaskWhereSQL({ ...filter, ...dates }, userID, User.get('CompanyId'), projectId);
+    }
+
+    if (search || stringFilter) {
+      taskWhere = [
+        ...taskWhere,
+        ...stringFilterToTaskWhereSQL(search, stringFilter),
+      ]
+    }
+
+    if (!page) {
+      page = 1;
+    }
+    const SQL = generateTasksSQL(projectId, userID, User.get('CompanyId'), isAdmin, taskWhere.join(' AND '), mainOrderBy, secondaryOrderBy, limit, (page - 1) * limit);
+
+    let responseTasks = <TaskInstance[]>await sequelize.query(SQL, {
+      model: models.Task,
+      type: QueryTypes.SELECT,
+      nest: true,
+      raw: true,
+      mapToModel: true
+    });
+
+    let databaseTime = 0;
+    const databaseWatch = new Stopwatch(true);
+    let tasks = [];
+    responseTasks.forEach((Task) => {
+      const hasAsssignedTo = Task.assignedTos !== null && Task.assignedTos.id !== null;
+      const hasTag = Task.Tags !== null && Task.Tags.id !== null;
+
+      const taskIndex = tasks.findIndex((task) => Task.id === task.id);
+      if (taskIndex !== -1) {
+
+        if (hasAsssignedTo && !tasks[taskIndex].assignedTos.some((assignedTo) => assignedTo.id === Task.assignedTos.id)) {
+          tasks[taskIndex].assignedTos.push(Task.assignedTos);
+        }
+        if (hasTag && !tasks[taskIndex].Tags.some((tag) => tag.id === Task.Tags.id)) {
+          tasks[taskIndex].Tags.push(Task.Tags);
+        }
+      } else {
+        tasks.push({
+          ...Task,
+          assignedTos: !hasAsssignedTo ? [] : [Task.assignedTos],
+          Tags: !hasTag ? [] : [Task.Tags],
+        })
+      }
+    })
+
+    if (!isAdmin) {
+      tasks = tasks.map((Task) => {
+        const Project = Task.Project;
+        const Groups = Project.ProjectGroups;
+        const GroupRight = Groups.ProjectGroupRight;
+        Task.rights = GroupRight;
+        return Task;
+      })
+    } else {
+      tasks = tasks.map((Task) => {
+        Task.rights = allGroupRights;
+        return Task;
+      })
+    }
+
+    databaseTime = databaseWatch.stop()
+    const count = tasks.length > 0 ? (<any>tasks[0]).count : 0;
+    return {
+      tasks,
+      count,
       execTime: mainWatch.stop(),
       secondaryTimes: [
         { source: 'User check', time: checkUserTime },
