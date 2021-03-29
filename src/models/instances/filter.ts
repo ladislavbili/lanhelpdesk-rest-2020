@@ -55,12 +55,14 @@ export interface FilterInstance extends DefaultInstance {
   getFilterCompanies?: any;
   getFilterTaskTypes?: any;
   getFilterAssignedTos?: any;
+  getFilterTags?: any;
   getFilterOneOfs?: any;
   getFilterCreatedBy?: any;
   getFilterOfProject?: any;
 
   setRoles?: any;
   setFilterAssignedTos?: any;
+  setFilterTags?: any;
   setFilterRequesters?: any;
   setFilterCompanies?: any;
   setFilterTaskTypes?: any;
@@ -110,12 +112,14 @@ export default function defineFilter(sequelize: Sequelize) {
         async get() {
           const [
             assignedTos,
+            tags,
             requesters,
             companies,
             taskTypes,
             oneOfResponse,
           ] = await Promise.all([
             this.getFilterAssignedTos(),
+            this.getFilterTags(),
             this.getFilterRequesters(),
             this.getFilterCompanies(),
             this.getFilterTaskTypes(),
@@ -125,6 +129,7 @@ export default function defineFilter(sequelize: Sequelize) {
           return {
             assignedToCur: this.get('assignedToCur'),
             assignedTos,
+            tags,
             requesterCur: this.get('requesterCur'),
             requesters,
             companyCur: this.get('companyCur'),
@@ -335,6 +340,8 @@ export function createFilterAssoc(models) {
   models.Filter.hasMany(models.FilterOneOf, { onDelete: 'CASCADE' });
 
   models.Filter.belongsToMany(models.User, { as: { singular: "filterAssignedTo", plural: "filterAssignedTos" }, through: 'filter_assignedTo' });
+
+  models.Filter.belongsToMany(models.Tag, { as: { singular: "filterTags", plural: "filterTags" }, through: 'filter_tags' });
 
   models.Filter.belongsToMany(models.User, { as: { singular: "filterRequester", plural: "filterRequesters" }, through: 'filter_requester' });
 

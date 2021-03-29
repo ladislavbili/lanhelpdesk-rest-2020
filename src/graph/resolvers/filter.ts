@@ -147,9 +147,10 @@ const mutations = {
     }
 
     //Filter
-    const { assignedTos, requesters, companies, taskTypes, oneOf, important, invoiced, pausal, overtime, ...directFilterParams } = filter;
+    const { assignedTos, tags, requesters, companies, taskTypes, oneOf, important, invoiced, pausal, overtime, ...directFilterParams } = filter;
     await Promise.all([
       idsDoExistsCheck(assignedTos, models.User),
+      idsDoExistsCheck(tags, models.Tag),
       idsDoExistsCheck(requesters, models.User),
       idsDoExistsCheck(companies, models.Company),
       idsDoExistsCheck(taskTypes, models.TaskType),
@@ -183,6 +184,7 @@ const mutations = {
       await Promise.all([
         newFilter.setRoles(roles),
         newFilter.setFilterAssignedTos(assignedTos ? assignedTos : []),
+        newFilter.setFilterTags(tags ? tags : []),
         newFilter.setFilterRequesters(requesters ? requesters : []),
         newFilter.setFilterCompanies(companies ? companies : []),
         newFilter.setFilterTaskTypes(taskTypes ? taskTypes : []),
@@ -206,6 +208,7 @@ const mutations = {
     );
     await Promise.all([
       newFilter.setFilterAssignedTos(assignedTos ? assignedTos : []),
+      newFilter.setFilterTags(tags ? tags : []),
       newFilter.setFilterRequesters(requesters ? requesters : []),
       newFilter.setFilterCompanies(companies ? companies : []),
       newFilter.setFilterTaskTypes(taskTypes ? taskTypes : []),
@@ -237,9 +240,10 @@ const mutations = {
     }
 
     //Filter
-    const { assignedTos, requesters, companies, taskTypes, oneOf, important, invoiced, pausal, overtime, ...directFilterParams } = filter;
+    const { assignedTos, tags, requesters, companies, taskTypes, oneOf, important, invoiced, pausal, overtime, ...directFilterParams } = filter;
     await Promise.all([
       idsDoExistsCheck(assignedTos, models.User),
+      idsDoExistsCheck(tags, models.Tag),
       idsDoExistsCheck(requesters, models.User),
       idsDoExistsCheck(companies, models.Company),
       idsDoExistsCheck(taskTypes, models.TaskType),
@@ -270,6 +274,7 @@ const mutations = {
     );
     await Promise.all([
       newFilter.setFilterAssignedTos(assignedTos ? assignedTos : []),
+      newFilter.setFilterTags(tags ? tags : []),
       newFilter.setFilterRequesters(requesters ? requesters : []),
       newFilter.setFilterCompanies(companies ? companies : []),
       newFilter.setFilterTaskTypes(taskTypes ? taskTypes : []),
@@ -316,10 +321,11 @@ const mutations = {
     let promises = [];
     if (filter) {
       //Filter
-      const { assignedTos, requesters, companies, taskTypes, important, invoiced, pausal, overtime, oneOf: oneOfs, ...directFilterParams } = filter;
+      const { assignedTos, tags, requesters, companies, taskTypes, important, invoiced, pausal, overtime, oneOf: oneOfs, ...directFilterParams } = filter;
       const dates = extractDatesFromObject(filter, dateNames);
       await Promise.all([
         idsDoExistsCheck(assignedTos, models.User),
+        idsDoExistsCheck(tags, models.User),
         idsDoExistsCheck(requesters, models.User),
         idsDoExistsCheck(companies, models.Company),
         idsDoExistsCheck(taskTypes, models.TaskType),
@@ -334,6 +340,7 @@ const mutations = {
       }
       changes = { ...directFilterParams, ...dates, ...boolAttributes };
       assignedTos !== undefined && promises.push(Filter.setFilterAssignedTos(assignedTos));
+      tags !== undefined && promises.push(Filter.setFilterTags(tags));
       requesters !== undefined && promises.push(Filter.setFilterRequesters(requesters));
       companies !== undefined && promises.push(Filter.setFilterCompanies(companies));
       taskTypes !== undefined && promises.push(Filter.setFilterTaskTypes(taskTypes));
@@ -390,10 +397,11 @@ const mutations = {
     let changes = {};
     let promises = [];
     if (filter) {
-      const { assignedTos, requesters, companies, taskTypes, important, invoiced, pausal, overtime, oneOf: oneOfs, ...directFilterParams } = filter;
+      const { assignedTos, tags, requesters, companies, taskTypes, important, invoiced, pausal, overtime, oneOf: oneOfs, ...directFilterParams } = filter;
       const dates = extractDatesFromObject(filter, dateNames);
       await Promise.all([
         idsDoExistsCheck(assignedTos, models.User),
+        idsDoExistsCheck(tags, models.User),
         idsDoExistsCheck(requesters, models.User),
         idsDoExistsCheck(companies, models.Company),
         idsDoExistsCheck(taskTypes, models.TaskType),
@@ -408,6 +416,7 @@ const mutations = {
       }
       changes = { ...directFilterParams, ...dates, ...boolAttributes };
       assignedTos !== undefined && promises.push(Filter.setFilterAssignedTos(assignedTos));
+      tags !== undefined && promises.push(Filter.setFilterTags(tags));
       requesters !== undefined && promises.push(Filter.setFilterRequesters(requesters));
       companies !== undefined && promises.push(Filter.setFilterCompanies(companies));
       taskTypes !== undefined && promises.push(Filter.setFilterTaskTypes(taskTypes));

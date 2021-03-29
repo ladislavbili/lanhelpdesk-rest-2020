@@ -40,6 +40,7 @@ type filter {
   companyCur: Boolean!
   companies: [BasicCompany]
   taskTypes: [TaskType]
+  tags: [Tag]
   oneOf: [OneOfEnum]!
 
   statusDateFrom: String
@@ -86,6 +87,7 @@ input FilterInput {
   companyCur: Boolean!
   companies: [Int]
   taskTypes: [Int]
+  tags: [Int]
   oneOf: [OneOfEnum]!
 
   statusDateFrom: String

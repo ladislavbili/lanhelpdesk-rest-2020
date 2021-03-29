@@ -39,5 +39,7 @@ export function createTagsAssoc(models) {
   models.Tag.belongsTo(models.Project, { as: 'ofProject' });
   models.Tag.belongsToMany(models.Task, { through: 'task_has_tags' });
   models.Tag.belongsToMany(models.RepeatTemplate, { through: 'repeat_template_has_tags' });
+
+  models.Tag.belongsToMany(models.Filter, { as: { singular: "tagFilter", plural: "tagFilters" }, through: 'filter_tags' });
   models.Tag.hasMany(models.InvoicedTag);
 }

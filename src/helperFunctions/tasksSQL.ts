@@ -379,14 +379,20 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
 export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, mainOrderBy, secondaryOrderBy, limit, offset) => {
 
   const notAdminWhere = `
-  WHERE ("Task"."createdById" = ${userId} OR "Task"."requesterId" = ${userId} OR "assignedTosFilter"."id" = ${userId} OR "Project->ProjectGroups->ProjectGroupRight"."allTasks" = true OR ("Project->ProjectGroups->ProjectGroupRight"."companyTasks" = true AND "Task"."CompanyId" = ${companyId}))
+  (
+    "Task"."createdById" = ${userId} OR
+    "Task"."requesterId" = ${userId} OR
+    "assignedTosFilter"."id" = ${userId} OR
+    "Project->ProjectGroups->ProjectGroupRight"."allTasks" = true OR
+    ("Project->ProjectGroups->ProjectGroupRight"."companyTasks" = true AND "Task"."CompanyId" = ${companyId})
+  )
   `;
 
 
   let sql = `
       ${outerSQLTop}
       ${baseSQL}
-     ${projectId ? ' AND "Project"."id" = ' + projectId : ''} ${isAdmin ? '' : notAdminWhere} ORDER BY "Task"."important" DESC ) AS "Task"
+     ${projectId ? ' AND "Project"."id" = ' + projectId : ''} ORDER BY "Task"."important" DESC ) AS "Task"
   `;
   sql = `
     ${sql}
@@ -408,7 +414,7 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
   if (where) {
     sql = `
     ${sql}
-    WHERE ${where}
+    WHERE ${where} ${isAdmin ? '' : `AND ${notAdminWhere}`}
     `
   }
 
