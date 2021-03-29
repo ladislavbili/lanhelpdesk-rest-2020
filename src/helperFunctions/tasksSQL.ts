@@ -1,6 +1,7 @@
 import moment from 'moment';
 import { capitalizeFirstLetter } from './stringManipulations';
 import { allStringFilters } from '@/configs/taskConstants';
+const rightsExists = `"Project->ProjectGroups->Users"."id" IS NOT NULL`;
 
 export const transformSortToQueryString = (sort, main) => {
   const order = sort.asc ? "ASC" : "DESC";
@@ -32,7 +33,6 @@ export const transformSortToQueryString = (sort, main) => {
 
 export const filterToTaskWhereSQL = (filter, userId, companyId, projectId) => {
   let where = [];
-
   // bool attributes
   [
     {
@@ -68,7 +68,7 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId) => {
         where.push(
           `(
             ${attribute.path ? `${attribute.path}` : ""}"${attribute.key}" = '${attribute.value}' OR
-            ${rightPath} = false
+            ( ${rightsExists} AND ${rightPath} = false )
           )`
         )
       } else {
@@ -109,7 +109,7 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId) => {
         where.push(
           `(
               ${attribute.path}"${attribute.key}" IN (${attribute.value.toString()}) OR
-              ${rightPath} = false
+              ( ${rightsExists} AND ${rightPath} = false )
             )`
         )
       } else {
@@ -209,7 +209,7 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId) => {
         let rightPath = `"Project->ProjectGroups->ProjectGroupRight"."${right}"`;
         where.push(`(
           ( ${condition.join(' AND ')} ) OR
-          ${rightPath} = false
+          ( ${rightsExists} AND ${rightPath} = false )
         )`);
       } else {
         where.push(`( ${condition.join(' AND ')} )`);
@@ -220,6 +220,10 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId) => {
   const assignedWhere = getAssignedTosWhereSQL(filter, userId, projectId);
   if (assignedWhere !== null) {
     where.push(assignedWhere);
+  }
+  const tagsWhere = getTagsWhereSQL(filter, userId, projectId);
+  if (tagsWhere !== null) {
+    where.push(tagsWhere);
   }
   const scheduledWhere = getScheduledWhereSQL(filter, projectId);
   if (scheduledWhere !== null) {
@@ -232,8 +236,20 @@ const getAssignedTosWhereSQL = (filter, userId, projectId) => {
   const ids = filter.assignedToCur ? [...filter.assignedTos, userId] : filter.assignedTos;
   if (ids.length > 0) {
     return `(
-      ${projectId ? `"Project->ProjectGroups->ProjectGroupRight"."assignedRead" = false OR` : ''}
+      ${projectId ? `( ${rightsExists} AND "Project->ProjectGroups->ProjectGroupRight"."assignedRead" = false ) OR ` : ''}
       "assignedTosFilter"."id" IN (${ids.toString()})
+    )
+    `
+  }
+  return null;
+}
+
+const getTagsWhereSQL = (filter, userId, projectId) => {
+  const ids = filter.tags;
+  if (ids.length > 0) {
+    return `(
+      ${projectId ? `( ${rightsExists} AND "Project->ProjectGroups->ProjectGroupRight"."tagsRead" = false ) OR ` : ''}
+      "tagsFilter"."id" IN (${ids.toString()})
     )
     `
   }
@@ -285,7 +301,7 @@ const getScheduledWhereSQL = (filter, projectId) => {
 
   //podmienky platia ak CONDITION je splneny alebo nema pravo scheduled citat
   return `(
-  ${projectId ? `"Project->ProjectGroups->ProjectGroupRight"."scheduledRead" = false OR` : ''}
+  ${projectId ? `( ${rightsExists} AND "Project->ProjectGroups->ProjectGroupRight"."scheduledRead" = false ) OR ` : ''}
     (${conditions.join(' AND ')})
   )`;
 }
@@ -379,7 +395,7 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
 export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, mainOrderBy, secondaryOrderBy, limit, offset) => {
 
   const notAdminWhere = `
-  (
+  ${where.length > 0 ? 'AND ' : ''}(
     "Task"."createdById" = ${userId} OR
     "Task"."requesterId" = ${userId} OR
     "assignedTosFilter"."id" = ${userId} OR
@@ -388,11 +404,11 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
   )
   `;
 
-
+  //ORDER BY "Task"."important" DESC
   let sql = `
       ${outerSQLTop}
       ${baseSQL}
-     ${projectId ? ' AND "Project"."id" = ' + projectId : ''} ORDER BY "Task"."important" DESC ) AS "Task"
+      ) AS "Task"
   `;
   sql = `
     ${sql}
@@ -414,7 +430,7 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
   if (where) {
     sql = `
     ${sql}
-    WHERE ${where} ${isAdmin ? '' : `AND ${notAdminWhere}`}
+    WHERE ${where} ${isAdmin ? '' : `${notAdminWhere}`}
     `
   }
 

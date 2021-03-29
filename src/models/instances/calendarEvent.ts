@@ -5,6 +5,7 @@ export interface CalendarEventInstance extends DefaultInstance {
   //task
   startsAt: number;
   endsAt: number;
+  Task: any;
 }
 
 export default function defineCalendarEvents(sequelize: Sequelize) {

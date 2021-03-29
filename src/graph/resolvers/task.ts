@@ -267,16 +267,17 @@ const querries = {
     const User = await checkResolver(req);
     const isAdmin = (<RoleInstance>User.get('Role')).get('level') === 0;
     const checkUserTime = checkUserWatch.stop();
+    let taskWhere = [];
     if (projectId) {
       const Project = await models.Project.findByPk(projectId);
       if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
+      taskWhere.push(`"Task"."ProjectId" = ${projectId}`)
     }
-    let taskWhere = [];
     if (filter) {
       const dates = extractDatesFromObject(filter, dateNames2);
-      taskWhere = filterToTaskWhereSQL({ ...filter, ...dates }, userID, User.get('CompanyId'), projectId);
+      taskWhere = taskWhere.concat(filterToTaskWhereSQL({ ...filter, ...dates }, userID, User.get('CompanyId'), projectId));
     }
 
     if (search || stringFilter) {
@@ -289,6 +290,7 @@ const querries = {
     if (!page) {
       page = 1;
     }
+
     const SQL = generateTasksSQL(projectId, userID, User.get('CompanyId'), isAdmin, taskWhere.join(' AND '), mainOrderBy, secondaryOrderBy, limit, (page - 1) * limit);
 
     let responseTasks = <TaskInstance[]>await sequelize.query(SQL, {
@@ -1285,13 +1287,13 @@ const subscriptions = {
 const attributes = {
   Task: {
     async assignedTo(task) {
-      if (!task.rights.assignedRead) {
+      if (!task.rights || !task.rights.assignedRead) {
         return [];
       }
       return getModelAttribute(task, 'assignedTos');
     },
     async company(task) {
-      if (!task.rights.companyRead) {
+      if (!task.rights || !task.rights.companyRead) {
         return null;
       }
       return getModelAttribute(task, 'Company');
@@ -1300,43 +1302,43 @@ const attributes = {
       return getModelAttribute(task, 'createdBy');
     },
     async milestone(task) {
-      if (!task.rights.milestoneRead) {
+      if (!task.rights || !task.rights.milestoneRead) {
         return null;
       }
       return getModelAttribute(task, 'Milestone');
     },
     async project(task) {
-      if (!task.rights.projectRead) {
+      if (!task.rights || !task.rights.projectRead) {
         return null;
       }
       return getModelAttribute(task, 'Project');
     },
     async requester(task) {
-      if (!task.rights.requesterRead) {
+      if (!task.rights || !task.rights.requesterRead) {
         return null;
       }
       return getModelAttribute(task, 'requester');
     },
     async status(task) {
-      if (!task.rights.statusRead) {
+      if (!task.rights || !task.rights.statusRead) {
         return null;
       }
       return getModelAttribute(task, 'Status');
     },
     async tags(task) {
-      if (!task.rights.tagsRead) {
+      if (!task.rights || !task.rights.tagsRead) {
         return [];
       }
       return getModelAttribute(task, 'Tags');
     },
     async taskType(task) {
-      if (!task.rights.typeRead) {
+      if (!task.rights || !task.rights.typeRead) {
         return null;
       }
       return getModelAttribute(task, 'TaskType');
     },
     async repeat(task) {
-      if (!task.rights.repeatRead) {
+      if (!task.rights || !task.rights.repeatRead) {
         return null;
       }
       return getModelAttribute(task, 'Repeat');
@@ -1346,7 +1348,7 @@ const attributes = {
     },
 
     async comments(task, body, { req, userID }) {
-      if (!task.rights.viewComments) {
+      if (!task.rights || !task.rights.viewComments) {
         return [];
       }
       const [
@@ -1381,37 +1383,37 @@ const attributes = {
     },
 
     async shortSubtasks(task) {
-      if (!task.rights.taskShortSubtasksRead) {
+      if (!task.rights || !task.rights.taskShortSubtasksRead) {
         return [];
       }
       return getModelAttribute(task, 'ShortSubtasks');
     },
     async scheduled(task) {
-      if (!task.rights.scheduledRead) {
+      if (!task.rights || !task.rights.scheduledRead) {
         return [];
       }
       return getModelAttribute(task, 'ScheduledTasks');
     },
     async subtasks(task) {
-      if (!task.rights.rozpocetRead && !task.rights.vykazRead) {
+      if (!task.rights || (!task.rights.rozpocetRead && !task.rights.vykazRead)) {
         return [];
       }
       return getModelAttribute(task, 'Subtasks');
     },
     async workTrips(task) {
-      if (!task.rights.rozpocetRead && !task.rights.vykazRead) {
+      if (!task.rights || (!task.rights.rozpocetRead && !task.rights.vykazRead)) {
         return [];
       }
       return getModelAttribute(task, 'WorkTrips');
     },
     async materials(task) {
-      if (!task.rights.rozpocetRead && !task.rights.vykazRead) {
+      if (!task.rights || (!task.rights.rozpocetRead && !task.rights.vykazRead)) {
         return [];
       }
       return getModelAttribute(task, 'Materials');
     },
     async customItems(task) {
-      if (!task.rights.rozpocetRead && !task.rights.vykazRead) {
+      if (!task.rights || (!task.rights.rozpocetRead && !task.rights.vykazRead)) {
         return [];
       }
       return getModelAttribute(task, 'CustomItems');
@@ -1420,13 +1422,13 @@ const attributes = {
       return getModelAttribute(task, 'CalendarEvents');
     },
     async taskChanges(task) {
-      if (!task.rights.history) {
+      if (!task.rights || !task.rights.history) {
         return [];
       }
       return getModelAttribute(task, 'TaskChanges', 'getTaskChanges', { order: [['createdAt', 'DESC']] });
     },
     async taskAttachments(task) {
-      if (!task.rights.taskAttachmentsRead) {
+      if (!task.rights || !task.rights.taskAttachmentsRead) {
         return [];
       }
       return getModelAttribute(task, 'TaskAttachments');

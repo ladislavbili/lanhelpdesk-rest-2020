@@ -113,7 +113,16 @@ const querries = {
           ]
         }, [])
     )
-    return tasks.reduce((acc, task) => [...acc, ...<CalendarEventInstance[]>task.get('CalendarEvents')], []);
+    return tasks.reduce(
+      (acc, task) => [
+        ...acc,
+        ...(<CalendarEventInstance[]>task.get('CalendarEvents')).map((CalendarEvent) => {
+          CalendarEvent.Task = task;
+          return CalendarEvent;
+        })
+      ],
+      []
+    );
   },
 }
 
