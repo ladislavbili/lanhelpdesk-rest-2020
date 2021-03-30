@@ -19,14 +19,7 @@ type TasklistColumnPreference{
   overtime: Boolean!
   pausal: Boolean!
   tags: Boolean!
-  subtasksApproved: Boolean!
-  subtasksPending: Boolean!
-  tripsApproved: Boolean!
-  tripsPending: Boolean!
-  materialsApproved: Boolean!
-  materialsPending: Boolean!
-  itemsApproved: Boolean!
-  itemsPending: Boolean!
+  statistics: Boolean!
   Project: Project
 }
 
@@ -55,13 +48,6 @@ addOrUpdateTasklistColumnPerference(
   overtime: Boolean
   pausal: Boolean
   tags: Boolean
-  subtasksApproved: Boolean
-  subtasksPending: Boolean
-  tripsApproved: Boolean
-  tripsPending: Boolean
-  materialsApproved: Boolean
-  materialsPending: Boolean
-  itemsApproved: Boolean
-  itemsPending: Boolean
+  statistics: Boolean
 ): TasklistColumnPreference
 `

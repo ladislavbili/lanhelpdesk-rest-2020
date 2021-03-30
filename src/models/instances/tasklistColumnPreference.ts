@@ -18,14 +18,7 @@ export interface TasklistColumnPreferenceInstance extends DefaultInstance {
   overtime: boolean;
   pausal: boolean;
   tags: boolean;
-  subtasksApproved: boolean;
-  subtasksPending: boolean;
-  tripsApproved: boolean;
-  tripsPending: boolean;
-  materialsApproved: boolean;
-  materialsPending: boolean;
-  itemsApproved: boolean;
-  itemsPending: boolean;
+  statistics: boolean;
 }
 
 export default function defineTasklistColumnPreferences(sequelize: Sequelize) {
@@ -112,42 +105,7 @@ export default function defineTasklistColumnPreferences(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: false,
       },
-      subtasksApproved: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      subtasksPending: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      tripsApproved: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      tripsPending: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      materialsApproved: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      materialsPending: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      itemsApproved: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      itemsPending: {
+      statistics: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
