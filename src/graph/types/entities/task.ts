@@ -35,7 +35,6 @@ type Task {
   workTrips: [WorkTrip]!
   materials: [Material]!
   customItems: [CustomItem]!
-  calendarEvents: [CalendarEvent]!
   taskChanges: [TaskChange]!
   taskAttachments: [TaskAttachment]!
   invoicedTasks: [InvoicedTask]!

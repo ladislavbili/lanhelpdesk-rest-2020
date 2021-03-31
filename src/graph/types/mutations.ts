@@ -1,4 +1,3 @@
-import { CalendarEventMutations } from './entities/calendarEvent';
 import { CommentMutations } from './entities/comment';
 import { CommentAttachmentMutations } from './entities/commentAttachment';
 import { CompanyMutations } from './entities/company';
@@ -37,7 +36,6 @@ import { RepeatTemplateAttachmentMutations } from './entities/repeatTemplateAtta
 
 export default `
 type Mutation {
-  ${CalendarEventMutations}
   ${CompanyMutations}
   ${CommentMutations}
   ${CommentAttachmentMutations}

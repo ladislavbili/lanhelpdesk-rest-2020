@@ -1,6 +1,5 @@
 export { AccessRightsInstance } from './accessRights';
 export { CompanyInstance } from './company';
-export { CalendarEventInstance } from './calendarEvent';
 export { CompanyRentInstance } from './companyRent';
 export { ImapInstance } from './imap';
 export { FilterInstance } from './filter';

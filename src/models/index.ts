@@ -32,7 +32,6 @@ import defineMaterials, { createMaterialsAssoc } from './instances/material';
 import defineCustomItems, { createCustomItemsAssoc } from './instances/customItem';
 import defineComments, { createCommentsAssoc } from './instances/comment';
 import defineEmailTargets, { createEmailTargetsAssoc } from './instances/emailTarget';
-import defineCalendarEvents, { createCalendarEventsAssoc } from './instances/calendarEvent';
 import defineTaskChanges, { createTaskChangesAssoc } from './instances/taskChange';
 import defineTaskChangeMessages, { createTaskChangeMessagesAssoc } from './instances/taskChangeMessage';
 import defineTaskAttachments, { createTaskAttachmentsAssoc } from './instances/taskAttachment';
@@ -102,7 +101,6 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineCustomItems(sequelize);
   defineComments(sequelize);
   defineEmailTargets(sequelize);
-  defineCalendarEvents(sequelize);
   defineTaskChanges(sequelize);
   defineTaskChangeMessages(sequelize);
   defineTaskAttachments(sequelize);
@@ -155,7 +153,6 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createCustomItemsAssoc(models);
   createCommentsAssoc(models);
   createEmailTargetsAssoc(models);
-  createCalendarEventsAssoc(models);
   createTaskChangesAssoc(models);
   createTaskChangeMessagesAssoc(models);
   createTaskAttachmentsAssoc(models);

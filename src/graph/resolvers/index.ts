@@ -1,4 +1,3 @@
-import calendarEvent from './calendarEvent';
 import comment from './comment';
 import commentAttachment from './commentAttachment';
 import company from './company';
@@ -40,7 +39,6 @@ export const pubsub = new PubSub();
 
 export default {
   Query: {
-    ...calendarEvent.querries,
     ...comment.querries,
     ...commentAttachment.querries,
     ...company.querries,
@@ -79,7 +77,6 @@ export default {
   },
 
   Mutation: {
-    ...calendarEvent.mutations,
     ...comment.mutations,
     ...commentAttachment.mutations,
     ...company.mutations,
@@ -120,7 +117,6 @@ export default {
     ...task.subscriptions,
   },
 
-  ...calendarEvent.attributes,
   ...comment.attributes,
   ...commentAttachment.attributes,
   ...company.attributes,

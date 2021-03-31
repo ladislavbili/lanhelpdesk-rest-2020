@@ -1418,9 +1418,6 @@ const attributes = {
       }
       return getModelAttribute(task, 'CustomItems');
     },
-    async calendarEvents(task) {
-      return getModelAttribute(task, 'CalendarEvents');
-    },
     async taskChanges(task) {
       if (!task.rights || !task.rights.history) {
         return [];

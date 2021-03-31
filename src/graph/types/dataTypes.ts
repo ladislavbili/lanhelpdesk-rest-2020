@@ -1,4 +1,3 @@
-import { CalendarEvent } from './entities/calendarEvent';
 import { Comment } from './entities/comment';
 import { CommentAttachment } from './entities/commentAttachment';
 import { Company } from './entities/company';
@@ -36,7 +35,6 @@ import { RepeatTemplate } from './entities/repeatTemplate';
 import { RepeatTemplateAttachment } from './entities/repeatTemplateAttachment';
 
 export default `
-${CalendarEvent}
 ${Comment}
 ${CommentAttachment}
 ${Company}

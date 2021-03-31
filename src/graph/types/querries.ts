@@ -1,4 +1,3 @@
-import { CalendarEventQuerries } from './entities/calendarEvent';
 import { CommentQuerries } from './entities/comment';
 import { CommentAttachmentQuerries } from './entities/commentAttachment';
 import { CompanyQuerries } from './entities/company';
@@ -37,7 +36,6 @@ import { RepeatTemplateAttachmentQuerries } from './entities/repeatTemplateAttac
 
 export default `
 type Query {
-  ${CalendarEventQuerries}
   ${CommentQuerries}
   ${CommentAttachmentQuerries}
   ${CompanyQuerries}

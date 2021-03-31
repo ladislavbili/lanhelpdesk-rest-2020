@@ -161,8 +161,6 @@ export function createTasksAssoc(models) {
 
   models.Task.hasMany(models.Comment, { onDelete: 'CASCADE' });
 
-  models.Task.hasMany(models.CalendarEvent, { onDelete: 'CASCADE' });
-
   models.Task.hasMany(models.TaskChange, { onDelete: 'CASCADE' });
 
   models.Task.hasMany(models.TaskAttachment, { onDelete: 'CASCADE' });
