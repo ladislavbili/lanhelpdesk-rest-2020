@@ -1,6 +1,9 @@
 import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
-import { checkIfHasProjectRights, multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
+import { multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
+import {
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 import checkResolver from './checkResolver';
 import {
   TaskInstance,

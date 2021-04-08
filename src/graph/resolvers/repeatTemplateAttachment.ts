@@ -3,9 +3,11 @@ import { models } from '@/models';
 import { RepeatTemplateInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 import {
-  checkIfHasProjectRights,
   getModelAttribute,
 } from '@/helperFunctions';
+import {
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 import fs from 'fs';
 const querries = {
 }

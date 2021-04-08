@@ -1,6 +1,8 @@
 import moment from 'moment';
 import checkResolver from '@/graph/resolvers/checkResolver';
-import { checkIfHasProjectRights } from '@/helperFunctions';
+import {
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 
 export function uploadAttachments(app) {
   app.post('/upload-attachments', async function(req, res) {

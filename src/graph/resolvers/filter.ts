@@ -9,8 +9,10 @@ import {
   splitArrayByFilter,
   extractDatesFromObject,
   getModelAttribute,
-  checkIfHasProjectRights,
 } from '@/helperFunctions';
+import {
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 import { Op } from 'sequelize';
 const dateNames = ['statusDateFrom', 'statusDateTo', 'pendingDateFrom', 'pendingDateTo', 'closeDateFrom', 'closeDateTo', 'deadlineFrom', 'deadlineTo', 'scheduledFrom', 'scheduledTo', 'createdAtFrom', 'createdAtTo'];
 

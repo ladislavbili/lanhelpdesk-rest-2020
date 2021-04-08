@@ -5,6 +5,8 @@ type ScheduledTask {
   from: String!
   to: String!
   user: User!
+  task: Task!
+  canEdit: Boolean
 }
 
 input ScheduledTaskInput {
@@ -15,6 +17,13 @@ input ScheduledTaskInput {
 `
 
 export const ScheduledTaskQuerries = `
+scheduledTasks(
+  projectId: Int
+  filter: FilterInput
+  from: String
+  to: String
+  userId: Int
+): [ScheduledTask]
 `
 
 export const ScheduledTaskMutations = `

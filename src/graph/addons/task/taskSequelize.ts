@@ -1,43 +1,7 @@
 import moment from 'moment';
 import { Op, Sequelize } from 'sequelize';
-import { capitalizeFirstLetter } from './stringManipulations';
+import { capitalizeFirstLetter } from '@/helperFunctions';
 import { allStringFilters } from '@/configs/taskConstants';
-
-export const filterObjectToFilter = (Filter) => ({
-  assignedToCur: Filter.assignedToCur,
-  assignedTos: Filter.assignedTos === null ? null : Filter.assignedTos.get('id'),
-  requesterCur: Filter.requesterCur,
-  requesters: Filter.requesters === null ? null : Filter.requesters.get('id'),
-  companyCur: Filter.companyCur,
-  companies: Filter.companies === null ? null : Filter.companies.get('id'),
-  taskTypes: Filter.taskTypes === null ? null : Filter.taskTypes.get('id'),
-  oneOf: Filter.oneOf,
-
-  statusDateFrom: Filter.statusDateFrom,
-  statusDateFromNow: Filter.statusDateFromNow,
-  statusDateTo: Filter.statusDateTo,
-  statusDateToNow: Filter.statusDateToNow,
-  pendingDateFrom: Filter.pendingDateFrom,
-  pendingDateFromNow: Filter.pendingDateFromNow,
-  pendingDateTo: Filter.pendingDateTo,
-  pendingDateToNow: Filter.pendingDateToNow,
-  closeDateFrom: Filter.closeDateFrom,
-  closeDateFromNow: Filter.closeDateFromNow,
-  closeDateTo: Filter.closeDateTo,
-  closeDateToNow: Filter.closeDateToNow,
-  deadlineFrom: Filter.deadlineFrom,
-  deadlineFromNow: Filter.deadlineFromNow,
-  deadlineTo: Filter.deadlineTo,
-  deadlineToNow: Filter.deadlineToNow,
-  scheduledFrom: Filter.scheduledFrom,
-  scheduledFromNow: Filter.scheduledFromNow,
-  scheduledTo: Filter.scheduledTo,
-  scheduledToNow: Filter.scheduledToNow,
-  createdAtFrom: Filter.createdAtFrom,
-  createdAtFromNow: Filter.createdAtFromNow,
-  createdAtTo: Filter.createdAtTo,
-  createdAtToNow: Filter.createdAtToNow,
-})
 
 export const filterToTaskWhere = (filter, userId, companyId) => {
   let where = {};
@@ -361,4 +325,32 @@ export const stringFilterToTaskWhere = (search, stringFilter) => {
     })
   }
   return where;
+}
+
+export const transformSortToQuery = (sort) => {
+  const last = sort.asc ? 'ASC' : 'DESC';
+  switch (sort.key) {
+
+    case 'assignedTo': {
+      return [
+        ['assignedTos', 'name', last],
+        ['assignedTos', 'surname', last]
+      ];
+    }
+    case 'status': {
+      return [['Status', 'order', last]];
+    }
+    case 'requester': {
+      return [
+        ['requester', 'name', last],
+        ['requester', 'surname', last]
+      ];
+    }
+    case 'id': case 'title': case 'deadline': case 'createdAt': {
+      return [[sort.key, last]];
+    }
+    default: {
+      return [['id', last]];
+    }
+  }
 }

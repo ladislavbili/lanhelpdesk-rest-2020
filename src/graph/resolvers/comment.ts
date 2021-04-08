@@ -8,7 +8,10 @@ import {
   EmailAlreadySendError
 } from '@/configs/errors';
 import { models } from '@/models';
-import { checkIfHasProjectRights, isEmail, getModelAttribute } from '@/helperFunctions';
+import { isEmail, getModelAttribute } from '@/helperFunctions';
+import {
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 import { sendEmail } from '@/services/smtp'
 import { RoleInstance, AccessRightsInstance, TaskInstance, EmailTargetInstance, UserInstance, CommentAttachmentInstance } from '@/models/instances';
 import pathResolver from 'path';

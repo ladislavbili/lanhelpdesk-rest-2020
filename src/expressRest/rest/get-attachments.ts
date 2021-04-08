@@ -1,4 +1,6 @@
-import { checkIfHasProjectRights } from '@/helperFunctions';
+import {
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 import checkResolver from '@/graph/resolvers/checkResolver';
 import { AccessRightsInstance, RoleInstance, CommentInstance, RepeatTemplateInstance, RepeatTemplateAttachmentInstance } from '@/models/instances';
 import { models } from '@/models';

@@ -106,31 +106,3 @@ export const sendNotifications = async (User, notifications, Task, assignedTos =
     'lanhelpdesk2019@gmail.com'
   );
 }
-
-export const transformSortToQuery = (sort) => {
-  const last = sort.asc ? 'ASC' : 'DESC';
-  switch (sort.key) {
-
-    case 'assignedTo': {
-      return [
-        ['assignedTos', 'name', last],
-        ['assignedTos', 'surname', last]
-      ];
-    }
-    case 'status': {
-      return [['Status', 'order', last]];
-    }
-    case 'requester': {
-      return [
-        ['requester', 'name', last],
-        ['requester', 'surname', last]
-      ];
-    }
-    case 'id': case 'title': case 'deadline': case 'createdAt': {
-      return [[sort.key, last]];
-    }
-    default: {
-      return [['id', last]];
-    }
-  }
-}

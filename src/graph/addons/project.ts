@@ -3,7 +3,7 @@ import { ApolloError } from 'apollo-server-express';
 import moment from 'moment';
 import {
   addApolloError
-} from './addErrorMessage';
+} from '@/helperFunctions';
 import {
   allGroupRights
 } from '@/configs/projectConstants';

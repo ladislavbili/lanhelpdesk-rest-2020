@@ -26,6 +26,7 @@ type Task {
   taskType: TaskType
   invoiced: Boolean!
 
+  rights: ProjectGroupRights
   repeat: Repeat
   metadata: TaskMetadata!
   comments: [Comment]!

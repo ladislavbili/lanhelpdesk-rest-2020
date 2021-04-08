@@ -1,6 +1,8 @@
 import moment from 'moment';
 import checkResolver from '@/graph/resolvers/checkResolver';
-import { checkIfHasProjectRights } from '@/helperFunctions';
+import {
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 import { models } from '@/models';
 import { RepeatTemplateAttachmentInstance, RepeatTemplateInstance } from '@/models/instances';
 

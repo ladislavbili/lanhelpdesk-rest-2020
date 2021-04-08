@@ -1,7 +1,10 @@
 import moment from 'moment';
 import { createDoesNoExistsError, InternalMessagesNotAllowed, createWrongEmailsError, EmailNoRecipientError } from '@/configs/errors';
 import checkResolver from '@/graph/resolvers/checkResolver';
-import { checkIfHasProjectRights, checkType, getAttributes, isEmail } from '@/helperFunctions';
+import { checkType, getAttributes, isEmail } from '@/helperFunctions';
+import {
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 import { models } from '@/models';
 import { AccessRightsInstance, RoleInstance, TaskInstance, CommentInstance } from '@/models/instances';
 import { EmailResultInstance } from '@/graph/resolvers/comment';

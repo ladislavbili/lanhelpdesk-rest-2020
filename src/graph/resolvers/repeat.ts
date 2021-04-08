@@ -40,18 +40,22 @@ import {
 import {
   idsDoExistsCheck,
   multipleIdDoesExistsCheck,
-  filterObjectToFilter,
   extractDatesFromObject,
   filterUnique,
   getModelAttribute,
   mergeFragmentedModel,
+  addApolloError,
+} from '@/helperFunctions';
+import {
+  filterObjectToFilter
+} from '@/graph/addons/filter';
+import {
   checkIfHasProjectRights,
   checkDefRequiredSatisfied,
   checkIfCanEditTaskAttributes,
   applyFixedOnAttributes,
-  addApolloError,
   canViewTask,
-} from '@/helperFunctions';
+} from '@/graph/addons/project';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');

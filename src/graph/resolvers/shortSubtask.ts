@@ -1,6 +1,13 @@
 import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import { models, sequelize } from '@/models';
-import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
+import {
+  multipleIdDoesExistsCheck,
+  idDoesExistsCheck,
+  getModelAttribute
+} from '@/helperFunctions';
+import {
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 import { TaskInstance, ShortSubtaskInstance, RepeatTemplateInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 

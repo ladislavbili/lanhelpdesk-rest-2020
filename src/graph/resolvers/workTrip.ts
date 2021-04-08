@@ -9,7 +9,10 @@ import {
   TaskMetadataInstance,
   ProjectInstance,
 } from '@/models/instances';
-import { multipleIdDoesExistsCheck, idDoesExistsCheck, checkIfHasProjectRights, getModelAttribute } from '@/helperFunctions';
+import { multipleIdDoesExistsCheck, idDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
+import {
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 import checkResolver from './checkResolver';
 
 const querries = {

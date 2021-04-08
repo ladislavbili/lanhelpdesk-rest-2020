@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { capitalizeFirstLetter } from './stringManipulations';
+import { capitalizeFirstLetter } from '@/helperFunctions';
 import { allStringFilters } from '@/configs/taskConstants';
 const rightsExists = `"Project->ProjectGroups->Users"."id" IS NOT NULL`;
 

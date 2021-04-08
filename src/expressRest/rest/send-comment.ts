@@ -1,7 +1,10 @@
 import moment from 'moment';
 import checkResolver from '@/graph/resolvers/checkResolver';
 import { createDoesNoExistsError, InternalMessagesNotAllowed } from '@/configs/errors';
-import { checkIfHasProjectRights, checkType, getAttributes } from '@/helperFunctions';
+import { checkType, getAttributes } from '@/helperFunctions';
+import {
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 import { models } from '@/models';
 import { AccessRightsInstance, RoleInstance, TaskInstance, CommentInstance } from '@/models/instances';
 import { sendNotificationToUsers } from '@/graph/resolvers/userNotification';

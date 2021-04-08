@@ -2,8 +2,10 @@ import { models } from '@/models';
 import checkResolver from './checkResolver';
 import {
   getModelAttribute,
-  checkIfHasProjectRights
 } from '@/helperFunctions';
+import {
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 
 const querries = {
   taskChanges: async (root, { taskId }, { req }) => {

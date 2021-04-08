@@ -15,10 +15,12 @@ import {
   multipleIdDoesExistsCheck,
   splitArrayByFilter,
   getModelAttribute,
-  checkIfHasProjectRights,
+} from '@/helperFunctions';
+import {
   checkDefIntegrity,
   checkIfChanged,
-} from '@/helperFunctions';
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 import {
   ProjectInstance,
   RoleInstance,

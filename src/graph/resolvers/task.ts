@@ -49,24 +49,27 @@ import {
   filterUnique,
   getModelAttribute,
   mergeFragmentedModel,
+  addApolloError,
+  createChangeMessage,
+  createTaskAttributesChangeMessages,
+  sendNotifications,
+} from '@/helperFunctions';
+import {
+  canViewTask,
   checkIfHasProjectRights,
   checkDefRequiredSatisfied,
   checkIfCanEditTaskAttributes,
   applyFixedOnAttributes,
-  addApolloError,
-  canViewTask,
-  createChangeMessage,
-  createTaskAttributesChangeMessages,
-  sendNotifications,
+} from '@/graph/addons/project';
+import {
   filterToTaskWhere,
-  filterToTaskWhereSQL,
   transformSortToQuery,
-  transformSortToQueryString,
   stringFilterToTaskWhere,
+  transformSortToQueryString,
+  filterToTaskWhereSQL,
   stringFilterToTaskWhereSQL,
   generateTasksSQL,
-
-} from '@/helperFunctions';
+} from '@/graph/addons/task';
 import { sendNotificationToUsers } from '@/graph/resolvers/userNotification';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
@@ -1286,6 +1289,12 @@ const subscriptions = {
 
 const attributes = {
   Task: {
+    async rights(task) {
+      if (!task.rights) {
+        return null;
+      }
+      return task.rights;
+    },
     async assignedTo(task) {
       if (!task.rights || !task.rights.assignedRead) {
         return [];

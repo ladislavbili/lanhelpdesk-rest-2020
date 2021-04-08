@@ -28,28 +28,6 @@ export {
 } from './expressProcessing';
 
 export {
-  filterObjectToFilter,
-  filterToTaskWhere,
-  stringFilterToTaskWhere,
-} from './filter';
-
-export {
-  toPercents,
-  roundPoint,
-  getDiscountedPrice,
-  getAHExtraPrice,
-  getAHPrice,
-  getFinalPrice,
-  getTotalPrice,
-  getTotalDiscountedPrice,
-  getTotalAHExtraPrice,
-  getTotalAHPrice,
-  getTotalFinalPrice,
-  getTotalFinalPriceWithDPH,
-} from './invoiceCalculations';
-
-
-export {
   logFunctionsOfModel,
 
   idDoesExists,
@@ -66,16 +44,6 @@ export {
 } from './objectManipulations';
 
 export {
-  checkDefIntegrity,
-  checkIfHasProjectRights,
-  checkDefRequiredSatisfied,
-  checkIfChanged,
-  checkIfCanEditTaskAttributes,
-  applyFixedOnAttributes,
-  canViewTask,
-} from './projectChecks';
-
-export {
   getModelAttribute,
   mergeFragmentedModel,
 } from './sequelizeFunctions';
@@ -89,15 +57,7 @@ export {
   createChangeMessage,
   createTaskAttributesChangeMessages,
   sendNotifications,
-  transformSortToQuery,
 } from './taskProcessing';
-
-export {
-  transformSortToQueryString,
-  generateTasksSQL,
-  filterToTaskWhereSQL,
-  stringFilterToTaskWhereSQL,
-} from './tasksSQL'
 
 export {
   firstDateSameOrAfter,

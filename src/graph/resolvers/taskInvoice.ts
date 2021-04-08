@@ -19,15 +19,17 @@ import checkResolver from './checkResolver';
 import {
   extractDatesFromObject,
   splitArrayByFilter,
+  getModelAttribute,
+} from '@/helperFunctions';
 
+import {
   getFinalPrice,
   getTotalAHPrice,
   getTotalFinalPrice,
   getTotalFinalPriceWithDPH,
   getAHExtraPrice,
   getTotalAHExtraPrice,
-  getModelAttribute,
-} from '@/helperFunctions';
+} from '@/graph/addons/taskInvoice';
 import moment from 'moment';
 const dateNames = ['fromDate', 'toDate'];
 

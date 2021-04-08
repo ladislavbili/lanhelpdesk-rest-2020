@@ -1,7 +1,10 @@
 import { createDoesNoExistsError, NoAccessToThisProjectError } from '@/configs/errors';
 import { models } from '@/models';
 import { ProjectInstance } from '@/models/instances';
-import { extractDatesFromObject, getModelAttribute, checkIfHasProjectRights } from '@/helperFunctions';
+import { extractDatesFromObject, getModelAttribute } from '@/helperFunctions';
+import {
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 import checkResolver from './checkResolver';
 
 const querries = {
