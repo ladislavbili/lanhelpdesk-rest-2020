@@ -121,8 +121,6 @@ export function createRepeatTemplatesAssoc(models) {
 
   models.RepeatTemplate.hasMany(models.ShortSubtask, { onDelete: 'CASCADE' });
 
-  models.RepeatTemplate.hasMany(models.ScheduledTask, { onDelete: 'CASCADE' });
-
   models.RepeatTemplate.hasMany(models.Subtask, { onDelete: 'CASCADE' });
 
   models.RepeatTemplate.hasMany(models.WorkTrip, { onDelete: 'CASCADE' });

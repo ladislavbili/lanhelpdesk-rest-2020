@@ -37,12 +37,8 @@ const attributes = {
     async taskType(repeatTemplate) {
       return getModelAttribute(repeatTemplate, 'TaskType');
     },
-
     async shortSubtasks(repeatTemplate) {
       return getModelAttribute(repeatTemplate, 'ShortSubtasks');
-    },
-    async scheduled(repeatTemplate) {
-      return getModelAttribute(repeatTemplate, 'ScheduledTasks');
     },
     async subtasks(repeatTemplate) {
       return getModelAttribute(repeatTemplate, 'Subtasks');

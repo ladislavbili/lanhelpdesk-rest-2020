@@ -206,7 +206,6 @@ const querries = {
               model: models.RepeatTemplate,
               include: [
                 models.ShortSubtask,
-                models.ScheduledTask,
                 {
                   model: models.Subtask,
                   include: [models.TaskType, { model: models.User, include: [models.Company] }]
@@ -275,7 +274,7 @@ const mutations = {
     const def = await Project.get('def');
     args = applyFixedOnAttributes(def, args);
 
-    let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, subtasks, workTrips, materials, customItems, shortSubtasks, scheduled, ...params } = args;
+    let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, subtasks, workTrips, materials, customItems, shortSubtasks, ...params } = args;
     const User = await checkResolver(
       req,
       [],
@@ -440,16 +439,6 @@ const mutations = {
         ShortSubtasks: shortSubtasks
       }
     }
-    //Scheduled Subtasks
-    if (scheduled) {
-      params = {
-        ...params,
-        ScheduledTasks: scheduled.map((item) => ({
-          ...item,
-          ...extractDatesFromObject(item, ['from', 'to'])
-        }))
-      }
-    }
 
     const NewRepeat = <RepeatInstance>await models.Repeat.create(
       {
@@ -463,7 +452,7 @@ const mutations = {
         include: [{
           model: models.RepeatTemplate,
           include: [
-            models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem
+            models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem
           ]
         }]
       }

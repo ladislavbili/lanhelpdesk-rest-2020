@@ -19,7 +19,8 @@ import {
   filterToTaskWhereSQL,
 } from '@/graph/addons/task';
 import checkResolver from './checkResolver';
-import { UserInstance, TaskInstance, RepeatTemplateInstance, RoleInstance } from '@/models/instances';
+import { UserInstance, TaskInstance, RepeatTemplateInstance, RoleInstance, ScheduledTaskInstance } from '@/models/instances';
+const dateNames1 = ['from', 'to'];
 const dateNames2 = [
   'closeDateFrom',
   'closeDateTo',
@@ -34,6 +35,8 @@ const dateNames2 = [
   'scheduledFrom',
   'scheduledTo',
 ];
+
+
 
 const querries = {
   scheduledTasks: async (root, { projectId, filter, userId, ...rangeDates }, { req, userID: currentUserId }) => {
@@ -52,6 +55,7 @@ const querries = {
       const dates = extractDatesFromObject(filter, dateNames2);
       where = where.concat(filterToTaskWhereSQL({ ...filter, ...dates }, currentUserId, User.get('CompanyId'), projectId));
     }
+
     if (!userId) {
       userId = currentUserId;
     }
@@ -92,7 +96,7 @@ const mutations = {
     if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === attributes.UserId)) {
       throw AssignedToUserNotSolvingTheTask;
     }
-    const dates = extractDatesFromObject(attributes, ['from', 'to']);
+    const dates = extractDatesFromObject(attributes, dateNames1);
     (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -110,6 +114,28 @@ const mutations = {
       ...attributes,
       ...dates,
     });
+  },
+
+  updateScheduledTask: async (root, { id, ...attributes }, { req }) => {
+    const SourceUser = await checkResolver(req);
+    const dates = extractDatesFromObject(attributes, dateNames1);
+    const ScheduledTask = <ScheduledTaskInstance>await models.ScheduledTask.findByPk(id, { include: [models.User] });
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), ScheduledTask.get('TaskId'), undefined, ['scheduledWrite']);
+    const TargetUser = <UserInstance>ScheduledTask.get('User');
+
+    (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: SourceUser.get('id'),
+        TaskChangeMessages: [{
+          type: 'scheduledTask',
+          originalValue: `${ScheduledTask.get('from')},${ScheduledTask.get('to')}`,
+          newValue: `${attributes.from},${attributes.to}`,
+          message: `Scheduled task was changed for user ${TargetUser.get('fullName')} as following: from ${timestampToString(ScheduledTask.get('from'))}=>${timestampToString(dates.from)}, to ${timestampToString(ScheduledTask.get('to'))}=>${timestampToString(dates.to)}.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    );
+    return ScheduledTask.update(dates);
   },
 
   deleteScheduledTask: async (root, { id }, { req }) => {
@@ -133,39 +159,6 @@ const mutations = {
     );
     return await ScheduledTask.destroy();
   },
-
-  addRepeatTemplateScheduledTask: async (root, { repeatTemplate, ...attributes }, { req }) => {
-    const SourceUser = await checkResolver(req);
-    const RepeatTemplate = <RepeatTemplateInstance>await models.RepeatTemplate.findByPk(
-      repeatTemplate,
-      { include: [{ model: models.User, as: 'assignedTos' }] }
-    );
-    if (RepeatTemplate === null) {
-      throw createDoesNoExistsError('Repeat template', repeatTemplate);
-    }
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['scheduledWrite']);
-    const AssignedTos = <UserInstance[]>RepeatTemplate.get('assignedTos');
-    if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === attributes.UserId)) {
-      throw AssignedToUserNotSolvingTheTask;
-    }
-    const dates = extractDatesFromObject(attributes, ['from', 'to']);
-    return models.ScheduledTask.create({
-      RepeatTemplateId: repeatTemplate,
-      ...attributes,
-      ...dates,
-    });
-  },
-
-  deleteRepeatTemplateScheduledTask: async (root, { id }, { req }) => {
-    const SourceUser = await checkResolver(req);
-    const ScheduledTask = await models.ScheduledTask.findByPk(id, { include: [models.User, models.RepeatTemplate] });
-    if (ScheduledTask === null) {
-      throw createDoesNoExistsError('Scheduled task', id);
-    }
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>ScheduledTask.get('RepeatTemplate')).get('ProjectId'), ['scheduledWrite']);
-    return await ScheduledTask.destroy();
-  },
-
 }
 
 const attributes = {

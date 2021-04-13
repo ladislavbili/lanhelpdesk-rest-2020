@@ -28,8 +28,6 @@ scheduledTasks(
 
 export const ScheduledTaskMutations = `
 addScheduledTask( from: String!, to: String!, UserId: Int!, task: Int! ): ScheduledTask
+updateScheduledTask( id: Int!, from: String!, to: String! ): ScheduledTask
 deleteScheduledTask( id: Int! ): ScheduledTask
-
-addRepeatTemplateScheduledTask( from: String!, to: String!, UserId: Int!, repeatTemplate: Int! ): ScheduledTask
-deleteRepeatTemplateScheduledTask( id: Int! ): ScheduledTask
 `

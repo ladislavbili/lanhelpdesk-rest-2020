@@ -25,7 +25,6 @@ type RepeatTemplate {
 
   repeat: Repeat!
   repeatTemplateAttachments: [RepeatTemplateAttachment]!
-  scheduled: [ScheduledTask]!
   shortSubtasks: [ShortSubtask]!
   subtasks: [Subtask]!
   workTrips: [WorkTrip]!
@@ -52,7 +51,6 @@ input RepeatTemplateAddInput {
   tags: [Int]!
   taskType: Int
 
-  scheduled: [ScheduledTaskInput]
   shortSubtasks: [ShortSubtaskInput]
   subtasks: [SubtaskInput]
   workTrips: [WorkTripInput]
@@ -84,7 +82,4 @@ export const RepeatTemplateQuerries = `
 `
 
 export const RepeatTemplateMutations = `
-`
-
-export const TaskSubscriptions = `
 `
