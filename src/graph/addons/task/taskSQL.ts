@@ -301,7 +301,7 @@ const getScheduledWhereSQL = (filter, projectId) => {
 
   //podmienky platia ak CONDITION je splneny alebo nema pravo scheduled citat
   return `(
-  ${projectId ? `( ${rightsExists} AND "Project->ProjectGroups->ProjectGroupRight"."scheduledRead" = false ) OR ` : ''}
+  ${projectId ? `( ${rightsExists} AND "Project->ProjectGroups->ProjectGroupRight"."assignedRead" = false ) OR ` : ''}
     (${conditions.join(' AND ')})
   )`;
 }
@@ -507,8 +507,8 @@ Bottom
 ("Task"."requesterId" IN (1) OR "Project->ProjectGroups->ProjectGroupRight"."requesterRead" = false)
 ("Task"."statusChange" >= '2021-03-24 15:27:08' OR "Project->ProjectGroups->ProjectGroupRight"."statusRead" = false)
 ("Task"."statusChange" <= '2021-03-24 15:27:08' OR "Project->ProjectGroups->ProjectGroupRight"."statusRead" = false)
-("ScheduledTasks"."from" >= '2021-03-24 15:28:02' OR "ScheduledTasks"."to" >= '2021-03-24 15:28:02' OR "Project->ProjectGroups->ProjectGroupRight"."scheduledRead" = false)
-("ScheduledTasks"."from" <= '2021-03-24 15:28:02' OR "ScheduledTasks"."to" <= '2021-03-24 15:28:02' OR "Project->ProjectGroups->ProjectGroupRight"."scheduledRead" = false)
+("ScheduledTasks"."from" >= '2021-03-24 15:28:02' OR "ScheduledTasks"."to" >= '2021-03-24 15:28:02' OR "Project->ProjectGroups->ProjectGroupRight"."assignedRead" = false)
+("ScheduledTasks"."from" <= '2021-03-24 15:28:02' OR "ScheduledTasks"."to" <= '2021-03-24 15:28:02' OR "Project->ProjectGroups->ProjectGroupRight"."assignedRead" = false)
 ("Task"."createdAt" <= '2021-03-24 15:28:39')
 ("Task"."createdAt" >= '2021-03-24 15:28:39')
 ("Task"."TaskTypeId" IN (1, 2) OR "Project->ProjectGroups->ProjectGroupRight"."typeRead" = false)

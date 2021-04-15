@@ -7,6 +7,7 @@ type ScheduledTask {
   user: User!
   task: Task!
   canEdit: Boolean
+  canView: Boolean
 }
 
 input ScheduledTaskInput {

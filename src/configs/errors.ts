@@ -136,3 +136,6 @@ export const ImapRoleLevelTooLowError = new ApolloError("Imap can't get assigned
 
 //VYKAZY
 export const MustSelectStatusesError = new ApolloError("You must pick at least one status!", "NO_STATUS_SELECTED");
+
+//scheduled
+export const ScheduledUserDoesntHaveAssignedEditRight = new ApolloError("This user can't be added as assigned or you have insufficient rights!", "SCHEDULED_USER_DOESNT_HAVE_ASSIGNED_RIGHT");

@@ -220,7 +220,7 @@ const getScheduledWhere = (filter) => {
     [Op.or]: [
       { '$ScheduledTasks.from$': conditions },
       { '$ScheduledTasks.to$': conditions },
-      { '$Project.ProjectGroups.ProjectGroupRight.scheduledRead$': false },
+      { '$Project.ProjectGroups.ProjectGroupRight.assignedRead$': false },
     ]
   }
 }

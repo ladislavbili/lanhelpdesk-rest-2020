@@ -496,11 +496,6 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       orgKey: 'ProjectId'
     },
     {
-      key: 'scheduled',
-      type: 'array',
-      right: 'scheduledWrite',
-    },
-    {
       key: 'shortSubtasks',
       type: 'array',
       right: 'taskShortSubtasksWrite',

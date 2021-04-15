@@ -36,7 +36,12 @@ type BasicProject {
 type MyProject {
   project: BasicProject!
   right: ProjectGroupRights!
-  usersWithRights: [BasicUser]!
+  usersWithRights: [UserWithRights]!
+}
+
+type UserWithRights {
+  user: BasicUser!
+  assignable: Boolean!
 }
 
 ${projectExtra}

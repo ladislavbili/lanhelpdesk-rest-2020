@@ -1,5 +1,7 @@
 import {
-  createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask,
+  createDoesNoExistsError,
+  SubtaskNotNullAttributesPresent,
+  ScheduledUserDoesntHaveAssignedEditRight,
 } from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import { QueryTypes } from 'sequelize';
@@ -19,7 +21,7 @@ import {
   filterToTaskWhereSQL,
 } from '@/graph/addons/task';
 import checkResolver from './checkResolver';
-import { UserInstance, TaskInstance, RepeatTemplateInstance, RoleInstance, ScheduledTaskInstance } from '@/models/instances';
+import { UserInstance, TaskInstance, RepeatTemplateInstance, RoleInstance, ScheduledTaskInstance, ProjectInstance, ProjectGroupInstance } from '@/models/instances';
 const dateNames1 = ['from', 'to'];
 const dateNames2 = [
   'closeDateFrom',
@@ -87,15 +89,47 @@ const querries = {
 const mutations = {
   addScheduledTask: async (root, { task, ...attributes }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['scheduledWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['assignedWrite']);
     const TargetUser = <UserInstance>await models.User.findByPk(attributes.UserId);
     if (TargetUser === null) {
       throw createDoesNoExistsError('User', attributes.UserId);
     }
-    const AssignedTos = <UserInstance[]>await Task.getAssignedTos();
-    if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === attributes.UserId)) {
-      throw AssignedToUserNotSolvingTheTask;
+    const [
+      Project,
+      AssignedTos,
+    ] = await Promise.all([
+      Task.getProject({
+        include: [
+          {
+            model: models.ProjectGroup,
+            include: [
+              models.User,
+              models.ProjectGroupRights,
+            ]
+          },
+        ]
+      }),
+      Task.getAssignedTos(),
+    ]);
+
+    const groupUsersWithRights = <any[]>(<ProjectGroupInstance[]>(<ProjectInstance>Project).get('ProjectGroups')).reduce((acc, ProjectGroup) => {
+      const rights = ProjectGroup.get('ProjectGroupRight');
+      return [
+        ...acc,
+        ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => ({ user: User, rights }))
+      ]
+    }, []);
+
+    const assignableUserIds = groupUsersWithRights.filter((user) => user.rights.assignedWrite).map((userWithRights) => userWithRights.user.get('id'));
+
+    if (!assignableUserIds.some((id) => id === attributes.UserId)) {
+      throw ScheduledUserDoesntHaveAssignedEditRight;
     }
+
+    if (!AssignedTos.some((AssignedTo) => AssignedTo.id === attributes.UserId)) {
+      Task.setAssignedTos([...AssignedTos.map((AssignedTo) => AssignedTo.id), attributes.UserId]);
+    }
+
     const dates = extractDatesFromObject(attributes, dateNames1);
     (<TaskInstance>Task).createTaskChange(
       {
@@ -120,7 +154,7 @@ const mutations = {
     const SourceUser = await checkResolver(req);
     const dates = extractDatesFromObject(attributes, dateNames1);
     const ScheduledTask = <ScheduledTaskInstance>await models.ScheduledTask.findByPk(id, { include: [models.User] });
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), ScheduledTask.get('TaskId'), undefined, ['scheduledWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), ScheduledTask.get('TaskId'), undefined, ['assignedWrite']);
     const TargetUser = <UserInstance>ScheduledTask.get('User');
 
     (<TaskInstance>Task).createTaskChange(
@@ -144,7 +178,7 @@ const mutations = {
     if (ScheduledTask === null) {
       throw createDoesNoExistsError('Scheduled task', id);
     }
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), ScheduledTask.get('TaskId'), undefined, ['scheduledWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), ScheduledTask.get('TaskId'), undefined, ['assignedWrite']);
     (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),

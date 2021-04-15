@@ -461,7 +461,10 @@ const mutations = {
           },
           {
             model: models.ProjectGroup,
-            include: [models.User]
+            include: [
+              models.User,
+              models.ProjectGroupRights
+            ]
           },
         ]
       }
@@ -523,12 +526,27 @@ const mutations = {
     //Rights and project def
     checkIfCanEditTaskAttributes(User, def, project, args);
 
-    if (assignedTos.length === 0) {
-      throw TaskMustBeAssignedToAtLeastOneUser;
-    }
     const groupUsers = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
       return [...acc, ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id'))]
     }, [])
+
+    const groupUsersWithRights = <any[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
+      const rights = ProjectGroup.get('ProjectGroupRight');
+      return [
+        ...acc,
+        ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => ({ user: User, rights }))
+      ]
+    }, []);
+
+    const assignableUserIds = groupUsersWithRights.filter((user) => user.rights.assignedWrite).map((userWithRights) => userWithRights.user.get('id'));
+    assignedTos = assignedTos.filter((id) => assignableUserIds.includes(id));
+    if (assignedTos.length === 0) {
+      throw TaskMustBeAssignedToAtLeastOneUser;
+    }
+
+    throw createUserNotPartOfProjectError('requester');
+
+
     //requester must be in project or project is open
     if (requester && Project.get('lockedRequester') && !groupUsers.includes(requester)) {
       throw createUserNotPartOfProjectError('requester');
@@ -1022,11 +1040,27 @@ const mutations = {
       }
       if (assignedTos) {
         await idsDoExistsCheck(assignedTos, models.User);
+
+        const groupUsersWithRights = <any[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
+          const rights = ProjectGroup.get('ProjectGroupRight');
+          return [
+            ...acc,
+            ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => ({ user: User, rights }))
+          ]
+        }, []);
+
+        //assignedTo must be in project group and assignable
+        const assignableUserIds = groupUsersWithRights.filter((user) => user.rights.assignedWrite).map((userWithRights) => userWithRights.user.get('id'));
+        assignedTos = assignedTos.filter((id) => assignableUserIds.includes(id));
         if (assignedTos.length === 0) {
           throw TaskMustBeAssignedToAtLeastOneUser;
         }
-        //assignedTo must be in project group
-        assignedTos = assignedTos.filter((assignedTo) => groupUsers.includes(assignedTo));
+        assignedTos = assignedTos.filter((assignedTo) => assignableUserIds.includes(assignedTo));
+
+        if (assignedTos.length === 0) {
+          throw TaskMustBeAssignedToAtLeastOneUser;
+        }
+
         //all subtasks and worktrips must be assigned
         const Subtasks = <SubtaskInstance[]>await Task.get('Subtasks');
         const WorkTrips = <WorkTripInstance[]>await Task.get('WorkTrips');
@@ -1398,7 +1432,7 @@ const attributes = {
       return getModelAttribute(task, 'ShortSubtasks');
     },
     async scheduled(task) {
-      if (!task.rights || !task.rights.scheduledRead) {
+      if (!task.rights || !task.rights.assignedRead) {
         return [];
       }
       return getModelAttribute(task, 'ScheduledTasks');

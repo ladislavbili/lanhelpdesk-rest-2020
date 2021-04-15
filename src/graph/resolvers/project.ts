@@ -95,9 +95,8 @@ const querries = {
           {
             model: models.ProjectGroup,
             include: [
-              {
-                model: models.User,
-              }
+              models.User,
+              models.ProjectGroupRights
             ]
           }
         ]
@@ -107,7 +106,7 @@ const querries = {
           right: allGroupRights,
           project: Project,
           usersWithRights: (<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, cur) => {
-            return [...acc, ...(<UserInstance[]>cur.get('Users'))]
+            return [...acc, ...(<UserInstance[]>cur.get('Users')).map((User) => ({ user: User, assignable: (<ProjectGroupRightsInstance>cur.get('ProjectGroupRight')).get('assignedWrite') }))]
           }, [])
         }
       ))
@@ -129,9 +128,8 @@ const querries = {
               {
                 model: models.ProjectGroup,
                 include: [
-                  {
-                    model: models.User,
-                  }
+                  models.User,
+                  models.ProjectGroupRights
                 ]
               }
             ]
@@ -144,7 +142,7 @@ const querries = {
           right: group.get('ProjectGroupRight'),
           project: group.get('Project'),
           usersWithRights: (<ProjectGroupInstance[]>(<ProjectInstance>group.get('Project')).get('ProjectGroups')).reduce((acc, cur) => {
-            return [...acc, ...(<UserInstance[]>cur.get('Users'))]
+            return [...acc, ...(<UserInstance[]>cur.get('Users')).map((User) => ({ user: User, assignable: (<ProjectGroupRightsInstance>cur.get('ProjectGroupRight')).get('assignedWrite') }))]
           }, [])
         }
       ))

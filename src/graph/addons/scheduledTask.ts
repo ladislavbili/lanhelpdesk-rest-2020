@@ -74,7 +74,7 @@ export const createScheduledTasksSQL = (where, currentUserId, isAdmin) => {
   "User"."name" as "User.name",
   "User"."surname" as "User.surname",
   ${ generateFullNameSQL('User')}
-  "Project->ProjectGroups->ProjectGroupRight"."scheduledWrite" AS "canEdit",
+  "Project->ProjectGroups->ProjectGroupRight"."assignedWrite" AS "canEdit",
 
   "assignedTosFilter"."id" AS "assignedTosFilter.id",
   "assignedTosFilter"."name" AS "assignedTosFilter.name",
@@ -96,12 +96,12 @@ export const createScheduledTasksSQL = (where, currentUserId, isAdmin) => {
   "Project->ProjectGroups"."id" AS "Project.ProjectGroups.id",
   "Project->ProjectGroups"."ProjectId" AS "Project.ProjectGroups.ProjectId",
   "Project->ProjectGroups->ProjectGroupRight"."assignedRead" AS "Project.ProjectGroups.ProjectGroupRight.assignedRead",
+  "Project->ProjectGroups->ProjectGroupRight"."assignedWrite" AS "Project.ProjectGroups.ProjectGroupRight.assignedWrite",
   "Project->ProjectGroups->ProjectGroupRight"."companyRead" AS "Project.ProjectGroups.ProjectGroupRight.companyRead",
   "Project->ProjectGroups->ProjectGroupRight"."deadlineRead" AS "Project.ProjectGroups.ProjectGroupRight.deadlineRead",
   "Project->ProjectGroups->ProjectGroupRight"."overtimeRead" AS "Project.ProjectGroups.ProjectGroupRight.overtimeRead",
   "Project->ProjectGroups->ProjectGroupRight"."pausalRead" AS "Project.ProjectGroups.ProjectGroupRight.pausalRead",
   "Project->ProjectGroups->ProjectGroupRight"."requesterRead" AS "Project.ProjectGroups.ProjectGroupRight.requesterRead",
-  "Project->ProjectGroups->ProjectGroupRight"."scheduledRead" AS "Project.ProjectGroups.ProjectGroupRight.scheduledRead",
   "Project->ProjectGroups->ProjectGroupRight"."statusRead" AS "Project.ProjectGroups.ProjectGroupRight.statusRead",
   "Project->ProjectGroups->ProjectGroupRight"."tagsRead" AS "Project.ProjectGroups.ProjectGroupRight.tagsRead",
   "Project->ProjectGroups->ProjectGroupRight"."typeRead" AS "Project.ProjectGroups.ProjectGroupRight.typeRead",
