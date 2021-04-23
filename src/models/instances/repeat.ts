@@ -6,6 +6,7 @@ export interface RepeatInstance extends DefaultInstance {
   repeatInterval: string;
   startsAt: number;
   active: boolean;
+  RepeatTemplate: any;
 }
 
 export default function defineRepeats(sequelize: Sequelize) {
@@ -41,4 +42,5 @@ export default function defineRepeats(sequelize: Sequelize) {
 export function createRepeatsAssoc(models) {
   models.Repeat.hasMany(models.Task);
   models.Repeat.hasOne(models.RepeatTemplate, { onDelete: 'CASCADE' });
+  models.Repeat.hasMany(models.RepeatTime, { onDelete: 'CASCADE' });
 }

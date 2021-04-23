@@ -32,6 +32,7 @@ import repeat from './repeat';
 import repeatTemplate from './repeatTemplate';
 import repeatTemplateAttachment from './repeatTemplateAttachment'
 import userNotification from './userNotification';
+import repeatTime from './repeatTime';
 
 const { PubSub } = require('apollo-server-express');
 export const pubsub = new PubSub();
@@ -74,6 +75,7 @@ export default {
     ...repeatTemplate.querries,
     ...repeatTemplateAttachment.querries,
     ...userNotification.querries,
+    ...repeatTime.querries,
   },
 
   Mutation: {
@@ -112,6 +114,7 @@ export default {
     ...repeatTemplate.mutations,
     ...repeatTemplateAttachment.mutations,
     ...userNotification.mutations,
+    ...repeatTime.mutations,
   },
   Subscription: {
     ...task.subscriptions,
@@ -152,4 +155,5 @@ export default {
   ...repeatTemplate.attributes,
   ...repeatTemplateAttachment.attributes,
   ...userNotification.attributes,
+  ...repeatTime.attributes,
 };

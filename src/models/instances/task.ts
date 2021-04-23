@@ -146,6 +146,7 @@ export function createTasksAssoc(models) {
   models.Task.belongsTo(models.TaskType);
 
   models.Task.belongsTo(models.Repeat);
+  models.Task.belongsTo(models.RepeatTime);
 
   models.Task.hasMany(models.ShortSubtask, { onDelete: 'CASCADE' });
 

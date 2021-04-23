@@ -9,6 +9,7 @@ type Repeat{
   tasks: [Task!]
   repeatTemplate: RepeatTemplate!
   active: Boolean!
+  repeatTimes: [RepeatTime]!
 }
 
 input TaskRepeatInput{
@@ -26,7 +27,12 @@ enum EnumRepeatInterval{
 `
 
 export const RepeatQuerries = `
-repeats( projectId: Int ): [Repeat!]
+repeats(
+  projectId: Int,
+  active: Boolean,
+  from: String,
+  to: String,
+): [Repeat!]
 repeat( id: Int ): Repeat
 `
 
@@ -47,5 +53,10 @@ updateRepeat(
   active: Boolean
   repeatTemplate: RepeatTemplateUpdateInput
 ): Repeat
+triggerRepeat(
+  repeatId: Int!
+  repeatTimeId: String
+  originalTrigger: String
+): Task
 deleteRepeat( id: Int! ): Repeat
 `

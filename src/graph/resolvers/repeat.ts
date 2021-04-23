@@ -36,6 +36,7 @@ import {
   TaskTypeInstance,
   CompanyInstance,
   RepeatTemplateInstance,
+  RepeatTimeInstance,
 } from '@/models/instances';
 import {
   idsDoExistsCheck,
@@ -56,7 +57,7 @@ import {
   applyFixedOnAttributes,
   canViewTask,
 } from '@/graph/addons/project';
-import { repeatEvent } from '@/services/repeatTasks';
+import { repeatEvent, repeatTimeEvent, addTask } from '@/services/repeatTasks';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 import checkResolver from './checkResolver';
@@ -65,9 +66,14 @@ import { Op } from 'sequelize';
 const dateNames = ['deadline', 'pendingDate', 'closeDate'];
 
 const querries = {
-  repeats: async (root, { projectId }, { req, userID }) => {
-
+  repeats: async (root, { projectId, active, ...rangeDates }, { req, userID }) => {
     const User = await checkResolver(req);
+
+    let repeatWhere = <any>{};
+    if (active !== undefined) {
+      repeatWhere = { active }
+    }
+
     let repeats = []
     let templateWhere = <any>{}
     if (projectId) {
@@ -75,10 +81,19 @@ const querries = {
         ProjectId: projectId
       }
     }
+
+    const { from, to } = extractDatesFromObject(rangeDates, ['from', 'to'], false);
+
     if ((<RoleInstance>User.get('Role')).get('level') !== 0) {
       const ProjectGroups = <ProjectGroupInstance[]>await User.getProjectGroups({
         include: [
-          models.ProjectGroupRights,
+          {
+            required: true,
+            model: models.ProjectGroupRights,
+            where: {
+              repeatRead: true
+            }
+          },
           {
             model: models.Project,
             required: true,
@@ -88,7 +103,9 @@ const querries = {
                 include: [
                   {
                     model: models.Repeat,
+                    where: repeatWhere,
                     include: [
+                      models.RepeatTime,
                       {
                         model: models.RepeatTemplate,
                         include: [
@@ -130,7 +147,9 @@ const querries = {
 
     }
     return models.Repeat.findAll({
+      where: repeatWhere,
       include: [
+        models.RepeatTime,
         {
           model: models.RepeatTemplate,
           required: true,
@@ -152,7 +171,7 @@ const querries = {
           ]
         }
       ]
-    })
+    });
   },
 
   repeat: async (root, { id }, { req }) => {
@@ -538,8 +557,8 @@ const mutations = {
     );
 
     //Figure out project and if can change project
+    await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['projectWrite']);
     if (args.project !== undefined && args.project !== RepeatTemplate.get('ProjectId')) {
-      await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['projectWrite']);
       await checkIfHasProjectRights(User.get('id'), undefined, args.project, ['projectWrite']);
     }
     const project = args.project ? args.project : RepeatTemplate.get('ProjectId');
@@ -800,14 +819,56 @@ const mutations = {
     }
     repeatEvent.emit('delete', id);
     return Repeat.destroy();
-  }
+  },
+
+  triggerRepeat: async (root, { repeatId, repeatTimeId, ...dates }, { req }) => {
+    let originalTrigger = null;
+    if (repeatTimeId) {
+      const RepeatTime = <RepeatTimeInstance>await models.RepeatTime.findByPk(repeatTimeId);
+      if (RepeatTime === undefined) {
+        throw createDoesNoExistsError('Repeat time', repeatId);
+      }
+    } else {
+      originalTrigger = extractDatesFromObject(dates, ['originalTrigger']).originalTrigger;
+    }
+    const Repeat = <RepeatInstance>await models.Repeat.findByPk(
+      repeatId,
+      {
+        include: [models.RepeatTemplate]
+      }
+    );
+
+    if (Repeat === undefined) {
+      throw createDoesNoExistsError('Repeat', repeatId);
+    }
+    const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
+    const User = await checkResolver(req);
+
+    //Figure out project and if can change project
+    await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['addTasks', 'repeatRead']);
+    const NewTask = await addTask(repeatId, repeatTimeId);
+    if (!repeatTimeId) {
+      models.RepeatTime.create({
+        RepeatId: repeatId,
+        originalTrigger,
+        triggersAt: originalTrigger,
+        triggered: true,
+        task: NewTask.get('id')
+      })
+    }
+    repeatTimeEvent.emit('changed', repeatId);
+    //get or create repeatTime and set it as triggered
+    return NewTask;
+  },
 }
 
 const attributes = {
   Repeat: {
     async repeatTemplate(repeat) {
-
       return getModelAttribute(repeat, 'RepeatTemplate');
+    },
+    async repeatTimes(repeat) {
+      return getModelAttribute(repeat, 'RepeatTimes');
     },
   }
 };

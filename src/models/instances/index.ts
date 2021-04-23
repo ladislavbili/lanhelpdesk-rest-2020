@@ -39,6 +39,7 @@ export { ScheduledTaskInstance } from './scheduledTask';
 export { ProjectGroupInstance } from './projectGroup';
 export { ProjectGroupRightsInstance } from './projectGroupRights';
 export { RepeatTemplateInstance } from './repeatTemplate';
+export { RepeatTimeInstance } from './repeatTime';
 export { RepeatTemplateAttachmentInstance } from './repeatTemplateAttachment';
 export { UserNotificationInstance } from './userNotification';
 export { TaskMetadataInstance } from './taskMetadata';

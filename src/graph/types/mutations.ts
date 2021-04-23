@@ -11,6 +11,10 @@ import { MilestoneMutations } from './entities/milestone';
 import { PricelistMutations } from './entities/pricelist';
 import { ProjectMutations } from './entities/project';
 import { ProjectGroupMutations } from './entities/projectGroup';
+import { RepeatMutations } from './entities/repeat';
+import { RepeatTemplateMutations } from './entities/repeatTemplate';
+import { RepeatTemplateAttachmentMutations } from './entities/repeatTemplateAttachment';
+import { RepeatTimeMutations } from './entities/repeatTime';
 import { RoleMutations } from './entities/role';
 import { ScheduledTaskMutations } from './entities/scheduledTask';
 import { ShortSubtaskMutations } from './entities/shortSubtask';
@@ -30,9 +34,6 @@ import { UserMutations } from './entities/user';
 import { UserInvoiceMutations } from './entities/userInvoice';
 import { UserNotificationMutations } from './entities/userNotification';
 import { WorkTripMutations } from './entities/workTrip';
-import { RepeatMutations } from './entities/repeat';
-import { RepeatTemplateMutations } from './entities/repeatTemplate';
-import { RepeatTemplateAttachmentMutations } from './entities/repeatTemplateAttachment';
 
 export default `
 type Mutation {
@@ -49,6 +50,10 @@ type Mutation {
   ${PricelistMutations}
   ${ProjectMutations}
   ${ProjectGroupMutations}
+  ${RepeatMutations}
+  ${RepeatTemplateMutations}
+  ${RepeatTemplateAttachmentMutations}
+  ${RepeatTimeMutations}
   ${RoleMutations}
   ${ScheduledTaskMutations}
   ${ShortSubtaskMutations}
@@ -68,8 +73,5 @@ type Mutation {
   ${UserInvoiceMutations}
   ${UserNotificationMutations}
   ${WorkTripMutations}
-  ${RepeatMutations}
-  ${RepeatTemplateMutations}
-  ${RepeatTemplateAttachmentMutations}
 }
 `

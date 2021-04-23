@@ -12,7 +12,6 @@ import {
   UserInstance,
   TagInstance,
   ShortSubtaskInstance,
-  ScheduledTaskInstance,
   SubtaskInstance,
   WorkTripInstance,
   MaterialInstance,
@@ -24,6 +23,7 @@ import { TASK_CHANGE } from '@/configs/subscriptions';
 import { repeatTasks } from '@/configs/constants';
 
 export const repeatEvent = new events.EventEmitter();
+export const repeatTimeEvent = new events.EventEmitter();
 
 let timers = [];
 export default async function start() {
@@ -31,9 +31,11 @@ export default async function start() {
     console.log(`Repeats are disabled!`);
     return;
   }
-  repeatEvent.on('add', addRepeat)
-  repeatEvent.on('update', updateRepeat)
-  repeatEvent.on('delete', deleteRepeat)
+  repeatEvent.on('add', addRepeat);
+  repeatEvent.on('update', updateRepeat);
+  repeatEvent.on('delete', deleteRepeat);
+
+  repeatTimeEvent.on('changed', changedRepeatTime);
 
   const Repeats = <RepeatInstance[]>await models.Repeat.findAll({ where: { active: true } })
   console.log(`Repeats are active and currently starting ${Repeats.length} repeats.`);
@@ -49,7 +51,7 @@ async function addRepeat(Repeat) {
       id,
       startsAt.getTime(),
       getMinutes(repeatEvery, repeatInterval),
-      [() => addTask(id)],
+      [(repeatTimeId) => addTask(id, repeatTimeId)],
     )
   );
 }
@@ -58,7 +60,7 @@ async function updateRepeat(Repeat) {
   console.log('updating repeat');
   const { repeatEvery, repeatInterval, startsAt, active, id } = Repeat.get();
   if (active) {
-    const timer = timers.find((existingTimer) => existingTimer.id === id);
+    const timer = timers.find((existingTimer) => existingTimer.repeatId === id);
     timer.stopTimer();
     timer.setTimer(startsAt.valueOf(), getMinutes(repeatEvery, repeatInterval));
     timer.restart();
@@ -69,14 +71,23 @@ async function updateRepeat(Repeat) {
 
 async function deleteRepeat(id) {
   console.log('deleting repeat');
-  const timer = timers.find((existingTimer) => existingTimer.id === id);
+  const timer = timers.find((existingTimer) => existingTimer.repeatId === id);
   if (timer !== undefined) {
-    timers = timers.filter((existingTimer) => existingTimer.id !== id);
+    timers = timers.filter((existingTimer) => existingTimer.repeatId !== id);
     timer.stopTimer();
   }
 }
 
-async function addTask(id) {
+async function changedRepeatTime(repeatId) {
+  const timer = timers.find((existingTimer) => existingTimer.repeatId === repeatId);
+
+  if (timer) {
+    timer.stopTimer();
+    timer.restart();
+  }
+}
+
+export async function addTask(id, repeatTimeId) {
   if (!repeatTasks) {
     return;
   }
@@ -91,7 +102,6 @@ async function addTask(id) {
           include: [
             models.RepeatTemplateAttachment,
             models.ShortSubtask,
-            models.ScheduledTask,
             models.Subtask,
             models.WorkTrip,
             models.Material,
@@ -153,11 +163,6 @@ async function addTask(id) {
     ShortSubtasks: (<ShortSubtaskInstance[]>RepeatTemplate.get('ShortSubtasks')).map((ShortSubtask) => ({
       title: ShortSubtask.get('title'),
       done: ShortSubtask.get('done'),
-    })),
-    ScheduledTasks: (<ScheduledTaskInstance[]>RepeatTemplate.get('ScheduledTasks')).map((ScheduledTask) => ({
-      UserId: ScheduledTask.get('UserId'),
-      from: ScheduledTask.get('from'),
-      to: ScheduledTask.get('to'),
     })),
     Subtasks: (<SubtaskInstance[]>RepeatTemplate.get('Subtasks')).map((Subtask) => ({
       approved: Subtask.get('approved'),
@@ -253,8 +258,22 @@ async function addTask(id) {
 
   //adding data
   const NewTask = <TaskInstance>await models.Task.create(params, {
-    include: [models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, models.TaskAttachment, models.TaskMetadata, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
+    include: [models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, models.TaskAttachment, models.TaskMetadata, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
   });
+
+  if (repeatTimeId) {
+    models.RepeatTime.update(
+      {
+        triggered: true,
+        TaskId: NewTask.get('id')
+      },
+      {
+        where: {
+          id: repeatTimeId
+        }
+      }
+    )
+  }
 
   await Promise.all([
     NewTask.setAssignedTos((<UserInstance[]>RepeatTemplate.get('assignedTos')).map((User) => User.get('id'))),
@@ -296,5 +315,5 @@ async function addTask(id) {
 
   sendNotifications(null, [`Task was created by repeat.`], NewTask, (<UserInstance[]>RepeatTemplate.get('assignedTos')).map((User) => User.get('id')));
   pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'add', data: NewTask, ids: [] } });
-  return;
+  return NewTask;
 }

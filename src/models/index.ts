@@ -23,6 +23,7 @@ import defineFilter, { createFilterAssoc } from './instances/filter';
 import defineFilterOneOf, { createFilterOneOfAssoc } from './instances/filterOneOf';
 import defineMilestone, { createMilestoneAssoc } from './instances/milestone';
 import defineRepeats, { createRepeatsAssoc } from './instances/repeat';
+import defineRepeatTimes, { createRepeatTimesAssoc } from './instances/repeatTime';
 import defineTasks, { createTasksAssoc } from './instances/task';
 import defineRepeatTemplates, { createRepeatTemplatesAssoc } from './instances/repeatTemplate';
 import defineRepeatTemplateAttachments, { createRepeatTemplateAttachmentsAssoc } from './instances/repeatTemplateAttachment';
@@ -122,6 +123,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineProjectGroupRights(sequelize);
   defineTaskMetadata(sequelize);
   defineTasklistColumnPreferences(sequelize);
+  defineRepeatTimes(sequelize);
 
   createRolesAssoc(models);
   createUsersAssoc(models);
@@ -176,6 +178,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createProjectGroupRightsAssoc(models);
   createTaskMetadataAssoc(models);
   createTasklistColumnPreferencesAssoc(models);
+  createRepeatTimesAssoc(models);
 
 
   //LOG FUNCTIONS

@@ -39,6 +39,7 @@ type Task {
   taskChanges: [TaskChange]!
   taskAttachments: [TaskAttachment]!
   invoicedTasks: [InvoicedTask]!
+  repeatTime: RepeatTime
 }
 
 input CommentInput{

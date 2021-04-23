@@ -139,3 +139,6 @@ export const MustSelectStatusesError = new ApolloError("You must pick at least o
 
 //scheduled
 export const ScheduledUserDoesntHaveAssignedEditRight = new ApolloError("This user can't be added as assigned or you have insufficient rights!", "SCHEDULED_USER_DOESNT_HAVE_ASSIGNED_RIGHT");
+
+//Repeat
+export const CantAddOrEditRepeatError = new ApolloError("You have insufficient rights in this project!", "CANT_ADD_OR_EDIT_REPEAT");

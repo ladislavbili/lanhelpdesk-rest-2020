@@ -11,6 +11,10 @@ import { MilestoneQuerries } from './entities/milestone';
 import { PricelistQuerries } from './entities/pricelist';
 import { ProjectQuerries } from './entities/project';
 import { ProjectGroupQuerries } from './entities/projectGroup';
+import { RepeatQuerries } from './entities/repeat';
+import { RepeatTemplateQuerries } from './entities/repeatTemplate';
+import { RepeatTemplateAttachmentQuerries } from './entities/repeatTemplateAttachment';
+import { RepeatTimeQuerries } from './entities/repeatTime';
 import { RoleQuerries } from './entities/role';
 import { ScheduledTaskQuerries } from './entities/scheduledTask';
 import { ShortSubtaskQuerries } from './entities/shortSubtask';
@@ -30,9 +34,6 @@ import { UserQuerries } from './entities/user';
 import { UserInvoiceQuerries } from './entities/userInvoice';
 import { UserNotificationQuerries } from './entities/userNotification';
 import { WorkTripQuerries } from './entities/workTrip';
-import { RepeatQuerries } from './entities/repeat';
-import { RepeatTemplateQuerries } from './entities/repeatTemplate';
-import { RepeatTemplateAttachmentQuerries } from './entities/repeatTemplateAttachment';
 
 export default `
 type Query {
@@ -49,6 +50,10 @@ type Query {
   ${PricelistQuerries}
   ${ProjectQuerries}
   ${ProjectGroupQuerries}
+  ${RepeatQuerries}
+  ${RepeatTemplateQuerries}
+  ${RepeatTemplateAttachmentQuerries}
+  ${RepeatTimeQuerries}
   ${RoleQuerries}
   ${ScheduledTaskQuerries}
   ${ShortSubtaskQuerries}
@@ -68,8 +73,5 @@ type Query {
   ${UserInvoiceQuerries}
   ${UserNotificationQuerries}
   ${WorkTripQuerries}
-  ${RepeatQuerries}
-  ${RepeatTemplateQuerries}
-  ${RepeatTemplateAttachmentQuerries}
 }
 `
