@@ -7,6 +7,7 @@ export interface RepeatInstance extends DefaultInstance {
   startsAt: number;
   active: boolean;
   RepeatTemplate: any;
+  canEdit: boolean;
 }
 
 export default function defineRepeats(sequelize: Sequelize) {

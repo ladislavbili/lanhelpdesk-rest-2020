@@ -389,6 +389,7 @@ const querries = {
             models.Tag,
             models.TaskType,
             models.Repeat,
+            models.RepeatTime,
             {
               model: models.TaskMetadata,
               as: 'TaskMetadata'
@@ -1385,6 +1386,12 @@ const attributes = {
         return null;
       }
       return getModelAttribute(task, 'Repeat');
+    },
+    async repeatTime(task) {
+      if (!task.rights || !task.rights.repeatRead) {
+        return null;
+      }
+      return getModelAttribute(task, 'RepeatTime');
     },
     async metadata(task) {
       return getModelAttribute(task, 'TaskMetadata');

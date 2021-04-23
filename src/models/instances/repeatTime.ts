@@ -7,6 +7,7 @@ export interface RepeatTimeInstance extends DefaultInstance {
   triggersAt: number;
   Repeat: any;
   canEdit: boolean;
+  rights: any;
 }
 
 export default function defineRepeatTimes(sequelize: Sequelize) {

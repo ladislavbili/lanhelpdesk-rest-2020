@@ -9,6 +9,7 @@ type Repeat{
   tasks: [Task!]
   repeatTemplate: RepeatTemplate!
   active: Boolean!
+  canEdit: Boolean!
   repeatTimes: [RepeatTime]!
 }
 
@@ -55,7 +56,7 @@ updateRepeat(
 ): Repeat
 triggerRepeat(
   repeatId: Int!
-  repeatTimeId: String
+  repeatTimeId: Int
   originalTrigger: String
 ): Task
 deleteRepeat( id: Int! ): Repeat

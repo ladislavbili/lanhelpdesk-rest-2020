@@ -13,6 +13,7 @@ export default class TriggerableTimer {
   repeatId: any;
   repeatTimeId: any;
   alreadyTriggered: boolean;
+  originalTrigger: any;
   triggersAt: any;
   startAt: number;
   repeatEvery: number;
@@ -39,6 +40,7 @@ export default class TriggerableTimer {
     this.repeatTimeId = null;
     this.triggersAt = null;
     this.alreadyTriggered = false;
+    this.originalTrigger = null;
     this.removeFunction = () => { };
     this.runTimeout();
   }
@@ -75,6 +77,7 @@ export default class TriggerableTimer {
     this.repeatTimeId = null;
     this.triggersAt = null;
     this.alreadyTriggered = false;
+    this.originalTrigger = null;
     this.timeoutID = setTimeout(() => {
       this.timeoutID = null;
       this.restart();
@@ -86,6 +89,7 @@ export default class TriggerableTimer {
     this.repeatTimeId = null;
     this.triggersAt = null;
     this.alreadyTriggered = false;
+    this.originalTrigger = null;
     this.runTimeout();
   }
 
@@ -95,6 +99,7 @@ export default class TriggerableTimer {
       return this.triggersAt - currentTime;
     }
     const remainingMiliseconds = this.getRemainingMiliseconds(currentTime);
+    this.originalTrigger = currentTime + remainingMiliseconds;
     /*
     1. get RepeatTime thats closest to current time and wasnt done already and is before this trigger - do it
     2. if you cant find one, find the one for this time, if it exists, dont do this trigger - add but set to alreadyTriggered
@@ -124,10 +129,13 @@ export default class TriggerableTimer {
       //2. resolve
       if (RepeatTime) {
         this.alreadyTriggered = true;
+      } else {
+        this.alreadyTriggered = false;
       }
     } else {
       // 1. resolve
       //console.log('resolve 1', RepeatTime.get('originalTrigger').valueOf() === currentTime + remainingMiliseconds);
+      this.alreadyTriggered = false;
       this.repeatTimeId = RepeatTime.get('id');
       this.triggersAt = (<number>RepeatTime.get('triggersAt').valueOf());
       return this.triggersAt - currentTime;
@@ -163,7 +171,12 @@ export default class TriggerableTimer {
     if (this.timeLeft === null) {
       this.timeLeft = await this.getRemainingTime();
     }
-    console.log(`remaining time ${this.timeLeft / minute} minutes.`);
+
+    if (this.alreadyTriggered) {
+      console.log(`waiting time ${this.timeLeft / minute} minutes.`);
+    } else {
+      console.log(`remaining time ${this.timeLeft / minute} minutes.`);
+    }
 
     let timer = this.getWaitTime();
     this.timeoutID = setTimeout(async () => {
@@ -171,7 +184,7 @@ export default class TriggerableTimer {
       //ak sa ma triggernut alebo delay sposobil ze timer je prekroceny, alebo je timer nepodstatny
       if (timer.shouldTrigger || newTimeLeft >= this.timeLeft) {
         if (this.alreadyTriggered) {
-          this.triggerFunctions.forEach((func) => func(this.repeatTimeId));
+          this.triggerFunctions.forEach((func) => func(this.repeatTimeId, this.originalTrigger));
         }
         this.restartAfterTimeout();
       } else {

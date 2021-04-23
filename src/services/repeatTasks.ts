@@ -7,6 +7,7 @@ import fs from 'fs';
 import {
   TaskInstance,
   RepeatInstance,
+  RepeatTimeInstance,
   RepeatTemplateInstance,
   RepeatTemplateAttachmentInstance,
   UserInstance,
@@ -51,7 +52,7 @@ async function addRepeat(Repeat) {
       id,
       startsAt.getTime(),
       getMinutes(repeatEvery, repeatInterval),
-      [(repeatTimeId) => addTask(id, repeatTimeId)],
+      [(repeatTimeId, originalTrigger) => addTask(id, repeatTimeId, originalTrigger)],
     )
   );
 }
@@ -87,7 +88,7 @@ async function changedRepeatTime(repeatId) {
   }
 }
 
-export async function addTask(id, repeatTimeId) {
+export async function addTask(id, repeatTimeId, originalTrigger) {
   if (!repeatTasks) {
     return;
   }
@@ -109,10 +110,6 @@ export async function addTask(id, repeatTimeId) {
             models.Tag,
             models.Project,
             {
-              model: models.TaskMetadata,
-              as: 'TaskMetadata'
-            },
-            {
               model: models.User,
               as: 'assignedTos'
             }
@@ -126,6 +123,19 @@ export async function addTask(id, repeatTimeId) {
   }
   const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
   const Project = <ProjectInstance>RepeatTemplate.get('Project');
+
+  if (!repeatTimeId) {
+    const newRepeatTime = <RepeatTimeInstance>await models.RepeatTime.create({
+      RepeatId: id,
+      originalTrigger,
+      triggersAt: originalTrigger,
+      triggered: true,
+    });
+    repeatTimeId = newRepeatTime.get('id');
+  } else {
+    await models.RepeatTime.update({ triggered: true }, { where: { id: repeatTimeId } });
+  }
+
   let params = {
     //DIRECT PARAMS
     title: RepeatTemplate.get('title'),
@@ -159,6 +169,7 @@ export async function addTask(id, repeatTimeId) {
     TaskTypeId: RepeatTemplate.get('TaskTypeId'),
     StatusId: RepeatTemplate.get('StatusId'),
     RepeatId: id,
+    RepeatTimeId: repeatTimeId,
     //EXTERNAL DATA
     ShortSubtasks: (<ShortSubtaskInstance[]>RepeatTemplate.get('ShortSubtasks')).map((ShortSubtask) => ({
       title: ShortSubtask.get('title'),
@@ -258,22 +269,8 @@ export async function addTask(id, repeatTimeId) {
 
   //adding data
   const NewTask = <TaskInstance>await models.Task.create(params, {
-    include: [models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, models.TaskAttachment, models.TaskMetadata, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
+    include: [models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, models.TaskAttachment, { model: models.TaskMetadata, as: 'TaskMetadata' }, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
   });
-
-  if (repeatTimeId) {
-    models.RepeatTime.update(
-      {
-        triggered: true,
-        TaskId: NewTask.get('id')
-      },
-      {
-        where: {
-          id: repeatTimeId
-        }
-      }
-    )
-  }
 
   await Promise.all([
     NewTask.setAssignedTos((<UserInstance[]>RepeatTemplate.get('assignedTos')).map((User) => User.get('id'))),

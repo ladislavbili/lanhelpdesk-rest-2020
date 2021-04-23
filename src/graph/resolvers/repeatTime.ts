@@ -11,6 +11,9 @@ import {
   RoleInstance,
   UserInstance,
 } from '@/models/instances';
+import {
+  allGroupRights
+} from '@/configs/projectConstants';
 import checkResolver from './checkResolver';
 import { getModelAttribute, extractDatesFromObject } from '@/helperFunctions';
 import { repeatTimeEvent } from '@/services/repeatTasks';
@@ -69,7 +72,6 @@ const querries = {
           {
             model: models.ProjectGroupRights,
             required: true,
-            attributes: ['repeatWrite', 'repeatRead'],
             where: {
               repeatRead: true,
             }
@@ -93,7 +95,12 @@ const querries = {
                       model: models.RepeatTime,
                       required: true,
                       where: repeatTimeWhere,
-                      include: [models.Task]
+                      include: [
+                        {
+                          model: models.Task,
+                          include: [models.Status]
+                        }
+                      ]
                     }]
                   }
                 ]
@@ -121,36 +128,22 @@ const querries = {
                 ...(<RepeatTimeInstance[]>Repeat.get('RepeatTimes')).map((RepeatTime) => {
                   RepeatTime.Repeat = Repeat;
                   RepeatTime.canEdit = <boolean>ProjectGroupRights.get('repeatWrite');
+                  RepeatTime.rights = ProjectGroupRights.get();
                   return RepeatTime;
                 })
               ]
             }, []),
         ]
       }, []);
-      /*
-        return (<RepeatTimeInstance[]>
-          (<RepeatInstance[]>
-            (<RepeatTemplateInstance[]>
-              (<ProjectInstance[]>
-                ProjectGroups.map((ProjectGroup) => ProjectGroup.get('Project'))
-              ).reduce((acc, cur) => [...acc, ...(<RepeatTemplateInstance[]>cur.get('RepeatTemplates'))], [])
-            ).map((RepeatTemplate) => RepeatTemplate.get('Repeat'))
-          ).reduce((acc, cur) =>
-            [...acc,
-            ...((<RepeatTimeInstance[]>cur.get('RepeatTimes')).map((RepeatTime) => {
-              RepeatTime.Repeat = cur;
-              RepeatTime.canWrite = ;
-              return RepeatTime;
-            }))
-            ], [])
-        );
-        */
 
     } else {
       const RepeatTimes = <RepeatTimeInstance[]>await models.RepeatTime.findAll({
         where: repeatTimeWhere,
         include: [
-          models.Task,
+          {
+            model: models.Task,
+            include: [models.Status]
+          },
           {
             model: models.Repeat,
             include: [models.RepeatTemplate],
@@ -161,6 +154,7 @@ const querries = {
 
       return RepeatTimes.map((RepeatTime) => {
         RepeatTime.canEdit = <boolean>true;
+        RepeatTime.rights = allGroupRights;
         return RepeatTime;
       })
     }
@@ -283,7 +277,11 @@ const mutations = {
 const attributes = {
   RepeatTime: {
     async task(repeatTime) {
-      return getModelAttribute(repeatTime, 'Task');
+      const Task = await getModelAttribute(repeatTime, 'Task');
+      if (Task) {
+        Task.rights = repeatTime.rights;
+      }
+      return Task;
     },
     async repeat(repeatTime) {
       return getModelAttribute(repeatTime, 'Repeat');

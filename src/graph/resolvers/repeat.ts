@@ -105,7 +105,12 @@ const querries = {
                     model: models.Repeat,
                     where: repeatWhere,
                     include: [
-                      models.RepeatTime,
+                      {
+                        model: models.RepeatTime,
+                        include: [{
+                          model: models.Task,
+                        }]
+                      },
                       {
                         model: models.RepeatTemplate,
                         include: [
@@ -141,15 +146,21 @@ const querries = {
           ).filter((Repeat) => {
             const Template = Repeat.get('RepeatTemplate');
             return canViewTask(Template, User, userRights)
+          }).map((Repeat) => {
+            Repeat.canEdit = <boolean>(<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).repeatWrite;
+            return Repeat;
           })
         ]
       }, [])
 
     }
-    return models.Repeat.findAll({
+    const Repeats = <RepeatInstance[]>await models.Repeat.findAll({
       where: repeatWhere,
       include: [
-        models.RepeatTime,
+        {
+          model: models.RepeatTime,
+          include: [models.Task]
+        },
         {
           model: models.RepeatTemplate,
           required: true,
@@ -172,6 +183,10 @@ const querries = {
         }
       ]
     });
+    return Repeats.map((Repeat) => {
+      Repeat.canEdit = <boolean>true;
+      return Repeat;
+    })
   },
 
   repeat: async (root, { id }, { req }) => {
@@ -499,6 +514,7 @@ const mutations = {
       id,
       {
         include: [
+          models.RepeatTime,
           {
             model: models.RepeatTemplate,
             include: [
@@ -846,16 +862,7 @@ const mutations = {
 
     //Figure out project and if can change project
     await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['addTasks', 'repeatRead']);
-    const NewTask = await addTask(repeatId, repeatTimeId);
-    if (!repeatTimeId) {
-      models.RepeatTime.create({
-        RepeatId: repeatId,
-        originalTrigger,
-        triggersAt: originalTrigger,
-        triggered: true,
-        task: NewTask.get('id')
-      })
-    }
+    const NewTask = await addTask(repeatId, repeatTimeId, originalTrigger);
     repeatTimeEvent.emit('changed', repeatId);
     //get or create repeatTime and set it as triggered
     return NewTask;
