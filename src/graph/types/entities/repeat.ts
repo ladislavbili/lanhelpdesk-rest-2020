@@ -3,7 +3,7 @@ import defaultAttributes from './defaultAttributes';
 export const Repeat = `
 type Repeat{
   ${defaultAttributes}
-  repeatEvery: String!
+  repeatEvery: Int!
   repeatInterval: EnumRepeatInterval!
   startsAt: String!
   tasks: [Task!]
@@ -14,7 +14,7 @@ type Repeat{
 }
 
 input TaskRepeatInput{
-  repeatEvery: String!
+  repeatEvery: Int!
   repeatInterval: EnumRepeatInterval!
   startsAt: String!
   active: Boolean!
@@ -34,13 +34,19 @@ repeats(
   from: String,
   to: String,
 ): [Repeat!]
+calendarRepeats(
+  projectId: Int,
+  active: Boolean,
+  from: String!,
+  to: String!,
+): [Repeat!]
 repeat( id: Int ): Repeat
 `
 
 export const RepeatMutations = `
 addRepeat(
   taskId: Int
-  repeatEvery: String!
+  repeatEvery: Int!
   repeatInterval: EnumRepeatInterval!
   startsAt: String!
   active: Boolean!
@@ -48,7 +54,7 @@ addRepeat(
 ): Repeat
 updateRepeat(
   id: Int!
-  repeatEvery: String
+  repeatEvery: Int
   repeatInterval: EnumRepeatInterval
   startsAt: String
   active: Boolean

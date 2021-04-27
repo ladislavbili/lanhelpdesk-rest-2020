@@ -38,6 +38,7 @@ import {
   RepeatTemplateInstance,
   RepeatTimeInstance,
 } from '@/models/instances';
+import { QueryTypes } from 'sequelize';
 import {
   idsDoExistsCheck,
   multipleIdDoesExistsCheck,
@@ -46,6 +47,7 @@ import {
   getModelAttribute,
   mergeFragmentedModel,
   addApolloError,
+  getMinutes,
 } from '@/helperFunctions';
 import {
   filterObjectToFilter
@@ -63,6 +65,7 @@ const { withFilter } = require('apollo-server-express');
 import checkResolver from './checkResolver';
 import moment from 'moment';
 import { Op } from 'sequelize';
+import { generateRepeatSQL } from '../addons/repeat';
 const dateNames = ['deadline', 'pendingDate', 'closeDate'];
 
 const querries = {
@@ -151,8 +154,8 @@ const querries = {
             return Repeat;
           })
         ]
-      }, [])
-
+      }, []);
+      return Repeats;
     }
     const Repeats = <RepeatInstance[]>await models.Repeat.findAll({
       where: repeatWhere,
@@ -187,6 +190,22 @@ const querries = {
       Repeat.canEdit = <boolean>true;
       return Repeat;
     })
+  },
+
+  calendarRepeats: async (root, { projectId, active, ...rangeDates }, { req, userID }) => {
+    const User = await checkResolver(req);
+
+    const { from, to } = extractDatesFromObject(rangeDates, ['from', 'to']);
+
+    const SQL = generateRepeatSQL(active, from, to, projectId, userID, (<RoleInstance>User.get('Role')).get('level') === 0);
+    let responseRepeats = await sequelize.query(SQL, {
+      model: models.Repeat,
+      type: QueryTypes.SELECT,
+      nest: true,
+      raw: true,
+      mapToModel: true
+    });
+    return responseRepeats;
   },
 
   repeat: async (root, { id }, { req }) => {
@@ -279,7 +298,6 @@ const mutations = {
   addRepeat: async (root, { taskId, repeatEvery, repeatInterval, active, repeatTemplate: args, ...argDates }, { req }) => {
 
     const project = args.project;
-    repeatEvery = parseInt(repeatEvery);
     const { startsAt } = extractDatesFromObject(argDates, ['startsAt']);
     const Project = await models.Project.findByPk(
       project,
@@ -508,8 +526,11 @@ const mutations = {
   },
 
   updateRepeat: async (root, { id, repeatEvery, repeatInterval, active, repeatTemplate: args, ...argDates }, { req }) => {
-    repeatEvery = parseInt(repeatEvery);
     const { startsAt } = extractDatesFromObject(argDates, ['startsAt']);
+
+    if (!args) {
+      args = {};
+    }
     const Repeat = <RepeatInstance>await models.Repeat.findByPk(
       id,
       {
@@ -556,6 +577,7 @@ const mutations = {
       throw createDoesNoExistsError('Repeat', id);
     }
     const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
+
     const User = await checkResolver(
       req,
       [],
@@ -792,6 +814,49 @@ const mutations = {
       }
       if (startsAt) {
         repeatAttrs = { ...repeatAttrs, startsAt };
+      }
+      //update RepeatTimes due to originalTimeshift
+      if (startsAt && !repeatInterval && !repeatEvery) {
+        const shift = Repeat.get('startsAt').valueOf() - startsAt;
+        (<RepeatTimeInstance[]>Repeat.get('RepeatTimes')).forEach((RepeatTime) => {
+          promises.push(RepeatTime.update(
+            {
+              originalTrigger: RepeatTime.get('originalTrigger').valueOf() + shift
+            },
+            { transaction }
+          ));
+        });
+      } else if (repeatInterval || repeatEvery) {
+
+        const originalTriggerEvery = 1000 * 60 * getMinutes(
+          Repeat.get('repeatEvery'),
+          Repeat.get('repeatInterval')
+        );
+
+        const newTriggerEvery = 1000 * 60 * getMinutes(
+          (repeatEvery ? repeatEvery : Repeat.get('repeatEvery')),
+          (repeatInterval ? repeatInterval : Repeat.get('repeatInterval'))
+        );
+
+        const originalStartsAt = Repeat.get('startsAt').valueOf();
+        (<RepeatTimeInstance[]>Repeat.get('RepeatTimes')).forEach((RepeatTime) => {
+          const originalTrigger = RepeatTime.get('originalTrigger').valueOf();
+          const isTriggerBeforeStart = originalTrigger < originalStartsAt;
+          const newOriginalTrigger = (
+            isTriggerBeforeStart ?
+              (
+                originalStartsAt - ((originalStartsAt - originalTrigger) * (newTriggerEvery / originalTriggerEvery)) +
+                (startsAt ? originalStartsAt - startsAt : 0)
+              )
+              :
+              (
+                (originalTrigger - originalStartsAt) /
+                originalTriggerEvery *
+                newTriggerEvery
+              ) + startsAt
+          );
+          promises.push(RepeatTime.update({ originalTrigger: newOriginalTrigger }, { transaction }));
+        })
       }
       if (repeatEvery || repeatInterval || startsAt || active !== undefined) {
         promises.push(Repeat.update(repeatAttrs, { transaction }));
