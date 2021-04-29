@@ -8,6 +8,7 @@ type RepeatTime{
   repeat: Repeat!
   triggered: Boolean!
   canEdit: Boolean
+  canCreateTask: Boolean
   task: Task
 }
 `

@@ -1352,9 +1352,6 @@ const attributes = {
       return getModelAttribute(task, 'Milestone');
     },
     async project(task) {
-      if (!task.rights || !task.rights.projectRead) {
-        return null;
-      }
       return getModelAttribute(task, 'Project');
     },
     async requester(task) {
@@ -1364,9 +1361,6 @@ const attributes = {
       return getModelAttribute(task, 'requester');
     },
     async status(task) {
-      if (!task.rights || !task.rights.statusRead) {
-        return null;
-      }
       return getModelAttribute(task, 'Status');
     },
     async tags(task) {

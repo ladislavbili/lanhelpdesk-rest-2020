@@ -7,6 +7,7 @@ export interface RepeatTimeInstance extends DefaultInstance {
   triggersAt: number;
   Repeat: any;
   canEdit: boolean;
+  canCreateTask: boolean;
   rights: any;
 }
 

@@ -325,7 +325,7 @@ export const checkDefRequiredSatisfied = (def, originalData, newData) => {
 }
 
 //skontrolovat ci ma pravo na polia
-export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, orgAttrs = null) => {
+export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, orgAttrs = null, ignoreAttributes = []) => {
   const groupRights = (
     User.get('Role').get('level') === 0 ?
       allGroupRights :
@@ -333,7 +333,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
   )
   //DEF ATTRIBUTES
 
-  if (!groupRights.assignedWrite && newAttrs.assignedTo !== undefined) {
+  if (!groupRights.assignedWrite && newAttrs.assignedTo !== undefined && !ignoreAttributes.includes('assignedTo')) {
     if (
       (
         !def.assignedTo.def ||
@@ -349,7 +349,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       throw createCantEditTaskAttributeError('assignedTo');
     }
   }
-  if (!groupRights.tagsWrite && newAttrs.tags !== undefined) {
+  if (!groupRights.tagsWrite && newAttrs.tags !== undefined && !ignoreAttributes.includes('tags')) {
     if (
       (
         !def.tag.def ||
@@ -371,7 +371,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
     }
   }
 
-  if (!groupRights.companyWrite && newAttrs.company !== undefined) {
+  if (!groupRights.companyWrite && newAttrs.company !== undefined && !ignoreAttributes.includes('company')) {
     if (
       (
         !def.company.def ||
@@ -385,7 +385,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       throw createCantEditTaskAttributeError('company');
     }
   }
-  if (!groupRights.requesterWrite && newAttrs.requester !== undefined) {
+  if (!groupRights.requesterWrite && newAttrs.requester !== undefined && !ignoreAttributes.includes('requester')) {
     if (
       (
         !def.requester.def ||
@@ -399,7 +399,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       throw createCantEditTaskAttributeError('requester');
     }
   }
-  if (!groupRights.typeWrite && newAttrs.taskType !== undefined) {
+  if (!groupRights.typeWrite && newAttrs.taskType !== undefined && !ignoreAttributes.includes('taskType')) {
     if (
       (
         !def.type.def ||

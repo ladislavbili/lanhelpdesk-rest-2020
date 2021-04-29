@@ -88,8 +88,8 @@ async function changedRepeatTime(repeatId) {
   }
 }
 
-export async function addTask(id, repeatTimeId, originalTrigger) {
-  if (!repeatTasks) {
+export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger = false) {
+  if (!repeatTasks && !manualTrigger) {
     return;
   }
   console.log('Creating repeated task');

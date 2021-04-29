@@ -84,13 +84,12 @@ const querries = {
               {
                 required: true,
                 model: models.RepeatTemplate,
-                attributes: ['id'],
+                attributes: ['id', 'title'],
                 include: [
                   {
                     required: true,
                     model: models.Repeat,
                     where: repeatWhere,
-                    attributes: ['id'],
                     include: [{
                       model: models.RepeatTime,
                       required: true,
@@ -128,6 +127,7 @@ const querries = {
                 ...(<RepeatTimeInstance[]>Repeat.get('RepeatTimes')).map((RepeatTime) => {
                   RepeatTime.Repeat = Repeat;
                   RepeatTime.canEdit = <boolean>ProjectGroupRights.get('repeatWrite');
+                  RepeatTime.canCreateTask = <boolean>ProjectGroupRights.get('repeatRead') && <boolean>ProjectGroupRights.get('addTasks');
                   RepeatTime.rights = ProjectGroupRights.get();
                   return RepeatTime;
                 })
@@ -154,6 +154,7 @@ const querries = {
 
       return RepeatTimes.map((RepeatTime) => {
         RepeatTime.canEdit = <boolean>true;
+        RepeatTime.canCreateTask = <boolean>true;
         RepeatTime.rights = allGroupRights;
         return RepeatTime;
       })

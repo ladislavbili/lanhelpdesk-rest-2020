@@ -21,9 +21,17 @@ export const generateRepeatSQL = (active, from, to, projectId, userId, isAdmin) 
     where.push(`( "RepeatTemplate"."ProjectId" = ${projectId} )`)
   }
 
-  where.push(`( "Repeat"."startsAt" <= '${toDBDate(from)}' )`)
-  where.push(`( '${toDBDate(from)}' <= ${nextTrigger} )`);
-  where.push(`( '${toDBDate(to)}' >= ${nextTrigger} )`);
+  where.push(`( "Repeat"."startsAt" <= '${toDBDate(to)}' )`)
+  where.push(`(
+    (
+      ( '${toDBDate(from)}' <= ${nextTrigger} ) AND ( '${toDBDate(to)}' >= ${nextTrigger} )
+    ) OR (
+      ( '${toDBDate(from)}' <= "Repeat"."startsAt" ) AND ( '${toDBDate(to)}' >= "Repeat"."startsAt" )
+    )
+  )`);
+  if (!isAdmin) {
+    where.push(`( "ProjectGroupRight"."repeatRead" = true )`)
+  }
 
   let sql = `
   SELECT
@@ -34,8 +42,14 @@ export const generateRepeatSQL = (active, from, to, projectId, userId, isAdmin) 
   "Repeat"."repeatEvery",
   "RepeatTemplate"."title" as "RepeatTemplate.title",
   ${ isAdmin ?
-      `true as "canEdit"` :
-      `"ProjectGroupRight"."repeatWrite" as "canEdit"`
+      `
+      true as "canCreateTask",
+      true as "canEdit"
+      ` :
+      `
+      "ProjectGroupRight"."repeatRead" AND "ProjectGroupRight"."addTasks" as "canCreateTask",
+      "ProjectGroupRight"."repeatWrite" as "canEdit"
+      `
     }
   FROM "repeat" AS "Repeat"
   INNER JOIN "repeat_templates" AS "RepeatTemplate" ON "RepeatTemplate"."RepeatId" = "Repeat"."id"
@@ -44,8 +58,8 @@ export const generateRepeatSQL = (active, from, to, projectId, userId, isAdmin) 
       `
     INNER JOIN "projects" AS "Project" ON "Project"."id" = "RepeatTemplate"."ProjectId"
     INNER JOIN "project_group" AS "ProjectGroup" ON "ProjectGroup"."ProjectId" = "Project"."id"
-    INNER JOIN "user_belongs_to_group" AS "UserBelongsToGroup" ON "UserBelongsToGroup"."ProjectGroupId" = "ProjectGroup"."id" AND UserId = ${userId}
-    INNER JOIN "project_group_rights" AS "ProjectGroupRight" ON "ProjectGroupRight"."id" = "RepeatTemplate"."ProjectId"
+    INNER JOIN "user_belongs_to_group" AS "UserBelongsToGroup" ON "UserBelongsToGroup"."ProjectGroupId" = "ProjectGroup"."id" AND "UserBelongsToGroup"."UserId" = ${userId}
+    INNER JOIN "project_group_rights" AS "ProjectGroupRight" ON "ProjectGroupRight"."ProjectGroupId" = "ProjectGroup"."id"
     `
     }
   `;
@@ -58,25 +72,3 @@ export const generateRepeatSQL = (active, from, to, projectId, userId, isAdmin) 
 
   return sql.replace(/"/g, '`').replace(/``/g, '"');
 }
-
-/*
-`
-SELECT id, startsAt,
-(
-IF( repeatInterval = "DAY", 24*60*60, IF( repeatInterval = "WEEK", 7*24*60*60, 30*24*60*60)) * repeatEvery -
-MOD ( UNIX_TIMESTAMP("2021-04-25 22:00:00") - UNIX_TIMESTAMP(startsAt), IF( repeatInterval = "DAY", 24*60*60, IF( repeatInterval = "WEEK", 7*24*60*60, 30*24*60*60)) * repeatEvery )
-) as timeTillTrigger,
-
-FROM_UNIXTIME((
-UNIX_TIMESTAMP("2021-04-25 22:00:00") +
-(
-IF( repeatInterval = "DAY", 24*60*60, IF( repeatInterval = "WEEK", 7*24*60*60, 30*24*60*60)) * repeatEvery -
-MOD ( UNIX_TIMESTAMP("2021-04-25 22:00:00") - UNIX_TIMESTAMP(startsAt), IF( repeatInterval = "DAY", 24*60*60, IF( repeatInterval = "WEEK", 7*24*60*60, 30*24*60*60)) * repeatEvery )
-)
-))
-as nextTrigger,
-FROM `
-repeat `
-`
-
-*/

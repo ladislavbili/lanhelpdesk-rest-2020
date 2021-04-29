@@ -205,6 +205,7 @@ const querries = {
       raw: true,
       mapToModel: true
     });
+
     return responseRepeats;
   },
 
@@ -326,7 +327,38 @@ const mutations = {
     const def = await Project.get('def');
     args = applyFixedOnAttributes(def, args);
 
+    const Task = await models.Task.findByPk(taskId, {
+      include: [
+        { model: models.User, as: 'assignedTos' },
+        models.Tag
+      ]
+    });
     let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, subtasks, workTrips, materials, customItems, shortSubtasks, ...params } = args;
+    let changedAttributes = [];
+    if (Task) {
+      if (!company) {
+        company = Task.get('CompanyId');
+        changedAttributes.push('company');
+      }
+      if (!assignedTos) {
+        assignedTos = (<UserInstance[]>Task.get('assignedTos')).map((User) => User.get('id'));
+        changedAttributes.push('assignedTo');
+      }
+      if (!requester) {
+        requester = Task.get('requesterId');
+        changedAttributes.push('requester');
+      }
+      if (!tags || tags.length === 0) {
+        tags = (<TagInstance[]>Task.get('Tags')).map((Tag) => Tag.get('id'))
+        changedAttributes.push('tags');
+      }
+      if (!taskType) {
+        taskType = Task.get('TaskTypeId');
+        changedAttributes.push('taskType');
+      }
+
+    }
+
     const User = await checkResolver(
       req,
       [],
@@ -365,14 +397,21 @@ const mutations = {
     await idsDoExistsCheck(assignedTos, models.User);
     await idsDoExistsCheck(tags, models.Tag);
     await multipleIdDoesExistsCheck(pairsToCheck);
-    checkDefRequiredSatisfied(def, null, args);
+    checkDefRequiredSatisfied(def, null, {
+      ...args,
+      company,
+      assignedTo: assignedTos,
+      requester,
+      tags,
+      taskType,
+    });
 
     tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
     if (!(<StatusInstance[]>Project.get('projectStatuses')).some((Status) => Status.get('id') === status)) {
       throw createDoesNoExistsError('Status', status);
     }
     //Rights and project def
-    checkIfCanEditTaskAttributes(User, def, project, args);
+    checkIfCanEditTaskAttributes(User, def, project, args, null, changedAttributes);
 
     if (assignedTos.length === 0) {
       throw TaskMustBeAssignedToAtLeastOneUser;
@@ -595,9 +634,9 @@ const mutations = {
     );
 
     //Figure out project and if can change project
-    await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['projectWrite']);
+    await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['repeatWrite']);
     if (args.project !== undefined && args.project !== RepeatTemplate.get('ProjectId')) {
-      await checkIfHasProjectRights(User.get('id'), undefined, args.project, ['projectWrite']);
+      await checkIfHasProjectRights(User.get('id'), undefined, args.project, ['projectWrite', 'repeatWrite']);
     }
     const project = args.project ? args.project : RepeatTemplate.get('ProjectId');
     let Project = <ProjectInstance>RepeatTemplate.get('Project');
@@ -638,6 +677,7 @@ const mutations = {
         allGroupRights :
         (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('ProjectId') === project).get('ProjectGroupRight')).get()
     )
+
     //can you even open this task
     if (!canViewTask(RepeatTemplate, User, groupRights, true)) {
       throw CantViewTaskError;
@@ -927,7 +967,7 @@ const mutations = {
 
     //Figure out project and if can change project
     await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['addTasks', 'repeatRead']);
-    const NewTask = await addTask(repeatId, repeatTimeId, originalTrigger);
+    const NewTask = await addTask(repeatId, repeatTimeId, originalTrigger, true);
     repeatTimeEvent.emit('changed', repeatId);
     //get or create repeatTime and set it as triggered
     return NewTask;

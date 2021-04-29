@@ -127,7 +127,7 @@ const mutations = {
   //loginUser( email: String!, password: String! ): UserData,
   loginUser: async (root, { email, password }, { res }) => {
 
-    if (password.length < 6 && false) {
+    if (password.length < 6) {
       throw PasswordTooShort;
     }
     const User = <UserInstance>await models.User.findOne({
@@ -142,7 +142,7 @@ const mutations = {
     if (!User) {
       throw FailedLoginError;
     }
-    if (! await compare(password, User.get('password')) && false) {
+    if (! await compare(password, User.get('password'))) {
       throw FailedLoginError;
     }
     if (!User.get('active')) {

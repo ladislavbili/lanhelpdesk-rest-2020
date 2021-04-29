@@ -36,8 +36,8 @@ input RepeatTemplateAddInput {
   title: String!
   important: Boolean
   closeDate: String
-  assignedTo: [Int]!
-  company: Int!
+  assignedTo: [Int]
+  company: Int
   deadline: String
   description: String!
   milestone: Int

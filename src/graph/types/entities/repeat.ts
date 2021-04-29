@@ -10,6 +10,7 @@ type Repeat{
   repeatTemplate: RepeatTemplate!
   active: Boolean!
   canEdit: Boolean!
+  canCreateTask: Boolean
   repeatTimes: [RepeatTime]!
 }
 
