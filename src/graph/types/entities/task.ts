@@ -143,6 +143,7 @@ tasks(
   stringFilter: StringFilterInput
   limit: Int
   page: Int
+  statuses: [Int]
 ): ExecTasks
 ttasks(
   projectId: Int

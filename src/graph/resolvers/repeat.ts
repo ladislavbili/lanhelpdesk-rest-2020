@@ -324,7 +324,7 @@ const mutations = {
       throw createDoesNoExistsError('project', project);
     }
 
-    const def = await Project.get('def');
+    const def = <any>await Project.get('def');
     args = applyFixedOnAttributes(def, args);
 
     const Task = await models.Task.findByPk(taskId, {
@@ -344,15 +344,15 @@ const mutations = {
         assignedTos = (<UserInstance[]>Task.get('assignedTos')).map((User) => User.get('id'));
         changedAttributes.push('assignedTo');
       }
-      if (!requester) {
+      if (!requester && def.requester.required) {
         requester = Task.get('requesterId');
         changedAttributes.push('requester');
       }
-      if (!tags || tags.length === 0) {
+      if ((!tags || tags.length === 0) && def.tag.required) {
         tags = (<TagInstance[]>Task.get('Tags')).map((Tag) => Tag.get('id'))
         changedAttributes.push('tags');
       }
-      if (!taskType) {
+      if (!taskType && def.type.required) {
         taskType = Task.get('TaskTypeId');
         changedAttributes.push('taskType');
       }

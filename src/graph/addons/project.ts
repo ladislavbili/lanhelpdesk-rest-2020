@@ -151,7 +151,28 @@ export const checkDefIntegrity = (def) => {
 
   if (tag.fixed && !tag.def) {
     throw new ApolloError('In default values, tag is set to be fixed, but is not set to default value.', 'PROJECT_DEF_INTEGRITY');
+  } else if (tag.required && tag.value.length === 0) {
+    throw new ApolloError('In default values, tag is set to be required, but no tags were selected.', 'PROJECT_DEF_INTEGRITY');
   }
+}
+
+export const updateDef = (def) => {
+  let newDef = { ...def };
+  [
+    'assignedTo',
+    'company',
+    'overtime',
+    'pausal',
+    'requester',
+    'status',
+    'tag',
+    'type',
+  ].forEach((key) => {
+    if (newDef[key].required) {
+      newDef[key].def = true;
+    }
+  })
+  return newDef;
 }
 
 const checkSingleAttribute = (newAttr, oldAttr) => {
@@ -247,7 +268,7 @@ export const canViewTask = (Task, User, groupRights, checkAdmin = false) => {
   )
 }
 
-export const applyFixedOnAttributes = (defaults, args) => {
+export const applyFixedOnAttributes = (defaults, args, User = null, statuses = []) => {
 
   const def = {
     ...(<any>defaults),
@@ -265,6 +286,9 @@ export const applyFixedOnAttributes = (defaults, args) => {
       }
     }
   });
+  if (User && def.assignedTo.required && args.assignedTo.length === 0) {
+    args.assignedTo = [User.get('id')]
+  }
 
   (['overtime', 'pausal']).forEach((key) => {
     if (def[key].fixed && args[key]) {
@@ -284,6 +308,17 @@ export const applyFixedOnAttributes = (defaults, args) => {
       }
     }
   });
+  if (User && def.company.required && [undefined, null].includes(args.company)) {
+    args.company = [User.get('CompanyId')]
+  }
+  if (User && def.requester.required && [undefined, null].includes(args.requester)) {
+    args.requester = User.get('id')
+  }
+  if (User && def.status.required && [undefined, null].includes(args.status)) {
+    const status = statuses.find((status) => status.action === 'IsNew');
+    args.status = status ? status.get('id') : null;
+  }
+
   return args;
 }
 

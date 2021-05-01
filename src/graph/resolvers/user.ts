@@ -142,7 +142,7 @@ const mutations = {
     if (!User) {
       throw FailedLoginError;
     }
-    if (! await compare(password, User.get('password'))) {
+    if (!await compare(password, User.get('password'))) {
       throw FailedLoginError;
     }
     if (!User.get('active')) {

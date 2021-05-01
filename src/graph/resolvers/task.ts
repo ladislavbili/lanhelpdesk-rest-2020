@@ -96,172 +96,7 @@ const dateNames2 = [
 ];
 
 const querries = {
-
-  ttasks: async (root, { projectId, filter, sort, search, stringFilter, limit, page }, { req, userID }) => {
-    const sortBy = sort ? transformSortToQuery(sort) : [['id', 'DESC']];
-    const mainWatch = new Stopwatch(true);
-    const checkUserWatch = new Stopwatch(true);
-    const User = await checkResolver(req);
-    const isAdmin = (<RoleInstance>User.get('Role')).get('level') === 0;
-    const checkUserTime = checkUserWatch.stop();
-
-    let projectWhere = {};
-    let taskWhere = {};
-    if (projectId) {
-      const Project = await models.Project.findByPk(projectId);
-      if (Project === null) {
-        throw createDoesNoExistsError('Project', projectId);
-      }
-      projectWhere = { id: projectId }
-    }
-    if (filter) {
-      const dates = extractDatesFromObject(filter, dateNames2);
-      taskWhere = filterToTaskWhere({ ...filter, ...dates }, userID, User.get('CompanyId'))
-    }
-
-    if (search || stringFilter) {
-      taskWhere = {
-        ...taskWhere,
-        ...stringFilterToTaskWhere(search, stringFilter),
-      }
-    }
-    if (!isAdmin) {
-      taskWhere = {
-        ...taskWhere,
-        [Op.or]: [
-          {
-            createdById: userID,
-          },
-          {
-            requesterId: userID,
-          },
-          {
-            '$assignedTosFilter.id$': userID,
-          },
-          {
-            '$Project.ProjectGroups.ProjectGroupRight.allTasks$': true,
-          },
-          {
-            '$Project.ProjectGroups.ProjectGroupRight.companyTasks$': true,
-            CompanyId: User.get('CompanyId')
-          },
-        ]
-      }
-    }
-
-    const taskIncludes = [
-      {
-        model: models.User,
-        as: 'assignedTos',
-        order: <any>[
-          ['name', !sort || sort.asc ? 'ASC' : 'DESC'],
-          ['surname', !sort || sort.asc ? 'ASC' : 'DESC'],
-        ],
-      },
-      {
-        model: models.User,
-        as: 'assignedTosFilter',
-        attributes: ['id', 'name', 'surname'],
-      },
-      {
-        model: models.ScheduledTask,
-        attributes: ['id'],
-      },
-      models.Company,
-      { model: models.User, as: 'createdBy' },
-      models.Milestone,
-      { model: models.User, as: 'requester' },
-      models.Status,
-      models.Tag,
-      { model: models.Tag, as: 'tagsFilter', attributes: ['id', 'title'] },
-      models.TaskType,
-      models.Repeat,
-      {
-        model: models.TaskMetadata,
-        as: 'TaskMetadata'
-      },
-      {
-        model: models.Project,
-        required: true,
-        where: projectWhere,
-        include: [
-          {
-            model: models.ProjectGroup,
-            required: !isAdmin,
-            include: [
-              {
-                model: models.ProjectGroupRights,
-                required: !isAdmin
-              },
-              {
-                model: models.User,
-                required: !isAdmin,
-                where: {
-                  id: userID
-                }
-              }
-            ]
-          }
-        ]
-      },
-    ];
-
-    if (!page) {
-      page = 1;
-    }
-
-    let tasks = []
-    let count = 0;
-    let databaseTime = 0;
-    const databaseWatch = new Stopwatch(true);
-    const limitVariables = (
-      limit ?
-        {
-          offset: (page - 1) * limit,
-          limit,
-        } :
-        {}
-    )
-
-    const response = <any>await models.Task.findAndCountAll({
-      order: [
-        ['important', 'DESC'],
-        ...<any>sortBy,
-      ],
-      where: taskWhere,
-      ...limitVariables,
-      include: taskIncludes,
-      distinct: true,
-      subQuery: false,
-    });
-    if (!isAdmin) {
-      tasks = (<TaskInstance[]>response.rows).map((Task) => {
-        const Project = <ProjectInstance>Task.get('Project');
-        const Groups = <ProjectGroupInstance[]>Project.get('ProjectGroups');
-        const GroupRight = <ProjectGroupRightsInstance>Groups[0].get('ProjectGroupRight');
-        Task.rights = GroupRight.get();
-        return Task;
-      })
-    } else {
-      tasks = (<TaskInstance[]>response.rows).map((Task) => {
-        Task.rights = allGroupRights;
-        return Task;
-      })
-    }
-    databaseTime = databaseWatch.stop()
-    count = response.count;
-    return {
-      tasks,
-      count,
-      execTime: mainWatch.stop(),
-      secondaryTimes: [
-        { source: 'User check', time: checkUserTime },
-        { source: 'Database', time: databaseTime },
-      ]
-    };
-  },
-
-  tasks: async (root, { projectId, filter, sort, search, stringFilter, limit, page }, { req, userID }) => {
+  tasks: async (root, { projectId, filter, sort, search, stringFilter, limit, page, statuses }, { req, userID }) => {
     const mainOrderBy = sort ? transformSortToQueryString(sort, true) : '"Task"."important" DESC, "Task"."id" DESC';
     const secondaryOrderBy = sort ? transformSortToQueryString(sort, false) : '"TaskData"."important" DESC, "TaskData"."id" DESC';
 
@@ -277,6 +112,9 @@ const querries = {
         throw createDoesNoExistsError('Project', projectId);
       }
       taskWhere.push(`"Task"."ProjectId" = ${projectId}`)
+    }
+    if (statuses && statuses.length !== 0) {
+      taskWhere.push(`"Task"."StatusId" IN (${statuses.join(',')})`)
     }
     if (filter) {
       const dates = extractDatesFromObject(filter, dateNames2);
@@ -474,11 +312,6 @@ const mutations = {
       throw createDoesNoExistsError('project', project);
     }
 
-    const def = await Project.get('def');
-    args = applyFixedOnAttributes(def, args);
-
-    let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, shortSubtasks, scheduled, ...params } = args;
-
     const User = await checkResolver(
       req,
       [],
@@ -491,9 +324,16 @@ const mutations = {
           where: {
             ProjectId: project,
           }
-        }
+        },
       ]
     );
+
+    const def = await Project.get('def');
+
+    args = applyFixedOnAttributes(def, args, User, <StatusInstance[]>Project.get('projectStatuses'));
+
+    let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, shortSubtasks, scheduled, ...params } = args;
+
     const groupRights = (
       (<RoleInstance>User.get('Role')).get('level') === 0 ?
         allGroupRights :
@@ -544,9 +384,6 @@ const mutations = {
     if (assignedTos.length === 0) {
       throw TaskMustBeAssignedToAtLeastOneUser;
     }
-
-    throw createUserNotPartOfProjectError('requester');
-
 
     //requester must be in project or project is open
     if (requester && Project.get('lockedRequester') && !groupUsers.includes(requester)) {

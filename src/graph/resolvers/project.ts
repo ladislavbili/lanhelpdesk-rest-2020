@@ -20,6 +20,7 @@ import {
   checkDefIntegrity,
   checkIfChanged,
   checkIfHasProjectRights,
+  updateDef,
 } from '@/graph/addons/project';
 import {
   ProjectInstance,
@@ -153,8 +154,8 @@ const querries = {
 const mutations = {
   addProject: async (root, { def, tags, statuses, groups, userGroups, ...attributes }, { req }) => {
     await checkResolver(req, ["addProjects"]);
-    checkDefIntegrity(def);
-    let defInput = def;
+    let defInput = updateDef(def);
+    checkDefIntegrity(defInput);
     //check is there is an admin
     if (!groups.some((group) => (
       group.rights.projectPrimaryRead &&
@@ -257,7 +258,6 @@ const mutations = {
     const User = await checkResolver(req);
     const {
       id,
-      def,
       deleteTags,
       updateTags,
       addTags,
@@ -270,7 +270,8 @@ const mutations = {
       deleteGroups,
       ...attributes
     } = allAttributes;
-    let defInput = { ...def };
+    const def = allAttributes.def ? updateDef(allAttributes.def) : allAttributes.def;
+    let defInput = def ? { ...def } : null;
     const Project = <ProjectInstance>await models.Project.findByPk(id, {
       include: [
         {
