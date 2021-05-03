@@ -340,7 +340,7 @@ const mutations = {
         company = Task.get('CompanyId');
         changedAttributes.push('company');
       }
-      if (!assignedTos) {
+      if (!assignedTos || assignedTos.length === 0) {
         assignedTos = (<UserInstance[]>Task.get('assignedTos')).map((User) => User.get('id'));
         changedAttributes.push('assignedTo');
       }

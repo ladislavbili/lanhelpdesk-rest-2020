@@ -405,12 +405,14 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       throw createCantEditTaskAttributeError('tags');
     }
   }
+  console.log(orgAttrs);
 
   if (!groupRights.companyWrite && newAttrs.company !== undefined && !ignoreAttributes.includes('company')) {
     if (
       (
         !def.company.def ||
-        def.company.value.get('id') !== newAttrs.company
+        (def.company.value === null && newAttrs.company !== User.get('CompanyId')) ||
+        (def.company.value !== null && def.company.value.get('id') !== newAttrs.company)
       ) &&
       (
         orgAttrs === null ||
@@ -424,7 +426,8 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
     if (
       (
         !def.requester.def ||
-        def.requester.value.get('id') !== newAttrs.requester
+        (def.requester.value === null && newAttrs.requester !== User.get('id')) ||
+        (def.requester.value !== null && def.requester.value.get('id') !== newAttrs.requester)
       ) &&
       (
         orgAttrs === null ||
@@ -434,7 +437,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       throw createCantEditTaskAttributeError('requester');
     }
   }
-  if (!groupRights.typeWrite && newAttrs.taskType !== undefined && !ignoreAttributes.includes('taskType')) {
+  if (!groupRights.typeWrite && newAttrs.taskType !== undefined && !ignoreAttributes.includes('taskType') && def.type.required) {
     if (
       (
         !def.type.def ||
@@ -452,7 +455,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
     if (
       (
         !def.status.def ||
-        def.status.value.get('id') !== newAttrs.status
+        (def.status.value !== null && def.status.value.get('id') !== newAttrs.status)
       ) &&
       (
         orgAttrs === null ||
