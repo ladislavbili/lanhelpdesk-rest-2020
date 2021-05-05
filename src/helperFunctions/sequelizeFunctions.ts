@@ -9,8 +9,11 @@ export const getModelAttribute = (item, attribute, globalAttribute = null, param
     return item.get(attribute);
   }
 
-  if (item[attribute]) {
+  if (item[attribute] !== undefined) {
     let data = item[attribute];
+    if (data === null) {
+      return null;
+    }
     if (Array.isArray(data)) {
       return data;
     }

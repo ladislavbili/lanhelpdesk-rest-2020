@@ -43,6 +43,8 @@ export const PasswordTooShort = new ApolloError("Password too short! Needs to be
 
 export const FailedLoginError = new ApolloError("Failed to log in! Please check your password or email!", "LOGIN_FAILED");
 
+export const NotAllowedToLoginError = new ApolloError("You don't have right to login!", "NOT_ALLOWED_TO_LOGIN");
+
 export const UserDeactivatedError = new ApolloError("Credentials are correct, but user was deactivated!", "USER_DEACTIVATED");
 
 export const MutationOrResolverAccessDeniedError = new ApolloError("You dont have access to this mutation or query!", "USER_NO_ACCESS");

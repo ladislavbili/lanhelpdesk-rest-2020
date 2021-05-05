@@ -155,6 +155,7 @@ ttasks(
   page: Int
 ): ExecTasks
 task(id: Int!): Task
+oldTask(id: Int!): Task
 getNumberOfTasks( projectId: Int! ): Int!
 `
 

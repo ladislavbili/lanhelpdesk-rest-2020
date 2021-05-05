@@ -231,6 +231,9 @@ const attributes = {
       return getModelAttribute(company, 'CompanyRents');
     },
     async usedSubtaskPausal(company) {
+      if (company.usedSubtaskPausal !== undefined) {
+        return company.usedSubtaskPausal;
+      }
       const fullTasks = await company.getTasks(
         {
           include: [{ model: models.Subtask }],
@@ -246,6 +249,9 @@ const attributes = {
       }, 0);
     },
     async usedTripPausal(company) {
+      if (company.usedTripPausal !== undefined) {
+        return company.usedTripPausal;
+      }
       const fullTasks = await company.getTasks(
         {
           include: [{ model: models.WorkTrip }],

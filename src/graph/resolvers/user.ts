@@ -8,6 +8,7 @@ import { randomString, addApolloError, idsDoExistsCheck, getModelAttribute } fro
 import {
   PasswordTooShort,
   FailedLoginError,
+  NotAllowedToLoginError,
   UserDeactivatedError,
   createDoesNoExistsError,
   CantCreateUserLevelError,
@@ -22,7 +23,7 @@ import {
   NotEveryUsersWorkTripWasCoveredError
 } from '@/configs/errors';
 import { models } from '@/models';
-import { UserInstance, RoleInstance, ProjectInstance } from '@/models/instances';
+import { UserInstance, RoleInstance, ProjectInstance, AccessRightsInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -142,6 +143,10 @@ const mutations = {
     if (!User) {
       throw FailedLoginError;
     }
+    if (!((<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('login'))) {
+      throw NotAllowedToLoginError;
+    }
+
     if (!await compare(password, User.get('password'))) {
       throw FailedLoginError;
     }

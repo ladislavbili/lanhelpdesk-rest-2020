@@ -40,6 +40,12 @@ export {
 } from './modelChecks';
 
 export {
+  toFloat,
+  toFloatOrZero
+}
+  from './numberManipulations';
+
+export {
   flattenObject,
 } from './objectManipulations';
 

@@ -53,6 +53,7 @@ import {
   createChangeMessage,
   createTaskAttributesChangeMessages,
   sendNotifications,
+  toFloatOrZero,
 } from '@/helperFunctions';
 import {
   canViewTask,
@@ -69,6 +70,19 @@ import {
   filterToTaskWhereSQL,
   stringFilterToTaskWhereSQL,
   generateTasksSQL,
+  generateTaskSQL,
+  generateAssignedTosSQL,
+  generateTaskAttachmentsSQL,
+  generateTagsSQL,
+  generateCompanySQL,
+  generateShortSubtasksSQL,
+  generateScheduledTasksSQL,
+  generateSubtasksSQL,
+  generateWorkTripsSQL,
+  generateMaterialsSQL,
+  generateCustomItemsSQL,
+  generateCompanyUsedTripPausalSQL,
+  generateCompanyUsedSubtaskPausalSQL,
 } from '@/graph/addons/task';
 import { sendNotificationToUsers } from '@/graph/resolvers/userNotification';
 import { repeatEvent } from '@/services/repeatTasks';
@@ -197,6 +211,201 @@ const querries = {
 
   task: async (root, { id }, { req }) => {
     const User = await checkResolver(req);
+    const isAdmin = (<RoleInstance>User.get('Role')).get('level') === 0;
+
+    const SQL = generateTaskSQL(id, User.get('id'), isAdmin);
+    let responseTask = <any>await sequelize.query(SQL, {
+      model: models.Task,
+      type: QueryTypes.SELECT,
+      nest: true,
+      raw: true,
+      mapToModel: true
+    });
+
+    if (responseTask.length === 0) {
+      throw createDoesNoExistsError('Task', id);
+    }
+
+    let [
+      responseTaskAttachments,
+      responseAssignedTos,
+      responseTags,
+      responseCompany,
+      reponseUsedTripPausal,
+      reponseUsedSubtaskPausal,
+      responseShortSubtasks,
+      responseScheduledTasks,
+      responseSubtasks,
+      responseWorkTrips,
+      responseMaterials,
+      responseCustomItems,
+    ] = await Promise.all([
+      sequelize.query(generateTaskAttachmentsSQL(id), {
+        model: models.TaskAttachment,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+      sequelize.query(generateAssignedTosSQL(id), {
+        model: models.User,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+      sequelize.query(generateTagsSQL(id), {
+        model: models.Tag,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+      sequelize.query(generateCompanySQL(id), {
+        model: models.Company,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+      sequelize.query(generateCompanyUsedTripPausalSQL(responseTask[0].CompanyId), {
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: false
+      }),
+      sequelize.query(generateCompanyUsedSubtaskPausalSQL(responseTask[0].CompanyId), {
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: false
+      }),
+      sequelize.query(generateShortSubtasksSQL(id), {
+        model: models.ShortSubtask,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+      sequelize.query(generateScheduledTasksSQL(id), {
+        model: models.ScheduledTask,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+      sequelize.query(generateSubtasksSQL(id), {
+        model: models.Subtask,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+      sequelize.query(generateWorkTripsSQL(id), {
+        model: models.WorkTrip,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+      sequelize.query(generateMaterialsSQL(id), {
+        model: models.Material,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+      sequelize.query(generateCustomItemsSQL(id), {
+        model: models.CustomItem,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      })
+    ])
+
+    let Company = <any>{ ...responseCompany[0] };
+
+    Company.monthlyPausal = toFloatOrZero(Company.monthlyPausal);
+    Company.taskWorkPausal = toFloatOrZero(Company.taskWorkPausal);
+    Company.taskTripPausal = toFloatOrZero(Company.taskTripPausal);
+    Company.usedSubtaskPausal = toFloatOrZero((<any[]>reponseUsedTripPausal)[0].total);
+    Company.usedTripPausal = toFloatOrZero((<any[]>reponseUsedSubtaskPausal)[0].total);
+    Company.Pricelist.Prices = responseCompany.map((Company) => {
+      const Price = (<any>Company).Pricelist.Prices;
+      return {
+        ...Price,
+        price: toFloatOrZero(Price.price),
+        TaskType: Price.TaskType.id !== null ? Price.TaskType : null,
+        TripType: Price.TripType.id !== null ? Price.TripType : null,
+      }
+    }
+    );
+
+    return {
+      ...responseTask[0],
+      InvoicedTasks: [],
+
+      TaskAttachments: responseTaskAttachments,
+      assignedTos: responseAssignedTos,
+      Tags: responseTags,
+      rights: allGroupRights,
+      Company,
+      ShortSubtasks: responseShortSubtasks,
+      ScheduledTasks: responseScheduledTasks,
+      Subtasks: (<any[]>responseSubtasks).map((subtask) => ({
+        ...subtask,
+        InvoicedSubtasks: [],
+        quantity: toFloatOrZero(subtask.quantity),
+        discount: toFloatOrZero(subtask.discount),
+        SubtaskApprovedBy: subtask.SubtaskApprovedBy.id === null ? null : subtask.SubtaskApprovedBy,
+        User: {
+          ...subtask.User,
+          Company: {
+            ...subtask.User.Company,
+            monthlyPausal: toFloatOrZero(subtask.User.Company.monthlyPausal),
+            taskWorkPausal: toFloatOrZero(subtask.User.Company.taskWorkPausal),
+            taskTripPausal: toFloatOrZero(subtask.User.Company.taskTripPausal),
+          }
+        }
+      })),
+      WorkTrips: (<any[]>responseWorkTrips).map((workTrip) => ({
+        ...workTrip,
+        InvoicedTrips: [],
+        quantity: toFloatOrZero(workTrip.quantity),
+        discount: toFloatOrZero(workTrip.discount),
+        TripApprovedBy: workTrip.TripApprovedBy.id === null ? null : workTrip.TripApprovedBy,
+        User: {
+          ...workTrip.User,
+          Company: {
+            ...workTrip.User.Company,
+            monthlyPausal: toFloatOrZero(workTrip.User.Company.monthlyPausal),
+            taskWorkPausal: toFloatOrZero(workTrip.User.Company.taskWorkPausal),
+            taskTripPausal: toFloatOrZero(workTrip.User.Company.taskTripPausal),
+          }
+        }
+      })),
+      Materials: (<any[]>responseMaterials).map((material) => ({
+        ...material,
+        InvoicedMaterials: [],
+        quantity: toFloatOrZero(material.quantity),
+        margin: toFloatOrZero(material.margin),
+        price: toFloatOrZero(material.price),
+        MaterialApprovedBy: material.MaterialApprovedBy.id === null ? null : material.MaterialApprovedBy,
+      })),
+      CustomItems: (<any[]>responseCustomItems).map((item) => ({
+        ...item,
+        InvoicedCustomItems: [],
+        quantity: toFloatOrZero(item.quantity),
+        margin: toFloatOrZero(item.margin),
+        price: toFloatOrZero(item.price),
+        ItemApprovedBy: item.ItemApprovedBy.id === null ? null : item.ItemApprovedBy,
+      })),
+    }
+  },
+
+  oldTask: async (root, { id }, { req }) => {
+    const User = await checkResolver(req);
     const FragmentedTask = await Promise.all([
       models.Task.findByPk(
         id,
@@ -221,7 +430,6 @@ const querries = {
             },
             { model: models.User, as: 'createdBy' },
             models.Milestone,
-            models.Project,
             { model: models.User, as: 'requester' },
             models.Status,
             models.Tag,
@@ -247,7 +455,7 @@ const querries = {
             },
             {
               model: models.Subtask,
-              include: [models.TaskType, models.InvoicedSubtask, { model: models.User, as: 'SubtaskApprovedBy' }, { model: models.User, include: [models.Company] }]
+              include: [models.TaskType, models.InvoicedSubtask, { model: models.User, as: 'SubtaskApprovedBy', attributes: ['klok'] }, { model: models.User, include: [models.Company] }]
             },
             {
               model: models.WorkTrip,
@@ -274,6 +482,8 @@ const querries = {
     Task.rights = groupRights;
     return Task;
   },
+
+
 
   getNumberOfTasks: async (root, { projectId }, { req }) => {
     const User = await checkResolver(req);
