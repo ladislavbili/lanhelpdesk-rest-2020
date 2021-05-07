@@ -1,5 +1,5 @@
 export const testing = true;
-const services = true;
+const services = !testing;
 
 export const imaps = services;
 export const smtps = services;
