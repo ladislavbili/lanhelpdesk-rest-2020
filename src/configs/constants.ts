@@ -1,7 +1,9 @@
 export const testing = true;
-export const imaps = !testing;
-export const smtps = !testing;
-export const repeatTasks = !testing;
+const services = true;
+
+export const imaps = services;
+export const smtps = services;
+export const repeatTasks = services;
 export const useHttps = !testing;
 
 export const refTokenLife = '10w';

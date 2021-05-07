@@ -335,12 +335,12 @@ const mutations = {
     });
     let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, subtasks, workTrips, materials, customItems, shortSubtasks, ...params } = args;
     let changedAttributes = [];
-    if (Task) {
+    if (Task && Task.get('ProjectId') === project) {
       if (!company) {
         company = Task.get('CompanyId');
         changedAttributes.push('company');
       }
-      if (!assignedTos || assignedTos.length === 0) {
+      if (!assignedTos) {
         assignedTos = (<UserInstance[]>Task.get('assignedTos')).map((User) => User.get('id'));
         changedAttributes.push('assignedTo');
       }
@@ -404,7 +404,7 @@ const mutations = {
       requester,
       tags,
       taskType,
-    });
+    }, true);
 
     tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
     if (!(<StatusInstance[]>Project.get('projectStatuses')).some((Status) => Status.get('id') === status)) {
@@ -413,12 +413,22 @@ const mutations = {
     //Rights and project def
     checkIfCanEditTaskAttributes(User, def, project, args, null, changedAttributes);
 
-    if (assignedTos.length === 0) {
-      throw TaskMustBeAssignedToAtLeastOneUser;
-    }
+
     const groupUsers = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
       return [...acc, ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id'))]
     }, [])
+
+    const groupUsersWithRights = <any[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
+      const rights = ProjectGroup.get('ProjectGroupRight');
+      return [
+        ...acc,
+        ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => ({ user: User, rights }))
+      ]
+    }, []);
+
+    const assignableUserIds = groupUsersWithRights.filter((user) => user.rights.assignedWrite).map((userWithRights) => userWithRights.user.get('id'));
+    assignedTos = assignedTos.filter((id) => assignableUserIds.includes(id));
+
     //requester must be in project or project is open
     if (requester && Project.get('lockedRequester') && !groupUsers.includes(requester)) {
       throw createUserNotPartOfProjectError('requester');
@@ -602,7 +612,7 @@ const mutations = {
                   },
                   {
                     model: models.ProjectGroup,
-                    include: [models.User]
+                    include: [models.User, models.ProjectGroupRights]
                   },
                 ]
               }
@@ -656,7 +666,7 @@ const mutations = {
             },
             {
               model: models.ProjectGroup,
-              include: [models.User]
+              include: [models.User, models.ProjectGroupRights]
             },
           ],
         }
@@ -735,11 +745,17 @@ const mutations = {
       }
       if (assignedTos) {
         await idsDoExistsCheck(assignedTos, models.User);
-        if (assignedTos.length === 0) {
-          throw TaskMustBeAssignedToAtLeastOneUser;
-        }
         //assignedTo must be in project group
-        assignedTos = assignedTos.filter((assignedTo) => groupUsers.includes(assignedTo));
+        const groupUsersWithRights = <any[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
+          const rights = ProjectGroup.get('ProjectGroupRight');
+          return [
+            ...acc,
+            ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => ({ user: User, rights }))
+          ]
+        }, []);
+        const assignableUserIds = groupUsersWithRights.filter((user) => user.rights.assignedWrite).map((userWithRights) => userWithRights.user.get('id'));
+
+        assignedTos = assignedTos.filter((assignedTo) => assignableUserIds.includes(assignedTo));
         //all subtasks and worktrips must be assigned
         const Subtasks = <SubtaskInstance[]>await RepeatTemplate.get('Subtasks');
         const WorkTrips = <WorkTripInstance[]>await RepeatTemplate.get('WorkTrips');
@@ -752,6 +768,7 @@ const mutations = {
         }
         promises.push(RepeatTemplate.setAssignedTos(assignedTos, { transaction }))
       }
+
       if (tags) {
         await idsDoExistsCheck(tags, models.Tag);
         promises.push(RepeatTemplate.setTags(tags, { transaction }))

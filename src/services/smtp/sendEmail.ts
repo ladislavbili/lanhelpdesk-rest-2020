@@ -51,6 +51,7 @@ export function sendEmail(textMessage, htmlMessage, subject, to, from, files = [
         to: to.toString(),
         subject: subject,
         text: 'Message from: ' + from + '\n' + textMessage,
+        from: smtp.username,
         html: htmlMessage,
         attachments: (files ? files : []).map((file) => {
           return {

@@ -568,7 +568,7 @@ const mutations = {
     await idsDoExistsCheck(assignedTos, models.User);
     await idsDoExistsCheck(tags, models.Tag);
     await multipleIdDoesExistsCheck(pairsToCheck);
-    checkDefRequiredSatisfied(def, null, args);
+    checkDefRequiredSatisfied(def, null, args, true);
 
     tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
     if (!(<StatusInstance[]>Project.get('projectStatuses')).some((Status) => Status.get('id') === status)) {
@@ -591,9 +591,6 @@ const mutations = {
 
     const assignableUserIds = groupUsersWithRights.filter((user) => user.rights.assignedWrite).map((userWithRights) => userWithRights.user.get('id'));
     assignedTos = assignedTos.filter((id) => assignableUserIds.includes(id));
-    if (assignedTos.length === 0) {
-      throw TaskMustBeAssignedToAtLeastOneUser;
-    }
 
     //requester must be in project or project is open
     if (requester && Project.get('lockedRequester') && !groupUsers.includes(requester)) {
@@ -661,12 +658,20 @@ const mutations = {
       ...dates,
       TaskChanges: [{
         UserId: User.get('id'),
-        TaskChangeMessages: [{
-          type: 'task',
-          originalValue: null,
-          newValue: null,
-          message: `Task was created by ${User.get('fullName')}`,
-        }]
+        TaskChangeMessages: [
+          {
+            type: 'task',
+            originalValue: null,
+            newValue: null,
+            message: `Task was created by ${User.get('fullName')}`,
+          },
+          {
+            type: 'task',
+            originalValue: null,
+            newValue: null,
+            message: `Task was named "${args.title}" and was described as "${args.description}"`,
+          },
+        ]
       }],
       TaskMetadata: {
         subtasksApproved,
@@ -886,7 +891,7 @@ const mutations = {
               },
               {
                 model: models.ProjectGroup,
-                include: [models.User]
+                include: [models.User, models.ProjectGroupRights]
               },
             ]
           }
@@ -939,7 +944,7 @@ const mutations = {
             },
             {
               model: models.ProjectGroup,
-              include: [models.User]
+              include: [models.User, models.ProjectGroupRights]
             },
           ],
         }
@@ -950,6 +955,7 @@ const mutations = {
     }
 
     const def = await Project.get('def');
+
     args = applyFixedOnAttributes(def, args);
 
     let { id, assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, ...params } = args;
@@ -1097,17 +1103,11 @@ const mutations = {
           ]
         }, []);
 
+        console.log(groupUsersWithRights);
+
         //assignedTo must be in project group and assignable
         const assignableUserIds = groupUsersWithRights.filter((user) => user.rights.assignedWrite).map((userWithRights) => userWithRights.user.get('id'));
         assignedTos = assignedTos.filter((id) => assignableUserIds.includes(id));
-        if (assignedTos.length === 0) {
-          throw TaskMustBeAssignedToAtLeastOneUser;
-        }
-        assignedTos = assignedTos.filter((assignedTo) => assignableUserIds.includes(assignedTo));
-
-        if (assignedTos.length === 0) {
-          throw TaskMustBeAssignedToAtLeastOneUser;
-        }
 
         //all subtasks and worktrips must be assigned
         const Subtasks = <SubtaskInstance[]>await Task.get('Subtasks');
@@ -1120,8 +1120,11 @@ const mutations = {
           throw CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError;
         }
         taskChangeMessages.push(await createChangeMessage('AssignedTo', models.User, 'Assigned to users', assignedTos, Task.get('assignedTos'), 'fullName'));
+        console.log('update assignedtos', assignedTos);
+
         promises.push(Task.setAssignedTos(assignedTos, { transaction }))
       }
+
       if (tags) {
         await idsDoExistsCheck(tags, models.Tag);
         taskChangeMessages.push(await createChangeMessage('Tags', models.Tag, 'Tags', tags, Task.get('Tags')));

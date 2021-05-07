@@ -286,9 +286,6 @@ export const applyFixedOnAttributes = (defaults, args, User = null, statuses = [
       }
     }
   });
-  if (User && def.assignedTo.required && args.assignedTo.length === 0) {
-    args.assignedTo = [User.get('id')]
-  }
 
   (['overtime', 'pausal']).forEach((key) => {
     if (def[key].fixed && args[key]) {
@@ -330,7 +327,7 @@ const checkedAttributes = [
   'taskType',
   'status',
 ];
-export const checkDefRequiredSatisfied = (def, originalData, newData) => {
+export const checkDefRequiredSatisfied = (def, originalData, newData, newTask = true) => {
   let mergedData = newData;
   if (originalData) {
     mergedData = checkedAttributes.reduce((acc, cur) => {
@@ -340,8 +337,16 @@ export const checkDefRequiredSatisfied = (def, originalData, newData) => {
     }, {});
   }
   def = { ...def, tags: def.tag, taskType: def.type };
+
   checkedAttributes.forEach((key) => {
-    if (['assignedTo', 'tags'].includes(key)) {
+    if (key === 'assignedTo') {
+      if (!newTask && def.assignedTo.required && mergedData.assignedTo.length === 0) {
+        throw new ApolloError(
+          `Right now only tags and requester can be not required. Field ${key} is of length 0 in task or request.`,
+          'PROJECT_DEF_INTEGRITY'
+        );
+      }
+    } else if (['tags'].includes(key)) {
       if (def[key].required && mergedData[key].length === 0) {
         throw new ApolloError(
           `Right now only tags and requester can be not required. Field ${key} is of length 0 in task or request.`,

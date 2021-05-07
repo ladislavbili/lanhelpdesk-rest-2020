@@ -1,13 +1,13 @@
 export default `
 type ProjectDefaults {
-  assignedTo: ProjectAssignedTo!
+  status: ProjectStatus!
+  requester: ProjectRequester!
   company: ProjectCompany!
   overtime: ProjectOvertime!
   pausal: ProjectPausal!
-  requester: ProjectRequester!
-  status: ProjectStatus!
-  tag: ProjectTag!
   type: ProjectTaskType!
+  assignedTo: ProjectAssignedTo!
+  tag: ProjectTag!
 }
 
 type ProjectAssignedTo {

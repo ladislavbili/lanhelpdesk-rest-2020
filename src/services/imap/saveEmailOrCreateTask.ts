@@ -3,7 +3,12 @@ import validator from "email-validator";
 import { Op } from 'sequelize';
 import stripHtml from 'html2plaintext';
 import { sendEmail } from '../smtp/sendEmail';
-import { TaskInstance, ProjectInstance } from '@/models/instances';
+import {
+  TaskInstance,
+  ProjectInstance,
+  StatusInstance,
+  TagInstance,
+} from '@/models/instances';
 import { models } from '@/models';
 import { randomString, addUser } from '@/helperFunctions';
 import moment from 'moment';
@@ -28,6 +33,28 @@ export default async function processEmail(email, Imap) {
   email.html = email.originalHTML ? sanitizeHtml(email.originalHTML) : null;
   email.text = email.html ? stripHtml(email.html) : email.text;
   saveEmail(email, Imap);
+}
+
+async function addComment(email, Imap, Task, attachmentsData, UserId = null) {
+  Task.createComment(
+    {
+      message: email.text,
+      rawMessage: email.originalText,
+      html: email.html,
+      rawHtml: email.originalHTML,
+      internal: false,
+      subject: email.subject,
+      isEmail: true,
+      emailSend: true,
+      emailError: null,
+      isParent: true,
+      UserId,
+      CommentAttachments: attachmentsData
+    },
+    {
+      include: [models.CommentAttachment]
+    }
+  )
 }
 
 async function saveEmail(email, Imap) {
@@ -77,71 +104,75 @@ async function saveEmail(email, Imap) {
   } else {
     let completed = 0;
     let attachmentsData = [];
-    email.attachments.forEach((attachment) => {
-      fs.promises.mkdir(`files/comment-attachments/${11}`, { recursive: true }).then((eeh) => {
-        fs.writeFile(`files/comment-attachments/${11}/${timestamp}-${attachment.filename}`, attachment.content, (eh) => {
-          completed++;
-          attachmentsData.push({
-            filename: attachment.filename,
-            mimetype: attachment.contentType,
-            size: attachment.size,
-            contentDisposition: attachment.contentDisposition === 'inline' ? 'email-content-files' : 'attachments',
-            path: `files/comment-attachments/${11}/${timestamp}-${attachment.filename}`,
-          });
-          if (completed === email.attachments.length) {
-            addComment(email, Imap, Task, attachmentsData);
-          }
+    if (email.attachments.length === 0) {
+      addComment(email, Imap, Task, attachmentsData, User.get('id'));
+    } else {
+      email.attachments.forEach((attachment) => {
+        fs.promises.mkdir(`files/comment-attachments/${11}`, { recursive: true }).then((eeh) => {
+          fs.writeFile(`files/comment-attachments/${11}/${timestamp}-${attachment.filename}`, attachment.content, (eh) => {
+            completed++;
+            attachmentsData.push({
+              filename: attachment.filename,
+              mimetype: attachment.contentType,
+              size: attachment.size,
+              contentDisposition: attachment.contentDisposition === 'inline' ? 'email-content-files' : 'attachments',
+              path: `files/comment-attachments/${11}/${timestamp}-${attachment.filename}`,
+            });
+            if (completed === email.attachments.length) {
+              addComment(email, Imap, Task, attachmentsData, User.get('id'));
+            }
+          })
         })
-      })
-    })
+      });
+    }
   }
 }
 
-async function addComment(email, Imap, Task, attachmentsData) {
-  Task.createComment(
-    {
-      message: email.text,
-      rawMessage: email.originalText,
-      html: email.html,
-      rawHtml: email.originalHTML,
-      internal: false,
-      subject: email.subject,
-      isEmail: true,
-      emailSend: true,
-      emailError: null,
-      isParent: true,
-      EmailTargets: [{ address: Imap.get('username') }],
-      CommentAttachments: attachmentsData
-    },
-    {
-      include: [{ model: models.EmailTarget }, { model: models.CommentAttachment }]
-    }
-  )
-}
-
 async function createTask(email, Imap, User, secret) {
-  const Status = await models.Status.findOne({ where: { action: 'IsNew' } });
-  const TaskType = await models.TaskType.findOne();
   const now = moment().valueOf();
-  let taskData = {
+  const Project = <ProjectInstance>await models.Project.findByPk(Imap.get('ProjectId'), {
+    include: [
+      {
+        model: models.Tag,
+        as: 'tags'
+      },
+      {
+        model: models.Status,
+        as: 'projectStatuses'
+      },
+    ],
+  });
+  const defaults = <any>await Project.get('def');
+  const Statuses = <StatusInstance[]>Project.get('projectStatuses');
+  const Tags = <TagInstance[]>Project.get('tags');
+  let taskData = <any>{
     title: email.subject,
     important: true,
     closeDate: null,
     deadline: null,
     description: email.text,
     milestone: null,
-    overtime: false,
-    pausal: false,
+    //overtime: false,
+    //pausal: false,
     pendingChangable: false,
     pendingDate: null,
-    CompanyId: Imap.get('CompanyId'),
+    //CompanyId: Imap.get('CompanyId'),
     ProjectId: Imap.get('ProjectId'),
-    requesterId: User.get('id'),
+    //requesterId: User.get('id'),
     createdById: User.get('id'),
-    StatusId: Status.get('id'),
-    TaskTypeId: TaskType.get('id'),
+    //StatusId: Status.get('id'),
+    //TaskTypeId: TaskType.get('id'),
     statusChange: now,
-
+    TaskMetadata: {
+      subtasksApproved: 0,
+      subtasksPending: 0,
+      tripsApproved: 0,
+      tripsPending: 0,
+      materialsApproved: 0,
+      materialsPending: 0,
+      itemsApproved: 0,
+      itemsPending: 0,
+    },
     TaskChanges: [{
       UserId: User.get('id'),
       TaskChangeMessages: [{
@@ -152,30 +183,47 @@ async function createTask(email, Imap, User, secret) {
       }]
     }]
   };
-
-  const defaults = <any>await (<ProjectInstance>await models.Project.findByPk(Imap.get('ProjectId'))).get('def');
-
+  //def attributes
   (['overtime', 'pausal']).forEach((attribute) => {
     if (defaults[attribute].def) {
       taskData[attribute] = defaults[attribute].value;
     }
   });
-
-  (['company', 'requester', 'status', 'taskType']).forEach((attribute) => {
-    if (defaults[attribute].def) {
-      taskData[attribute] = defaults[attribute].value.get('id');
+  if (defaults.status.def) {
+    if (defaults.status.value !== null) {
+      taskData.StatusId = defaults.status.value.id
+    } else {
+      taskData.StatusId = Statuses.find((Status) => Status.get('action') === 'IsNew').get('id')
     }
-  });
+  }
+  if (defaults.requester.def) {
+    if (defaults.requester.value !== null) {
+      taskData.requesterId = defaults.requester.value.id
+    } else {
+      taskData.requesterId = User.get('id')
+    }
+  }
+
+  if (defaults.company.def) {
+    if (defaults.company.value !== null) {
+      taskData.CompanyId = defaults.company.value.id
+    } else {
+      taskData.CompanyId = User.get('CompanyId')
+    }
+  }
+
+  if (defaults.type.def) {
+    taskData.TaskTypeId = defaults.type.value.id
+  }
+
 
   const NewTask = <TaskInstance>await models.Task.create(
     taskData,
     {
       include: [
         {
-          model: models.Comment,
-          include: [
-            { model: models.EmailTarget }
-          ]
+          model: models.TaskMetadata,
+          as: 'TaskMetadata'
         },
         {
           model: models.TaskChange,
@@ -186,7 +234,7 @@ async function createTask(email, Imap, User, secret) {
       ]
     }
   );
-  console.log(`task created with company ID ${NewTask.get('CompanyId')}`);
+  console.log(`task created ${NewTask.get('id')} with company ID ${NewTask.get('CompanyId')}`);
   if (defaults.assignedTo.def) {
     NewTask.setAssignedTos(defaults.assignedTo.value.map((value) => value.get('id')));
   }
@@ -196,35 +244,35 @@ async function createTask(email, Imap, User, secret) {
 
   let completed = 0;
   let attachmentsData = [];
-  email.attachments.forEach((attachment) => {
-    fs.promises.mkdir(`files/comment-attachments/${11}`, { recursive: true }).then((eeh) => {
-      fs.writeFile(`files/comment-attachments/${11}/${now}-${attachment.filename}`, attachment.content, (eh) => {
-        completed++;
-        attachmentsData.push({
-          filename: attachment.filename,
-          mimetype: attachment.contentType,
-          size: attachment.size,
-          contentDisposition: attachment.contentDisposition === 'inline' ? 'email-content-files' : 'attachments',
-          path: `files/comment-attachments/${11}/${now}-${attachment.filename}`,
-        });
-        if (completed === email.attachments.length) {
-          addComment(email, Imap, NewTask, attachmentsData);
-        }
+  if (email.attachments.length === 0) {
+    addComment(email, Imap, NewTask, attachmentsData, User.get('id'));
+  } else {
+    email.attachments.forEach((attachment) => {
+      fs.promises.mkdir(`files/comment-attachments/${11}`, { recursive: true }).then((eeh) => {
+        fs.writeFile(`files/comment-attachments/${11}/${now}-${attachment.filename}`, attachment.content, (eh) => {
+          completed++;
+          attachmentsData.push({
+            filename: attachment.filename,
+            mimetype: attachment.contentType,
+            size: attachment.size,
+            contentDisposition: attachment.contentDisposition === 'inline' ? 'email-content-files' : 'attachments',
+            path: `files/comment-attachments/${11}/${now}-${attachment.filename}`,
+          });
+          if (completed === email.attachments.length) {
+            addComment(email, Imap, NewTask, attachmentsData, User.get('id'));
+          }
+        })
       })
-    })
-  })
+    });
+  }
 
   sendEmail(
     `Dobrý deň, \n
       Radi by sme Vám oznámili, že Vaša žiadosť bola zaevidovaná pod číslom tiketu: ${NewTask.get('id')} ${email.subject}.
-      Odpoveďou na tento e-mail nás viete priamo kontaktovať. Prosím ponechajte číslo tiketu v hlavičke správy.
-      Stav tiketu: https://test2020.lanhelpdesk.com/helpdesk/taskList/i/all/${NewTask.get('id')}` + (!secret.newUser ? '' : `
-      Za účelom sledovania stavu tiketu sme Vám vytvorili účet s obmedzeným prístupom, heslo si prosím po prihlásení nezabudnite zmeniť! \n
-      E-mail: ${User.get('email')} \n
-      Heslo: ${secret.password}\n`),
+      Odpoveďou na tento e-mail nás viete priamo kontaktovať. Prosím ponechajte číslo tiketu v hlavičke správy.`,
     '',
     `[${NewTask.get('id')}] Vaša požiadavka s ID ${NewTask.get('id')} bola prijatá.`,
     email.from.map((item) => item.address),
-    'test@lanhelpdesk.com'
+    Imap.get('username')
   );
 }

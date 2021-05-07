@@ -116,7 +116,7 @@ export default class ImapData {
     //this.imapFlow.on('mailboxOpen', this.mailboxOpen);
     //this.imapFlow.on('mailboxClose', this.mailboxClose);
     this.imapFlow.on('exists', data => {
-      console.log(`"${data.count} messages in ${this.host}`);
+      console.log(`${data.count} messages in ${this.host}`);
       this.processEmails();
     });
     this.preparationChecks();
