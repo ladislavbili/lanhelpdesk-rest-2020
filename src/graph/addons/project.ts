@@ -410,7 +410,6 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       throw createCantEditTaskAttributeError('tags');
     }
   }
-  console.log(orgAttrs);
 
   if (!groupRights.companyWrite && newAttrs.company !== undefined && !ignoreAttributes.includes('company')) {
     if (
@@ -563,7 +562,7 @@ export const checkIfCanEditTaskAttributes = (User, def, projectId, newAttrs, org
       type: 'repeat',
       right: 'repeatWrite',
     },
-  ].forEach((check) => {
+  ].filter((check) => !ignoreAttributes.includes(check.key)).forEach((check) => {
     switch (check.type) {
       case 'text': {
         if (

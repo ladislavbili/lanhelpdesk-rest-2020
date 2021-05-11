@@ -575,7 +575,7 @@ const mutations = {
       throw createDoesNoExistsError('Status', status);
     }
     //Rights and project def
-    checkIfCanEditTaskAttributes(User, def, project, args);
+    checkIfCanEditTaskAttributes(User, def, project, args, null, ['title', 'description']);
 
     const groupUsers = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
       return [...acc, ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id'))]
@@ -1103,8 +1103,6 @@ const mutations = {
           ]
         }, []);
 
-        console.log(groupUsersWithRights);
-
         //assignedTo must be in project group and assignable
         const assignableUserIds = groupUsersWithRights.filter((user) => user.rights.assignedWrite).map((userWithRights) => userWithRights.user.get('id'));
         assignedTos = assignedTos.filter((id) => assignableUserIds.includes(id));
@@ -1120,7 +1118,6 @@ const mutations = {
           throw CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError;
         }
         taskChangeMessages.push(await createChangeMessage('AssignedTo', models.User, 'Assigned to users', assignedTos, Task.get('assignedTos'), 'fullName'));
-        console.log('update assignedtos', assignedTos);
 
         promises.push(Task.setAssignedTos(assignedTos, { transaction }))
       }
