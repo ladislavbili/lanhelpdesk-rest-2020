@@ -50,4 +50,5 @@ export const allGroupRights = {
   addTasks: true,
   deleteTasks: true,
   important: true,
+  statistics: true
 }

@@ -2,57 +2,58 @@ import { Sequelize, DataTypes } from "sequelize";
 import DefaultInstance from './defaultInstance';
 
 export interface ProjectGroupRightsInstance extends DefaultInstance {
-  assignedRead: Boolean;
-  assignedWrite: Boolean;
-  companyRead: Boolean;
-  companyWrite: Boolean;
-  deadlineRead: Boolean;
-  deadlineWrite: Boolean;
-  milestoneRead: Boolean;
-  milestoneWrite: Boolean;
-  overtimeRead: Boolean;
-  overtimeWrite: Boolean;
-  pausalRead: Boolean;
-  pausalWrite: Boolean;
-  projectRead: Boolean;
-  projectWrite: Boolean;
-  projectPrimaryRead: Boolean;
-  projectPrimaryWrite: Boolean;
-  repeatRead: Boolean;
-  repeatWrite: Boolean;
-  requesterRead: Boolean;
-  requesterWrite: Boolean;
-  rozpocetRead: Boolean;
-  rozpocetWrite: Boolean;
-  scheduledRead: Boolean;
-  scheduledWrite: Boolean;
-  statusRead: Boolean;
-  statusWrite: Boolean;
-  tagsRead: Boolean;
-  tagsWrite: Boolean;
-  taskAttachmentsRead: Boolean;
-  taskAttachmentsWrite: Boolean;
-  taskDescriptionRead: Boolean;
-  taskDescriptionWrite: Boolean;
-  taskShortSubtasksRead: Boolean;
-  taskShortSubtasksWrite: Boolean;
-  typeRead: Boolean;
-  typeWrite: Boolean;
-  vykazRead: Boolean;
-  vykazWrite: Boolean;
-  addComments: Boolean;
-  emails: Boolean;
-  history: Boolean;
-  internal: Boolean;
-  projectSecondary: Boolean;
-  pausalInfo: Boolean;
-  taskTitleEdit: Boolean;
-  viewComments: Boolean;
-  companyTasks: Boolean;
-  allTasks: Boolean;
-  addTasks: Boolean;
-  deleteTasks: Boolean;
-  important: Boolean;
+  assignedRead: boolean;
+  assignedWrite: boolean;
+  companyRead: boolean;
+  companyWrite: boolean;
+  deadlineRead: boolean;
+  deadlineWrite: boolean;
+  milestoneRead: boolean;
+  milestoneWrite: boolean;
+  overtimeRead: boolean;
+  overtimeWrite: boolean;
+  pausalRead: boolean;
+  pausalWrite: boolean;
+  projectRead: boolean;
+  projectWrite: boolean;
+  projectPrimaryRead: boolean;
+  projectPrimaryWrite: boolean;
+  repeatRead: boolean;
+  repeatWrite: boolean;
+  requesterRead: boolean;
+  requesterWrite: boolean;
+  rozpocetRead: boolean;
+  rozpocetWrite: boolean;
+  scheduledRead: boolean;
+  scheduledWrite: boolean;
+  statusRead: boolean;
+  statusWrite: boolean;
+  tagsRead: boolean;
+  tagsWrite: boolean;
+  taskAttachmentsRead: boolean;
+  taskAttachmentsWrite: boolean;
+  taskDescriptionRead: boolean;
+  taskDescriptionWrite: boolean;
+  taskShortSubtasksRead: boolean;
+  taskShortSubtasksWrite: boolean;
+  typeRead: boolean;
+  typeWrite: boolean;
+  vykazRead: boolean;
+  vykazWrite: boolean;
+  addComments: boolean;
+  emails: boolean;
+  history: boolean;
+  internal: boolean;
+  projectSecondary: boolean;
+  pausalInfo: boolean;
+  taskTitleEdit: boolean;
+  viewComments: boolean;
+  companyTasks: boolean;
+  allTasks: boolean;
+  addTasks: boolean;
+  deleteTasks: boolean;
+  important: boolean;
+  statistics: boolean;
 
 }
 
@@ -311,6 +312,11 @@ export default function defineProjectGroupRights(sequelize: Sequelize) {
         defaultValue: false,
       },
       important: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      statistics: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,

@@ -1,7 +1,15 @@
 import { createDoesNoExistsError, createCantBeNegativeError, EditedRentNotOfCompanyError } from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import { Sequelize } from "sequelize";
-import { UserInstance, CompanyInstance, CompanyRentInstance, ProjectInstance, TaskInstance, ImapInstance } from '@/models/instances';
+import {
+  UserInstance,
+  CompanyInstance,
+  CompanyRentInstance,
+  ProjectInstance,
+  TaskInstance,
+  ImapInstance,
+  RepeatTemplateInstance,
+} from '@/models/instances';
 import { splitArrayByFilter, addApolloError, getModelAttribute } from '@/helperFunctions';
 import { Op } from 'sequelize';
 import moment from 'moment';
@@ -193,7 +201,9 @@ const mutations = {
           { model: models.Project, as: 'defCompany' },
           { model: models.Imap },
           { model: models.User },
-          { model: models.Task }
+          { model: models.Task },
+          { model: models.RepeatTemplate },
+
         ]
       }
     );
@@ -206,10 +216,11 @@ const mutations = {
       throw createDoesNoExistsError('New company', newId);
     }
     let promises = [
-      ...(<UserInstance[]>OldCompany.get('Users')).map(user => user.setCompany(newId)),
-      ...(<TaskInstance[]>OldCompany.get('Tasks')).map(task => task.setCompany(newId)),
-      ...(<ImapInstance[]>OldCompany.get('Imaps')).map(imap => imap.setCompany(newId)),
+      ...(<UserInstance[]>OldCompany.get('Users')).map((user) => user.setCompany(newId)),
+      ...(<TaskInstance[]>OldCompany.get('Tasks')).map((task) => task.setCompany(newId)),
+      ...(<ImapInstance[]>OldCompany.get('Imaps')).map((imap) => imap.setCompany(newId)),
       ...(<ProjectInstance[]>OldCompany.get('defCompany')).map((project) => project.setDefCompany(newId)),
+      ...(<RepeatTemplateInstance[]>OldCompany.get('RepeatTemplates')).map((repeatTemplate) => repeatTemplate.setCompany(newId)),
     ];
     await Promise.all(promises);
     return OldCompany.destroy();

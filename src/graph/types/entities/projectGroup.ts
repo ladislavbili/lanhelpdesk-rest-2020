@@ -63,6 +63,7 @@ type ProjectGroupRights {
   addTasks: Boolean!
   deleteTasks: Boolean!
   important: Boolean!
+  statistics: Boolean!
 }
 
 input ProjectGroupInput {
@@ -131,6 +132,7 @@ input ProjectGroupRightInput {
   addTasks: Boolean!
   deleteTasks: Boolean!
   important: Boolean!
+  statistics: Boolean!
 }
 
 input UserGroupInput {

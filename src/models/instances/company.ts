@@ -73,7 +73,7 @@ export default function defineCompanies(sequelize: Sequelize) {
       },
       email: {
         type: DataTypes.TEXT({ length: "tiny" }),
-        allowNull: false,
+        allowNull: true,
         defaultValue: '',
         validate: {
           isEmail: true
