@@ -88,7 +88,10 @@ import { sendNotificationToUsers } from '@/graph/resolvers/userNotification';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
-import { TASK_CHANGE } from '@/configs/subscriptions';
+import {
+  TASK_CHANGE,
+  TASK_HISTORY_CHANGE,
+} from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
 import Stopwatch from 'statman-stopwatch';
@@ -853,7 +856,7 @@ const mutations = {
       NewTask.setTags(tags),
     ])
     sendNotifications(User, [`Task was created by ${User.get('fullName')}`], NewTask, assignedTos);
-    pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'add', data: NewTask, ids: [] } });
+    pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
     NewTask.rights = groupRights;
     return NewTask;
   },
@@ -1261,7 +1264,8 @@ const mutations = {
     })
     NewTask.rights = groupRights;
     sendNotifications(User, taskChangeMessages.map((taskChange) => taskChange.message), NewTask);
-    pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'update', data: NewTask, ids: [] } });
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: NewTask.get('id') });
+    pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
     return NewTask;
   },
 
@@ -1286,86 +1290,9 @@ const mutations = {
       throw CantViewTaskError;
     }
     sendNotifications(User, [`Task was deleted.`], Task)
-
-    pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'delete', data: Task, ids: [id] } });
-    return Task.destroy();
-  }
-}
-
-const subscriptions = {
-  taskSubscription: {
-    subscribe: withFilter(
-      () => pubsub.asyncIterator(TASK_CHANGE),
-      async ({ taskSubscription }, { projectId, filter }, { userID }) => {
-        const User = <UserInstance>await models.User.findByPk(userID);
-        if (User === null) {
-          throw InvalidTokenError;
-        }
-        if (projectId) {
-          const Project = await models.Project.findByPk(projectId);
-          if (Project === null) {
-            throw createDoesNoExistsError('Project', projectId);
-          }
-        }
-        const { type, data, ids } = taskSubscription;
-        if (type === 'delete') {
-          return true;
-        }
-        if (projectId && data.get('ProjectId') !== projectId) {
-          return false;
-        }
-
-        if (filter) {
-          const assignedToCorrect = (
-            (filter.assignedToCur && (await data.getAssignedTos()).some((AssignedUser) => AssignedUser.get('id') === User.get('id'))) ||
-            (!filter.assignedToCur && (filter.assignedTo === null || (await data.getAssignedTos()).some((AssignedUser) => AssignedUser.get('id') === filter.assignedTo)))
-          );
-          const requesterCorrect = (
-            (filter.requesterCur && data.get('requesterId') === User.get('id')) ||
-            (!filter.requesterCur && (filter.requester === null || filter.requester === data.get('requesterId')))
-          );
-          const companyCorrect = (
-            (filter.companyCur && data.get('CompanyId') === User.get('CompanyId')) ||
-            (!filter.companyCur && (filter.company === null || filter.company === data.get('CompanyId')))
-          );
-
-          let oneOfCheck = [];
-          let allCheck = [];
-          if (filter.oneOf.includes('assigned')) {
-            oneOfCheck.push(assignedToCorrect)
-          } else {
-            allCheck.push(assignedToCorrect)
-          }
-
-          if (filter.oneOf.includes('requester')) {
-            oneOfCheck.push(requesterCorrect)
-          } else {
-            allCheck.push(requesterCorrect)
-          }
-
-          if (filter.oneOf.includes('company')) {
-            oneOfCheck.push(companyCorrect)
-          } else {
-            allCheck.push(companyCorrect)
-          }
-          const oneOfCorrect = allCheck.every((bool) => bool) && (oneOfCheck.length === 0 || oneOfCheck.some((bool) => bool))
-
-          if (
-            !(
-              oneOfCorrect &&
-              (filter.taskType === null || filter.taskType === data.get('TaskTypeId')) &&
-              taskCheckDate(filter.statusDateFromNow, filter.statusDateFrom, filter.statusDateToNow, filter.statusDateTo, data.get('statusChange')) &&
-              taskCheckDate(filter.pendingDateFromNow, filter.pendingDateFrom, filter.pendingDateToNow, filter.pendingDateTo, data.get('pendingDate')) &&
-              taskCheckDate(filter.closeDateFromNow, filter.closeDateFrom, filter.closeDateToNow, filter.closeDateTo, data.get('closeDate')) &&
-              taskCheckDate(filter.deadlineFromNow, filter.deadlineFrom, filter.deadlineToNow, filter.deadlineTo, data.get('deadline'))
-            )
-          ) {
-            return false;
-          }
-        }
-        return true;
-      },
-    ),
+    await Task.destroy();
+    pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
+    return Task;
   }
 }
 
@@ -1526,6 +1453,25 @@ const attributes = {
     },
   }
 };
+
+const subscriptions = {
+  tasksSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(TASK_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
+  },
+  taskHistorySubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(TASK_HISTORY_CHANGE),
+      async ({ taskHistorySubscription }, { taskId }, { userID }) => {
+        return taskHistorySubscription === taskId;
+      }
+    ),
+  }
+}
 
 export default {
   attributes,

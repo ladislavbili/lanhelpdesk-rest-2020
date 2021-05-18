@@ -1,4 +1,5 @@
 export { AccessRightsInstance } from './accessRights';
+export { ErrorMessageInstance } from './errorMessage';
 export { CompanyInstance } from './company';
 export { CompanyRentInstance } from './companyRent';
 export { ImapInstance } from './imap';

@@ -79,3 +79,7 @@ addCompany( title: String!, dph: Int!, ico: String!, dic: String!, ic_dph: Strin
 updateCompany( id: Int!, title: String, dph: Int, ico: String, dic: String, ic_dph: String, country: String, city: String, street: String, zip: String, email: String, phone: String, description: String, pricelistId: Int, monthly: Boolean, monthlyPausal: Float, taskWorkPausal: Float, taskTripPausal: Float, rents: [CompanyRentUpdateInput] ): Company
 deleteCompany( id: Int!, newId: Int! ): Company
 `
+
+export const CompanySubscriptions = `
+  companiesSubscription: Boolean
+`

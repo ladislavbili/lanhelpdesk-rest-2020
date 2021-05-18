@@ -60,13 +60,14 @@ import {
   canViewTask,
 } from '@/graph/addons/project';
 import { repeatEvent, repeatTimeEvent, addTask } from '@/services/repeatTasks';
-import { pubsub } from './index';
-const { withFilter } = require('apollo-server-express');
 import checkResolver from './checkResolver';
 import moment from 'moment';
 import { Op } from 'sequelize';
 import { generateRepeatSQL } from '../addons/repeat';
 const dateNames = ['deadline', 'pendingDate', 'closeDate'];
+import { REPEAT_CHANGE } from '@/configs/subscriptions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
 
 const querries = {
   repeats: async (root, { projectId, active, ...rangeDates }, { req, userID }) => {
@@ -571,6 +572,7 @@ const mutations = {
       NewRepeatTeplate.setTags(tags),
     ])
     repeatEvent.emit('add', NewRepeat);
+    pubsub.publish(REPEAT_CHANGE, { repeatsSubscription: true });
     return NewRepeat;
   },
 
@@ -926,6 +928,7 @@ const mutations = {
     if (repeatEvery || repeatInterval || startsAt || active !== undefined) {
       repeatEvent.emit('update', Repeat);
     }
+    pubsub.publish(REPEAT_CHANGE, { repeatsSubscription: true });
     return Repeat;
   },
 
@@ -956,7 +959,9 @@ const mutations = {
       throw CantViewTaskError;
     }
     repeatEvent.emit('delete', id);
-    return Repeat.destroy();
+    await Repeat.destroy();
+    pubsub.publish(REPEAT_CHANGE, { repeatsSubscription: true });
+    return Repeat;
   },
 
   triggerRepeat: async (root, { repeatId, repeatTimeId, ...dates }, { req }) => {
@@ -1002,8 +1007,20 @@ const attributes = {
   }
 };
 
+const subscriptions = {
+  repeatsSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(REPEAT_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
+  }
+}
+
 export default {
   attributes,
   mutations,
   querries,
+  subscriptions,
 }

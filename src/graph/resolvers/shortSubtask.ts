@@ -8,6 +8,8 @@ import {
 import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
+import { pubsub } from './index';
+import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import { TaskInstance, ShortSubtaskInstance, RepeatTemplateInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 
@@ -18,7 +20,7 @@ const mutations = {
   addShortSubtask: async (root, { task, ...attributes }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['taskShortSubtasksWrite']);
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -29,7 +31,8 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
     return models.ShortSubtask.create({
       TaskId: task,
       ...attributes,
@@ -43,7 +46,7 @@ const mutations = {
       throw createDoesNoExistsError('Short subtask', id);
     }
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), ShortSubtask.get('TaskId'), undefined, ['taskShortSubtasksWrite']);
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -54,7 +57,8 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: ShortSubtask.get('TaskId') });
     return ShortSubtask.update(args);
   },
 
@@ -65,7 +69,7 @@ const mutations = {
       throw createDoesNoExistsError('Short subtask', id);
     }
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), ShortSubtask.get('TaskId'), undefined, ['taskShortSubtasksWrite']);
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -76,7 +80,8 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: ShortSubtask.get('TaskId') });
     return ShortSubtask.destroy();
   },
 

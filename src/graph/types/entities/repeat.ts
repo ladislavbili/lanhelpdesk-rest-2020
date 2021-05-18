@@ -68,3 +68,7 @@ triggerRepeat(
 ): Task
 deleteRepeat( id: Int! ): Repeat
 `
+
+export const RepeatSubscriptions = `
+  repeatsSubscription: Boolean
+`

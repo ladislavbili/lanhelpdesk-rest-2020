@@ -2,6 +2,9 @@ import { createDoesNoExistsError } from '@/configs/errors';
 import { idDoesExistsCheck, idsDoExistsCheck, getModelAttribute } from '@/helperFunctions';
 import { models } from '@/models';
 import checkResolver from './checkResolver';
+import { ERROR_MESSAGE_CHANGE } from '@/configs/subscriptions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
 
 const querries = {
   errorMessages: async (root, args, { req }) => {
@@ -28,19 +31,23 @@ const mutations = {
     if (ErrorMessage === null) {
       throw createDoesNoExistsError('ErrorMessage', id);
     }
-    return ErrorMessage.update({ read: read === undefined ? true : read });
+    await ErrorMessage.update({ read: read === undefined ? true : read });
+    pubsub.publish(ERROR_MESSAGE_CHANGE, { errorMessagesSubscription: true });
+    return ErrorMessage;
   },
 
   setSelectedErrorMessagesRead: async (root, { ids, read }, { req }) => {
     await checkResolver(req, ["viewErrors"]);
     await idsDoExistsCheck(ids, models.ErrorMessage)
     await models.ErrorMessage.update({ read: read === undefined ? true : read }, { where: { id: ids } });
+    pubsub.publish(ERROR_MESSAGE_CHANGE, { errorMessagesSubscription: true });
     return ids;
   },
 
   setAllErrorMessagesRead: async (root, { read }, { req }) => {
     await checkResolver(req, ["viewErrors"]);
     await models.ErrorMessage.update({ read: read === undefined ? true : read }, { where: { read: !(read === undefined ? true : read) } });
+    pubsub.publish(ERROR_MESSAGE_CHANGE, { errorMessagesSubscription: true });
     return true;
   },
 
@@ -51,18 +58,22 @@ const mutations = {
     if (ErrorMessage === null) {
       throw createDoesNoExistsError('ErrorMessage', id);
     }
-    return ErrorMessage.destroy();
+    await ErrorMessage.destroy();
+    pubsub.publish(ERROR_MESSAGE_CHANGE, { errorMessagesSubscription: true });
+    return ErrorMessage;
   },
   deleteSelectedErrorMessages: async (root, { ids }, { req }) => {
     await checkResolver(req, ["viewErrors"]);
     await idsDoExistsCheck(ids, models.ErrorMessage)
     await models.ErrorMessage.destroy({ where: { id: ids } });
+    pubsub.publish(ERROR_MESSAGE_CHANGE, { errorMessagesSubscription: true });
     return ids;
   },
 
   deleteAllErrorMessages: async (root, args, { req }) => {
     await checkResolver(req, ["viewErrors"]);
     await models.ErrorMessage.destroy({ truncate: true });
+    pubsub.publish(ERROR_MESSAGE_CHANGE, { errorMessagesSubscription: true });
     return true;
   },
 }
@@ -75,8 +86,20 @@ const attributes = {
   },
 };
 
+const subscriptions = {
+  errorMessagesSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(ERROR_MESSAGE_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
+  }
+}
+
 export default {
   attributes,
   mutations,
-  querries
+  querries,
+  subscriptions,
 }

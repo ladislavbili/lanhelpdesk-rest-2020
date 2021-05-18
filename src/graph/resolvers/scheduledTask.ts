@@ -20,6 +20,8 @@ import {
 import {
   filterToTaskWhereSQL,
 } from '@/graph/addons/task';
+import { pubsub } from './index';
+import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 import { UserInstance, TaskInstance, RepeatTemplateInstance, RoleInstance, ScheduledTaskInstance, ProjectInstance, ProjectGroupInstance } from '@/models/instances';
 const dateNames1 = ['from', 'to'];
@@ -37,8 +39,6 @@ const dateNames2 = [
   'scheduledFrom',
   'scheduledTo',
 ];
-
-
 
 const querries = {
   scheduledTasks: async (root, { projectId, filter, userId, ...rangeDates }, { req, userID: currentUserId }) => {
@@ -131,7 +131,7 @@ const mutations = {
     }
 
     const dates = extractDatesFromObject(attributes, dateNames1);
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -142,7 +142,8 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
     return models.ScheduledTask.create({
       TaskId: task,
       ...attributes,
@@ -157,7 +158,7 @@ const mutations = {
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), ScheduledTask.get('TaskId'), undefined, ['assignedWrite']);
     const TargetUser = <UserInstance>ScheduledTask.get('User');
 
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -169,6 +170,7 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: ScheduledTask.get('TaskId') });
     return ScheduledTask.update(dates);
   },
 
@@ -179,7 +181,7 @@ const mutations = {
       throw createDoesNoExistsError('Scheduled task', id);
     }
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), ScheduledTask.get('TaskId'), undefined, ['assignedWrite']);
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -191,6 +193,7 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: ScheduledTask.get('TaskId') });
     return await ScheduledTask.destroy();
   },
 }

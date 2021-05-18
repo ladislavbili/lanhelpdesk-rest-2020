@@ -13,6 +13,8 @@ import {
   TaskMetadataInstance,
   ProjectInstance,
 } from '@/models/instances';
+import { pubsub } from './index';
+import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -48,7 +50,7 @@ const mutations = {
       throw AssignedToUserNotSolvingTheTask;
     }
     await idDoesExistsCheck(type, models.TaskType);
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -59,7 +61,8 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
     if (params.approved) {
       params = {
         ...params,
@@ -200,13 +203,14 @@ const mutations = {
       promises.push(Subtask.update(params, { transaction: t }));
       await Promise.all(promises);
     });
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages,
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: Subtask.get('TaskId') });
     return Subtask.reload();
   },
 
@@ -236,7 +240,7 @@ const mutations = {
 
     await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
     const originalValue = `${Subtask.get('title')}${Subtask.get('done').toString()},${Subtask.get('quantity')},${Subtask.get('discount')},${(<TaskTypeInstance>Subtask.get('TaskType')).get('id')},${Subtask.get('UserId')}`;
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -247,7 +251,8 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: Subtask.get('TaskId') });
     if (Project.get('autoApproved') || Subtask.get('approved')) {
       TaskMetadata.update({
         subtasksApproved: parseFloat(<any>TaskMetadata.get('subtasksApproved')) - parseFloat(<any>Subtask.get('quantity'))

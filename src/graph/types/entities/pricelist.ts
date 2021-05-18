@@ -47,3 +47,7 @@ addPricelist( title: String!, order: Int!, afterHours: Int!, def: Boolean!, mate
 updatePricelist( id: Int!, title: String, order: Int, afterHours: Int, def: Boolean, materialMargin: Int, materialMarginExtra: Int, prices: [UpdatePriceInput] ): Pricelist
 deletePricelist( id: Int!, newDefId: Int, newId: Int ): Pricelist
 `
+
+export const PricelistSubscriptions = `
+  pricelistsSubscription: Boolean
+`

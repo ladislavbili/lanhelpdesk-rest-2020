@@ -29,3 +29,7 @@ export const TagQuerries = `
 
 export const TagMutations = `
 `
+
+export const TagSubscriptions = `
+  tagsSubscription: Boolean
+`

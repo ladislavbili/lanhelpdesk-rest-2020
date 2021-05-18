@@ -6,6 +6,10 @@ import {
 } from '@/helperFunctions';
 import { PricelistInstance, ProjectInstance, TaskTypeInstance } from '@/models/instances';
 
+import { TASK_TYPE_CHANGE } from '@/configs/subscriptions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
+
 const querries = {
   taskTypes: async (root, args, { req }) => {
     await checkResolver(req);
@@ -34,6 +38,7 @@ const mutations = {
         type: 'TaskType',
         TaskTypeId: TaskType.get('id')
       })))
+    pubsub.publish(TASK_TYPE_CHANGE, { taskTypesSubscription: true });
     return TaskType;
   },
 
@@ -43,7 +48,9 @@ const mutations = {
     if (TaskType === null) {
       throw createDoesNoExistsError('Task type', id);
     }
-    return TaskType.update(args);
+    await TaskType.update(args);
+    pubsub.publish(TASK_TYPE_CHANGE, { taskTypesSubscription: true });
+    return TaskType;
   },
 
   deleteTaskType: async (root, { id, newId }, { req }) => {
@@ -74,7 +81,9 @@ const mutations = {
       ...allTasks.map((task) => task.setTaskType(newId)),
       ...allTasks.map((subtask) => subtask.setTaskType(newId)),
     ]);
-    return OldTaskType.destroy();
+    await OldTaskType.destroy();
+    pubsub.publish(TASK_TYPE_CHANGE, { taskTypesSubscription: true });
+    return OldTaskType;
   },
 }
 
@@ -86,8 +95,20 @@ const attributes = {
   },
 };
 
+const subscriptions = {
+  taskTypesSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(TASK_TYPE_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
+  }
+}
+
 export default {
   attributes,
   mutations,
-  querries
+  querries,
+  subscriptions,
 }

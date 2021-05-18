@@ -2,21 +2,9 @@ import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
 import { ProjectInstance, TaskInstance, StatusInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
-/*
-statuses: [Status]
-statusTemplates: [Status]
-status(id: Int!): Status
-`
-
-export const StatusMutations = `
-addStatusTemplate( title: String!, order: Int!, color: String!, icon: String!, action: StatusAllowedType! ): Status
-updateStatusTemplate( id: Int!, title: String, order: Int, color: String, icon: String, action: StatusAllowedType ): Status
-deleteStatusTemplate( id: Int! ): Status
-addStatus( title: String!, order: Int!, color: String!, icon: String!, action: StatusAllowedType!, projectId: Int! ): Status
-updateStatus( id: Int!, title: String, order: Int, color: String, icon: String, action: StatusAllowedType ): Status
-deleteStatus( id: Int! ): Status
-*/
-
+import { STATUS_TEMPLATE_CHANGE } from '@/configs/subscriptions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
 
 const querries = {
   statusTemplates: async (root, args, { req }) => {
@@ -53,7 +41,9 @@ const querries = {
 const mutations = {
   addStatusTemplate: async (root, args, { req }) => {
     await checkResolver(req, ["statuses"]);
-    return models.Status.create({ ...args, template: true });
+    const NewStatus = await models.Status.create({ ...args, template: true });
+    pubsub.publish(STATUS_TEMPLATE_CHANGE, { statusTemplateSubscription: true });
+    return NewStatus;
   },
 
   updateStatusTemplate: async (root, { id, ...args }, { req }) => {
@@ -62,7 +52,9 @@ const mutations = {
     if (Status === null) {
       throw createDoesNoExistsError('Status', id);
     }
-    return Status.update(args);
+    const UpdatedStatus = await Status.update(args);
+    pubsub.publish(STATUS_TEMPLATE_CHANGE, { statusTemplateSubscription: true });
+    return UpdatedStatus;
   },
 
   deleteStatusTemplate: async (root, { id }, { req }) => {
@@ -71,15 +63,29 @@ const mutations = {
     if (OldStatus === null) {
       throw createDoesNoExistsError('Status', id);
     }
-    return OldStatus.destroy();
+    await OldStatus.destroy();
+    pubsub.publish(STATUS_TEMPLATE_CHANGE, { statusTemplateSubscription: true });
+    return OldStatus;
   },
 }
 
 const attributes = {
 };
 
+const subscriptions = {
+  statusTemplateSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(STATUS_TEMPLATE_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
+  }
+}
+
 export default {
   attributes,
   mutations,
-  querries
+  querries,
+  subscriptions
 }

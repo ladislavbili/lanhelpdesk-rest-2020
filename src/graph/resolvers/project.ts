@@ -39,8 +39,9 @@ import {
   ProjectGroupRightsInstance,
   UserInstance
 } from '@/models/instances';
+import { PROJECT_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
-import { TASK_CHANGE } from '@/configs/subscriptions';
+const { withFilter } = require('apollo-server-express');
 import { ApolloError } from 'apollo-server-express';
 
 const querries = {
@@ -251,6 +252,7 @@ const mutations = {
       let index = tags.findIndex((tag) => tag.id === fakeID);
       return newTags[index].get('id');
     }));
+    pubsub.publish(PROJECT_CHANGE, { projectsSubscription: true });
     return newProject;
   },
 
@@ -530,6 +532,7 @@ const mutations = {
 
     promises.push(Project.update({ ...attributes, ...extraAttributes }));
     await Promise.all(promises);
+    pubsub.publish(PROJECT_CHANGE, { projectsSubscription: true });
     return Project;
   },
 
@@ -549,7 +552,8 @@ const mutations = {
     }
     await idsDoExistsCheck([userId], models.User);
     await checkIfHasProjectRights(User.get('id'), undefined, projectId, ['projectSecondary']);
-    (<ProjectGroupInstance[]>Project.get('ProjectGroups'))[0].addUser(userId);
+    await (<ProjectGroupInstance[]>Project.get('ProjectGroups'))[0].addUser(userId);
+    pubsub.publish(PROJECT_CHANGE, { projectsSubscription: true });
     return Project.reload();
   },
 
@@ -569,10 +573,11 @@ const mutations = {
       await checkIfHasProjectRights(User.get('id'), undefined, id, ['projectSecondary']);
     }
     const Tasks = <TaskInstance[]>await Project.get('Tasks');
-    pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'delete', data: null, ids: Tasks.forEach((Task) => Task.get('id')) } });
     const Imaps = <ImapInstance[]>await Project.get('Imaps');
     await Promise.all(Imaps.map((Imap) => Imap.setProject(newId)));
-    return Project.destroy();
+    await Project.destroy();
+    pubsub.publish(PROJECT_CHANGE, { projectsSubscription: true });
+    return Project;
   },
 }
 
@@ -659,12 +664,20 @@ const attributes = {
   },
 };
 
+const subscriptions = {
+  projectsSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(PROJECT_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
+  }
+}
+
 export default {
   attributes,
   mutations,
-  querries
-}
-
-function fixRights(rights) {
-  return rights
+  querries,
+  subscriptions,
 }

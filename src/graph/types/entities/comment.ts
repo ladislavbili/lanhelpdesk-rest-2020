@@ -30,3 +30,8 @@ addComment( message: String!, internal: Boolean!, task: Int!, parentCommentId: I
 sendEmail( message: String!, task: Int!, parentCommentId: Int, tos: [String]!, subject: String! ): Comment
 resendEmail( messageId: Int! ): Comment
 `
+
+
+export const CommentSubscriptions = `
+  commentsSubscription( taskId: Int! ): Int
+`

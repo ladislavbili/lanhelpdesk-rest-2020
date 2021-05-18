@@ -20,3 +20,7 @@ addMilestone( title: String!, description: String!, startsAt: String, endsAt: St
 updateMilestone( id: Int!, title: String, description: String, startsAt: String, endsAt: String ): Milestone
 deleteMilestone( id: Int! ): Milestone
 `
+
+export const MilestoneSubscriptions = `
+  milestonesSubscription: Boolean
+`

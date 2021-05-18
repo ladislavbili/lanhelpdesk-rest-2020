@@ -136,3 +136,7 @@ addPublicFilter( title: String!, global: Boolean!, dashboard: Boolean!, order: I
 updatePublicFilter( id: Int!, title: String, global: Boolean!, dashboard: Boolean!, order: Int, filter: FilterInput, roles: [Int], projectId: Int ): Filter
 deleteFilter( id: Int! ): Filter
 `
+
+export const FilterSubscriptions = `
+  filtersSubscription: Boolean
+`

@@ -25,6 +25,10 @@ import {
 import { models } from '@/models';
 import { UserInstance, RoleInstance, ProjectInstance, AccessRightsInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
+import { USER_CHANGE, USER_DATA_CHANGE } from '@/configs/subscriptions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
+
 
 const querries = {
   users: async (root, args, { req }) => {
@@ -115,14 +119,16 @@ const mutations = {
       throw PasswordTooShort;
     }
     const hashedPassword = await hash(password, 12);
-    return models.User.create({
+    const NewUser = <UserInstance>await models.User.create({
       ...targetUserData,
       password: hashedPassword,
       tokenKey: randomString(),
       RoleId: roleId,
       CompanyId: companyId,
       language: language ? language : 'sk',
-    })
+    });
+    pubsub.publish(USER_CHANGE, { usersSubscription: true });
+    return NewUser;
   },
 
   //loginUser( email: String!, password: String! ): UserData,
@@ -243,7 +249,10 @@ const mutations = {
       await models.Token.destroy({ where: { UserId: TargetUser.get('id') } })
     }
 
-    return TargetUser.update({ active });
+    const UpdatedUser = await TargetUser.update({ active });
+    pubsub.publish(USER_CHANGE, { usersSubscription: true });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: UpdatedUser.get('id') });
+    return UpdatedUser;
   },
 
 
@@ -324,7 +333,10 @@ const mutations = {
         changes.RoleId = roleId;
       }
     }
-    return TargetUser.update(changes);
+    const UpdatedUser = await TargetUser.update(changes);
+    pubsub.publish(USER_CHANGE, { usersSubscription: true });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: UpdatedUser.get('id') });
+    return UpdatedUser;
   },
 
   //updateProfile( active: Boolean, username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String ): User,
@@ -341,19 +353,22 @@ const mutations = {
       await models.Token.destroy({ where: { UserId: User.get('id') } })
       changes.password = await hash(args.password, 12);
     }
-    User.update(changes);
+    const UpdatedUser = await User.update(changes);
+    pubsub.publish(USER_CHANGE, { usersSubscription: true });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: UpdatedUser.get('id') });
+
     let loginKey = randomString();
     let expiresAt = moment().add(7, 'd').valueOf()
-    User.createToken({ key: loginKey, expiresAt });
+    UpdatedUser.createToken({ key: loginKey, expiresAt });
 
     res.cookie(
       'jid',
-      await createRefreshToken(User, loginKey),
+      await createRefreshToken(UpdatedUser, loginKey),
       refCookieSettings
     );
     return {
-      user: User,
-      accessToken: await createAccessToken(User, loginKey)
+      user: UpdatedUser,
+      accessToken: await createAccessToken(UpdatedUser, loginKey)
     };
   },
 
@@ -442,7 +457,10 @@ const mutations = {
     ]
 
     await Promise.all(promises);
-    return TargetUser.destroy();
+    await TargetUser.destroy();
+    pubsub.publish(USER_CHANGE, { usersSubscription: true });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: TargetUser.get('id') });
+    return TargetUser;
   },
 
   //setUserStatuses( ids: [Int]! ): User
@@ -450,6 +468,7 @@ const mutations = {
     const User = await checkResolver(req);
     await idsDoExistsCheck(ids, models.Status);
     await User.setStatuses(ids);
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: User.get('id') });
     return models.User.findByPk(User.get('id'), {
       include: [
         models.Status,
@@ -464,12 +483,16 @@ const mutations = {
 
   setTasklistLayout: async (root, { tasklistLayout }, { req }) => {
     const User = await checkResolver(req);
-    return User.update({ tasklistLayout: parseInt(tasklistLayout) });
+    await User.update({ tasklistLayout: parseInt(tasklistLayout) });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: User.get('id') });
+    return User;
   },
 
   setTaskLayout: async (root, { taskLayout }, { req }) => {
     const User = await checkResolver(req);
-    return User.update({ taskLayout: parseInt(taskLayout) });
+    await User.update({ taskLayout: parseInt(taskLayout) });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: User.get('id') });
+    return User;
   },
 }
 
@@ -498,10 +521,30 @@ const attributes = {
   },
 };
 
+const subscriptions = {
+  usersSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(USER_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
+  },
+  userDataSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(USER_DATA_CHANGE),
+      async ({ userDataSubscription }, args, { userID }) => {
+        return userDataSubscription === userID;
+      }
+    ),
+  }
+}
+
 export default {
   attributes,
   mutations,
-  querries
+  querries,
+  subscriptions,
 }
 
 async function checkIfPairFitsTask(Task, requester) {

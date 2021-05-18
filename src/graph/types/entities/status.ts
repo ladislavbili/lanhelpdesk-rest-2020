@@ -48,3 +48,7 @@ addStatusTemplate( title: String!, order: Int!, color: String!, icon: String!, a
 updateStatusTemplate( id: Int!, title: String, order: Int, color: String, icon: String, action: StatusAllowedType ): Status
 deleteStatusTemplate( id: Int! ): Status
 `
+
+export const StatusSubscriptions = `
+  statusTemplateSubscription: Boolean
+`

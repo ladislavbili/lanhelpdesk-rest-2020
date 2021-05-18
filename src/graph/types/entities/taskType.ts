@@ -18,3 +18,7 @@ addTaskType( title: String!, order: Int ): TaskType
 updateTaskType( id: Int!, title: String, order: Int ): TaskType
 deleteTaskType( id: Int!, newId: Int! ): TaskType
 `
+
+export const TaskTypeSubscriptions = `
+  taskTypesSubscription: Boolean
+`

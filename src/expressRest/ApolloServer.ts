@@ -10,6 +10,7 @@ export default new ApolloServer({
   resolvers,
   schemaDirectives,
   subscriptions: {
+    path: '/subscriptions',
     onConnect: async (connectionParams, webSocket) => {
       await checkResolver({ headers: connectionParams });
       return { headers: connectionParams };

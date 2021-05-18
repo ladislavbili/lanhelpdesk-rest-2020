@@ -1,6 +1,8 @@
 import { createDoesNoExistsError } from '@/configs/errors';
 import { models } from '@/models';
 import { ProjectInstance, TaskInstance } from '@/models/instances';
+import { pubsub } from './index';
+import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 import {
   getModelAttribute,
@@ -24,7 +26,7 @@ const mutations = {
       fs.unlinkSync(<string>TaskAttachment.get('path'));
     } catch (err) {
     }
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: User.get('id'),
         TaskChangeMessages: [{
@@ -35,7 +37,8 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: TaskAttachment.get('TaskId') });
     return TaskAttachment.destroy();
   },
 }

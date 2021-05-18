@@ -10,6 +10,9 @@ import { sendEmail } from '@/services/smtp';
 import { models } from '@/models';
 import checkResolver from './checkResolver';
 import { UserNotificationInstance, UserInstance } from '@/models/instances';
+import { USER_NOTIFICATION_CHANGE } from '@/configs/subscriptions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
 
 const querries = {
   userNotifications: async (root, { limit }, { req }) => {
@@ -129,10 +132,22 @@ const attributes = {
   },
 };
 
+const subscriptions = {
+  userNotificationsSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(USER_NOTIFICATION_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
+  }
+}
+
 export default {
   attributes,
   mutations,
-  querries
+  querries,
+  subscriptions,
 }
 
 export const sendNotificationToUsers = async (notification, UserId, Task) => {

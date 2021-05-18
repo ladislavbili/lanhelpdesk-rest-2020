@@ -13,6 +13,8 @@ import { multipleIdDoesExistsCheck, idDoesExistsCheck, getModelAttribute } from 
 import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
+import { pubsub } from './index';
+import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 
 const querries = {
@@ -48,7 +50,7 @@ const mutations = {
       throw AssignedToUserNotSolvingTheTask;
     }
     await idDoesExistsCheck(type, models.TripType);
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -59,7 +61,9 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
+
     if (params.approved) {
       params = {
         ...params,
@@ -203,13 +207,14 @@ const mutations = {
       promises.push(WorkTrip.update(params, { transaction: t }));
       await Promise.all(promises);
     });
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages,
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: WorkTrip.get('TaskId') });
     return WorkTrip.reload();
   },
 
@@ -239,7 +244,7 @@ const mutations = {
 
     await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
     const originalValue = `${WorkTrip.get('done').toString()},${WorkTrip.get('quantity')},${WorkTrip.get('discount')},${(<TripTypeInstance>WorkTrip.get('TripType')).get('id')},${WorkTrip.get('UserId')}`;
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -250,7 +255,8 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: WorkTrip.get('TaskId') });
     if (Project.get('autoApproved') || WorkTrip.get('approved')) {
       TaskMetadata.update({
         tripsApproved: TaskMetadata.get('tripsApproved') - (<number>WorkTrip.get('quantity'))

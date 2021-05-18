@@ -18,6 +18,9 @@ import {
   getModelAttribute
 } from '@/helperFunctions';
 import checkResolver from './checkResolver';
+import { ROLE_CHANGE } from '@/configs/subscriptions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
 
 const querries = {
   roles: async (root, args, { req }) => {
@@ -70,12 +73,18 @@ const mutations = {
     //nesmie pridat prava ktore sam nema
     checkRights((<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get(), {}, accessRights, userID, null)
 
-    return models.Role.create({
-      title, order, level,
-      AccessRight: accessRights
-    }, {
+    const NewRole = await models.Role.create(
+      {
+        title, order, level,
+        AccessRight: accessRights
+      },
+      {
         include: [{ model: models.AccessRights }]
-      });
+      }
+    );
+
+    pubsub.publish(ROLE_CHANGE, { rolesSubscription: true });
+    return NewRole;
   },
 
   updateRole: async (root, { id, title, order, level, accessRights }, { req, userID }) => {
@@ -110,7 +119,9 @@ const mutations = {
     checkRights((<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get(), TargetAccessRights.get(), accessRights, userID, id)
 
     await TargetAccessRights.update(accessRights);
-    return TargetRole.update({ title, order });
+    await TargetRole.update({ title, order });
+    pubsub.publish(ROLE_CHANGE, { rolesSubscription: true });
+    return TargetRole;
   },
 
   deleteRole: async (root, { id, newId }, { req, userID }) => {
@@ -149,7 +160,9 @@ const mutations = {
     await Promise.all(allUsers.map(user => user.setRole(newId)));
     const Imaps = <ImapInstance[]>await OldRole.get('Imaps');
     await Promise.all(Imaps.map((Imap) => Imap.setRole(newId)));
-    return OldRole.destroy();
+    await OldRole.destroy();
+    pubsub.publish(ROLE_CHANGE, { rolesSubscription: true });
+    return OldRole;
   },
 }
 
@@ -186,8 +199,20 @@ const attributes = {
   },
 };
 
+const subscriptions = {
+  rolesSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(ROLE_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
+  }
+}
+
 export default {
   attributes,
   mutations,
-  querries
+  querries,
+  subscriptions,
 }

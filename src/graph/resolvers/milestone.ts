@@ -1,11 +1,17 @@
 import { createDoesNoExistsError, NoAccessToThisProjectError } from '@/configs/errors';
 import { models } from '@/models';
-import { ProjectInstance } from '@/models/instances';
+import {
+  ProjectInstance,
+  MilestoneInstance,
+} from '@/models/instances';
 import { extractDatesFromObject, getModelAttribute } from '@/helperFunctions';
 import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
 import checkResolver from './checkResolver';
+import { MILESTONE_CHANGE } from '@/configs/subscriptions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
 
 const querries = {
   milestone: async (root, { id }, { req }) => {
@@ -25,7 +31,9 @@ const mutations = {
     const dates = extractDatesFromObject(args, ['startsAt', 'endsAt']);
 
     await checkIfHasProjectRights(User.get('id'), undefined, projectId, ['milestoneWrite']);
-    return models.Milestone.create({ ...args, ...dates, ProjectId: projectId });
+    const NewMilestone = <MilestoneInstance>await models.Milestone.create({ ...args, ...dates, ProjectId: projectId });
+    pubsub.publish(MILESTONE_CHANGE, { milestonesSubscription: true });
+    return NewMilestone;
   },
 
   updateMilestone: async (root, { id, ...args }, { req }) => {
@@ -38,7 +46,9 @@ const mutations = {
 
     await checkIfHasProjectRights(User.get('id'), undefined, Milestone.get('ProjectId'), ['milestoneWrite']);
 
-    return Milestone.update({ ...args, ...dates });
+    await Milestone.update({ ...args, ...dates });
+    pubsub.publish(MILESTONE_CHANGE, { milestonesSubscription: true });
+    return Milestone;
   },
 
   deleteMilestone: async (root, { id }, { req }) => {
@@ -49,7 +59,9 @@ const mutations = {
     }
     await checkIfHasProjectRights(User.get('id'), undefined, Milestone.get('ProjectId'), ['milestoneWrite']);
     await models.Task.update({ pendingChangable: true }, { where: { pendingChangable: false, MilestoneId: id } });
-    return Milestone.destroy();
+    await Milestone.destroy();
+    pubsub.publish(MILESTONE_CHANGE, { milestonesSubscription: true });
+    return Milestone;
   },
 }
 
@@ -64,8 +76,19 @@ const attributes = {
   },
 };
 
+const subscriptions = {
+  milestonesSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(MILESTONE_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
+  }
+}
 export default {
   attributes,
   mutations,
-  querries
+  querries,
+  subscriptions,
 }

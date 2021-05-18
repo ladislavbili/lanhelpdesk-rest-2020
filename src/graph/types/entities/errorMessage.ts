@@ -26,3 +26,7 @@ deleteErrorMessage( id: Int! ): ErrorMessage
 deleteSelectedErrorMessages( ids: [Int]! ): [Int]
 deleteAllErrorMessages: Boolean
 `
+
+export const ErrorMessageSubscriptions = `
+  errorMessagesSubscription: Boolean
+`

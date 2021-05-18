@@ -69,3 +69,7 @@ addRole( title: String!, order: Int, level: Int!, accessRights: AccessRightsCrea
 updateRole( id: Int!, title: String, order: Int, level: Int, accessRights: AccessRightsUpdateInput ): Role
 deleteRole( id: Int!, newId: Int! ): Role
 `
+
+export const RoleSubscriptions = `
+  rolesSubscription: Boolean
+`

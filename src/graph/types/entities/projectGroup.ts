@@ -151,3 +151,7 @@ export const ProjectGroupQuerries = `
 
 export const ProjectGroupMutations = `
 `
+
+export const ProjectGroupSubscriptions = `
+  projectGroupsSubscription: Boolean
+`

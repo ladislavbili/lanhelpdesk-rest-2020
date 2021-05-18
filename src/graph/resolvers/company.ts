@@ -14,6 +14,9 @@ import { splitArrayByFilter, addApolloError, getModelAttribute } from '@/helperF
 import { Op } from 'sequelize';
 import moment from 'moment';
 import checkResolver from './checkResolver';
+import { COMPANY_CHANGE } from '@/configs/subscriptions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
 
 const querries = {
   companies: async (root, args, { req }) => {
@@ -111,15 +114,21 @@ const mutations = {
       })
     })
 
-    return models.Company.create({
-      monthly,
-      ...attributes,
-      PricelistId: pricelistId,
-      CompanyRents: rents,
-      ...otherAttributes
-    }, {
+    const NewCompany = await models.Company.create(
+      {
+        monthly,
+        ...attributes,
+        PricelistId: pricelistId,
+        CompanyRents: rents,
+        ...otherAttributes
+      },
+      {
         include: [{ model: models.CompanyRent }]
-      });
+      }
+    );
+
+    pubsub.publish(COMPANY_CHANGE, { companiesSubscription: true });
+    return NewCompany;
   },
 
   updateCompany: async (root, { id, pricelistId, rents, ...args }, { req, userID }) => {
@@ -190,6 +199,7 @@ const mutations = {
       promises.push(TargetCompany.update(args, { transaction: t }));
       await Promise.all(promises);
     })
+    pubsub.publish(COMPANY_CHANGE, { companiesSubscription: true });
     return TargetCompany;
   },
 
@@ -223,7 +233,9 @@ const mutations = {
       ...(<RepeatTemplateInstance[]>OldCompany.get('RepeatTemplates')).map((repeatTemplate) => repeatTemplate.setCompany(newId)),
     ];
     await Promise.all(promises);
-    return OldCompany.destroy();
+    await OldCompany.destroy();
+    pubsub.publish(COMPANY_CHANGE, { companiesSubscription: true });
+    return OldCompany;
   },
 }
 
@@ -320,8 +332,20 @@ const attributes = {
   },
 };
 
+const subscriptions = {
+  companiesSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(COMPANY_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
+  }
+}
+
 export default {
   attributes,
   mutations,
-  querries
+  querries,
+  subscriptions,
 }

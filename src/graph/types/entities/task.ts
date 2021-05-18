@@ -92,6 +92,7 @@ type TasksDifference{
   data: Task
   ids: [Int]
 }
+
 enum EnumSubTaskChanged{
   add
   delete
@@ -167,5 +168,6 @@ deleteTask( id: Int! ): Task
 `
 
 export const TaskSubscriptions = `
-  taskSubscription( projectId: Int, filter: FilterInput ): TasksDifference
+  tasksSubscription: Boolean
+  taskHistorySubscription( taskId: Int! ): Int
 `

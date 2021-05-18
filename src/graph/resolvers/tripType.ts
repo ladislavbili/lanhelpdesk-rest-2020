@@ -4,6 +4,10 @@ import checkResolver from './checkResolver';
 import { getModelAttribute } from '@/helperFunctions';
 import { PricelistInstance, TripTypeInstance } from '@/models/instances';
 
+import { TRIP_TYPE_CHANGE } from '@/configs/subscriptions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
+
 const querries = {
   tripTypes: async (root, args, { req }) => {
     await checkResolver(req);
@@ -31,7 +35,8 @@ const mutations = {
         price: 0,
         type: 'TripType',
         TripTypeId: TripType.get('id')
-      })))
+      })));
+    pubsub.publish(TRIP_TYPE_CHANGE, { tripTypesSubscription: true });
     return TripType;
   },
 
@@ -41,7 +46,9 @@ const mutations = {
     if (TripType === null) {
       throw createDoesNoExistsError('Trip type', id);
     }
-    return TripType.update(args);
+    await TripType.update(args);
+    pubsub.publish(TRIP_TYPE_CHANGE, { tripTypesSubscription: true });
+    return TripType;
   },
 
   deleteTripType: async (root, { id, newId }, { req }) => {
@@ -58,7 +65,9 @@ const mutations = {
     await Promise.all(allTrips.map((workTrip) => workTrip.setTripType(newId)));
 
     await models.Price.destroy({ where: { type: 'TripType', TripTypeId: id } })
-    return OldTripType.destroy();
+    await OldTripType.destroy();
+    pubsub.publish(TRIP_TYPE_CHANGE, { tripTypesSubscription: true });
+    return OldTripType;
   },
 }
 
@@ -70,8 +79,20 @@ const attributes = {
   },
 };
 
+const subscriptions = {
+  tripTypesSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(TRIP_TYPE_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
+  }
+}
+
 export default {
   attributes,
   mutations,
-  querries
+  querries,
+  subscriptions,
 }

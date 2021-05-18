@@ -35,34 +35,34 @@ export async function createRefreshToken(user, loginKey) {
 
 export async function verifyAccToken(token, UserModel, extraParameters = []) {
   return new Promise(async (resolve, reject) => {
-    let userData = jwt_decode(token);
-    const User = await UserModel.findByPk(
-      userData.id,
-      {
-        include: [
-          ...extraParameters,
-          {
-            model: models.Token,
-            where: { key: userData.loginKey }
-          },
-          {
-            model: models.Role,
-            include: [
-              { model: models.AccessRights }
-            ]
-          }
-        ]
-      }
-    );
-    if (User === null || User.get('Tokens').length === 0) {
-      resolve(<VerifyResult>{ User: null, userData: null, ok: false })
-    }
     try {
+      let userData = jwt_decode(token);
+      const User = await UserModel.findByPk(
+        userData.id,
+        {
+          include: [
+            ...extraParameters,
+            {
+              model: models.Token,
+              where: { key: userData.loginKey }
+            },
+            {
+              model: models.Role,
+              include: [
+                { model: models.AccessRights }
+              ]
+            }
+          ]
+        }
+      );
+      if (User === null || User.get('Tokens').length === 0) {
+        resolve(<VerifyResult>{ User: null, userData: null, ok: false })
+      }
       userData = await verify(token, createPass(process.env.JWT_ACC_PASS, User.get(), userData.loginKey));
+      resolve(<VerifyResult>{ User, userData, ok: true })
     } catch (error) {
       resolve(<VerifyResult>{ User: null, userData: null, ok: false })
     }
-    resolve(<VerifyResult>{ User, userData, ok: true })
   })
 }
 

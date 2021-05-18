@@ -3,6 +3,9 @@ import { models, sequelize } from '@/models';
 import checkResolver from './checkResolver';
 import { PriceInstance, PricelistInstance } from '@/models/instances';
 import { getModelAttribute } from '@/helperFunctions';
+import { PRICELIST_CHANGE } from '@/configs/subscriptions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
 
 const querries = {
   pricelists: async (root, args, { req }) => {
@@ -58,17 +61,22 @@ const mutations = {
       await models.Pricelist.update({ def: false }, { where: { def: true } })
     }
 
-    return models.Pricelist.create({
-      ...attributes,
-      Prices: prices.map((price) => ({
-        price: price.price,
-        type: price.type,
-        TripTypeId: price.type === 'TripType' ? price.typeId : null,
-        TaskTypeId: price.type === 'TaskType' ? price.typeId : null,
-      }))
-    }, {
+    const Pricelist = await models.Pricelist.create(
+      {
+        ...attributes,
+        Prices: prices.map((price) => ({
+          price: price.price,
+          type: price.type,
+          TripTypeId: price.type === 'TripType' ? price.typeId : null,
+          TaskTypeId: price.type === 'TaskType' ? price.typeId : null,
+        }))
+      },
+      {
         include: [{ model: models.Price }]
-      });
+      }
+    );
+    pubsub.publish(PRICELIST_CHANGE, { pricelistsSubscription: true });
+    return Pricelist;
   },
 
   updatePricelist: async (root, { id, prices, ...attributes }, { req }) => {
@@ -98,6 +106,7 @@ const mutations = {
       }
       await Promise.all(promises);
     })
+    pubsub.publish(PRICELIST_CHANGE, { pricelistsSubscription: true });
     return Pricelist;
   },
 
@@ -131,7 +140,9 @@ const mutations = {
       await NewDefaultPricelist.update({ def: true })
     }
     await Promise.all(companies.map((Company) => Company.setPricelist(newId)));
-    return Pricelist.destroy();
+    await Pricelist.destroy();
+    pubsub.publish(PRICELIST_CHANGE, { pricelistsSubscription: true });
+    return Pricelist;
   },
 }
 
@@ -154,8 +165,20 @@ const attributes = {
   },
 };
 
+const subscriptions = {
+  pricelistsSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(PRICELIST_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
+  }
+}
+
 export default {
   attributes,
   mutations,
-  querries
+  querries,
+  subscriptions,
 }

@@ -15,6 +15,9 @@ import {
 } from '@/graph/addons/project';
 import { Op } from 'sequelize';
 const dateNames = ['statusDateFrom', 'statusDateTo', 'pendingDateFrom', 'pendingDateTo', 'closeDateFrom', 'closeDateTo', 'deadlineFrom', 'deadlineTo', 'scheduledFrom', 'scheduledTo', 'createdAtFrom', 'createdAtTo'];
+import { FILTER_CHANGE } from '@/configs/subscriptions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
 
 const querries = {
   myFilters: async (root, args, { req }) => {
@@ -190,7 +193,8 @@ const mutations = {
         newFilter.setFilterRequesters(requesters ? requesters : []),
         newFilter.setFilterCompanies(companies ? companies : []),
         newFilter.setFilterTaskTypes(taskTypes ? taskTypes : []),
-      ])
+      ]);
+      pubsub.publish(FILTER_CHANGE, { filtersSubscription: true });
       return newFilter;
     }
     const newFilter = <FilterInstance>await models.Filter.create(
@@ -214,7 +218,8 @@ const mutations = {
       newFilter.setFilterRequesters(requesters ? requesters : []),
       newFilter.setFilterCompanies(companies ? companies : []),
       newFilter.setFilterTaskTypes(taskTypes ? taskTypes : []),
-    ])
+    ]);
+    pubsub.publish(FILTER_CHANGE, { filtersSubscription: true });
     return newFilter;
 
   },
@@ -267,7 +272,7 @@ const mutations = {
         ...directFilterParams,
         ...boolAttributes,
         ...dates,
-        pub: false,
+        pub: true,
         FilterOneOfs: oneOf.map((item) => ({ input: item })),
       },
       {
@@ -281,6 +286,7 @@ const mutations = {
       newFilter.setFilterCompanies(companies ? companies : []),
       newFilter.setFilterTaskTypes(taskTypes ? taskTypes : []),
     ])
+    pubsub.publish(FILTER_CHANGE, { filtersSubscription: true });
     return newFilter;
   },
 
@@ -366,6 +372,7 @@ const mutations = {
     }
     promises.push(Filter.update(changes))
     await promises;
+    pubsub.publish(FILTER_CHANGE, { filtersSubscription: true });
     return Filter;
   },
 
@@ -439,6 +446,7 @@ const mutations = {
     }
     promises.push(Filter.update(changes))
     await promises;
+    pubsub.publish(FILTER_CHANGE, { filtersSubscription: true });
     return Filter;
   },
 
@@ -454,7 +462,9 @@ const mutations = {
       return Filter.destroy();
     } else if (Filter.get('pub')) {
       await checkResolver(req, ["publicFilters"]);
-      return Filter.destroy();
+      await Filter.destroy();
+      pubsub.publish(FILTER_CHANGE, { filtersSubscription: true });
+      return Filter;
     } else {
       throw NoAccessToThisFilterError;
     }
@@ -480,8 +490,20 @@ const attributes = {
   },
 };
 
+const subscriptions = {
+  filtersSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(FILTER_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
+  }
+}
+
 export default {
   attributes,
   mutations,
-  querries
+  querries,
+  subscriptions,
 }

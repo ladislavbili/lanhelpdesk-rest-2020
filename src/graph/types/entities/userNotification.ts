@@ -25,3 +25,6 @@ deleteUserNotification( id: Int! ): UserNotification
 deleteSelectedUserNotifications( ids: [Int]! ): [Int]
 deleteAllUserNotifications: Boolean
 `
+export const UserNotificationSubscriptions = `
+  userNotificationsSubscription: Boolean
+`

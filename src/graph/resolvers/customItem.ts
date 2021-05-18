@@ -4,6 +4,8 @@ import { multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions'
 import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
+import { pubsub } from './index';
+import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 import {
   TaskInstance,
@@ -39,7 +41,7 @@ const mutations = {
       Task.getTaskMetadata(),
       Task.getProject(),
     ]);
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -50,7 +52,8 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
     if (params.approved || (<ProjectInstance>Project).get('autoApproved')) {
       (<TaskMetadataInstance>TaskMetadata).update({
         itemsApproved: (<TaskMetadataInstance>TaskMetadata).get('itemsApproved') + params.quantity
@@ -126,13 +129,14 @@ const mutations = {
         message: `Custom item ${CustomItem.get('title')}${params.title && params.title !== CustomItem.get('title') ? `/${params.title}` : ''} was set as approved by ${SourceUser.get('fullName')}(${SourceUser.get('email')}).`,
       })
     }
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages,
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: CustomItem.get('TaskId') });
     //Metadata update
     if ((params.approved !== undefined && params.approved !== null) || params.quantity) {
       let itemsApproved = parseFloat(<any>TaskMetadata.get('itemsApproved'));
@@ -189,7 +193,7 @@ const mutations = {
     const Project = <ProjectInstance>Task.get('Project');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
     await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -200,7 +204,8 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: CustomItem.get('TaskId') });
     if (Project.get('autoApproved') || CustomItem.get('approved')) {
       TaskMetadata.update({
         itemsApproved: parseFloat(<any>TaskMetadata.get('itemsApproved')) - parseFloat(<any>CustomItem.get('quantity'))

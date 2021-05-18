@@ -5,6 +5,8 @@ import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
 import checkResolver from './checkResolver';
+import { pubsub } from './index';
+import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import {
   TaskInstance,
   RepeatTemplateInstance,
@@ -39,7 +41,7 @@ const mutations = {
       Task.getTaskMetadata(),
       Task.getProject(),
     ]);
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -50,7 +52,9 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
+
     if (params.approved || (<ProjectInstance>Project).get('autoApproved')) {
       (<TaskMetadataInstance>TaskMetadata).update({
         materialsApproved: (<TaskMetadataInstance>TaskMetadata).get('materialsApproved') + params.quantity
@@ -126,13 +130,15 @@ const mutations = {
         message: `Material ${Material.get('title')}${params.title && params.title !== Material.get('title') ? `/${params.title}` : ''} was set as approved by ${SourceUser.get('fullName')}(${SourceUser.get('email')}).`,
       })
     }
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages,
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: Material.get('TaskId') });
+
     //Metadata update
     if ((params.approved !== undefined && params.approved !== null) || params.quantity) {
       let materialsApproved = parseFloat(<any>TaskMetadata.get('materialsApproved'));
@@ -190,7 +196,7 @@ const mutations = {
     const Project = <ProjectInstance>Task.get('Project');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
     await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
-    (<TaskInstance>Task).createTaskChange(
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
@@ -201,7 +207,8 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
-    )
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: Material.get('TaskId') });
     if (Project.get('autoApproved') || Material.get('approved')) {
       TaskMetadata.update({
         materialsApproved: parseFloat(<any>TaskMetadata.get('materialsApproved')) - parseFloat(<any>Material.get('quantity'))

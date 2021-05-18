@@ -19,6 +19,12 @@ import { Op } from 'sequelize';
 import { sendNotificationToUsers } from './userNotification';
 import checkResolver from './checkResolver';
 import fs from 'fs';
+import {
+  COMMENT_CHANGE,
+  TASK_HISTORY_CHANGE,
+} from '@/configs/subscriptions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
 
 export interface EmailResultInstance {
   message: string;
@@ -85,7 +91,7 @@ const mutations = {
       ...params,
     });
     if (!internal) {
-      (<TaskInstance>Task).createTaskChange({
+      await (<TaskInstance>Task).createTaskChange({
         UserId: SourceUser.get('id'),
         TaskChangeMessages: [{
           type: 'comment',
@@ -94,7 +100,9 @@ const mutations = {
           message: `${SourceUser.get('fullName')} has commented the task.`,
         }]
       }, { include: [{ model: models.TaskChangeMessage }] });
+      pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
     }
+    pubsub.publish(COMMENT_CHANGE, { commentsSubscription: task });
     /*
     sendNotificationToUsers(
       {
@@ -143,7 +151,7 @@ const mutations = {
       isParent: parentCommentId === null || parentCommentId === undefined,
       EmailTargets: tos.map((to) => ({ address: to })),
     }, { include: [models.EmailTarget] });
-    models.TaskChange.create({
+    await models.TaskChange.create({
       UserId: SourceUser.get('id'),
       TaskId: task,
       TaskChangeMessages: [{
@@ -153,8 +161,11 @@ const mutations = {
         message: `${SourceUser.get('fullName')} send email from the task.`,
       }],
     }, { include: [{ model: models.TaskChangeMessage }] });
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
+    pubsub.publish(COMMENT_CHANGE, { commentsSubscription: task });
     return NewComment;
   },
+
   resendEmail: async (root, { messageId }, { req }) => {
     const SourceUser = await checkResolver(req);
     const Comment = await models.Comment.findByPk(messageId, {
@@ -184,10 +195,11 @@ const mutations = {
         (<UserInstance>Comment.get('User')).get('email')
       );
       if (emailResult.error) {
-        Comment.update({ emailError: emailResult.message })
+        await Comment.update({ emailError: emailResult.message })
       } else {
-        Comment.update({ emailError: null, emailSend: true })
+        await Comment.update({ emailError: null, emailSend: true })
       }
+      await pubsub.publish(COMMENT_CHANGE, { commentsSubscription: Comment.get('TaskId') });
     }
     CommentAttachments.forEach((CommentAttachment) => {
       fs.readFile(`./${CommentAttachment.get('path')}`, async (err, data) => {
@@ -214,10 +226,11 @@ const mutations = {
             files
           );
           if (emailResult.error) {
-            Comment.update({ emailError: emailResult.message })
+            await Comment.update({ emailError: emailResult.message })
           } else {
-            Comment.update({ emailError: null, emailSend: true })
+            await Comment.update({ emailError: null, emailSend: true })
           }
+          pubsub.publish(COMMENT_CHANGE, { commentsSubscription: Comment.get('TaskId') });
         }
       });
     });
@@ -254,8 +267,20 @@ const attributes = {
   }
 };
 
+const subscriptions = {
+  commentsSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(COMMENT_CHANGE),
+      async ({ commentsSubscription }, { taskId }, { userID }) => {
+        return commentsSubscription === taskId;
+      }
+    ),
+  }
+}
+
 export default {
   attributes,
   mutations,
-  querries
+  querries,
+  subscriptions,
 }
