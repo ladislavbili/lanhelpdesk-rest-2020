@@ -94,6 +94,14 @@ const subscriptions = {
         return true;
       }
     ),
+  },
+  errorMessageCountSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(ERROR_MESSAGE_CHANGE),
+      async (data, args, { userID }) => {
+        return true;
+      }
+    ),
   }
 }
 

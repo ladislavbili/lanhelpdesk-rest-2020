@@ -2,7 +2,7 @@ import TriggerableTimer from '@/services/components/triggerableTimer';
 import { models } from '@/models';
 import moment from 'moment';
 import events from 'events';
-import { timestampToString, getMinutes, sendNotifications } from '@/helperFunctions';
+import { timestampToString, getMinutes, sendTaskNotificationsToUsers } from '@/helperFunctions';
 import fs from 'fs';
 import {
   TaskInstance,
@@ -310,7 +310,7 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
     })
 
 
-  sendNotifications(null, [`Task was created by repeat.`], NewTask, (<UserInstance[]>RepeatTemplate.get('assignedTos')).map((User) => User.get('id')));
-  pubsub.publish(TASK_CHANGE, { taskSubscription: { type: 'add', data: NewTask, ids: [] } });
+  sendTaskNotificationsToUsers(null, NewTask, [`Task was created by repeat.`]);
+  pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
   return NewTask;
 }

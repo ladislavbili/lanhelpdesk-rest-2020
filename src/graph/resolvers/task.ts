@@ -52,8 +52,8 @@ import {
   addApolloError,
   createChangeMessage,
   createTaskAttributesChangeMessages,
-  sendNotifications,
   toFloatOrZero,
+  sendTaskNotificationsToUsers,
 } from '@/helperFunctions';
 import {
   canViewTask,
@@ -84,7 +84,6 @@ import {
   generateCompanyUsedTripPausalSQL,
   generateCompanyUsedSubtaskPausalSQL,
 } from '@/graph/addons/task';
-import { sendNotificationToUsers } from '@/graph/resolvers/userNotification';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
@@ -855,7 +854,7 @@ const mutations = {
       NewTask.setAssignedTos(assignedTos),
       NewTask.setTags(tags),
     ])
-    sendNotifications(User, [`Task was created by ${User.get('fullName')}`], NewTask, assignedTos);
+    sendTaskNotificationsToUsers(User, NewTask, [`Task was created by ${User.get('fullName')}`]);
     pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
     NewTask.rights = groupRights;
     return NewTask;
@@ -1222,17 +1221,8 @@ const mutations = {
           default:
             break;
         }
-        sendNotificationToUsers(
-          {
-            subject: `Status was changed from ${TaskStatus.get('title')} to ${Status.get('title')}.`,
-            message: `Status was changed from ${TaskStatus.get('title')} to ${Status.get('title')} at ${moment().format('HH:mm DD.MM.YYYY')} in task currently named ${Task.get('id')}:${Task.get('title')}.`,
-            read: false,
-            createdById: User.get('id'),
-            TaskId: Task.get('id'),
-          },
-          User.get('id'),
-          Task,
-        )
+
+        sendTaskNotificationsToUsers(User, Task, [`Status was changed from ${TaskStatus.get('title')} to ${Status.get('title')} at ${moment().format('HH:mm DD.MM.YYYY')}`]);
       }
 
       taskChangeMessages = [
@@ -1263,7 +1253,7 @@ const mutations = {
       ]
     })
     NewTask.rights = groupRights;
-    sendNotifications(User, taskChangeMessages.map((taskChange) => taskChange.message), NewTask);
+    sendTaskNotificationsToUsers(User, NewTask, taskChangeMessages.map((taskChange) => taskChange.message));
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: NewTask.get('id') });
     pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
     return NewTask;
@@ -1289,7 +1279,7 @@ const mutations = {
     if (!canViewTask(Task, User, groupRights, true)) {
       throw CantViewTaskError;
     }
-    sendNotifications(User, [`Task was deleted.`], Task)
+    await sendTaskNotificationsToUsers(User, Task, [`Task named "${Task.get('title')}" with id ${Task.get('id')} was deleted.`], true);
     await Task.destroy();
     pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
     return Task;

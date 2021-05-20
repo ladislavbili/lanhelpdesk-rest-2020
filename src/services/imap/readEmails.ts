@@ -4,7 +4,6 @@ import ImapData from './ImapData';
 import lodash from 'lodash';
 import events from 'events';
 import { models } from '@/models';
-import saveEmailOrCreateTask from './saveEmailOrCreateTask';
 
 export const imapEvent = new events.EventEmitter();
 

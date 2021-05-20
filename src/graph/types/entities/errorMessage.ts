@@ -13,20 +13,21 @@ type ErrorMessage {
 `
 
 export const ErrorMessageQuerries = `
-errorMessages: [ErrorMessage]
-errorMessageCount: Int
+  errorMessages: [ErrorMessage]
+  errorMessageCount: Int
 `
 
 export const ErrorMessageMutations = `
-setErrorMessageRead( id: Int!, read: Boolean ): ErrorMessage
-setSelectedErrorMessagesRead( ids: [Int]!, read: Boolean ): [Int]
-setAllErrorMessagesRead( read: Boolean ): Boolean
+  setErrorMessageRead( id: Int!, read: Boolean ): ErrorMessage
+  setSelectedErrorMessagesRead( ids: [Int]!, read: Boolean ): [Int]
+  setAllErrorMessagesRead( read: Boolean ): Boolean
 
-deleteErrorMessage( id: Int! ): ErrorMessage
-deleteSelectedErrorMessages( ids: [Int]! ): [Int]
-deleteAllErrorMessages: Boolean
+  deleteErrorMessage( id: Int! ): ErrorMessage
+  deleteSelectedErrorMessages( ids: [Int]! ): [Int]
+  deleteAllErrorMessages: Boolean
 `
 
 export const ErrorMessageSubscriptions = `
   errorMessagesSubscription: Boolean
+  errorMessageCountSubscription: Boolean
 `

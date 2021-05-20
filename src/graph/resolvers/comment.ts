@@ -8,7 +8,11 @@ import {
   EmailAlreadySendError
 } from '@/configs/errors';
 import { models } from '@/models';
-import { isEmail, getModelAttribute } from '@/helperFunctions';
+import {
+  isEmail,
+  getModelAttribute,
+  sendTaskNotificationsToUsers,
+} from '@/helperFunctions';
 import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
@@ -16,7 +20,6 @@ import { sendEmail } from '@/services/smtp'
 import { RoleInstance, AccessRightsInstance, TaskInstance, EmailTargetInstance, UserInstance, CommentAttachmentInstance } from '@/models/instances';
 import pathResolver from 'path';
 import { Op } from 'sequelize';
-import { sendNotificationToUsers } from './userNotification';
 import checkResolver from './checkResolver';
 import fs from 'fs';
 import {
@@ -101,21 +104,15 @@ const mutations = {
         }]
       }, { include: [{ model: models.TaskChangeMessage }] });
       pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
+      sendTaskNotificationsToUsers(
+        SourceUser,
+        Task,
+        [
+          `Comment added: ${params.message}`
+        ]
+      );
     }
     pubsub.publish(COMMENT_CHANGE, { commentsSubscription: task });
-    /*
-    sendNotificationToUsers(
-      {
-        subject
-      message
-      read
-      createdById: SourceUser.get('id'),
-      task: Task.get('id'),
-      },
-      SourceUser.get('id'),
-      Task,
-    )
-    */
     return NewComment;
   },
 

@@ -119,7 +119,7 @@ export default function defineTasks(sequelize: Sequelize) {
 }
 
 export function createTasksAssoc(models) {
-  models.Task.hasMany(models.UserNotification, { onDelete: 'CASCADE' });
+  models.Task.hasMany(models.UserNotification);
 
   models.Task.belongsToMany(models.User, { as: { singular: "assignedTo", plural: "assignedTos" }, through: 'task_assignedTo' });
 

@@ -1,13 +1,16 @@
 import moment from 'moment';
 import checkResolver from '@/graph/resolvers/checkResolver';
 import { createDoesNoExistsError, InternalMessagesNotAllowed } from '@/configs/errors';
-import { checkType, getAttributes } from '@/helperFunctions';
+import {
+  checkType,
+  getAttributes,
+  sendTaskNotificationsToUsers,
+} from '@/helperFunctions';
 import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
 import { models } from '@/models';
 import { AccessRightsInstance, RoleInstance, TaskInstance, CommentInstance } from '@/models/instances';
-import { sendNotificationToUsers } from '@/graph/resolvers/userNotification';
 
 export function sendComment(app) {
   app.post('/send-comment', async function(req, res) {
@@ -109,17 +112,11 @@ export function sendComment(app) {
       ${ParentComment.get('comment')}
       `
     }
-    sendNotificationToUsers(
-      {
-        subject: `New comment at ${moment().format('HH:mm DD.MM.YYYY')}.`,
-        message: notificationMessage,
-        read: false,
-        createdById: User.get('id'),
-        TaskId: Task.get('id'),
-      },
-      User.get('id'),
+    sendTaskNotificationsToUsers(
+      User,
       Task,
-    )
+      notificationMessage,
+    );
     return res.send({ ok: true, error: null, comment: NewComment.get() });
   });
 }

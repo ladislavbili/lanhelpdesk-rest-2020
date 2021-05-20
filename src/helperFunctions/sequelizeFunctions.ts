@@ -23,8 +23,8 @@ export const getModelAttribute = (item, attribute, globalAttribute = null, param
     return null;
   }
 
-  console.log('============================');
-  console.log(item.constructor, 'direct load', loadTimer++, attribute);
+  //console.log('============================');
+  //console.log(item.constructor, 'direct load', loadTimer++, attribute);
 
   if (parameters === null) {
     return item[globalAttribute === null ? `get${capitalizeFirstLetter(attribute)}` : globalAttribute]();

@@ -1,9 +1,5 @@
 import { createDoesNoExistsError } from '@/configs/errors';
-import moment from 'moment';
 import { timestampToString } from './timeManipulations';
-import { filterUnique } from './arrayManipulations';
-import { models } from '@/models';
-import { sendEmail } from '@/services/smtp';
 
 export const createTaskAttributesChangeMessages = async (args, Task) => {
   return (<any[]>await Promise.all(
@@ -75,34 +71,4 @@ export const createChangeMessage = async (type, model, name, newValue, OriginalI
       message: `${name} were changed from "${OriginalItem.substring(0, 50)}..." to "${newValue.substring(0, 50)}."`,
     }
   }
-}
-
-export const sendNotifications = async (User, notifications, Task, assignedTos = []) => {
-  const AssignedTos = Task.get('assignedTos');
-  const ids = [Task.get('requesterId'), ...(AssignedTos ? AssignedTos.map((assignedTo) => assignedTo.get('id')) : assignedTos)];
-  const uniqueIds = filterUnique(ids).filter((id) => User === null || User.get('id') !== id);
-  if (uniqueIds.length === 0) {
-    return;
-  }
-  const Users = await models.User.findAll({ where: { id: uniqueIds, receiveNotifications: true } });
-  if (Users.length === 0) {
-    return;
-  }
-  sendEmail(
-    `In task with id ${Task.get('id')} and current title ${Task.get('title')} was changed at ${moment().format('HH:mm DD.MM.YYYY')}.
-    Recorded notifications by ${User === null ? 'system' : (`user ${User.get('fullName')}(${User.get('email')})`)} as follows:
-    ${
-    notifications.length === 0 ?
-      `Non-specified change has happened.
-      ` :
-      notifications.reduce((acc, notification) => acc + ` ${notification}
-      `, ``)
-    }
-    This is an automated message.If you don't wish to receive this kind of notification, please log in and change your profile setting.
-    `,
-    "",
-    `[${Task.get('id')}]Task ${Task.get('title')} was changed notification at ${moment().format('HH:mm DD.MM.YYYY')} `,
-    Users.map((User) => User.get('email')),
-    'lanhelpdesk2019@gmail.com'
-  );
 }

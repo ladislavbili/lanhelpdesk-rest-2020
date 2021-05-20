@@ -40,6 +40,10 @@ export {
 } from './modelChecks';
 
 export {
+  sendTaskNotificationsToUsers,
+} from './notifications';
+
+export {
   toFloat,
   toFloatOrZero
 }
@@ -62,7 +66,6 @@ export {
 export {
   createChangeMessage,
   createTaskAttributesChangeMessages,
-  sendNotifications,
 } from './taskProcessing';
 
 export {

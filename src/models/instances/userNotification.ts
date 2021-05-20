@@ -41,5 +41,5 @@ export function createUserNotificationsAssoc(models) {
   //created by
   models.UserNotification.belongsTo(models.User, { as: 'createdBy' });
   // Task
-  models.UserNotification.belongsTo(models.Task, { foreignKey: { allowNull: false } });
+  models.UserNotification.belongsTo(models.Task);
 }

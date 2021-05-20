@@ -1,12 +1,7 @@
 import { createDoesNoExistsError } from '@/configs/errors';
 import {
-  idDoesExistsCheck,
-  idsDoExistsCheck,
   getModelAttribute,
-  filterUnique,
 } from '@/helperFunctions';
-import moment from 'moment';
-import { sendEmail } from '@/services/smtp';
 import { models } from '@/models';
 import checkResolver from './checkResolver';
 import { UserNotificationInstance, UserInstance } from '@/models/instances';
@@ -58,7 +53,9 @@ const mutations = {
     if (UserNotification === null || User.get('id') !== UserNotification.get('UserId')) {
       throw createDoesNoExistsError('UserNotification', id);
     }
-    return UserNotification.update({ read: read === undefined ? true : read });
+    await UserNotification.update({ read: read === undefined ? true : read });
+    pubsub.publish(USER_NOTIFICATION_CHANGE, { userNotificationsSubscription: User.get('id') });
+    return UserNotification;
   },
 
   setSelectedUserNotificationsRead: async (root, { ids, read }, { req }) => {
@@ -75,6 +72,7 @@ const mutations = {
       { read: read === undefined ? true : read },
       { where: { id: filteredIds } }
     );
+    pubsub.publish(USER_NOTIFICATION_CHANGE, { userNotificationsSubscription: User.get('id') });
     return filteredIds;
   },
 
@@ -84,6 +82,7 @@ const mutations = {
       { read: read === undefined ? true : read },
       { where: { read: !(read === undefined ? true : read), UserId: User.get('id') } }
     );
+    pubsub.publish(USER_NOTIFICATION_CHANGE, { userNotificationsSubscription: User.get('id') });
     return true;
   },
 
@@ -94,7 +93,9 @@ const mutations = {
     if (UserNotification === null || UserNotification.get('UserId') !== User.get('id')) {
       throw createDoesNoExistsError('UserNotification', id);
     }
-    return UserNotification.destroy();
+    await UserNotification.destroy();
+    pubsub.publish(USER_NOTIFICATION_CHANGE, { userNotificationsSubscription: User.get('id') });
+    return UserNotification;
   },
 
   deleteSelectedUserNotifications: async (root, { ids }, { req }) => {
@@ -108,12 +109,14 @@ const mutations = {
     })
     const filteredIds = <number[]>UserNotifications.map((UserNotification) => UserNotification.get('id'));
     await models.UserNotification.destroy({ where: { id: filteredIds } });
+    pubsub.publish(USER_NOTIFICATION_CHANGE, { userNotificationsSubscription: User.get('id') });
     return filteredIds;
   },
 
   deleteAllUserNotifications: async (root, args, { req }) => {
     const User = await checkResolver(req);
     await models.UserNotification.destroy({ truncate: true, where: { UserId: User.get('id') } });
+    pubsub.publish(USER_NOTIFICATION_CHANGE, { userNotificationsSubscription: User.get('id') });
     return true;
   },
 }
@@ -136,8 +139,16 @@ const subscriptions = {
   userNotificationsSubscription: {
     subscribe: withFilter(
       () => pubsub.asyncIterator(USER_NOTIFICATION_CHANGE),
-      async (data, args, { userID }) => {
-        return true;
+      async ({ userNotificationsSubscription }, args, { userID }) => {
+        return userNotificationsSubscription === userID;
+      }
+    ),
+  },
+  userNotificationsCountSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(USER_NOTIFICATION_CHANGE),
+      async ({ userNotificationsSubscription }, args, { userID }) => {
+        return userNotificationsSubscription === userID;
       }
     ),
   }
@@ -148,33 +159,4 @@ export default {
   mutations,
   querries,
   subscriptions,
-}
-
-export const sendNotificationToUsers = async (notification, UserId, Task) => {
-  const [response1, response2] = await Promise.all([
-    models.User.findAll({ where: { id: [Task.get('requesterId')] } }),
-    Task.getAssignedTos()
-  ])
-  let Users = <UserInstance[]>[...(<UserInstance[]>response1), ...(<UserInstance[]>response2)];
-  filterUnique(Users, 'id').forEach((User) => {
-    sendNotification(User, Task, notification);
-  })
-}
-
-export const sendNotification = async (User, Task, notification) => {
-  models.UserNotification.create({ ...notification, UserId: User.get('id') });
-
-  if (User.get('receiveNotifications')) {
-    sendEmail(
-      `In task with id ${Task.get('id')} and current title ${Task.get('title')} was changed at ${moment().format('HH:mm DD.MM.YYYY')}.
-      Subject: ${notification.subject}
-      Message: ${notification.message}
-      This is an automated message.If you don't wish to receive this kind of notification, please log in and change your profile setting.
-      `,
-      "",
-      `${Task.get('id')}: ${Task.get('title')} was changed at ${moment().format('HH:mm DD.MM.YYYY')} `,
-      User.get('email'),
-      'lanhelpdesk2019@gmail.com'
-    );
-  }
 }

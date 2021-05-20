@@ -179,6 +179,8 @@ export default class ImapData {
     if (otherMessages.length > 0) {
       let messagesData = <any[]>await Promise.all(otherMessages.map((message) => simpleParser(message.source, {})));
       messagesData.forEach((messageData) => {
+        console.log('create task');
+
         saveEmailOrCreateTask({
           from: messageData.from.value,
           subject: messageData.subject,
