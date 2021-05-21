@@ -5,6 +5,7 @@ import { FilterSubscriptions } from './entities/filter';
 import { MilestoneSubscriptions } from './entities/milestone';
 import { PricelistSubscriptions } from './entities/pricelist';
 import { ProjectSubscriptions } from './entities/project';
+import { ProjectGroupSubscriptions } from './entities/projectGroup';
 import { RepeatSubscriptions } from './entities/repeat';
 import { RoleSubscriptions } from './entities/role';
 import { StatusSubscriptions } from './entities/status';
@@ -24,6 +25,7 @@ type Subscription {
   ${MilestoneSubscriptions}
   ${PricelistSubscriptions}
   ${ProjectSubscriptions}
+  ${ProjectGroupSubscriptions}
   ${RepeatSubscriptions}
   ${RoleSubscriptions}
   ${StatusSubscriptions}

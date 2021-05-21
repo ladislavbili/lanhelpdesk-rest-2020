@@ -39,7 +39,7 @@ import {
   ProjectGroupRightsInstance,
   UserInstance
 } from '@/models/instances';
-import { PROJECT_CHANGE } from '@/configs/subscriptions';
+import { PROJECT_CHANGE, PROJECT_GROUP_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 import { ApolloError } from 'apollo-server-express';
@@ -533,28 +533,8 @@ const mutations = {
     promises.push(Project.update({ ...attributes, ...extraAttributes }));
     await Promise.all(promises);
     pubsub.publish(PROJECT_CHANGE, { projectsSubscription: true });
+    pubsub.publish(PROJECT_GROUP_CHANGE, { projectGroupsSubscription: Project.get('id') });
     return Project;
-  },
-
-  addUserToProject: async (root, { projectId, userId }, { req }) => {
-    const User = await checkResolver(req);
-    const Project = <ProjectInstance>await models.Project.findByPk(projectId, {
-      include: [models.ProjectGroup],
-      order: [
-        ['order', 'DESC']
-      ]
-    });
-    if (Project === null) {
-      throw createDoesNoExistsError('Project', projectId);
-    }
-    if ((<ProjectGroupInstance[]>Project.get('ProjectGroups')).length === 0) {
-      return Project;
-    }
-    await idsDoExistsCheck([userId], models.User);
-    await checkIfHasProjectRights(User.get('id'), undefined, projectId, ['projectSecondary']);
-    await (<ProjectGroupInstance[]>Project.get('ProjectGroups'))[0].addUser(userId);
-    pubsub.publish(PROJECT_CHANGE, { projectsSubscription: true });
-    return Project.reload();
   },
 
   deleteProject: async (root, { id, newId }, { req }) => {
@@ -577,6 +557,7 @@ const mutations = {
     await Promise.all(Imaps.map((Imap) => Imap.setProject(newId)));
     await Project.destroy();
     pubsub.publish(PROJECT_CHANGE, { projectsSubscription: true });
+    pubsub.publish(PROJECT_GROUP_CHANGE, { projectGroupsSubscription: Project.get('id') });
     return Project;
   },
 }

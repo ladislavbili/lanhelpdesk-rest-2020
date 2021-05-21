@@ -124,6 +124,7 @@ export default {
     ...milestone.subscriptions,
     ...pricelist.subscriptions,
     ...project.subscriptions,
+    ...projectGroup.subscriptions,
     ...role.subscriptions,
     ...status.subscriptions,
     ...task.subscriptions,

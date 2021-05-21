@@ -147,11 +147,13 @@ input UserGroupUpdateInput {
 `
 
 export const ProjectGroupQuerries = `
+  projectGroups(id: Int!): [ProjectGroup]
 `
 
 export const ProjectGroupMutations = `
+  addUserToProjectGroup( id: Int!, userId: Int! ): ProjectGroup
 `
 
 export const ProjectGroupSubscriptions = `
-  projectGroupsSubscription: Boolean
+  projectGroupsSubscription(projectId: Int!): Int
 `

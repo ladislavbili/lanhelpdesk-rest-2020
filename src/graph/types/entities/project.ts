@@ -84,7 +84,6 @@ updateProject(
   deleteGroups: [Int]!,
 ): Project
 deleteProject( id: Int!, newId: Int! ): Project
-addUserToProject( projectId: Int!, userId: Int! ): Project
 `
 
 export const ProjectSubscriptions = `
