@@ -24,5 +24,5 @@ export const TaskChangeMutations = `
 `
 
 export const TaskChangeSubscriptions = `
-  taskChangesSubscription: Boolean
+  taskHistorySubscription(taskId: Int!): Boolean
 `

@@ -90,6 +90,7 @@ const { withFilter } = require('apollo-server-express');
 import {
   TASK_CHANGE,
   TASK_HISTORY_CHANGE,
+  TASK_DELETE,
 } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
@@ -484,8 +485,6 @@ const querries = {
     Task.rights = groupRights;
     return Task;
   },
-
-
 
   getNumberOfTasks: async (root, { projectId }, { req }) => {
     const User = await checkResolver(req);
@@ -1266,9 +1265,7 @@ const mutations = {
       {
         include: [
           { model: models.User, as: 'assignedTos', attributes: ['id'] },
-          {
-            model: models.Project,
-          }
+          models.Project,
         ]
       }
     );
@@ -1282,6 +1279,7 @@ const mutations = {
     await sendTaskNotificationsToUsers(User, Task, [`Task named "${Task.get('title')}" with id ${Task.get('id')} was deleted.`], true);
     await Task.destroy();
     pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
+    pubsub.publish(TASK_DELETE, { taskDeleteSubscription: id });
     return Task;
   }
 }
@@ -1453,14 +1451,14 @@ const subscriptions = {
       }
     ),
   },
-  taskHistorySubscription: {
+  taskDeleteSubscription: {
     subscribe: withFilter(
-      () => pubsub.asyncIterator(TASK_HISTORY_CHANGE),
-      async ({ taskHistorySubscription }, { taskId }, { userID }) => {
-        return taskHistorySubscription === taskId;
+      () => pubsub.asyncIterator(TASK_DELETE),
+      async ({ taskDeleteSubscription }, { taskId }, { userID }) => {
+        return taskDeleteSubscription === taskId;
       }
     ),
-  }
+  },
 }
 
 export default {

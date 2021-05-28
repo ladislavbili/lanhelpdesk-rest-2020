@@ -24,7 +24,6 @@ import checkResolver from './checkResolver';
 import fs from 'fs';
 import {
   COMMENT_CHANGE,
-  TASK_HISTORY_CHANGE,
 } from '@/configs/subscriptions';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
@@ -69,100 +68,6 @@ const querries = {
 }
 
 const mutations = {
-  addComment: async (root, { task, parentCommentId, internal, ...params }, { req }) => {
-    const SourceUser = await checkResolver(req);
-    const { groupRights, Task } = await checkIfHasProjectRights(SourceUser.get('id'), task);
-    if (internal && !groupRights.internal) {
-      throw InternalMessagesNotAllowed;
-    }
-    if (parentCommentId) {
-      const ParentComment = await models.Comment.findByPk(parentCommentId);
-      if (ParentComment === null || ParentComment.get('TaskId') !== task) {
-        throw createDoesNoExistsError('Parent comment', parentCommentId);
-      }
-      if (ParentComment.get('internal') && !groupRights.internal) {
-        throw InternalMessagesNotAllowed;
-      }
-    }
-
-    const NewComment = await models.Comment.create({
-      internal,
-      TaskId: task,
-      commentOfId: parentCommentId || null,
-      isParent: parentCommentId === null || parentCommentId === undefined,
-      UserId: SourceUser.get('id'),
-      ...params,
-    });
-    if (!internal) {
-      await (<TaskInstance>Task).createTaskChange({
-        UserId: SourceUser.get('id'),
-        TaskChangeMessages: [{
-          type: 'comment',
-          originalValue: null,
-          newValue: null,
-          message: `${SourceUser.get('fullName')} has commented the task.`,
-        }]
-      }, { include: [{ model: models.TaskChangeMessage }] });
-      pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
-      sendTaskNotificationsToUsers(
-        SourceUser,
-        Task,
-        [
-          `Comment added: ${params.message}`
-        ]
-      );
-    }
-    pubsub.publish(COMMENT_CHANGE, { commentsSubscription: task });
-    return NewComment;
-  },
-
-  sendEmail: async (root, { task, parentCommentId, message, subject, tos }, { req }) => {
-    const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['emails']);
-    if (parentCommentId) {
-      const ParentComment = await models.Comment.findByPk(parentCommentId);
-      if (ParentComment === null || ParentComment.get('TaskId') !== task) {
-        throw createDoesNoExistsError('Parent comment', parentCommentId);
-      }
-    }
-    if (tos.length === 0) {
-      throw EmailNoRecipientError;
-    }
-    if (tos.some((address) => !isEmail(address))) {
-      throw createWrongEmailsError(tos.filter((address) => !isEmail(address)));
-    }
-    let emailResult = <EmailResultInstance>await sendEmail(message, message, subject, tos, SourceUser.get('email'));
-    let savedResult = { emailSend: true, emailError: null };
-    if (emailResult.error) {
-      savedResult = { emailSend: false, emailError: emailResult.message }
-    }
-    const NewComment = await models.Comment.create({
-      message,
-      UserId: SourceUser.get('id'),
-      TaskId: task,
-      commentOfId: parentCommentId || null,
-      internal: false,
-      subject,
-      isEmail: true,
-      ...savedResult,
-      isParent: parentCommentId === null || parentCommentId === undefined,
-      EmailTargets: tos.map((to) => ({ address: to })),
-    }, { include: [models.EmailTarget] });
-    await models.TaskChange.create({
-      UserId: SourceUser.get('id'),
-      TaskId: task,
-      TaskChangeMessages: [{
-        type: 'email',
-        originalValue: null,
-        newValue: null,
-        message: `${SourceUser.get('fullName')} send email from the task.`,
-      }],
-    }, { include: [{ model: models.TaskChangeMessage }] });
-    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
-    pubsub.publish(COMMENT_CHANGE, { commentsSubscription: task });
-    return NewComment;
-  },
-
   resendEmail: async (root, { messageId }, { req }) => {
     const SourceUser = await checkResolver(req);
     const Comment = await models.Comment.findByPk(messageId, {
@@ -272,7 +177,7 @@ const subscriptions = {
         return commentsSubscription === taskId;
       }
     ),
-  }
+  },
 }
 
 export default {

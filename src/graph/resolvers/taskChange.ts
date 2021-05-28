@@ -6,7 +6,7 @@ import {
 import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
-import { TASK_CHANGE_CHANGE } from '@/configs/subscriptions';
+import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 
@@ -21,7 +21,10 @@ const querries = {
       ],
       where: {
         TaskId: taskId
-      }
+      },
+      order: [
+        ['id', 'DESC'],
+      ],
     })
   },
 }
@@ -44,14 +47,14 @@ const attributes = {
 };
 
 const subscriptions = {
-  commentsSubscription: {
+  taskHistorySubscription: {
     subscribe: withFilter(
-      () => pubsub.asyncIterator(TASK_CHANGE_CHANGE),
-      async (data, args, { userID }) => {
-        return true;
+      () => pubsub.asyncIterator(TASK_HISTORY_CHANGE),
+      async ({ taskHistorySubscription }, { taskId }, { userID }) => {
+        return taskHistorySubscription === taskId;
       }
     ),
-  }
+  },
 }
 
 export default {

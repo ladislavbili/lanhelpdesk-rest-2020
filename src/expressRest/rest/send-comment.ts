@@ -10,6 +10,11 @@ import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
 import { models } from '@/models';
+import {
+  COMMENT_CHANGE,
+  TASK_HISTORY_CHANGE,
+} from '@/configs/subscriptions';
+import { pubsub } from '@/graph/resolvers';
 import { AccessRightsInstance, RoleInstance, TaskInstance, CommentInstance } from '@/models/instances';
 
 export function sendComment(app) {
@@ -75,6 +80,8 @@ export function sendComment(app) {
       UserId: User.get('id'),
       message,
     });
+    pubsub.publish(COMMENT_CHANGE, { commentsSubscription: taskId });
+
     if (!internal) {
       (<TaskInstance>Task).createTaskChange({
         UserId: User.get('id'),
@@ -115,7 +122,7 @@ export function sendComment(app) {
     sendTaskNotificationsToUsers(
       User,
       Task,
-      notificationMessage,
+      [notificationMessage],
     );
     return res.send({ ok: true, error: null, comment: NewComment.get() });
   });

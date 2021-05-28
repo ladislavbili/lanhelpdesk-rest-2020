@@ -169,5 +169,5 @@ deleteTask( id: Int! ): Task
 
 export const TaskSubscriptions = `
   tasksSubscription: Boolean
-  taskHistorySubscription( taskId: Int! ): Int
+  taskDeleteSubscription( taskId: Int! ): Int
 `

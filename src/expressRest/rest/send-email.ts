@@ -10,6 +10,11 @@ import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
 import { models } from '@/models';
+import {
+  COMMENT_CHANGE,
+  TASK_HISTORY_CHANGE,
+} from '@/configs/subscriptions';
+import { pubsub } from '@/graph/resolvers';
 import { AccessRightsInstance, RoleInstance, TaskInstance, CommentInstance } from '@/models/instances';
 import { EmailResultInstance } from '@/graph/resolvers/comment';
 import { sendEmail as sendEmailService } from '@/services/smtp'
@@ -96,6 +101,7 @@ export function sendEmail(app) {
       isParent: parentCommentId === null || parentCommentId === undefined,
       EmailTargets: tos.map((to) => ({ address: to })),
     }, { include: [models.EmailTarget] });
+    pubsub.publish(COMMENT_CHANGE, { commentsSubscription: taskId });
     models.TaskChange.create({
       UserId: User.get('id'),
       TaskId: taskId,
