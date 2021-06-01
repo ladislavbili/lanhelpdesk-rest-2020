@@ -22,10 +22,10 @@ type TasklistColumnPreference{
   statistics: Boolean!
   works: Boolean!
   trips: Boolean!
-  materials: Boolean!
+  materialsWithoutDPH: Boolean!
+  materialsWithDPH: Boolean!
   Project: Project
 }
-
 `
 
 export const TasklistColumnPreferenceQuerries = `
@@ -54,6 +54,7 @@ addOrUpdateTasklistColumnPerference(
   statistics: Boolean
   works: Boolean
   trips: Boolean
-  materials: Boolean
+  materialsWithoutDPH: Boolean
+  materialsWithDPH: Boolean
 ): TasklistColumnPreference
 `

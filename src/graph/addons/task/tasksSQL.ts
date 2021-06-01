@@ -504,11 +504,15 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
 
 const outerSQLTop = `
 SELECT "TaskData".*,
+  "Subtasks"."subtasksQuantity" as subtasksQuantity,
+  "WorkTrips"."workTripsQuantity" as workTripsQuantity,
+  "Materials"."materialsPrice" as materialsPrice,
   ${createAttributesFromItem("assignedTos", "assignedTos", userAttributes)}
   ${generateFullNameSQL('assignedTos')}
   ${createAttributesFromItem("assignedTos->task_assignedTo", "assignedTos.task_assignedTo", assignedTosTaskMapAttributes)}
   ${createAttributesFromItem("Tags", "Tags", tagAttributes)}
   ${removeLastComma(createAttributesFromItem("Tags->task_has_tags", "Tags.task_has_tags", tagsTaskMapAttributes))}
+
 FROM (
 `;
 
@@ -526,8 +530,8 @@ ${createAttributesFromItem("requester", "requester", userAttributes)}
 ${generateFullNameSQL('requester')}
 ${createAttributesFromItem("Status", "Status", statusAttributes)}
 
-"tagsFilter"."id" AS "tagsFilter.id"
-"tagsFilter"."title" AS "tagsFilter.title"
+"tagsFilter"."id" AS "tagsFilter.id",
+"tagsFilter"."title" AS "tagsFilter.title",
 ${createAttributesFromItem("tagsFilter->task_has_tags", "tagsFilter.task_has_tags", tagsTaskMapAttributes)}
 ${createAttributesFromItem("TaskType", "TaskType", taskTypeAttributes)}
 ${createAttributesFromItem("Repeat", "Repeat", repeatAttributes)}
@@ -535,10 +539,11 @@ ${createAttributesFromItem("TaskMetadata", "TaskMetadata", taskMetadataAttribute
 ${createAttributesFromItem("Project->ProjectGroups", "Project.ProjectGroups", projectGroupAttributes)}
 ${createAttributesFromItem("Project->ProjectGroups->ProjectGroupRight", "Project.ProjectGroups.ProjectGroupRight", projectGroupRightsAttributes)}
 ${createAttributesFromItem("Project->ProjectGroups->Users", "Project.ProjectGroups.Users", userAttributes)}
-${createAttributesFromItem("Project->ProjectGroups->Users->user_belongs_to_group", "Project.ProjectGroups.Users.user_belongs_to_group", userBelongsToGroupAttributes)}
+${removeLastComma(createAttributesFromItem("Project->ProjectGroups->Users->user_belongs_to_group", "Project.ProjectGroups.Users.user_belongs_to_group", userBelongsToGroupAttributes))}
 FROM (
+  SELECT DISTINCT
   ${createAttributesFromItem("Task", null, taskAttributes)}
-  ${createAttributesFromItem("Project", "Project", projectAttributes)}
+  ${removeLastComma(createAttributesFromItem("Project", "Project", projectAttributes))}
   FROM "tasks" AS "Task"
   INNER JOIN "projects" AS "Project" ON "Task"."ProjectId" = "Project"."id"
   `;
@@ -551,4 +556,23 @@ LEFT OUTER JOIN (
 LEFT OUTER JOIN (
   "task_has_tags" AS "Tags->task_has_tags" INNER JOIN "tags" AS "Tags" ON "Tags"."id" = "Tags->task_has_tags"."TagId"
 ) ON "TaskData"."id" = "Tags->task_has_tags"."TaskId"
+LEFT OUTER JOIN (
+  SELECT "Subtasks"."TaskId", SUM( "Subtasks"."quantity" ) as subtasksQuantity FROM "subtasks" AS Subtasks GROUP BY "Subtasks"."TaskId"
+) AS "Subtasks" ON "Subtasks"."TaskId" = "TaskData"."id"
+LEFT OUTER JOIN (
+  SELECT "WorkTrips"."TaskId", COUNT( "WorkTrips"."id" ) as workTripsQuantity FROM "work_trips" AS WorkTrips GROUP BY "WorkTrips"."TaskId"
+) AS "WorkTrips" ON "WorkTrips"."TaskId" = "TaskData"."id"
+LEFT OUTER JOIN (
+  SELECT "Materials"."TaskId", SUM( "Materials"."quantity" * "Materials"."price" ) as materialsPrice FROM "materials" AS Materials GROUP BY "Materials"."TaskId"
+) AS "Materials" ON "Materials"."TaskId" = "TaskData"."id"
+GROUP BY "TaskData"."id"
 `;
+/*
+SUM( "Subtasks"."quantity" ) as subtasksQuantity,
+COUNT( "WorkTrips"."id" ) as workTripsQuantity,
+SUM( "Materials"."quantity" * "Materials"."price" ) as materialsPrice,
+
+LEFT OUTER JOIN "a" AS "Subtasks" ON "TaskData"."id" = "Subtasks"."TaskId"
+LEFT OUTER JOIN "work_trips" AS "WorkTrips" ON "TaskData"."id" = "WorkTrips"."TaskId"
+LEFT OUTER JOIN "materials" AS "Materials" ON "TaskData"."id" = "Materials"."TaskId"
+*/

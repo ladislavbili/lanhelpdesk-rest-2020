@@ -48,6 +48,10 @@ export interface TaskInstance extends DefaultInstance {
   createTaskMetadata?: any;
   getTaskMetadata?: any;
 
+  subtasksQuantity?: number;
+  workTripsQuantity?: number;
+  materialsPrice?: number;
+
   rights?: any;
 }
 

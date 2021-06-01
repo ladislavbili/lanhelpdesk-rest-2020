@@ -182,6 +182,9 @@ const querries = {
           ...Task,
           assignedTos: !hasAsssignedTo ? [] : [Task.assignedTos],
           Tags: !hasTag ? [] : [Task.Tags],
+          subtasksQuantity: toFloatOrZero(Task.subtasksQuantity),
+          workTripsQuantity: toFloatOrZero(Task.workTripsQuantity),
+          materialsPrice: toFloatOrZero(Task.materialsPrice),
         })
       }
     })
