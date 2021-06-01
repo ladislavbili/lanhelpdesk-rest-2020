@@ -17,6 +17,7 @@ import { RepeatTemplateAttachment } from './entities/repeatTemplateAttachment';
 import { RepeatTime } from './entities/repeatTime';
 import { Role } from './entities/role';
 import { ScheduledTask } from './entities/scheduledTask';
+import { ScheduledWork } from './entities/scheduledWork';
 import { ShortSubtask } from './entities/shortSubtask';
 import { Smtp } from './entities/smtp';
 import { Status } from './entities/status';
@@ -55,6 +56,7 @@ ${RepeatTemplateAttachment}
 ${RepeatTime}
 ${Role}
 ${ScheduledTask}
+${ScheduledWork}
 ${ShortSubtask}
 ${Smtp}
 ${Status}

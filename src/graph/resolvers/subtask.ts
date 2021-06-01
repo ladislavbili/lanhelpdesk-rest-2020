@@ -1,6 +1,11 @@
 import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import { models, sequelize } from '@/models';
-import { multipleIdDoesExistsCheck, idDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
+import {
+  multipleIdDoesExistsCheck,
+  idDoesExistsCheck,
+  getModelAttribute,
+  extractDatesFromObject,
+} from '@/helperFunctions';
 import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
@@ -12,10 +17,12 @@ import {
   RepeatTemplateInstance,
   TaskMetadataInstance,
   ProjectInstance,
+  ScheduledWorkInstance,
 } from '@/models/instances';
 import { pubsub } from './index';
 import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
+const scheduledDates = ['from', 'to'];
 
 const querries = {
   subtasks: async (root, { taskId }, { req }) => {
@@ -28,13 +35,14 @@ const querries = {
       ],
       where: {
         TaskId: taskId
-      }
+      },
+      include: [models.ScheduledWork],
     })
   },
 }
 
 const mutations = {
-  addSubtask: async (root, { task, type, assignedTo, ...params }, { req }) => {
+  addSubtask: async (root, { task, type, assignedTo, scheduled, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
     const [
@@ -78,19 +86,32 @@ const mutations = {
         subtasksPending: (<TaskMetadataInstance>TaskMetadata).get('subtasksPending') + parseFloat(<any>params.quantity)
       })
     }
-    return models.Subtask.create({
-      TaskId: task,
-      TaskTypeId: type,
-      UserId: assignedTo,
-      ...params,
-    });
+    if (scheduled) {
+      return models.Subtask.create({
+        TaskId: task,
+        TaskTypeId: type,
+        UserId: assignedTo,
+        ...params,
+        ScheduledWork: extractDatesFromObject(scheduled, scheduledDates),
+      }, {
+          include: [models.ScheduledWork]
+        });
+    } else {
+      return models.Subtask.create({
+        TaskId: task,
+        TaskTypeId: type,
+        UserId: assignedTo,
+        ...params,
+      });
+    }
   },
 
-  updateSubtask: async (root, { id, type, assignedTo, ...params }, { req }) => {
+  updateSubtask: async (root, { id, type, assignedTo, scheduled, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const Subtask = <SubtaskInstance>await models.Subtask.findByPk(id, {
       include: [
         models.TaskType,
+        models.ScheduledWork,
         {
           model: models.Task,
           include: [
@@ -200,6 +221,17 @@ const mutations = {
           subtasksPending
         }, { transaction: t })
       }
+      //scheduled
+      const ScheduledWork = <ScheduledWorkInstance>Subtask.get('ScheduledWork');
+      if (scheduled === null && ScheduledWork) {
+        promises.push(ScheduledWork.destroy({ transaction: t }));
+      } else if (scheduled) {
+        if (ScheduledWork) {
+          promises.push(ScheduledWork.update(extractDatesFromObject(scheduled, scheduledDates), { transaction: t }));
+        } else {
+          promises.push(Subtask.createScheduledWork(extractDatesFromObject(scheduled, scheduledDates), { transaction: t }));
+        }
+      }
       promises.push(Subtask.update(params, { transaction: t }));
       await Promise.all(promises);
     });
@@ -265,7 +297,7 @@ const mutations = {
     return Subtask.destroy();
   },
 
-  addRepeatTemplateSubtask: async (root, { repeatTemplate, type, assignedTo, ...params }, { req }) => {
+  addRepeatTemplateSubtask: async (root, { repeatTemplate, type, assignedTo, scheduled, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const RepeatTemplate = <RepeatTemplateInstance>await models.RepeatTemplate.findByPk(
       repeatTemplate,
@@ -287,21 +319,34 @@ const mutations = {
         SubtaskApprovedById: SourceUser.get('id'),
       }
     }
-    return models.Subtask.create({
-      RepeatTemplateId: repeatTemplate,
-      TaskTypeId: type,
-      UserId: assignedTo,
-      ...params,
-    });
+    if (scheduled) {
+      return models.Subtask.create({
+        RepeatTemplateId: repeatTemplate,
+        TaskTypeId: type,
+        UserId: assignedTo,
+        ...params,
+        ScheduledWork: extractDatesFromObject(scheduled, scheduledDates),
+      }, {
+          include: [models.ScheduledWork]
+        });
+    } else {
+      return models.Subtask.create({
+        RepeatTemplateId: repeatTemplate,
+        TaskTypeId: type,
+        UserId: assignedTo,
+        ...params,
+      });
+    }
   },
 
-  updateRepeatTemplateSubtask: async (root, { id, type, assignedTo, ...params }, { req }) => {
+  updateRepeatTemplateSubtask: async (root, { id, type, assignedTo, scheduled, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const Subtask = <SubtaskInstance>await models.Subtask.findByPk(
       id,
       {
         include: [
           models.TaskType,
+          models.ScheduledWork,
           {
             model: models.RepeatTemplate,
             include: [
@@ -352,6 +397,17 @@ const mutations = {
           SubtaskApprovedById: SourceUser.get('id')
         }
       }
+      //scheduled
+      const ScheduledWork = <ScheduledWorkInstance>Subtask.get('ScheduledWork');
+      if (scheduled === null && ScheduledWork) {
+        promises.push(ScheduledWork.destroy({ transaction: t }));
+      } else if (scheduled) {
+        if (ScheduledWork) {
+          promises.push(ScheduledWork.update(extractDatesFromObject(scheduled, scheduledDates), { transaction: t }));
+        } else {
+          promises.push(Subtask.createScheduledWork(extractDatesFromObject(scheduled, scheduledDates), { transaction: t }));
+        }
+      }
       promises.push(Subtask.update(params, { transaction: t }));
       await Promise.all(promises);
     });
@@ -397,6 +453,9 @@ const attributes = {
     },
     async invoicedData(subtask) {
       return getModelAttribute(subtask, 'InvoicedSubtasks');
+    },
+    async scheduled(subtask) {
+      return getModelAttribute(subtask, 'ScheduledWork');
     },
   }
 };

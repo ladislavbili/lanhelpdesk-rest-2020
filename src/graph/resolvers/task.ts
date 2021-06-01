@@ -111,6 +111,7 @@ const dateNames2 = [
   'scheduledFrom',
   'scheduledTo',
 ];
+const scheduledDateNames = ['from', 'to'];
 
 const querries = {
   tasks: async (root, { projectId, filter, sort, search, stringFilter, limit, page, statuses }, { req, userID }) => {
@@ -748,11 +749,26 @@ const mutations = {
       await idsDoExistsCheck(subtasks.map((subtask) => subtask.type), models.TaskType);
       params = {
         ...params,
-        Subtasks: subtasks.map((subtask) => (
-          subtask.approved ?
-            { ...subtask, UserId: subtask.assignedTo, TaskTypeId: subtask.type, SubtaskApprovedById: User.get('id') } :
-            { ...subtask, UserId: subtask.assignedTo, TaskTypeId: subtask.type }
-        ))
+        Subtasks: subtasks.map((subtask) => {
+          let baseSubtask = {
+            ...subtask,
+            UserId: subtask.assignedTo,
+            TaskTypeId: subtask.type,
+          };
+          if (subtask.approved) {
+            baseSubtask = {
+              ...baseSubtask,
+              SubtaskApprovedById: User.get('id'),
+            }
+          }
+          if (subtask.scheduled) {
+            baseSubtask = {
+              ...baseSubtask,
+              ScheduledWork: extractDatesFromObject(subtask.scheduled, scheduledDateNames),
+            }
+          }
+          return baseSubtask;
+        })
       }
     }
     //WorkTrip
@@ -763,11 +779,22 @@ const mutations = {
       await idsDoExistsCheck(workTrips.map((workTrip) => workTrip.type), models.TripType);
       params = {
         ...params,
-        WorkTrips: workTrips.map((workTrip) => (
-          workTrip.approved ?
-            { ...workTrip, UserId: workTrip.assignedTo, TripTypeId: workTrip.type, TripApprovedById: User.get('id') } :
-            { ...workTrip, UserId: workTrip.assignedTo, TripTypeId: workTrip.type }
-        ))
+        WorkTrips: workTrips.map((workTrip) => {
+          let baseTrip = { ...workTrip, UserId: workTrip.assignedTo, TripTypeId: workTrip.type };
+          if (workTrip.approved) {
+            baseTrip = {
+              ...baseTrip,
+              TripApprovedById: User.get('id'),
+            }
+          }
+          if (workTrip.scheduled) {
+            baseTrip = {
+              ...baseTrip,
+              ScheduledWork: extractDatesFromObject(workTrip.scheduled, scheduledDateNames),
+            }
+          }
+          return baseTrip;
+        }),
       }
     }
     //Material
@@ -815,7 +842,12 @@ const mutations = {
           include: [{
             model: models.RepeatTemplate,
             include: [
-              models.ScheduledTask, models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem
+              models.ScheduledTask,
+              models.ShortSubtask,
+              { model: models.Subtask, include: [models.ScheduledWork] },
+              { model: models.WorkTrip, include: [models.ScheduledWork] },
+              models.Material,
+              models.CustomItem
             ]
           }]
         }
@@ -838,8 +870,8 @@ const mutations = {
         models.Comment,
         models.ScheduledTask,
         models.ShortSubtask,
-        models.Subtask,
-        models.WorkTrip,
+        { model: models.Subtask, include: [models.ScheduledWork] },
+        { model: models.WorkTrip, include: [models.ScheduledWork] },
         models.Material,
         models.CustomItem,
         {

@@ -16,6 +16,7 @@ export interface SubtaskInstance extends DefaultInstance {
 
   setTaskType?: any;
   setUser?: any;
+  createScheduledWork?: any;
 }
 
 export default function defineSubtasks(sequelize: Sequelize) {
@@ -78,4 +79,7 @@ export function createSubtasksAssoc(models) {
   models.Subtask.belongsTo(models.User, { as: 'SubtaskApprovedBy' });
 
   models.Subtask.hasMany(models.InvoicedSubtask);
+
+  models.Subtask.hasOne(models.ScheduledWork, { onDelete: 'CASCADE' });
+
 }

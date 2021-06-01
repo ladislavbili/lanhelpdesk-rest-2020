@@ -54,6 +54,7 @@ import defineProjectGroups, { createProjectGroupsAssoc } from './instances/proje
 import defineProjectGroupRights, { createProjectGroupRightsAssoc } from './instances/projectGroupRights';
 import defineTaskMetadata, { createTaskMetadataAssoc } from './instances/taskMetadata';
 import defineTasklistColumnPreferences, { createTasklistColumnPreferencesAssoc } from './instances/taskListColumnPreference';
+import defineScheduledWorks, { createScheduledWorksAssoc } from './instances/scheduledWork';
 
 
 /*
@@ -124,6 +125,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineTaskMetadata(sequelize);
   defineTasklistColumnPreferences(sequelize);
   defineRepeatTimes(sequelize);
+  defineScheduledWorks(sequelize);
 
   createRolesAssoc(models);
   createUsersAssoc(models);
@@ -179,11 +181,11 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createTaskMetadataAssoc(models);
   createTasklistColumnPreferencesAssoc(models);
   createRepeatTimesAssoc(models);
-
+  createScheduledWorksAssoc(models);
 
   //LOG FUNCTIONS
 
-  //logFunctionsOfModel(models.Project);
+  //logFunctionsOfModel(models.Subtask);
 
   if (ignoreUpdating) {
     return new Promise((resolve, reject) => resolve());

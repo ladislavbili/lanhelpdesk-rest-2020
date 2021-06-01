@@ -19,6 +19,7 @@ import {
   materialAttributes,
   customItemAttributes,
   scheduledTaskAttributes,
+  scheduledWorkAttributes,
 } from './attributes';
 const toDBDate = (date) => (new Date(date)).toISOString().slice(0, 19).replace('T', ' ');
 
@@ -190,6 +191,7 @@ export const generateSubtasksSQL = (taskId) => {
     ${createAttributesFromItem("User", "User", userAttributes)}
     ${generateFullNameSQL("User")},
     ${createAttributesFromItem("User->Company", "User.Company", companyAttributes)}
+    ${createAttributesFromItem("ScheduledWork", "ScheduledWork", scheduledWorkAttributes)}
 
     `
   )
@@ -197,12 +199,12 @@ export const generateSubtasksSQL = (taskId) => {
   return `
   SELECT
   ${attributes.slice(0, attributes.lastIndexOf(","))}
-
   FROM (SELECT * FROM "subtasks" WHERE "subtasks"."TaskId" = ${taskId} ) AS "Subtasks"
   LEFT OUTER JOIN "task_types" AS "TaskType" ON "Subtasks"."TaskTypeId" = "TaskType"."id"
   LEFT OUTER JOIN "users" AS "SubtaskApprovedBy" ON "Subtasks"."SubtaskApprovedById" = "SubtaskApprovedBy"."id"
   LEFT OUTER JOIN "users" AS "User" ON "Subtasks"."UserId" = "User"."id"
   LEFT OUTER JOIN "companies" AS "User->Company" ON "User"."CompanyId" = "User->Company"."id"
+  LEFT OUTER JOIN "scheduled_work" AS "ScheduledWork" ON "Subtasks"."id" = "ScheduledWork"."SubtaskId"
   `.replace(/"/g, '`');
 }
 
@@ -219,6 +221,7 @@ export const generateWorkTripsSQL = (taskId) => {
     ${createAttributesFromItem("User", "User", userAttributes)}
     ${generateFullNameSQL("User")},
     ${createAttributesFromItem("User->Company", "User.Company", companyAttributes)}
+    ${createAttributesFromItem("ScheduledWork", "ScheduledWork", scheduledWorkAttributes)}
 
     `
   )
@@ -232,6 +235,7 @@ export const generateWorkTripsSQL = (taskId) => {
   LEFT OUTER JOIN "users" AS "TripApprovedBy" ON "WorkTrips"."TripApprovedById" = "TripApprovedBy"."id"
   LEFT OUTER JOIN "users" AS "User" ON "WorkTrips"."UserId" = "User"."id"
   LEFT OUTER JOIN "companies" AS "User->Company" ON "User"."CompanyId" = "User->Company"."id"
+  LEFT OUTER JOIN "scheduled_work" AS "ScheduledWork" ON "WorkTrips"."id" = "ScheduledWork"."WorkTripId"
   `.replace(/"/g, '`');
 }
 

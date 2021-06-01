@@ -276,3 +276,11 @@ export const scheduledTaskAttributes = [
   "from",
   "to"
 ]
+
+export const scheduledWorkAttributes = [
+  "id",
+  "createdAt",
+  "updatedAt",
+  "from",
+  "to"
+]

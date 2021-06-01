@@ -68,6 +68,7 @@ const dateNames = ['deadline', 'pendingDate', 'closeDate'];
 import { REPEAT_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
+const scheduledDateNames = ['from', 'to'];
 
 const querries = {
   repeats: async (root, { projectId, active, ...rangeDates }, { req, userID }) => {
@@ -263,11 +264,11 @@ const querries = {
                 models.ShortSubtask,
                 {
                   model: models.Subtask,
-                  include: [models.TaskType, { model: models.User, include: [models.Company] }]
+                  include: [models.TaskType, models.ScheduledWork, { model: models.User, include: [models.Company] }]
                 },
                 {
                   model: models.WorkTrip,
-                  include: [models.TripType, { model: models.User, include: [models.Company] }]
+                  include: [models.TripType, models.ScheduledWork, { model: models.User, include: [models.Company] }]
                 },
                 {
                   model: models.Material,
@@ -498,11 +499,26 @@ const mutations = {
       await idsDoExistsCheck(subtasks.map((subtask) => subtask.type), models.TaskType);
       params = {
         ...params,
-        Subtasks: subtasks.map((subtask) => (
-          subtask.approved ?
-            { ...subtask, UserId: subtask.assignedTo, TaskTypeId: subtask.type, SubtaskApprovedById: User.get('id') } :
-            { ...subtask, UserId: subtask.assignedTo, TaskTypeId: subtask.type }
-        ))
+        Subtasks: subtasks.map((subtask) => {
+          let baseSubtask = {
+            ...subtask,
+            UserId: subtask.assignedTo,
+            TaskTypeId: subtask.type,
+          };
+          if (subtask.approved) {
+            baseSubtask = {
+              ...baseSubtask,
+              SubtaskApprovedById: User.get('id'),
+            }
+          }
+          if (subtask.scheduled) {
+            baseSubtask = {
+              ...baseSubtask,
+              ScheduledWork: extractDatesFromObject(subtask.scheduled, scheduledDateNames),
+            }
+          }
+          return baseSubtask;
+        })
       }
     }
     //WorkTrip
@@ -513,11 +529,22 @@ const mutations = {
       await idsDoExistsCheck(workTrips.map((workTrip) => workTrip.type), models.TripType);
       params = {
         ...params,
-        WorkTrips: workTrips.map((workTrip) => (
-          workTrip.approved ?
-            { ...workTrip, UserId: workTrip.assignedTo, TripTypeId: workTrip.type, TripApprovedById: User.get('id') } :
-            { ...workTrip, UserId: workTrip.assignedTo, TripTypeId: workTrip.type }
-        ))
+        WorkTrips: workTrips.map((workTrip) => {
+          let baseTrip = { ...workTrip, UserId: workTrip.assignedTo, TripTypeId: workTrip.type };
+          if (workTrip.approved) {
+            baseTrip = {
+              ...baseTrip,
+              TripApprovedById: User.get('id'),
+            }
+          }
+          if (workTrip.scheduled) {
+            baseTrip = {
+              ...baseTrip,
+              ScheduledWork: extractDatesFromObject(workTrip.scheduled, scheduledDateNames),
+            }
+          }
+          return baseTrip;
+        }),
       }
     }
     //Material
@@ -554,7 +581,11 @@ const mutations = {
         include: [{
           model: models.RepeatTemplate,
           include: [
-            models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem
+            models.ShortSubtask,
+            { model: models.Subtask, include: [models.ScheduledWork] },
+            { model: models.WorkTrip, include: [models.ScheduledWork] },
+            models.Material,
+            models.CustomItem
           ]
         }]
       }

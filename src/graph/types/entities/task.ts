@@ -56,6 +56,7 @@ input SubtaskInput{
   discount: Float!
   type: Int!
   assignedTo: Int!
+  scheduled: ScheduledWorkInput
 }
 
 input WorkTripInput{
@@ -66,6 +67,7 @@ input WorkTripInput{
   discount: Float!
   type: Int!
   assignedTo: Int!
+  scheduled: ScheduledWorkInput
 }
 
 input MaterialInput{

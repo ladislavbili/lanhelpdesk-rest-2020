@@ -12,6 +12,7 @@ import project from './project';
 import projectGroup from './projectGroup';
 import role from './role';
 import scheduledTask from './scheduledTask';
+import scheduledWork from './scheduledWork';
 import shortSubtask from './shortSubtask';
 import smtp from './smtp';
 import status from './status';
@@ -76,6 +77,7 @@ export default {
     ...repeatTemplateAttachment.querries,
     ...userNotification.querries,
     ...repeatTime.querries,
+    ...scheduledWork.querries,
   },
 
   Mutation: {
@@ -115,6 +117,7 @@ export default {
     ...repeatTemplateAttachment.mutations,
     ...userNotification.mutations,
     ...repeatTime.mutations,
+    ...scheduledWork.mutations,
   },
   Subscription: {
     ...comment.subscriptions,
@@ -172,4 +175,5 @@ export default {
   ...repeatTemplateAttachment.attributes,
   ...userNotification.attributes,
   ...repeatTime.attributes,
+  ...scheduledWork.attributes,
 };

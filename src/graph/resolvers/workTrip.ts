@@ -8,14 +8,21 @@ import {
   RepeatTemplateInstance,
   TaskMetadataInstance,
   ProjectInstance,
+  ScheduledWorkInstance,
 } from '@/models/instances';
-import { multipleIdDoesExistsCheck, idDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
+import {
+  multipleIdDoesExistsCheck,
+  idDoesExistsCheck,
+  getModelAttribute,
+  extractDatesFromObject,
+} from '@/helperFunctions';
 import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
 import { pubsub } from './index';
 import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
+const scheduledDates = ['from', 'to'];
 
 const querries = {
   workTrips: async (root, { taskId }, { req }) => {
@@ -28,13 +35,14 @@ const querries = {
       ],
       where: {
         TaskId: taskId
-      }
+      },
+      include: [models.ScheduledWork],
     })
   },
 }
 
 const mutations = {
-  addWorkTrip: async (root, { task, type, assignedTo, ...params }, { req }) => {
+  addWorkTrip: async (root, { task, type, assignedTo, scheduled, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
     const [
@@ -79,19 +87,32 @@ const mutations = {
         tripsPending: (<TaskMetadataInstance>TaskMetadata).get('tripsPending') + params.quantity
       })
     }
-    return models.WorkTrip.create({
-      TaskId: task,
-      TripTypeId: type,
-      UserId: assignedTo,
-      ...params,
-    });
+    if (scheduled) {
+      return models.WorkTrip.create({
+        TaskId: task,
+        TripTypeId: type,
+        UserId: assignedTo,
+        ...params,
+        ScheduledWork: extractDatesFromObject(scheduled, scheduledDates),
+      }, {
+          include: [models.ScheduledWork]
+        });
+    } else {
+      return models.WorkTrip.create({
+        TaskId: task,
+        TripTypeId: type,
+        UserId: assignedTo,
+        ...params,
+      });
+    }
   },
 
-  updateWorkTrip: async (root, { id, type, assignedTo, ...params }, { req }) => {
+  updateWorkTrip: async (root, { id, type, assignedTo, scheduled, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const WorkTrip = <WorkTripInstance>await models.WorkTrip.findByPk(id, {
       include: [
         models.TripType,
+        models.ScheduledWork,
         {
           model: models.Task,
           include: [
@@ -203,7 +224,17 @@ const mutations = {
           tripsPending
         }, { transaction: t })
       }
-
+      //scheduled
+      const ScheduledWork = <ScheduledWorkInstance>WorkTrip.get('ScheduledWork');
+      if (scheduled === null && ScheduledWork) {
+        promises.push(ScheduledWork.destroy({ transaction: t }));
+      } else if (scheduled) {
+        if (ScheduledWork) {
+          promises.push(ScheduledWork.update(extractDatesFromObject(scheduled, scheduledDates), { transaction: t }));
+        } else {
+          promises.push(WorkTrip.createScheduledWork(extractDatesFromObject(scheduled, scheduledDates), { transaction: t }));
+        }
+      }
       promises.push(WorkTrip.update(params, { transaction: t }));
       await Promise.all(promises);
     });
@@ -269,7 +300,7 @@ const mutations = {
     return WorkTrip.destroy();
   },
 
-  addRepeatTemplateWorkTrip: async (root, { repeatTemplate, type, assignedTo, ...params }, { req }) => {
+  addRepeatTemplateWorkTrip: async (root, { repeatTemplate, type, assignedTo, scheduled, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const RepeatTemplate = <RepeatTemplateInstance>await models.RepeatTemplate.findByPk(
       repeatTemplate,
@@ -291,21 +322,34 @@ const mutations = {
       }
     }
 
-    return models.WorkTrip.create({
-      RepeatTemplateId: repeatTemplate,
-      TripTypeId: type,
-      UserId: assignedTo,
-      ...params,
-    });
+    if (scheduled) {
+      return models.WorkTrip.create({
+        RepeatTemplateId: repeatTemplate,
+        TripTypeId: type,
+        UserId: assignedTo,
+        ...params,
+        ScheduledWork: extractDatesFromObject(scheduled, scheduledDates),
+      }, {
+          include: [models.ScheduledWork]
+        });
+    } else {
+      return models.WorkTrip.create({
+        RepeatTemplateId: repeatTemplate,
+        TripTypeId: type,
+        UserId: assignedTo,
+        ...params,
+      });
+    }
   },
 
-  updateRepeatTemplateWorkTrip: async (root, { id, type, assignedTo, ...params }, { req }) => {
+  updateRepeatTemplateWorkTrip: async (root, { id, type, assignedTo, scheduled, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const WorkTrip = <WorkTripInstance>await models.WorkTrip.findByPk(
       id,
       {
         include: [
           models.TripType,
+          models.ScheduledWork,
           {
             model: models.RepeatTemplate,
             include: [
@@ -356,6 +400,17 @@ const mutations = {
           TripApprovedById: SourceUser.get('id')
         }
       }
+      //scheduled
+      const ScheduledWork = <ScheduledWorkInstance>WorkTrip.get('ScheduledWork');
+      if (scheduled === null && ScheduledWork) {
+        promises.push(ScheduledWork.destroy({ transaction: t }));
+      } else if (scheduled) {
+        if (ScheduledWork) {
+          promises.push(ScheduledWork.update(extractDatesFromObject(scheduled, scheduledDates), { transaction: t }));
+        } else {
+          promises.push(WorkTrip.createScheduledWork(extractDatesFromObject(scheduled, scheduledDates), { transaction: t }));
+        }
+      }
       promises.push(WorkTrip.update(params, { transaction: t }));
       await Promise.all(promises);
     });
@@ -393,6 +448,9 @@ const attributes = {
     },
     async invoicedData(workTrip) {
       return getModelAttribute(workTrip, 'InvoicedTrips');
+    },
+    async scheduled(workTrip) {
+      return getModelAttribute(workTrip, 'ScheduledWork');
     },
   }
 };
