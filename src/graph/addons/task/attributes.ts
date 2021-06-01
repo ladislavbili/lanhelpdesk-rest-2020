@@ -1,28 +1,58 @@
-export const taskAttributes = [
+export const companyAttributes = [
   "id",
   "title",
-  "important",
-  "closeDate",
-  "deadline",
+  "dph",
+  "ico",
+  "dic",
+  "ic_dph",
+  "country",
+  "city",
+  "street",
+  "zip",
+  "email",
+  "phone",
   "description",
-  "overtime",
-  "pausal",
-  "pendingChangable",
-  "pendingDate",
-  "statusChange",
-  "invoicedDate",
-  "invoiced",
+  "monthly",
+  "monthlyPausal",
+  "taskWorkPausal",
+  "taskTripPausal",
   "createdAt",
   "updatedAt",
-  "UserId",
+  "PricelistId",
+]
+
+export const milestoneAttributes = [
+  "id",
+  "title",
+  "description",
+  "startsAt",
+  "endsAt",
+  "createdAt",
+  "updatedAt",
   "ProjectId",
+]
+
+export const pricelistAttributes = [
+  "id",
+  "title",
+  "order",
+  "afterHours",
+  "def",
+  "materialMargin",
+  "materialMarginExtra",
+  "createdAt",
+  "updatedAt",
+]
+
+export const priceAttributes = [
+  "id",
+  "price",
+  "type",
+  "createdAt",
+  "updatedAt",
   "TaskTypeId",
-  "CompanyId",
-  "StatusId",
-  "MilestoneId",
-  "createdById",
-  "requesterId",
-  "RepeatId",
+  "TripTypeId",
+  "PricelistId",
 ]
 
 export const projectAttributes = [
@@ -67,107 +97,74 @@ export const projectAttributes = [
   "CompanyId",
 ]
 
-export const taskAttachmentAttributes = [
-  "id",
-  "filename",
-  "mimetype",
-  "encoding",
-  "createdAt",
-  "updatedAt",
-  "UserId",
-  "TaskId",
-  "path",
-  "size",
-]
-
-export const userAttributes = [
-  "id",
-  "active",
-  "username",
-  "email",
-  "name",
-  "surname",
-  "receiveNotifications",
-  "signature",
-  "language",
-  "RoleId",
-  "CompanyId",
-]
-
-export const companyAttributes = [
-  "id",
-  "title",
-  "dph",
-  "ico",
-  "dic",
-  "ic_dph",
-  "email",
-  "phone",
-  "description",
-  "monthly",
-  "monthlyPausal",
-  "taskWorkPausal",
-  "taskTripPausal",
-  "createdAt",
-  "updatedAt",
-  "PricelistId",
-]
-
-export const pricelistAttributes = [
+export const projectGroupAttributes = [
   "id",
   "title",
   "order",
-  "afterHours",
-  "def",
-  "materialMargin",
-  "materialMarginExtra",
-  "createdAt",
-  "updatedAt",
-]
-export const priceAttributes = [
-  "id",
-  "price",
-  "type",
-  "createdAt",
-  "updatedAt",
-  "TaskTypeId",
-  "TripTypeId",
-  "PricelistId",
-]
-export const taskTypeAttributes = [
-  "id",
-  "title",
-  "order",
-  "createdAt",
-  "updatedAt",
-]
-export const tripTypeAttributes = [
-  "id",
-  "title",
-  "order",
-  "createdAt",
-  "updatedAt",
-]
-
-export const milestoneAttributes = [
-  "id",
-  "title",
-  "description",
-  "startsAt",
-  "endsAt",
   "createdAt",
   "updatedAt",
   "ProjectId",
 ]
 
-export const statusAttributes = [
+export const projectGroupRightsAttributes = [
   "id",
-  "title",
-  "order",
-  "color",
-  "icon",
-  "action",
+  "assignedRead",
+  "assignedWrite",
+  "companyRead",
+  "companyWrite",
+  "deadlineRead",
+  "deadlineWrite",
+  "milestoneRead",
+  "milestoneWrite",
+  "overtimeRead",
+  "overtimeWrite",
+  "pausalRead",
+  "pausalWrite",
+  "projectRead",
+  "projectWrite",
+  "projectPrimaryRead",
+  "projectPrimaryWrite",
+  "repeatRead",
+  "repeatWrite",
+  "requesterRead",
+  "requesterWrite",
+  "rozpocetRead",
+  "rozpocetWrite",
+  "scheduledRead",
+  "scheduledWrite",
+  "statusRead",
+  "statusWrite",
+  "tagsRead",
+  "tagsWrite",
+  "taskAttachmentsRead",
+  "taskAttachmentsWrite",
+  "taskDescriptionRead",
+  "taskDescriptionWrite",
+  "taskShortSubtasksRead",
+  "taskShortSubtasksWrite",
+  "typeRead",
+  "typeWrite",
+  "vykazRead",
+  "vykazWrite",
+  "addComments",
+  "emails",
+  "history",
+  "internal",
+  "projectSecondary",
+  "pausalInfo",
+  "taskTitleEdit",
+  "viewComments",
+  "companyTasks",
+  "allTasks",
+  "addTasks",
+  "statistics",
+  "deleteTasks",
+  "important",
+  "createdAt",
+  "updatedAt",
+  "ProjectGroupId",
 ]
+
 export const repeatAttributes = [
   "id",
   "repeatEvery",
@@ -176,20 +173,6 @@ export const repeatAttributes = [
   "active",
   "createdAt",
   "updatedAt",
-]
-export const taskMetadataAttributes = [
-  "id",
-  "subtasksApproved",
-  "subtasksPending",
-  "tripsApproved",
-  "tripsPending",
-  "materialsApproved",
-  "materialsPending",
-  "itemsApproved",
-  "itemsPending",
-  "createdAt",
-  "updatedAt",
-  "TaskId",
 ]
 
 export const repeatTimeAttributes = [
@@ -200,6 +183,72 @@ export const repeatTimeAttributes = [
   "createdAt",
   "updatedAt",
   "RepeatId",
+]
+
+export const customItemAttributes = [
+  "id",
+  "title",
+  "order",
+  "done",
+  "approved",
+  "quantity",
+  "price",
+  "createdAt",
+  "updatedAt",
+  "UserId",
+  "TaskId",
+  "RepeatTemplateId",
+  "ItemApprovedById",
+]
+
+export const materialAttributes = [
+  "id",
+  "title",
+  "order",
+  "done",
+  "approved",
+  "quantity",
+  "margin",
+  "price",
+  "createdAt",
+  "updatedAt",
+  "UserId",
+  "TaskId",
+  "RepeatTemplateId",
+  "MaterialApprovedById",
+]
+
+export const scheduledTaskAttributes = [
+  "id",
+  "createdAt",
+  "updatedAt",
+  "TaskId",
+  "UserId",
+  "from",
+  "to"
+]
+
+export const scheduledWorkAttributes = [
+  "id",
+  "createdAt",
+  "updatedAt",
+  "from",
+  "to"
+]
+
+export const statusAttributes = [
+  "id",
+  "title",
+  "order",
+  "template",
+  "color",
+  "icon",
+  "action",
+  "createdAt",
+  "updatedAt",
+  "ProjectId",
+  "defStatusId",
+  "projectStatusId",
 ]
 
 export const subtaskAttributes = [
@@ -220,6 +269,108 @@ export const subtaskAttributes = [
   "SubtaskApprovedById",
 ]
 
+export const tagAttributes = [
+  "id",
+  "title",
+  "color",
+  "order",
+  "createdAt",
+  "updatedAt",
+  "ProjectId",
+  "ofProjectId",
+]
+
+export const taskAttributes = [
+  "id",
+  "title",
+  "important",
+  "closeDate",
+  "deadline",
+  "description",
+  "overtime",
+  "pausal",
+  "pendingChangable",
+  "pendingDate",
+  "statusChange",
+  "invoicedDate",
+  "invoiced",
+  "createdAt",
+  "updatedAt",
+  "UserId",
+  "ProjectId",
+  "TaskTypeId",
+  "CompanyId",
+  "StatusId",
+  "MilestoneId",
+  "createdById",
+  "requesterId",
+  "RepeatId",
+]
+
+export const taskAttachmentAttributes = [
+  "id",
+  "filename",
+  "mimetype",
+  "encoding",
+  "createdAt",
+  "updatedAt",
+  "UserId",
+  "TaskId",
+  "path",
+  "size",
+]
+
+export const taskMetadataAttributes = [
+  "id",
+  "subtasksApproved",
+  "subtasksPending",
+  "tripsApproved",
+  "tripsPending",
+  "materialsApproved",
+  "materialsPending",
+  "itemsApproved",
+  "itemsPending",
+  "createdAt",
+  "updatedAt",
+  "TaskId",
+]
+
+export const taskTypeAttributes = [
+  "id",
+  "title",
+  "order",
+  "createdAt",
+  "updatedAt",
+]
+
+export const tripTypeAttributes = [
+  "id",
+  "title",
+  "order",
+  "createdAt",
+  "updatedAt",
+]
+
+export const userAttributes = [
+  "id",
+  "active",
+  "username",
+  "email",
+  "name",
+  "surname",
+  "password",
+  "receiveNotifications",
+  "signature",
+  "tokenKey",
+  "language",
+  "tasklistLayout",
+  "taskLayout",
+  "createdAt",
+  "updatedAt",
+  "RoleId",
+  "CompanyId",
+]
+
 export const workTripAttributes = [
   "id",
   "order",
@@ -235,52 +386,29 @@ export const workTripAttributes = [
   "RepeatTemplateId",
   "TripApprovedById",
 ]
-export const materialAttributes = [
+
+
+//filter
+export const assignedTosFilterAttributes = [
   "id",
-  "title",
-  "order",
-  "done",
-  "approved",
-  "quantity",
-  "margin",
-  "price",
+  "name",
+  "surname",
+];
+
+//map tables
+export const assignedTosTaskMapAttributes = [
+  "UserId",
+  "TaskId",
+];
+
+export const userBelongsToGroupAttributes = [
   "createdAt",
   "updatedAt",
   "UserId",
-  "TaskId",
-  "RepeatTemplateId",
-  "MaterialApprovedById",
-]
-export const customItemAttributes = [
-  "id",
-  "title",
-  "order",
-  "done",
-  "approved",
-  "quantity",
-  "price",
-  "createdAt",
-  "updatedAt",
-  "UserId",
-  "TaskId",
-  "RepeatTemplateId",
-  "ItemApprovedById",
+  "ProjectGroupId",
 ]
 
-export const scheduledTaskAttributes = [
-  "id",
-  "createdAt",
-  "updatedAt",
+export const tagsTaskMapAttributes = [
+  "TagId",
   "TaskId",
-  "UserId",
-  "from",
-  "to"
-]
-
-export const scheduledWorkAttributes = [
-  "id",
-  "createdAt",
-  "updatedAt",
-  "from",
-  "to"
 ]

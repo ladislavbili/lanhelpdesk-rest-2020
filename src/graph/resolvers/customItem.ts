@@ -56,11 +56,11 @@ const mutations = {
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
     if (params.approved || (<ProjectInstance>Project).get('autoApproved')) {
       (<TaskMetadataInstance>TaskMetadata).update({
-        itemsApproved: (<TaskMetadataInstance>TaskMetadata).get('itemsApproved') + params.quantity
+        itemsApproved: parseFloat(<any>(<TaskMetadataInstance>TaskMetadata).get('itemsApproved')) + parseFloat(<any>params.quantity),
       })
     } else {
       (<TaskMetadataInstance>TaskMetadata).update({
-        itemsPending: (<TaskMetadataInstance>TaskMetadata).get('itemsPending') + params.quantity
+        itemsPending: parseFloat(<any>(<TaskMetadataInstance>TaskMetadata).get('itemsPending')) + parseFloat(<any>params.quantity),
       })
     }
     if (params.approved) {

@@ -21,35 +21,24 @@ import {
   scheduledTaskAttributes,
   scheduledWorkAttributes,
 } from './attributes';
-const toDBDate = (date) => (new Date(date)).toISOString().slice(0, 19).replace('T', ' ');
-
-const createAttributesFromItem = (associationName, newAssociationName, attributes) => {
-  return `
-  ${attributes.reduce(
-      (acc, attribute) => `${acc}"${associationName}"."${attribute}" AS "${newAssociationName}.${attribute}",
-    `, ""
-    )}
-  `
-}
-
-const generateFullNameSQL = (source) => {
-  return ` CONCAT( "${source}"."name", ' ' , "${source}"."surname" ) as "${source}.fullName"`;
-}
+import {
+  toDBDate,
+  createAttributesFromItem,
+  generateFullNameSQL,
+  removeLastComma,
+} from '../sqlFunctions';
 
 export const generateTaskSQL = (taskId, userId, isAdmin) => {
 
   const attributes = (
     `SELECT DISTINCT
-    ${ taskAttributes.reduce(
-      (acc, attribute) => `${acc}"Task"."${attribute}",
-      ` , ""
-    )}
+    ${createAttributesFromItem("Task", null, taskAttributes)}
     ${createAttributesFromItem("Project", "Project", projectAttributes)}
     ${createAttributesFromItem("createdBy", "createdBy", userAttributes)}
-    ${generateFullNameSQL("createdBy")},
+    ${generateFullNameSQL("createdBy")}
     ${createAttributesFromItem("Milestone", "Milestone", milestoneAttributes)}
     ${createAttributesFromItem("requester", "requester", userAttributes)}
-    ${generateFullNameSQL("requester")},
+    ${generateFullNameSQL("requester")}
     ${createAttributesFromItem("Status", "Status", statusAttributes)}
     ${createAttributesFromItem("TaskType", "TaskType", taskTypeAttributes)}
     ${createAttributesFromItem("Repeat", "Repeat", repeatAttributes)}
@@ -128,7 +117,7 @@ export const generateCompanySQL = (taskId) => {
 
   return `
   SELECT
-  ${attributes.slice(0, attributes.lastIndexOf(","))}
+  ${removeLastComma(attributes)}
   FROM "companies" AS "Company"
   INNER JOIN "tasks" AS "Task" ON "Company"."id" = "Task"."CompanyId" AND "Task"."id" = ${taskId}
   LEFT OUTER JOIN "pricelists" AS "Pricelist" ON "Company"."PricelistId" = "Pricelist"."id"
@@ -167,12 +156,9 @@ export const generateCompanyUsedSubtaskPausalSQL = (companyId) => {
 export const generateScheduledTasksSQL = (taskId) => {
   return `
   SELECT
-  ${ scheduledTaskAttributes.reduce(
-      (acc, attribute) => `${acc}"ScheduledTasks"."${attribute}",
-    ` , ""
-    )}
+  ${createAttributesFromItem("ScheduledTasks", null, scheduledTaskAttributes)}
   ${createAttributesFromItem("User", "User", userAttributes)}
-  ${generateFullNameSQL("User")}
+  ${removeLastComma(generateFullNameSQL("User"))}
   FROM (SELECT * FROM "scheduled_task" WHERE "scheduled_task"."TaskId" = ${taskId} ) AS "ScheduledTasks"
   LEFT OUTER JOIN "users" AS "User" ON "ScheduledTasks"."UserId" = "User"."id"
   `.replace(/"/g, '`');
@@ -181,24 +167,20 @@ export const generateScheduledTasksSQL = (taskId) => {
 export const generateSubtasksSQL = (taskId) => {
   const attributes = (
     `
-    ${ subtaskAttributes.reduce(
-      (acc, attribute) => `${acc}"Subtasks"."${attribute}",
-      ` , ""
-    )}
+    ${createAttributesFromItem("Subtasks", null, subtaskAttributes)}
     ${createAttributesFromItem("TaskType", "TaskType", taskTypeAttributes)}
     ${createAttributesFromItem("SubtaskApprovedBy", "SubtaskApprovedBy", userAttributes)}
-    ${generateFullNameSQL("SubtaskApprovedBy")},
+    ${generateFullNameSQL("SubtaskApprovedBy")}
     ${createAttributesFromItem("User", "User", userAttributes)}
-    ${generateFullNameSQL("User")},
+    ${generateFullNameSQL("User")}
     ${createAttributesFromItem("User->Company", "User.Company", companyAttributes)}
     ${createAttributesFromItem("ScheduledWork", "ScheduledWork", scheduledWorkAttributes)}
-
     `
   )
 
   return `
   SELECT
-  ${attributes.slice(0, attributes.lastIndexOf(","))}
+  ${removeLastComma(attributes)}
   FROM (SELECT * FROM "subtasks" WHERE "subtasks"."TaskId" = ${taskId} ) AS "Subtasks"
   LEFT OUTER JOIN "task_types" AS "TaskType" ON "Subtasks"."TaskTypeId" = "TaskType"."id"
   LEFT OUTER JOIN "users" AS "SubtaskApprovedBy" ON "Subtasks"."SubtaskApprovedById" = "SubtaskApprovedBy"."id"
@@ -211,25 +193,20 @@ export const generateSubtasksSQL = (taskId) => {
 export const generateWorkTripsSQL = (taskId) => {
   const attributes = (
     `
-    ${ workTripAttributes.reduce(
-      (acc, attribute) => `${acc}"WorkTrips"."${attribute}",
-      ` , ""
-    )}
+    ${createAttributesFromItem("WorkTrips", null, workTripAttributes)}
     ${createAttributesFromItem("TripType", "TripType", tripTypeAttributes)}
     ${createAttributesFromItem("TripApprovedBy", "TripApprovedBy", userAttributes)}
-    ${generateFullNameSQL("TripApprovedBy")},
+    ${generateFullNameSQL("TripApprovedBy")}
     ${createAttributesFromItem("User", "User", userAttributes)}
-    ${generateFullNameSQL("User")},
+    ${generateFullNameSQL("User")}
     ${createAttributesFromItem("User->Company", "User.Company", companyAttributes)}
     ${createAttributesFromItem("ScheduledWork", "ScheduledWork", scheduledWorkAttributes)}
-
     `
   )
 
   return `
   SELECT
-  ${attributes.slice(0, attributes.lastIndexOf(","))}
-
+  ${removeLastComma(attributes)}
   FROM (SELECT * FROM "work_trips" WHERE "work_trips"."TaskId" = ${taskId} ) AS "WorkTrips"
   LEFT OUTER JOIN "trip_types" AS "TripType" ON "WorkTrips"."TripTypeId" = "TripType"."id"
   LEFT OUTER JOIN "users" AS "TripApprovedBy" ON "WorkTrips"."TripApprovedById" = "TripApprovedBy"."id"
@@ -242,19 +219,15 @@ export const generateWorkTripsSQL = (taskId) => {
 export const generateMaterialsSQL = (taskId) => {
   const attributes = (
     `
-    ${ materialAttributes.reduce(
-      (acc, attribute) => `${acc}"Materials"."${attribute}",
-      ` , ""
-    )}
+    ${createAttributesFromItem("Materials", null, materialAttributes)}
     ${createAttributesFromItem("MaterialApprovedBy", "MaterialApprovedBy", userAttributes)}
-    ${generateFullNameSQL("MaterialApprovedBy")},
+    ${generateFullNameSQL("MaterialApprovedBy")}
     `
   )
 
   return `
   SELECT
-  ${attributes.slice(0, attributes.lastIndexOf(","))}
-
+  ${removeLastComma(attributes)}
   FROM (SELECT * FROM "materials" WHERE "materials"."TaskId" = ${taskId} ) AS "Materials"
   LEFT OUTER JOIN "users" AS "MaterialApprovedBy" ON "Materials"."MaterialApprovedById" = "MaterialApprovedBy"."id"
   `.replace(/"/g, '`');
@@ -263,19 +236,15 @@ export const generateMaterialsSQL = (taskId) => {
 export const generateCustomItemsSQL = (taskId) => {
   const attributes = (
     `
-    ${ customItemAttributes.reduce(
-      (acc, attribute) => `${acc}"CustomItems"."${attribute}",
-      ` , ""
-    )}
+    ${createAttributesFromItem("CustomItems", null, customItemAttributes)}
     ${createAttributesFromItem("ItemApprovedBy", "ItemApprovedBy", userAttributes)}
-    ${generateFullNameSQL("ItemApprovedBy")},
+    ${generateFullNameSQL("ItemApprovedBy")}
     `
   )
 
   return `
   SELECT
-  ${attributes.slice(0, attributes.lastIndexOf(","))}
-
+  ${removeLastComma(attributes)}
   FROM (SELECT * FROM "custom_items" WHERE "custom_items"."TaskId" = ${taskId} ) AS "CustomItems"
   LEFT OUTER JOIN "users" AS "ItemApprovedBy" ON "CustomItems"."ItemApprovedById" = "ItemApprovedBy"."id"
   `.replace(/"/g, '`');

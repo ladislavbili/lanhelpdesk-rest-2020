@@ -19,6 +19,9 @@ export interface TasklistColumnPreferenceInstance extends DefaultInstance {
   pausal: boolean;
   tags: boolean;
   statistics: boolean;
+  works: boolean;
+  trips: boolean;
+  materials: boolean;
 }
 
 export default function defineTasklistColumnPreferences(sequelize: Sequelize) {
@@ -106,6 +109,21 @@ export default function defineTasklistColumnPreferences(sequelize: Sequelize) {
         defaultValue: false,
       },
       statistics: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      works: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      trips: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      materials: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,

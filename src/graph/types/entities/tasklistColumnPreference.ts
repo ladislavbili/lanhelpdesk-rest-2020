@@ -20,6 +20,9 @@ type TasklistColumnPreference{
   pausal: Boolean!
   tags: Boolean!
   statistics: Boolean!
+  works: Boolean!
+  trips: Boolean!
+  materials: Boolean!
   Project: Project
 }
 
@@ -49,5 +52,8 @@ addOrUpdateTasklistColumnPerference(
   pausal: Boolean
   tags: Boolean
   statistics: Boolean
+  works: Boolean
+  trips: Boolean
+  materials: Boolean
 ): TasklistColumnPreference
 `

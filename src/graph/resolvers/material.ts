@@ -57,11 +57,11 @@ const mutations = {
 
     if (params.approved || (<ProjectInstance>Project).get('autoApproved')) {
       (<TaskMetadataInstance>TaskMetadata).update({
-        materialsApproved: (<TaskMetadataInstance>TaskMetadata).get('materialsApproved') + params.quantity
+        materialsApproved: parseFloat(<any>(<TaskMetadataInstance>TaskMetadata).get('materialsApproved')) + parseFloat(<any>params.quantity),
       })
     } else {
       (<TaskMetadataInstance>TaskMetadata).update({
-        materialsPending: (<TaskMetadataInstance>TaskMetadata).get('materialsPending') + params.quantity
+        materialsPending: parseFloat(<any>(<TaskMetadataInstance>TaskMetadata).get('materialsPending')) + parseFloat(<any>params.quantity),
       })
     }
     if (params.approved) {

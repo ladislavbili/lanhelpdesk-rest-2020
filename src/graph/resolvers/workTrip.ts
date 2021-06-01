@@ -80,11 +80,11 @@ const mutations = {
     }
     if (params.approved || (<ProjectInstance>Project).get('autoApproved')) {
       (<TaskMetadataInstance>TaskMetadata).update({
-        tripsApproved: (<TaskMetadataInstance>TaskMetadata).get('tripsApproved') + params.quantity
+        tripsApproved: parseFloat(<any>(<TaskMetadataInstance>TaskMetadata).get('tripsApproved')) + parseFloat(<any>params.quantity),
       })
     } else {
       (<TaskMetadataInstance>TaskMetadata).update({
-        tripsPending: (<TaskMetadataInstance>TaskMetadata).get('tripsPending') + params.quantity
+        tripsPending: parseFloat(<any>(<TaskMetadataInstance>TaskMetadata).get('tripsPending')) + parseFloat(<any>params.quantity),
       })
     }
     if (scheduled) {
@@ -196,27 +196,20 @@ const mutations = {
       }
       //Metadata update
       if ((params.approved !== undefined && params.approved !== null) || params.quantity) {
-        let tripsApproved = TaskMetadata.get('tripsApproved');
-        let tripsPending = TaskMetadata.get('tripsPending');
+        const metaQuantity = parseFloat(<any>(params.quantity ? params.quantity : WorkTrip.get('quantity')));
+        let tripsApproved = parseFloat(<any>TaskMetadata.get('tripsApproved'));
+        let tripsPending = parseFloat(<any>TaskMetadata.get('tripsPending'));
         //Delete first
         if (Project.get('autoApproved') || WorkTrip.get('approved')) {
-          tripsApproved -= WorkTrip.get('quantity');
+          tripsApproved -= metaQuantity;
         } else {
-          tripsPending -= WorkTrip.get('quantity');
+          tripsPending -= metaQuantity;
         }
         //Add new
         if (Project.get('autoApproved') || params.approved === true || (params.approved !== false && WorkTrip.get('approved'))) {
-          if (params.quantity) {
-            tripsApproved += params.quantity;
-          } else {
-            tripsApproved += WorkTrip.get('quantity');
-          }
+          tripsApproved += metaQuantity;
         } else {
-          if (params.quantity) {
-            tripsPending += params.quantity;
-          } else {
-            tripsPending += WorkTrip.get('quantity');
-          }
+          tripsPending += metaQuantity;
         }
         //Update
         TaskMetadata.update({

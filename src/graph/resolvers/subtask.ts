@@ -79,11 +79,11 @@ const mutations = {
     }
     if (params.approved || (<ProjectInstance>Project).get('autoApproved')) {
       (<TaskMetadataInstance>TaskMetadata).update({
-        subtasksApproved: (<TaskMetadataInstance>TaskMetadata).get('subtasksApproved') + parseFloat(<any>params.quantity)
+        subtasksApproved: parseFloat(<any>(<TaskMetadataInstance>TaskMetadata).get('subtasksApproved')) + parseFloat(<any>params.quantity),
       })
     } else {
       (<TaskMetadataInstance>TaskMetadata).update({
-        subtasksPending: (<TaskMetadataInstance>TaskMetadata).get('subtasksPending') + parseFloat(<any>params.quantity)
+        subtasksPending: parseFloat(<any>(<TaskMetadataInstance>TaskMetadata).get('subtasksPending')) + parseFloat(<any>params.quantity),
       })
     }
     if (scheduled) {

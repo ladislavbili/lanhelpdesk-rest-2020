@@ -63,6 +63,7 @@ import {
   applyFixedOnAttributes,
 } from '@/graph/addons/project';
 import {
+  calculateMetadata,
   filterToTaskWhere,
   transformSortToQuery,
   stringFilterToTaskWhere,
@@ -603,54 +604,6 @@ const mutations = {
     if (milestone && !(<MilestoneInstance[]>Project.get('Milestones')).some((projectMilestone) => projectMilestone.get('id') === milestone)) {
       throw MilestoneNotPartOfProject;
     }
-    let subtasksApproved = 0;
-    let subtasksPending = 0;
-    let tripsApproved = 0;
-    let tripsPending = 0;
-    let materialsApproved = 0;
-    let materialsPending = 0;
-    let itemsApproved = 0;
-    let itemsPending = 0;
-
-    if (subtasks) {
-      subtasks.map((subtask) => {
-        if (subtask.approved || Project.get('autoApproved')) {
-          subtasksApproved += parseFloat(<any>subtask.quantity);
-        } else {
-          subtasksPending += parseFloat(<any>subtask.quantity);
-        }
-      })
-    }
-
-    if (workTrips) {
-      workTrips.map((trip) => {
-        if (trip.approved || Project.get('autoApproved')) {
-          tripsApproved += parseFloat(<any>trip.quantity);
-        } else {
-          tripsPending += parseFloat(<any>trip.quantity);
-        }
-      })
-    }
-
-    if (materials) {
-      materials.map((material) => {
-        if (material.approved || Project.get('autoApproved')) {
-          materialsApproved += parseFloat(<any>material.quantity);
-        } else {
-          materialsPending += parseFloat(<any>material.quantity);
-        }
-      })
-    }
-
-    if (customItems) {
-      customItems.map((customItem) => {
-        if (customItem.approved || Project.get('autoApproved')) {
-          itemsApproved += parseFloat(<any>customItem.quantity);
-        } else {
-          itemsPending += parseFloat(<any>customItem.quantity);
-        }
-      })
-    }
 
     const dates = extractDatesFromObject(params, dateNames);
     //status corresponds to data - closedate, pendingDate
@@ -675,16 +628,7 @@ const mutations = {
           },
         ]
       }],
-      TaskMetadata: {
-        subtasksApproved,
-        subtasksPending,
-        tripsApproved,
-        tripsPending,
-        materialsApproved,
-        materialsPending,
-        itemsApproved,
-        itemsPending,
-      },
+      TaskMetadata: calculateMetadata(Project.get('autoApproved'), subtasks, workTrips, materials, customItems),
       createdById: User.get('id'),
       CompanyId: company,
       ProjectId: project,
