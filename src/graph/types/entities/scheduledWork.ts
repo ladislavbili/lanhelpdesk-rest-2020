@@ -18,4 +18,5 @@ export const ScheduledWorkQuerries = `
 `
 
 export const ScheduledWorkMutations = `
+  createSubtaskFromScheduled(id: Int!): Subtask
 `

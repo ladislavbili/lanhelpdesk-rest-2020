@@ -144,7 +144,7 @@ const mutations = {
     }]
     await checkIfHasProjectRights(SourceUser.get('id'), undefined, Task.get('ProjectId'), ['vykazWrite']);
     if (assignedTo !== undefined) {
-      if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
+      if (Subtask.get('UserId') !== assignedTo && !AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
         throw AssignedToUserNotSolvingTheTask;
       }
     }
@@ -362,7 +362,7 @@ const mutations = {
     await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>Subtask.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
     if (assignedTo !== undefined) {
       const AssignedTos = <UserInstance[]>(<RepeatTemplateInstance>Subtask.get('RepeatTemplate')).get('assignedTos');
-      if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
+      if (Subtask.get('UserId') !== assignedTo && !AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
         throw AssignedToUserNotSolvingTheTask;
       }
     }

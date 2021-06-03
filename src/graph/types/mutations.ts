@@ -17,6 +17,7 @@ import { RepeatTemplateAttachmentMutations } from './entities/repeatTemplateAtta
 import { RepeatTimeMutations } from './entities/repeatTime';
 import { RoleMutations } from './entities/role';
 import { ScheduledTaskMutations } from './entities/scheduledTask';
+import { ScheduledWorkMutations } from './entities/scheduledWork';
 import { ShortSubtaskMutations } from './entities/shortSubtask';
 import { SmtpMutations } from './entities/smtp';
 import { StatusMutations } from './entities/status';
@@ -56,6 +57,7 @@ type Mutation {
   ${RepeatTimeMutations}
   ${RoleMutations}
   ${ScheduledTaskMutations}
+  ${ScheduledWorkMutations}
   ${ShortSubtaskMutations}
   ${SmtpMutations}
   ${StatusMutations}

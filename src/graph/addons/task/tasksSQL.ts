@@ -23,7 +23,8 @@ import {
   subtaskAttributes,
   workTripAttributes,
   materialAttributes,
-} from './attributes';
+} from '../attributes';
+
 import {
   toDBDate,
   createAttributesFromItem,
@@ -565,7 +566,6 @@ LEFT OUTER JOIN (
 LEFT OUTER JOIN (
   SELECT "Materials"."TaskId", SUM( "Materials"."quantity" * "Materials"."price" ) as materialsPrice FROM "materials" AS Materials GROUP BY "Materials"."TaskId"
 ) AS "Materials" ON "Materials"."TaskId" = "TaskData"."id"
-GROUP BY "TaskData"."id"
 `;
 /*
 SUM( "Subtasks"."quantity" ) as subtasksQuantity,

@@ -187,6 +187,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
 
   //logFunctionsOfModel(models.Subtask);
 
+
   if (ignoreUpdating) {
     return new Promise((resolve, reject) => resolve());
   }

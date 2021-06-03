@@ -1,4 +1,22 @@
-const toDBDate = (date) => date.toISOString().slice(0, 19).replace('T', ' ');
+import {
+  toDBDate,
+  createAttributesFromItem,
+  generateFullNameSQL,
+  removeLastComma,
+} from './sqlFunctions';
+
+import {
+  assignedTosFilterAttributes,
+  assignedTosTaskMapAttributes,
+  companyAttributes,
+  projectGroupAttributes,
+  projectGroupRightsAttributes,
+  scheduledTaskAttributes,
+  statusAttributes,
+  taskAttributes,
+  userAttributes,
+  userBelongsToGroupAttributes,
+} from './attributes';
 
 export const scheduledFilterSQL = (from, to, userId) => {
   let where = [];
@@ -65,52 +83,25 @@ export const createScheduledTasksSQL = (where, currentUserId, isAdmin) => {
 
   let sql = `
   SELECT
-  "ScheduledTask"."id",
-  "ScheduledTask"."from",
-  "ScheduledTask"."to",
-  "Task"."title" as "Task.title",
-  "Task"."id" as "Task.id",
-  "User"."id" as "User.id",
-  "User"."name" as "User.name",
-  "User"."surname" as "User.surname",
+  ${createAttributesFromItem("ScheduledTask", null, scheduledTaskAttributes)}
+  ${createAttributesFromItem("Task", "Task", taskAttributes)}
+  ${createAttributesFromItem("User", "User", userAttributes)}
   ${ generateFullNameSQL('User')}
   "Project->ProjectGroups->ProjectGroupRight"."assignedWrite" AS "canEdit",
-
-  "assignedTosFilter"."id" AS "assignedTosFilter.id",
-  "assignedTosFilter"."name" AS "assignedTosFilter.name",
-  "assignedTosFilter"."surname" AS "assignedTosFilter.surname",
-  "assignedTosFilter->task_assignedTo"."UserId" AS "assignedTosFilter.task_assignedTo.UserId",
-  "assignedTosFilter->task_assignedTo"."TaskId" AS "assignedTosFilter.task_assignedTo.TaskId",
-  "Company"."id" AS "Company.id", "Company"."title" AS "Company.title",
+  ${createAttributesFromItem("assignedTosFilter", "assignedTosFilter", assignedTosFilterAttributes)}
+  ${createAttributesFromItem("assignedTosFilter->task_assignedTo", "assignedTosFilter.task_assignedTo", assignedTosTaskMapAttributes)}
+  ${createAttributesFromItem("Company", "Company", companyAttributes)}
+  ${createAttributesFromItem("requester", "requester", userAttributes)}
+  ${createAttributesFromItem("Status", "Status", statusAttributes)}
   "createdBy"."id" AS "createdBy.id",
-  "requester"."id" AS "requester.id",
-  "requester"."name" AS "requester.name",
-  "requester"."surname" AS "requester.surname",
-  "Status"."id" AS "Task.Status.id",
-  "Status"."title" AS "Task.Status.title",
-  "Status"."color" AS "Task.Status.color",
-
   "tagsFilter"."id" AS "tagsFilter.id",
   "TaskType"."id" AS "TaskType.id",
   "Project"."id" AS "Project.id",
-  "Project->ProjectGroups"."id" AS "Project.ProjectGroups.id",
-  "Project->ProjectGroups"."ProjectId" AS "Project.ProjectGroups.ProjectId",
-  "Project->ProjectGroups->ProjectGroupRight"."assignedRead" AS "Project.ProjectGroups.ProjectGroupRight.assignedRead",
-  "Project->ProjectGroups->ProjectGroupRight"."assignedWrite" AS "Project.ProjectGroups.ProjectGroupRight.assignedWrite",
-  "Project->ProjectGroups->ProjectGroupRight"."companyRead" AS "Project.ProjectGroups.ProjectGroupRight.companyRead",
-  "Project->ProjectGroups->ProjectGroupRight"."deadlineRead" AS "Project.ProjectGroups.ProjectGroupRight.deadlineRead",
-  "Project->ProjectGroups->ProjectGroupRight"."overtimeRead" AS "Project.ProjectGroups.ProjectGroupRight.overtimeRead",
-  "Project->ProjectGroups->ProjectGroupRight"."pausalRead" AS "Project.ProjectGroups.ProjectGroupRight.pausalRead",
-  "Project->ProjectGroups->ProjectGroupRight"."requesterRead" AS "Project.ProjectGroups.ProjectGroupRight.requesterRead",
-  "Project->ProjectGroups->ProjectGroupRight"."statusRead" AS "Project.ProjectGroups.ProjectGroupRight.statusRead",
-  "Project->ProjectGroups->ProjectGroupRight"."tagsRead" AS "Project.ProjectGroups.ProjectGroupRight.tagsRead",
-  "Project->ProjectGroups->ProjectGroupRight"."typeRead" AS "Project.ProjectGroups.ProjectGroupRight.typeRead",
-  "Project->ProjectGroups->ProjectGroupRight"."companyTasks" AS "Project.ProjectGroups.ProjectGroupRight.companyTasks",
-  "Project->ProjectGroups->ProjectGroupRight"."allTasks" AS "Project.ProjectGroups.ProjectGroupRight.allTasks",
-  "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId" AS "Project.ProjectGroups.ProjectGroupRight.ProjectGroupId",
+  ${createAttributesFromItem("Project->ProjectGroups", "Project.ProjectGroups", projectGroupAttributes)}
+  ${createAttributesFromItem("Project->ProjectGroups->ProjectGroupRight", "Project.ProjectGroups.ProjectGroupRight", projectGroupRightsAttributes)}
   "Project->ProjectGroups->Users"."id" AS "Project.ProjectGroups.Users.id",
-  "Project->ProjectGroups->Users->user_belongs_to_group"."UserId" AS "Project.ProjectGroups.Users.user_belongs_to_group.UserId",
-  "Project->ProjectGroups->Users->user_belongs_to_group"."ProjectGroupId" AS "Project.ProjectGroups.Users.user_belongs_to_group.ProjectGroupId"
+  ${removeLastComma(createAttributesFromItem("Project->ProjectGroups->Users->user_belongs_to_group", "Project.ProjectGroups.Users.user_belongs_to_group", userBelongsToGroupAttributes))}
+
   FROM "scheduled_task" AS "ScheduledTask"
   INNER JOIN "tasks" AS "Task" ON "ScheduledTask"."TaskId" = "Task"."id"
   INNER JOIN "projects" AS "Project" ON "Task"."ProjectId" = "Project"."id"
@@ -119,7 +110,7 @@ export const createScheduledTasksSQL = (where, currentUserId, isAdmin) => {
   ${ isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
   ${ isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN(
     "user_belongs_to_group" AS "Project->ProjectGroups->Users->user_belongs_to_group" INNER JOIN "users" AS "Project->ProjectGroups->Users" ON "Project->ProjectGroups->Users"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."UserId"
-  ) ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."ProjectGroupId" AND "Project->ProjectGroups->Users"."id" = ${ currentUserId}
+  ) ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."ProjectGroupId" AND "Project->ProjectGroups->Users"."id" = ${currentUserId}
 
   LEFT OUTER JOIN(
     "task_assignedTo" AS "assignedTosFilter->task_assignedTo" INNER JOIN "users" AS "assignedTosFilter" ON "assignedTosFilter"."id" = "assignedTosFilter->task_assignedTo"."UserId"
@@ -144,8 +135,4 @@ export const createScheduledTasksSQL = (where, currentUserId, isAdmin) => {
   GROUP BY "id"
   `;
   return sql.replace(/"/g, '`');
-}
-
-const generateFullNameSQL = (source) => {
-  return ` CONCAT( "${source}"."name", ' ' , "${source}"."surname" ) as "${source}.fullName",`;
 }

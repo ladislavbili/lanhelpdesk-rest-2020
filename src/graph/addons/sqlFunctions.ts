@@ -15,6 +15,26 @@ export const createAttributesFromItem = (associationName, newAssociationName, at
   `
 }
 
+export const createModelAttributes = (associationName, newAssociationName, model) => {
+  if (!model) {
+    return ``;
+  }
+  if (!newAssociationName) {
+    return `
+    ${ Object.keys(model.rawAttributes).reduce(
+        (acc, attribute) => `${acc}"${associationName}"."${attribute}",
+      ` , ""
+      )}
+    `
+  }
+  return `
+  ${ Object.keys(model.rawAttributes).reduce(
+      (acc, attribute) => `${acc}"${associationName}"."${attribute}" AS "${newAssociationName}.${attribute}",
+    `, ""
+    )}
+  `
+}
+
 export const generateFullNameSQL = (source, target = null) => {
   if (target === null) {
     target = source;

@@ -18,7 +18,7 @@ export const sendTaskNotificationsToUsers = async (FromUser, Task, notifications
     models.User.findAll({ where: { id: [Task.get('requesterId')] } }),
     Task.getAssignedTos()
   ])
-  let Users = <UserInstance[]>[...(<UserInstance[]>response1), ...(<UserInstance[]>response2)];
+  let Users = <UserInstance[]>[...(<UserInstance[]>response1), ...(<UserInstance[]>response2)].filter((User) => User.get('id') !== FromUser.get('id'));
   await Promise.all(
     filterUnique(Users, 'id').map((User) => {
       sendNotification(

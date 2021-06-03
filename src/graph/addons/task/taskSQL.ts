@@ -1,4 +1,5 @@
 import moment from 'moment';
+import { models } from '@/models';
 import {
   taskAttributes,
   projectAttributes,
@@ -20,10 +21,11 @@ import {
   customItemAttributes,
   scheduledTaskAttributes,
   scheduledWorkAttributes,
-} from './attributes';
+} from '../attributes';
 import {
   toDBDate,
   createAttributesFromItem,
+  createModelAttributes,
   generateFullNameSQL,
   removeLastComma,
 } from '../sqlFunctions';

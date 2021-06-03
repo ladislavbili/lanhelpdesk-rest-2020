@@ -1086,17 +1086,6 @@ const mutations = {
         //assignedTo must be in project group and assignable
         const assignableUserIds = groupUsersWithRights.filter((user) => user.rights.assignedWrite).map((userWithRights) => userWithRights.user.get('id'));
         assignedTos = assignedTos.filter((id) => assignableUserIds.includes(id));
-
-        //all subtasks and worktrips must be assigned
-        const Subtasks = <SubtaskInstance[]>await Task.get('Subtasks');
-        const WorkTrips = <WorkTripInstance[]>await Task.get('WorkTrips');
-        const allAssignedIds = [
-          ...Subtasks.map((Subtask) => Subtask.get('UserId')),
-          ...WorkTrips.map((WorkTrip) => WorkTrip.get('UserId')),
-        ];
-        if (!allAssignedIds.every((id) => assignedTos.includes(id))) {
-          throw CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError;
-        }
         taskChangeMessages.push(await createChangeMessage('AssignedTo', models.User, 'Assigned to users', assignedTos, Task.get('assignedTos'), 'fullName'));
 
         promises.push(Task.setAssignedTos(assignedTos, { transaction }))

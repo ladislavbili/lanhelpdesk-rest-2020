@@ -11,7 +11,7 @@ type Subtask {
   discount: Float!
   task: Task
   repeatTemplate: RepeatTemplate
-  type: TaskType!
+  type: TaskType
   assignedTo: BasicUser!
   invoicedData: [InvoicedSubtask]
   scheduled: ScheduledWork

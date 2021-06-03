@@ -147,7 +147,7 @@ const mutations = {
     ];
     await checkIfHasProjectRights(SourceUser.get('id'), undefined, Task.get('ProjectId'), ['vykazWrite']);
     if (assignedTo !== undefined) {
-      if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
+      if (WorkTrip.get('UserId') !== assignedTo && !AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
         throw AssignedToUserNotSolvingTheTask;
       }
     }
@@ -358,7 +358,7 @@ const mutations = {
     await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>WorkTrip.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
     if (assignedTo !== undefined) {
       const AssignedTos = <UserInstance[]>(<RepeatTemplateInstance>WorkTrip.get('RepeatTemplate')).get('assignedTos');
-      if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
+      if (WorkTrip.get('UserId') !== assignedTo && !AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
         throw AssignedToUserNotSolvingTheTask;
       }
     }

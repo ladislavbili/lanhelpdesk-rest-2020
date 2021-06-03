@@ -56,6 +56,7 @@ export default {
     ...role.querries,
     ...tag.querries,
     ...scheduledTask.querries,
+    ...scheduledWork.querries,
     ...shortSubtask.querries,
     ...smtp.querries,
     ...status.querries,
@@ -77,7 +78,6 @@ export default {
     ...repeatTemplateAttachment.querries,
     ...userNotification.querries,
     ...repeatTime.querries,
-    ...scheduledWork.querries,
   },
 
   Mutation: {
@@ -96,6 +96,7 @@ export default {
     ...role.mutations,
     ...tag.mutations,
     ...scheduledTask.mutations,
+    ...scheduledWork.mutations,
     ...shortSubtask.mutations,
     ...smtp.mutations,
     ...status.mutations,
@@ -117,7 +118,6 @@ export default {
     ...repeatTemplateAttachment.mutations,
     ...userNotification.mutations,
     ...repeatTime.mutations,
-    ...scheduledWork.mutations,
   },
   Subscription: {
     ...comment.subscriptions,
@@ -154,6 +154,7 @@ export default {
   ...role.attributes,
   ...tag.attributes,
   ...scheduledTask.attributes,
+  ...scheduledWork.attributes,
   ...shortSubtask.attributes,
   ...smtp.attributes,
   ...status.attributes,
@@ -175,5 +176,4 @@ export default {
   ...repeatTemplateAttachment.attributes,
   ...userNotification.attributes,
   ...repeatTime.attributes,
-  ...scheduledWork.attributes,
 };
