@@ -1,30 +1,7 @@
 import moment from 'moment';
 import { models } from '@/models';
 import {
-  taskAttributes,
-  projectAttributes,
-  taskAttachmentAttributes,
-  userAttributes,
-  companyAttributes,
-  pricelistAttributes,
-  priceAttributes,
-  taskTypeAttributes,
-  tripTypeAttributes,
-  milestoneAttributes,
-  statusAttributes,
-  repeatAttributes,
-  taskMetadataAttributes,
-  repeatTimeAttributes,
-  subtaskAttributes,
-  workTripAttributes,
-  materialAttributes,
-  customItemAttributes,
-  scheduledTaskAttributes,
-  scheduledWorkAttributes,
-} from '../attributes';
-import {
   toDBDate,
-  createAttributesFromItem,
   createModelAttributes,
   generateFullNameSQL,
   removeLastComma,
@@ -34,18 +11,18 @@ export const generateTaskSQL = (taskId, userId, isAdmin) => {
 
   const attributes = (
     `SELECT DISTINCT
-    ${createAttributesFromItem("Task", null, taskAttributes)}
-    ${createAttributesFromItem("Project", "Project", projectAttributes)}
-    ${createAttributesFromItem("createdBy", "createdBy", userAttributes)}
+    ${createModelAttributes("Task", null, models.Task)}
+    ${createModelAttributes("Project", "Project", models.Project)}
+    ${createModelAttributes("createdBy", "createdBy", models.User)}
     ${generateFullNameSQL("createdBy")}
-    ${createAttributesFromItem("Milestone", "Milestone", milestoneAttributes)}
-    ${createAttributesFromItem("requester", "requester", userAttributes)}
+    ${createModelAttributes("Milestone", "Milestone", models.Milestone)}
+    ${createModelAttributes("requester", "requester", models.User)}
     ${generateFullNameSQL("requester")}
-    ${createAttributesFromItem("Status", "Status", statusAttributes)}
-    ${createAttributesFromItem("TaskType", "TaskType", taskTypeAttributes)}
-    ${createAttributesFromItem("Repeat", "Repeat", repeatAttributes)}
-    ${createAttributesFromItem("TaskMetadata", "TaskMetadata", taskMetadataAttributes)}
-    ${createAttributesFromItem("RepeatTime", "RepeatTime", repeatTimeAttributes)}
+    ${createModelAttributes("Status", "Status", models.Status)}
+    ${createModelAttributes("TaskType", "TaskType", models.TaskType)}
+    ${createModelAttributes("Repeat", "Repeat", models.Repeat)}
+    ${createModelAttributes("TaskMetadata", "TaskMetadata", models.TaskMetadata)}
+    ${createModelAttributes("RepeatTime", "RepeatTime", models.RepeatTime)}
     `
   );
 
@@ -106,14 +83,11 @@ export const generateAssignedTosSQL = (taskId) => {
 export const generateCompanySQL = (taskId) => {
   const attributes = (
     `
-    ${ companyAttributes.reduce(
-      (acc, attribute) => `${acc}"Company"."${attribute}",
-      ` , ""
-    )}
-    ${createAttributesFromItem("Pricelist", "Pricelist", pricelistAttributes)}
-    ${createAttributesFromItem("Pricelist->Prices", "Pricelist.Prices", priceAttributes)}
-    ${createAttributesFromItem("Pricelist->Prices->TaskType", "Pricelist.Prices.TaskType", taskTypeAttributes)}
-    ${createAttributesFromItem("Pricelist->Prices->TripType", "Pricelist.Prices.TripType", tripTypeAttributes)}
+    ${createModelAttributes("Company", null, models.Company)}
+    ${createModelAttributes("Pricelist", "Pricelist", models.Pricelist)}
+    ${createModelAttributes("Pricelist->Prices", "Pricelist.Prices", models.Price)}
+    ${createModelAttributes("Pricelist->Prices->TaskType", "Pricelist.Prices.TaskType", models.TaskType)}
+    ${createModelAttributes("Pricelist->Prices->TripType", "Pricelist.Prices.TripType", models.TripType)}
     `
   );
 
@@ -158,8 +132,8 @@ export const generateCompanyUsedSubtaskPausalSQL = (companyId) => {
 export const generateScheduledTasksSQL = (taskId) => {
   return `
   SELECT
-  ${createAttributesFromItem("ScheduledTasks", null, scheduledTaskAttributes)}
-  ${createAttributesFromItem("User", "User", userAttributes)}
+  ${createModelAttributes("ScheduledTasks", null, models.ScheduledTask)}
+  ${createModelAttributes("User", "User", models.User)}
   ${removeLastComma(generateFullNameSQL("User"))}
   FROM (SELECT * FROM "scheduled_task" WHERE "scheduled_task"."TaskId" = ${taskId} ) AS "ScheduledTasks"
   LEFT OUTER JOIN "users" AS "User" ON "ScheduledTasks"."UserId" = "User"."id"
@@ -169,14 +143,14 @@ export const generateScheduledTasksSQL = (taskId) => {
 export const generateSubtasksSQL = (taskId) => {
   const attributes = (
     `
-    ${createAttributesFromItem("Subtasks", null, subtaskAttributes)}
-    ${createAttributesFromItem("TaskType", "TaskType", taskTypeAttributes)}
-    ${createAttributesFromItem("SubtaskApprovedBy", "SubtaskApprovedBy", userAttributes)}
+    ${createModelAttributes("Subtasks", null, models.Subtask)}
+    ${createModelAttributes("TaskType", "TaskType", models.TaskType)}
+    ${createModelAttributes("SubtaskApprovedBy", "SubtaskApprovedBy", models.User)}
     ${generateFullNameSQL("SubtaskApprovedBy")}
-    ${createAttributesFromItem("User", "User", userAttributes)}
+    ${createModelAttributes("User", "User", models.User)}
     ${generateFullNameSQL("User")}
-    ${createAttributesFromItem("User->Company", "User.Company", companyAttributes)}
-    ${createAttributesFromItem("ScheduledWork", "ScheduledWork", scheduledWorkAttributes)}
+    ${createModelAttributes("User->Company", "User.Company", models.Company)}
+    ${createModelAttributes("ScheduledWork", "ScheduledWork", models.ScheduledWork)}
     `
   )
 
@@ -195,14 +169,14 @@ export const generateSubtasksSQL = (taskId) => {
 export const generateWorkTripsSQL = (taskId) => {
   const attributes = (
     `
-    ${createAttributesFromItem("WorkTrips", null, workTripAttributes)}
-    ${createAttributesFromItem("TripType", "TripType", tripTypeAttributes)}
-    ${createAttributesFromItem("TripApprovedBy", "TripApprovedBy", userAttributes)}
+    ${createModelAttributes("WorkTrips", null, models.WorkTrip)}
+    ${createModelAttributes("TripType", "TripType", models.TaskType)}
+    ${createModelAttributes("TripApprovedBy", "TripApprovedBy", models.User)}
     ${generateFullNameSQL("TripApprovedBy")}
-    ${createAttributesFromItem("User", "User", userAttributes)}
+    ${createModelAttributes("User", "User", models.User)}
     ${generateFullNameSQL("User")}
-    ${createAttributesFromItem("User->Company", "User.Company", companyAttributes)}
-    ${createAttributesFromItem("ScheduledWork", "ScheduledWork", scheduledWorkAttributes)}
+    ${createModelAttributes("User->Company", "User.Company", models.Company)}
+    ${createModelAttributes("ScheduledWork", "ScheduledWork", models.ScheduledWork)}
     `
   )
 
@@ -221,8 +195,8 @@ export const generateWorkTripsSQL = (taskId) => {
 export const generateMaterialsSQL = (taskId) => {
   const attributes = (
     `
-    ${createAttributesFromItem("Materials", null, materialAttributes)}
-    ${createAttributesFromItem("MaterialApprovedBy", "MaterialApprovedBy", userAttributes)}
+    ${createModelAttributes("Materials", null, models.Material)}
+    ${createModelAttributes("MaterialApprovedBy", "MaterialApprovedBy", models.User)}
     ${generateFullNameSQL("MaterialApprovedBy")}
     `
   )
@@ -238,8 +212,8 @@ export const generateMaterialsSQL = (taskId) => {
 export const generateCustomItemsSQL = (taskId) => {
   const attributes = (
     `
-    ${createAttributesFromItem("CustomItems", null, customItemAttributes)}
-    ${createAttributesFromItem("ItemApprovedBy", "ItemApprovedBy", userAttributes)}
+    ${createModelAttributes("CustomItems", null, models.CustomItem)}
+    ${createModelAttributes("ItemApprovedBy", "ItemApprovedBy", models.User)}
     ${generateFullNameSQL("ItemApprovedBy")}
     `
   )

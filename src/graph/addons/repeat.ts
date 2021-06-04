@@ -1,4 +1,8 @@
-const toDBDate = (date) => (new Date(date)).toISOString().slice(0, 19).replace('T', ' ');
+import { models } from '@/models';
+import {
+  toDBDate,
+  createModelAttributes,
+} from './sqlFunctions';
 
 export const generateRepeatSQL = (active, from, to, projectId, userId, isAdmin) => {
   const nextTrigger = `(
@@ -35,11 +39,7 @@ export const generateRepeatSQL = (active, from, to, projectId, userId, isAdmin) 
 
   let sql = `
   SELECT
-  "Repeat"."id",
-  "Repeat"."active",
-  "Repeat"."startsAt",
-  "Repeat"."repeatInterval",
-  "Repeat"."repeatEvery",
+  ${createModelAttributes("Repeat", null, models.Repeat)}
   "RepeatTemplate"."title" as "RepeatTemplate.title",
   ${ isAdmin ?
       `

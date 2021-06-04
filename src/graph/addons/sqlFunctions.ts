@@ -1,4 +1,14 @@
-export const createAttributesFromItem = (associationName, newAssociationName, attributes) => {
+import { DataTypes } from "sequelize";
+
+export const createModelAttributes = (associationName, newAssociationName, model, direct = null) => {
+  let attributes = [];
+  if (direct && assocTableMaps[direct]) {
+    attributes = assocTableMaps[direct];
+  } else if (!model) {
+    return ``;
+  } else {
+    attributes = Object.keys(model.rawAttributes).filter((key) => (model.rawAttributes[key].type.toString() !== 'VIRTUAL'));
+  }
   if (!newAssociationName) {
     return `
     ${ attributes.reduce(
@@ -8,27 +18,7 @@ export const createAttributesFromItem = (associationName, newAssociationName, at
     `
   }
   return `
-  ${attributes.reduce(
-      (acc, attribute) => `${acc}"${associationName}"."${attribute}" AS "${newAssociationName}.${attribute}",
-    `, ""
-    )}
-  `
-}
-
-export const createModelAttributes = (associationName, newAssociationName, model) => {
-  if (!model) {
-    return ``;
-  }
-  if (!newAssociationName) {
-    return `
-    ${ Object.keys(model.rawAttributes).reduce(
-        (acc, attribute) => `${acc}"${associationName}"."${attribute}",
-      ` , ""
-      )}
-    `
-  }
-  return `
-  ${ Object.keys(model.rawAttributes).reduce(
+  ${ attributes.reduce(
       (acc, attribute) => `${acc}"${associationName}"."${attribute}" AS "${newAssociationName}.${attribute}",
     `, ""
     )}
@@ -46,3 +36,9 @@ export const toDBDate = (date) => (new Date(date)).toISOString().slice(0, 19).re
 
 
 export const removeLastComma = (string) => string.slice(0, string.lastIndexOf(','));
+
+const assocTableMaps = {
+  assignedTosTaskMapAttributes: ["UserId", "TaskId"],
+  userBelongsToGroupAttributes: ["UserId", "ProjectGroupId"],
+  tagsTaskMapAttributes: ["TagId", "TaskId"],
+}

@@ -1,22 +1,11 @@
+import { models } from '@/models';
+
 import {
   toDBDate,
-  createAttributesFromItem,
+  createModelAttributes,
   generateFullNameSQL,
   removeLastComma,
 } from './sqlFunctions';
-
-import {
-  assignedTosFilterAttributes,
-  assignedTosTaskMapAttributes,
-  companyAttributes,
-  projectGroupAttributes,
-  projectGroupRightsAttributes,
-  scheduledTaskAttributes,
-  statusAttributes,
-  taskAttributes,
-  userAttributes,
-  userBelongsToGroupAttributes,
-} from './attributes';
 
 export const scheduledFilterSQL = (from, to, userId) => {
   let where = [];
@@ -72,7 +61,6 @@ export const scheduledFilterSQL = (from, to, userId) => {
   return where;
 }
 
-
 export const createScheduledTasksSQL = (where, currentUserId, isAdmin) => {
   //sort by start date
   //get attributes, task - (title id) ,task status (id color title), start, end
@@ -83,24 +71,24 @@ export const createScheduledTasksSQL = (where, currentUserId, isAdmin) => {
 
   let sql = `
   SELECT
-  ${createAttributesFromItem("ScheduledTask", null, scheduledTaskAttributes)}
-  ${createAttributesFromItem("Task", "Task", taskAttributes)}
-  ${createAttributesFromItem("User", "User", userAttributes)}
+  ${createModelAttributes("ScheduledTask", null, models.ScheduledTask)}
+  ${createModelAttributes("Task", "Task", models.Task)}
+  ${createModelAttributes("User", "User", models.User)}
   ${ generateFullNameSQL('User')}
   "Project->ProjectGroups->ProjectGroupRight"."assignedWrite" AS "canEdit",
-  ${createAttributesFromItem("assignedTosFilter", "assignedTosFilter", assignedTosFilterAttributes)}
-  ${createAttributesFromItem("assignedTosFilter->task_assignedTo", "assignedTosFilter.task_assignedTo", assignedTosTaskMapAttributes)}
-  ${createAttributesFromItem("Company", "Company", companyAttributes)}
-  ${createAttributesFromItem("requester", "requester", userAttributes)}
-  ${createAttributesFromItem("Status", "Status", statusAttributes)}
+  ${createModelAttributes("assignedTosFilter", "assignedTosFilter", models.User)}
+  ${createModelAttributes("assignedTosFilter->task_assignedTo", "assignedTosFilter.task_assignedTo", null, 'assignedTosTaskMapAttributes')}
+  ${createModelAttributes("Company", "Company", models.Company)}
+  ${createModelAttributes("requester", "requester", models.User)}
+  ${createModelAttributes("Status", "Status", models.Status)}
   "createdBy"."id" AS "createdBy.id",
   "tagsFilter"."id" AS "tagsFilter.id",
   "TaskType"."id" AS "TaskType.id",
   "Project"."id" AS "Project.id",
-  ${createAttributesFromItem("Project->ProjectGroups", "Project.ProjectGroups", projectGroupAttributes)}
-  ${createAttributesFromItem("Project->ProjectGroups->ProjectGroupRight", "Project.ProjectGroups.ProjectGroupRight", projectGroupRightsAttributes)}
+  ${createModelAttributes("Project->ProjectGroups", "Project.ProjectGroups", models.ProjectGroups)}
+  ${createModelAttributes("Project->ProjectGroups->ProjectGroupRight", "Project.ProjectGroups.ProjectGroupRight", models.ProjectGroupRights)}
   "Project->ProjectGroups->Users"."id" AS "Project.ProjectGroups.Users.id",
-  ${removeLastComma(createAttributesFromItem("Project->ProjectGroups->Users->user_belongs_to_group", "Project.ProjectGroups.Users.user_belongs_to_group", userBelongsToGroupAttributes))}
+  ${removeLastComma(createModelAttributes("Project->ProjectGroups->Users->user_belongs_to_group", "Project.ProjectGroups.Users.user_belongs_to_group", null, 'userBelongsToGroupAttributes'))}
 
   FROM "scheduled_task" AS "ScheduledTask"
   INNER JOIN "tasks" AS "Task" ON "ScheduledTask"."TaskId" = "Task"."id"
