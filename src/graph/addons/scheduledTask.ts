@@ -80,7 +80,7 @@ export const createScheduledTasksSQL = (where, currentUserId, isAdmin) => {
   ${createModelAttributes("assignedTosFilter->task_assignedTo", "assignedTosFilter.task_assignedTo", null, 'assignedTosTaskMapAttributes')}
   ${createModelAttributes("Company", "Company", models.Company)}
   ${createModelAttributes("requester", "requester", models.User)}
-  ${createModelAttributes("Status", "Status", models.Status)}
+  ${createModelAttributes("Task->Status", "Task.Status", models.Status)}
   "createdBy"."id" AS "createdBy.id",
   "tagsFilter"."id" AS "tagsFilter.id",
   "TaskType"."id" AS "TaskType.id",
@@ -106,7 +106,7 @@ export const createScheduledTasksSQL = (where, currentUserId, isAdmin) => {
   LEFT OUTER JOIN "companies" AS "Company" ON "Task"."CompanyId" = "Company"."id"
   LEFT OUTER JOIN "users" AS "createdBy" ON "Task"."createdById" = "createdBy"."id"
   LEFT OUTER JOIN "users" AS "requester" ON "Task"."requesterId" = "requester"."id"
-  LEFT OUTER JOIN "statuses" AS "Status" ON "Task"."StatusId" = "Status"."id"
+  LEFT OUTER JOIN "statuses" AS "Task->Status" ON "Task"."StatusId" = "Task->Status"."id"
   LEFT OUTER JOIN(
     "task_has_tags" AS "tagsFilter->task_has_tags" INNER JOIN "tags" AS "tagsFilter" ON "tagsFilter"."id" = "tagsFilter->task_has_tags"."TagId"
   ) ON "Task"."id" = "tagsFilter->task_has_tags"."TaskId"

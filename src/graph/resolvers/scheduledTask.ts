@@ -74,14 +74,13 @@ const querries = {
     }
 
     const SQL = createScheduledTasksSQL(where, currentUserId, isAdmin);
-    let responseScheduled = await sequelize.query(SQL, {
+    const responseScheduled = <ScheduledTaskInstance[]>await sequelize.query(SQL, {
       model: models.ScheduledTask,
       type: QueryTypes.SELECT,
       nest: true,
       raw: true,
       mapToModel: true
     });
-
     return responseScheduled;
   }
 }
