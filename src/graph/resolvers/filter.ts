@@ -293,7 +293,7 @@ const mutations = {
   //updateFilter - id! title pub! global! dashboard! filter order roles projectId
   updateFilter: async (root, { id, roles, filter, order, pub, projectId, ...args }, { req }) => {
     let User = null;
-    const Filter = <FilterInstance>await models.Filter.findByPk(id, { include: [{ model: models.FilterOneOf }] });
+    const Filter = <FilterInstance>await models.Filter.findByPk(id);
     if (Filter === null) {
       throw createDoesNoExistsError('Filter', id);
     }
@@ -310,14 +310,7 @@ const mutations = {
 
     //if project, must be at least read and exists
     if (projectId) {
-      const Project = await models.Project.findByPk(
-        projectId,
-        {
-          include: [
-            { model: models.ProjectRight }
-          ]
-        }
-      );
+      const Project = await models.Project.findByPk(projectId);
       if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
@@ -353,10 +346,12 @@ const mutations = {
       companies !== undefined && promises.push(Filter.setFilterCompanies(companies));
       taskTypes !== undefined && promises.push(Filter.setFilterTaskTypes(taskTypes));
       //One of
+      /*
       const [existingOneOfs, deletedOneOfs] = splitArrayByFilter(Filter.get('FilterOneOfs'), ((filterOneOf) => oneOfs.some((oneOf) => oneOf === filterOneOf.get('input'))));
       const newOneOfs = oneOfs.filter((oneOf) => !existingOneOfs.some((filterOneOf) => filterOneOf.get('input') === oneOf))
       deletedOneOfs.forEach((oneOf) => promises.push(oneOf.destroy()));
       newOneOfs.forEach((oneOf) => promises.push(Filter.createFilterOneOf({ input: oneOf })));
+      */
     }
 
     projectId !== undefined && promises.push(Filter.setFilterOfProject(projectId));
