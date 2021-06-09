@@ -4,7 +4,7 @@ export const allStringFilters = [
 
   'overtime',
   'pausal',
-
+  'startsAt',
   'deadline',
   'createdAt',
 

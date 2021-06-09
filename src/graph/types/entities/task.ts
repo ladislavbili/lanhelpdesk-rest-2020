@@ -131,6 +131,7 @@ input StringFilterInput {
   requester: String
   company: String
   createdAt: String
+  startsAt: String
   deadline: String
   project: String
   taskType: String

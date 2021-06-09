@@ -12,6 +12,7 @@ type TasklistColumnPreference{
   company: Boolean!
   assignedTo: Boolean!
   createdAtV: Boolean!
+  startsAt: Boolean!
   deadline: Boolean!
   project: Boolean!
   milestone: Boolean!
@@ -44,6 +45,7 @@ addOrUpdateTasklistColumnPerference(
   company: Boolean
   assignedTo: Boolean
   createdAtV: Boolean
+  startsAt: Boolean
   deadline: Boolean
   project: Boolean
   milestone: Boolean

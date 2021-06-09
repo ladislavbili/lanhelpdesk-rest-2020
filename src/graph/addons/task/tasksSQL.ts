@@ -339,7 +339,7 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
             `)
           break;
         }
-        case 'deadline': case 'createdAt': {
+        case 'startsAt': case 'deadline': case 'createdAt': {
           let filterString = filterItem.value;
           if (filterString.includes(":")) {
             filterString = filterString.split(":");
@@ -348,6 +348,7 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
               filterString = filterString.join(':')
             }
           }
+
           where.push(`(
             DATE_FORMAT("Task"."${filterItem.key}", '%H:%i %e.%c.%Y') LIKE '%${filterString}%' OR
             DATE_FORMAT("Task"."${filterItem.key}", '%H:%i %d.%m.%Y') LIKE '%${filterString}%'
@@ -392,8 +393,9 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
             `);
           break;
         }
-        default:
+        default: {
           break;
+        }
       }
     })
   }
