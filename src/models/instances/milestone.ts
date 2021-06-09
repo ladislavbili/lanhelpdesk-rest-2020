@@ -3,6 +3,7 @@ import DefaultInstance from './defaultInstance';
 
 export interface MilestoneInstance extends DefaultInstance {
   title: string;
+  order: number;
   description: string;
   startsAt: Date;
   endsAt: Date;
@@ -15,6 +16,11 @@ export default function defineMilestone(sequelize: Sequelize) {
       title: {
         type: DataTypes.TEXT,
         allowNull: false,
+      },
+      order: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 0
       },
       description: {
         type: DataTypes.TEXT,

@@ -9,6 +9,7 @@ export interface TaskInstance extends DefaultInstance {
   //tags
   //company - X
   //createdBy - X
+  startsAt: number; // X
   deadline: number; // X
   description: string; // X
   //milestone - ? X
@@ -28,6 +29,9 @@ export interface TaskInstance extends DefaultInstance {
   statusChange: number; //X
   invoicedDate: number; //X
   invoiced: boolean;
+
+  ganttOrder: number;
+
   //taskType - X
   setStatus?: any;
   setCompany?: any;
@@ -72,6 +76,10 @@ export default function defineTasks(sequelize: Sequelize) {
         type: DataTypes.DATE,
         allowNull: true,
       },
+      startsAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
       deadline: {
         type: DataTypes.DATE,
         allowNull: true,
@@ -112,6 +120,11 @@ export default function defineTasks(sequelize: Sequelize) {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+      },
+      ganttOrder: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 0
       },
     },
     {

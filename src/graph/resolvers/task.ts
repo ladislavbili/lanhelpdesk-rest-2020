@@ -97,7 +97,7 @@ import checkResolver from './checkResolver';
 import moment from 'moment';
 import Stopwatch from 'statman-stopwatch';
 import { sendEmail } from '@/services/smtp';
-const dateNames = ['deadline', 'pendingDate', 'closeDate'];
+const dateNames = ['startsAt', 'deadline', 'pendingDate', 'closeDate'];
 const dateNames2 = [
   'closeDateFrom',
   'closeDateTo',
