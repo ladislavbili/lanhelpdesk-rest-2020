@@ -114,10 +114,14 @@ const dateNames2 = [
 ];
 const scheduledDateNames = ['from', 'to'];
 
+const createBasicSort = (taskName, milestoneSort) => {
+  return milestoneSort ? `"Milestone"."order" ASC, "${taskName}"."startsAt" DESC` : `"${taskName}"."important" DESC, "${taskName}"."id" DESC`;
+}
+
 const querries = {
-  tasks: async (root, { projectId, filter, sort, search, stringFilter, limit, page, statuses }, { req, userID }) => {
-    const mainOrderBy = sort ? transformSortToQueryString(sort, true) : '"Task"."important" DESC, "Task"."id" DESC';
-    const secondaryOrderBy = sort ? transformSortToQueryString(sort, false) : '"TaskData"."important" DESC, "TaskData"."id" DESC';
+  tasks: async (root, { projectId, filter, sort, milestoneSort, search, stringFilter, limit, page, statuses }, { req, userID }) => {
+    const mainOrderBy = sort ? transformSortToQueryString(sort, true, milestoneSort) : createBasicSort('Task', milestoneSort);
+    const secondaryOrderBy = sort ? transformSortToQueryString(sort, false, milestoneSort) : createBasicSort('TaskData', milestoneSort);
 
     const mainWatch = new Stopwatch(true);
     const checkUserWatch = new Stopwatch(true);

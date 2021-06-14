@@ -115,6 +115,7 @@ enum EnumSortTaskKey {
   status
   requester
   assignedTo
+  startsAt
   createdAt
   deadline
 }
@@ -148,20 +149,12 @@ tasks(
   projectId: Int
   filter: FilterInput
   sort: SortTasksInput
+  milestoneSort: Boolean
   search: String
   stringFilter: StringFilterInput
   limit: Int
   page: Int
   statuses: [Int]
-): ExecTasks
-ttasks(
-  projectId: Int
-  filter: FilterInput
-  sort: SortTasksInput
-  search: String
-  stringFilter: StringFilterInput
-  limit: Int
-  page: Int
 ): ExecTasks
 task(id: Int!): Task
 oldTask(id: Int!): Task

@@ -11,30 +11,33 @@ import {
 } from '../sqlFunctions';
 const rightsExists = `"Project->ProjectGroups->Users"."id" IS NOT NULL`;
 
-export const transformSortToQueryString = (sort, main) => {
+export const transformSortToQueryString = (sort, main, gantt = false) => {
   const order = sort.asc ? "ASC" : "DESC";
   const separator = main ? '"."' : '.';
   let orderBy = '';
   switch (sort.key) {
     case 'assignedTo': {
-      orderBy = `"assignedTos${separator}name" ${order}, "assignedTos${separator}surname" ${order}`;
+      orderBy = `ISNULL("assignedTos${separator}id") ASC, "assignedTos${separator}name" ${order}, "assignedTos${separator}surname" ${order}`;
       break;
     }
     case 'status': {
-      orderBy = `"Status${separator}order" ${order}, "Project.title" ${order}`;
+      orderBy = `ISNULL("Status${separator}id") ASC, "Status${separator}order" ${order}, "Project.title" ${order}`;
       break;
     }
     case 'requester': {
-      orderBy = `"requester${separator}name" ${order}, "requester${separator}surname" ${order}`;
+      orderBy = `ISNULL("requester${separator}id") ASC, "requester${separator}name" ${order}, "requester${separator}surname" ${order}`;
       break;
     }
-    case 'id': case 'title': case 'deadline': case 'createdAt': {
-      orderBy = `${main ? "Task" : "TaskData"}."${sort.key}" ${order}`;
+    case 'id': case 'title': case 'deadline': case 'createdAt': case 'startsAt': {
+      orderBy = `ISNULL(${main ? "Task" : "TaskData"}."${sort.key}") ASC, ${main ? "Task" : "TaskData"}."${sort.key}" ${order}`;
       break;
     }
     default: {
       orderBy = `${main ? "Task" : "TaskData"}."id" ${order}`;
     }
+  }
+  if (gantt) {
+    return `ISNULL("Milestone.order") ASC,"Milestone.order" ASC, ${orderBy}, ${main ? "Task" : "TaskData"}."id" DESC`;
   }
   return `${main ? "Task" : "TaskData"}."important" DESC, ${orderBy}, ${main ? "Task" : "TaskData"}."id" DESC`;
 }
