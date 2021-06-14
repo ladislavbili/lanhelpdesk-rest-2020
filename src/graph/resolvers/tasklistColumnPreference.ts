@@ -13,7 +13,7 @@ const querries = {
 }
 
 const mutations = {
-  addOrUpdateTasklistColumnPerference: async (root, { projectId, ...attributes }, { req }) => {
+  addOrUpdateTasklistColumnPreference: async (root, { projectId, ...attributes }, { req }) => {
     const User = await checkResolver(req);
     const Preference = await models.TasklistColumnPreference.findOne({ where: { ProjectId: projectId ? projectId : null, UserId: User.get('id') } });
     if (Preference) {

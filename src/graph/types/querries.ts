@@ -27,6 +27,7 @@ import { TaskAttachmentQuerries } from './entities/taskAttachment';
 import { TaskChangeQuerries } from './entities/taskChange';
 import { TaskInvoiceQuerries } from './entities/taskInvoice';
 import { TasklistColumnPreferenceQuerries } from './entities/tasklistColumnPreference';
+import { TasklistGanttColumnPreferenceQuerries } from './entities/tasklistGanttColumnPreference';
 import { TaskMetadataQuerries } from './entities/taskMetadata';
 import { TaskTypeQuerries } from './entities/taskType';
 import { TripTypeQuerries } from './entities/tripType';
@@ -66,6 +67,7 @@ type Query {
   ${TaskChangeQuerries}
   ${TaskInvoiceQuerries}
   ${TasklistColumnPreferenceQuerries}
+  ${TasklistGanttColumnPreferenceQuerries}
   ${TaskMetadataQuerries}
   ${TaskTypeQuerries}
   ${TripTypeQuerries}

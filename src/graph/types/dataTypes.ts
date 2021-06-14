@@ -28,6 +28,7 @@ import { TaskAttachment } from './entities/taskAttachment';
 import { TaskChange } from './entities/taskChange';
 import { TaskInvoice } from './entities/taskInvoice';
 import { TasklistColumnPreference } from './entities/tasklistColumnPreference';
+import { TasklistGanttColumnPreference } from './entities/tasklistGanttColumnPreference';
 import { TaskMetadata } from './entities/taskMetadata';
 import { TaskType } from './entities/taskType';
 import { TripType } from './entities/tripType';
@@ -67,6 +68,7 @@ ${TaskAttachment}
 ${TaskChange}
 ${TaskInvoice}
 ${TasklistColumnPreference}
+${TasklistGanttColumnPreference}
 ${TaskMetadata}
 ${TaskType}
 ${TripType}

@@ -45,4 +45,5 @@ export { RepeatTemplateAttachmentInstance } from './repeatTemplateAttachment';
 export { UserNotificationInstance } from './userNotification';
 export { TaskMetadataInstance } from './taskMetadata';
 export { TasklistColumnPreferenceInstance } from './taskListColumnPreference';
+export { TasklistGanttColumnPreferenceInstance } from './taskListGanttColumnPreference';
 export { ScheduledWorkInstance } from './scheduledWork';

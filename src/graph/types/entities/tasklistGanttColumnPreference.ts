@@ -1,26 +1,20 @@
 import defaultAttributes from './defaultAttributes';
 
-export const TasklistColumnPreference = `
-type TasklistColumnPreference{
+export const TasklistGanttColumnPreference = `
+type TasklistGanttColumnPreference{
   ${defaultAttributes}
   taskId: Boolean!
   status: Boolean!
   important: Boolean!
   invoiced: Boolean!
-  title: Boolean!
   requester: Boolean!
   company: Boolean!
   assignedTo: Boolean!
   createdAtV: Boolean!
-  startsAt: Boolean!
-  deadline: Boolean!
-  project: Boolean!
-  milestone: Boolean!
   taskType: Boolean!
   overtime: Boolean!
   pausal: Boolean!
   tags: Boolean!
-  statistics: Boolean!
   works: Boolean!
   trips: Boolean!
   materialsWithoutDPH: Boolean!
@@ -29,34 +23,28 @@ type TasklistColumnPreference{
 }
 `
 
-export const TasklistColumnPreferenceQuerries = `
-tasklistColumnPreference( projectId: Int ): TasklistColumnPreference
+export const TasklistGanttColumnPreferenceQuerries = `
+tasklistGanttColumnPreference( projectId: Int ): TasklistGanttColumnPreference
 `
 
-export const TasklistColumnPreferenceMutations = `
-addOrUpdateTasklistColumnPreference(
+export const TasklistGanttColumnPreferenceMutations = `
+addOrUpdateTasklistGanttColumnPreference(
   projectId: Int
   taskId: Boolean
   status: Boolean
   important: Boolean
   invoiced: Boolean
-  title: Boolean
   requester: Boolean
   company: Boolean
   assignedTo: Boolean
   createdAtV: Boolean
-  startsAt: Boolean
-  deadline: Boolean
-  project: Boolean
-  milestone: Boolean
   taskType: Boolean
   overtime: Boolean
   pausal: Boolean
   tags: Boolean
-  statistics: Boolean
   works: Boolean
   trips: Boolean
   materialsWithoutDPH: Boolean
   materialsWithDPH: Boolean
-): TasklistColumnPreference
+): TasklistGanttColumnPreference
 `

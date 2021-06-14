@@ -54,6 +54,7 @@ import defineProjectGroups, { createProjectGroupsAssoc } from './instances/proje
 import defineProjectGroupRights, { createProjectGroupRightsAssoc } from './instances/projectGroupRights';
 import defineTaskMetadata, { createTaskMetadataAssoc } from './instances/taskMetadata';
 import defineTasklistColumnPreferences, { createTasklistColumnPreferencesAssoc } from './instances/taskListColumnPreference';
+import defineTasklistGanttColumnPreferences, { createTasklistGanttColumnPreferencesAssoc } from './instances/taskListGanttColumnPreference';
 import defineScheduledWorks, { createScheduledWorksAssoc } from './instances/scheduledWork';
 
 
@@ -124,6 +125,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineProjectGroupRights(sequelize);
   defineTaskMetadata(sequelize);
   defineTasklistColumnPreferences(sequelize);
+  defineTasklistGanttColumnPreferences(sequelize);
   defineRepeatTimes(sequelize);
   defineScheduledWorks(sequelize);
 
@@ -180,6 +182,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createProjectGroupRightsAssoc(models);
   createTaskMetadataAssoc(models);
   createTasklistColumnPreferencesAssoc(models);
+  createTasklistGanttColumnPreferencesAssoc(models);
   createRepeatTimesAssoc(models);
   createScheduledWorksAssoc(models);
 
