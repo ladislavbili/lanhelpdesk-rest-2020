@@ -44,6 +44,7 @@ export interface ProjectInstance extends DefaultInstance {
   createTag?: any;
   createProjectStatus?: any;
   createProjectGroup?: any;
+  createProjectAttachment?: any;
 
   getDefAssignedTos?: any;
   getDefCompany?: any;
@@ -338,4 +339,6 @@ export function createProjectsAssoc(models) {
   models.Project.hasMany(models.RepeatTemplate, { onDelete: 'CASCADE' });
 
   models.Project.hasMany(models.ProjectGroup, { onDelete: 'CASCADE' });
+
+  models.Project.hasMany(models.ProjectAttachment, { onDelete: 'CASCADE' });
 }

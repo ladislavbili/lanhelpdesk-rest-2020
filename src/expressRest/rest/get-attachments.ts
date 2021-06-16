@@ -31,6 +31,8 @@ export function getAttachments(app) {
       checkResult = await checkRepeatTemplate(path, req);
     } else if (type === 'comment') {
       checkResult = await checkComment(path, req);
+    } else if (type === 'project') {
+      checkResult = await checkProject(path, req);
     } else {
       return res.status(412).send({ ok: false, error: 'Wrong attachment type (task/comment)' });
     }
@@ -39,7 +41,7 @@ export function getAttachments(app) {
       return res.status(404).send({ ok: false, error: checkResult.error });
     }
     if (!fs.existsSync(path)) {
-      //checkResult.Attachment.destroy();
+      checkResult.Attachment.destroy();
       return res.status(404).send({ ok: false, error: 'Attachment was deleted from the server.' })
     }
 
@@ -88,6 +90,20 @@ async function checkComment(path, req) {
       return { ok: false, error: `Can't show internal comment to user without rights.` }
     }
     return { ok: true, error: null, Attachment: CommentAttachment };
+  } catch (err) {
+    return { ok: false, error: err.message }
+  }
+}
+
+async function checkProject(path, req) {
+  const ProjectAttachment = await models.ProjectAttachment.findOne({ where: { path } });
+  if (!ProjectAttachment) {
+    return { ok: false, error: `Attachment with path ${path} doesn't exists.` }
+  }
+  try {
+    const User = await checkResolver(req);
+    await checkIfHasProjectRights(User.get('id'), undefined, ProjectAttachment.get('ProjectId'), ['projectPrimaryRead']);
+    return { ok: true, error: null, Attachment: ProjectAttachment };
   } catch (err) {
     return { ok: false, error: err.message }
   }

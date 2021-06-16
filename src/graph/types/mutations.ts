@@ -10,6 +10,7 @@ import { MaterialMutations } from './entities/material';
 import { MilestoneMutations } from './entities/milestone';
 import { PricelistMutations } from './entities/pricelist';
 import { ProjectMutations } from './entities/project';
+import { ProjectAttachmentMutations } from './entities/projectAttachment';
 import { ProjectGroupMutations } from './entities/projectGroup';
 import { RepeatMutations } from './entities/repeat';
 import { RepeatTemplateMutations } from './entities/repeatTemplate';
@@ -51,6 +52,7 @@ type Mutation {
   ${MilestoneMutations}
   ${PricelistMutations}
   ${ProjectMutations}
+  ${ProjectAttachmentMutations}
   ${ProjectGroupMutations}
   ${RepeatMutations}
   ${RepeatTemplateMutations}

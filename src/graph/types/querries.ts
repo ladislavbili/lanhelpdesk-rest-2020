@@ -10,6 +10,7 @@ import { MaterialQuerries } from './entities/material';
 import { MilestoneQuerries } from './entities/milestone';
 import { PricelistQuerries } from './entities/pricelist';
 import { ProjectQuerries } from './entities/project';
+import { ProjectAttachmentQuerries } from './entities/projectAttachment';
 import { ProjectGroupQuerries } from './entities/projectGroup';
 import { RepeatQuerries } from './entities/repeat';
 import { RepeatTemplateQuerries } from './entities/repeatTemplate';
@@ -50,6 +51,7 @@ type Query {
   ${MilestoneQuerries}
   ${PricelistQuerries}
   ${ProjectQuerries}
+  ${ProjectAttachmentQuerries}
   ${ProjectGroupQuerries}
   ${RepeatQuerries}
   ${RepeatTemplateQuerries}

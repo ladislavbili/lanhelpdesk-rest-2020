@@ -12,11 +12,12 @@ import ApolloServer from './ApolloServer';
 import {
   test,
   uploadAttachments,
+  uploadProjectAttachments,
   getAttachments,
   refreshToken,
   sendComment,
   sendEmail,
-  uploadRepeatTemplateAttachments
+  uploadRepeatTemplateAttachments,
 } from './rest';
 import {
   useHttps
@@ -41,6 +42,7 @@ export const startRest = () => {
   //REST stuff
   test(app);
   uploadAttachments(app);
+  uploadProjectAttachments(app);
   getAttachments(app);
   refreshToken(app);
   sendComment(app);

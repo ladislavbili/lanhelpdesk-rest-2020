@@ -56,6 +56,7 @@ import defineTaskMetadata, { createTaskMetadataAssoc } from './instances/taskMet
 import defineTasklistColumnPreferences, { createTasklistColumnPreferencesAssoc } from './instances/taskListColumnPreference';
 import defineTasklistGanttColumnPreferences, { createTasklistGanttColumnPreferencesAssoc } from './instances/taskListGanttColumnPreference';
 import defineScheduledWorks, { createScheduledWorksAssoc } from './instances/scheduledWork';
+import defineProjectAttachments, { createProjectAttachmentsAssoc } from './instances/projectAttachment';
 
 
 /*
@@ -128,6 +129,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineTasklistGanttColumnPreferences(sequelize);
   defineRepeatTimes(sequelize);
   defineScheduledWorks(sequelize);
+  defineProjectAttachments(sequelize);
 
   createRolesAssoc(models);
   createUsersAssoc(models);
@@ -185,6 +187,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createTasklistGanttColumnPreferencesAssoc(models);
   createRepeatTimesAssoc(models);
   createScheduledWorksAssoc(models);
+  createProjectAttachmentsAssoc(models);
 
   //LOG FUNCTIONS
 

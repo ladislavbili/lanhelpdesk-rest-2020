@@ -1,4 +1,4 @@
-export const testing = true;
+export const testing = false;
 const services = !testing;
 
 export const imaps = services;

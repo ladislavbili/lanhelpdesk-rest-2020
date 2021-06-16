@@ -16,6 +16,7 @@ type Project {
   tags: [Tag]!
   statuses: [Status]!
   groups: [ProjectGroup]!
+  attachments: [ProjectAttachment]!
 }
 
 type BasicProject {

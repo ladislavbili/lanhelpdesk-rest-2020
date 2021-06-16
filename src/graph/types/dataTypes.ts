@@ -10,6 +10,7 @@ import { Material } from './entities/material';
 import { Milestone } from './entities/milestone';
 import { Pricelist } from './entities/pricelist';
 import { Project } from './entities/project';
+import { ProjectAttachment } from './entities/projectAttachment';
 import { ProjectGroup } from './entities/projectGroup';
 import { Repeat } from './entities/repeat';
 import { RepeatTemplate } from './entities/repeatTemplate';
@@ -50,6 +51,7 @@ ${Material}
 ${Milestone}
 ${Pricelist}
 ${Project}
+${ProjectAttachment}
 ${ProjectGroup}
 ${Repeat}
 ${RepeatTemplate}

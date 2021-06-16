@@ -4,7 +4,7 @@ import {
   ProjectNoNewStatus,
   ProjectNoCloseStatus
 } from '@/configs/errors';
-import { models, sequelize } from '@/models';
+import { models } from '@/models';
 import checkResolver from './checkResolver';
 import {
   allGroupRights
@@ -60,6 +60,7 @@ const querries = {
     }
     return models.Project.findByPk(id, {
       include: [
+        models.ProjectAttachment,
         {
           model: models.Tag,
           as: 'tags'
@@ -612,6 +613,9 @@ const attributes = {
     },
     async groups(project) {
       return getModelAttribute(project, 'ProjectGroups');
+    },
+    async attachments(project) {
+      return getModelAttribute(project, 'ProjectAttachments');
     },
   },
 
