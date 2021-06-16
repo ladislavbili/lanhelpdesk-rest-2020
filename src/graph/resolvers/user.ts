@@ -23,7 +23,13 @@ import {
   NotEveryUsersWorkTripWasCoveredError
 } from '@/configs/errors';
 import { models } from '@/models';
-import { UserInstance, RoleInstance, ProjectInstance, AccessRightsInstance } from '@/models/instances';
+import {
+  UserInstance,
+  RoleInstance,
+  ProjectInstance,
+  ProjectGroupInstance,
+  AccessRightsInstance,
+} from '@/models/instances';
 import checkResolver from './checkResolver';
 import { USER_CHANGE, USER_DATA_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
@@ -415,7 +421,7 @@ const mutations = {
     );
 
     const [tasks, subtasks, workTrips] = await Promise.all([
-      TargetUser.getRequesterTasks({ include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] }),
+      TargetUser.getRequesterTasks({ include: [{ model: models.Project }] }),
       TargetUser.getSubtasks({ include: [{ model: models.Task, include: [{ model: models.User, as: 'assignedTos' }] }] }),
       TargetUser.getWorkTrips({ include: [{ model: models.Task, include: [{ model: models.User, as: 'assignedTos' }] }] }),
     ])
@@ -548,9 +554,16 @@ export default {
 }
 
 async function checkIfPairFitsTask(Task, requester) {
-  const Project = await Task.get('Project');
-  const ProjectRights = await Project.get('ProjectRights');
-  return Project.get('lockedRequester') || ProjectRights.some((right) => right.get('UserId') === requester)
+  const Project = <ProjectInstance>await models.Project.findByPk(Task.get('ProjectId'), {
+    include: [{
+      model: models.ProjectGroup,
+      include: [models.User]
+    }]
+  });
+  const allRequesterIds = (<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
+    return [...acc, ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id'))]
+  }, []);
+  return Project.get('lockedRequester') || allRequesterIds.includes(requester);
 }
 
 async function checkIfPairFitsSubtask(Subtask, assignedId) {

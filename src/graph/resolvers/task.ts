@@ -119,7 +119,7 @@ const createBasicSort = (taskName, milestoneSort) => {
 }
 
 const querries = {
-  tasks: async (root, { projectId, filter, sort, milestoneSort, search, stringFilter, limit, page, statuses }, { req, userID }) => {
+  tasks: async (root, { projectId, milestoneId, filter, sort, milestoneSort, search, stringFilter, limit, page, statuses }, { req, userID }) => {
     const mainOrderBy = sort ? transformSortToQueryString(sort, true, milestoneSort) : createBasicSort('Task', milestoneSort);
     const secondaryOrderBy = sort ? transformSortToQueryString(sort, false, milestoneSort) : createBasicSort('TaskData', milestoneSort);
 
@@ -130,11 +130,17 @@ const querries = {
     const checkUserTime = checkUserWatch.stop();
     let taskWhere = [];
     if (projectId) {
-      const Project = await models.Project.findByPk(projectId);
+      const Project = await models.Project.findByPk(projectId, { include: [models.Milestone] });
       if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
-      taskWhere.push(`"Task"."ProjectId" = ${projectId}`)
+      taskWhere.push(`"Task"."ProjectId" = ${projectId}`);
+      if (milestoneId !== null && milestoneId !== undefined) {
+        if (!(<MilestoneInstance[]>Project.get('Milestones')).some((Milestone) => Milestone.get('id') === milestoneId)) {
+          throw createDoesNoExistsError('Milestone', milestoneId);
+        }
+        taskWhere.push(`"Task"."MilestoneId" = ${milestoneId}`);
+      }
     }
     if (statuses && statuses.length !== 0) {
       taskWhere.push(`"Task"."StatusId" IN (${statuses.join(',')})`)
@@ -171,12 +177,16 @@ const querries = {
     responseTasks.forEach((Task) => {
       const hasAsssignedTo = Task.assignedTos !== null && Task.assignedTos.id !== null;
       const hasTag = Task.Tags !== null && Task.Tags.id !== null;
+      const hasScheduled = Task.ScheduledTasks !== null && Task.ScheduledTasks.id !== null;
 
       const taskIndex = tasks.findIndex((task) => Task.id === task.id);
       if (taskIndex !== -1) {
 
         if (hasAsssignedTo && !tasks[taskIndex].assignedTos.some((assignedTo) => assignedTo.id === Task.assignedTos.id)) {
           tasks[taskIndex].assignedTos.push(Task.assignedTos);
+        }
+        if (hasScheduled && !tasks[taskIndex].ScheduledTasks.some((ScheduledTask) => ScheduledTask.id === Task.ScheduledTasks.id)) {
+          tasks[taskIndex].ScheduledTasks.push(Task.ScheduledTasks);
         }
         if (hasTag && !tasks[taskIndex].Tags.some((tag) => tag.id === Task.Tags.id)) {
           tasks[taskIndex].Tags.push(Task.Tags);
@@ -185,6 +195,7 @@ const querries = {
         tasks.push({
           ...Task,
           assignedTos: !hasAsssignedTo ? [] : [Task.assignedTos],
+          ScheduledTasks: !hasScheduled ? [] : [Task.ScheduledTasks],
           Tags: !hasTag ? [] : [Task.Tags],
           subtasksQuantity: toFloatOrZero(Task.subtasksQuantity),
           workTripsQuantity: toFloatOrZero(Task.workTripsQuantity),
@@ -192,7 +203,6 @@ const querries = {
         })
       }
     })
-
     if (!isAdmin) {
       tasks = tasks.map((Task) => {
         const Project = Task.Project;

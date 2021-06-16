@@ -66,7 +66,7 @@ const querries = {
         },
         {
           model: models.Status,
-          as: 'projectStatuses'
+          as: 'projectStatuses',
         },
         {
           model: models.ProjectGroup,
@@ -75,8 +75,10 @@ const querries = {
             models.ProjectGroupRights
           ]
         },
-
-      ]
+      ],
+      order: [
+        [{ model: models.Status, as: 'projectStatuses' }, 'order', 'ASC'],
+      ],
     });
   },
   myProjects: async (root, args, { req, userID }) => {
@@ -101,7 +103,10 @@ const querries = {
               models.ProjectGroupRights
             ]
           }
-        ]
+        ],
+        order: [
+          [{ model: models.Status, as: 'projectStatuses' }, 'order', 'ASC'],
+        ],
       })
       return Projects.map((Project) => (
         {

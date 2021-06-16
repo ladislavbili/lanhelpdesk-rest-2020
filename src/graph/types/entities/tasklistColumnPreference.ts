@@ -11,6 +11,7 @@ type TasklistColumnPreference{
   requester: Boolean!
   company: Boolean!
   assignedTo: Boolean!
+  scheduled: Boolean!
   createdAtV: Boolean!
   startsAt: Boolean!
   deadline: Boolean!
@@ -44,6 +45,7 @@ addOrUpdateTasklistColumnPreference(
   requester: Boolean
   company: Boolean
   assignedTo: Boolean
+  scheduled: Boolean
   createdAtV: Boolean
   startsAt: Boolean
   deadline: Boolean

@@ -111,6 +111,7 @@ ${createExecClass("Task", true)}
 
 enum EnumSortTaskKey {
   id
+  important
   title
   status
   requester
@@ -147,6 +148,7 @@ input StringFilterInput {
 export const TaskQuerries = `
 tasks(
   projectId: Int
+  milestoneId: Int
   filter: FilterInput
   sort: SortTasksInput
   milestoneSort: Boolean

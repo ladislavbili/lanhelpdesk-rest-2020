@@ -53,7 +53,7 @@ const mutations = {
 
   deleteMilestone: async (root, { id }, { req }) => {
     const User = await checkResolver(req);
-    const Milestone = await models.Milestone.findByPk(id, { include: [{ model: models.Project, include: [{ model: models.ProjectRight }] }] });
+    const Milestone = await models.Milestone.findByPk(id, { include: [models.Project] });
     if (Milestone === null) {
       throw createDoesNoExistsError('Milestone', id);
     }

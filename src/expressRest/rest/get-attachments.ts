@@ -6,6 +6,9 @@ import { AccessRightsInstance, RoleInstance, CommentInstance, RepeatTemplateInst
 import { models } from '@/models';
 import fs from 'fs';
 import pathResolver from 'path';
+import {
+  testing,
+} from '@/configs/constants';
 
 export function getAttachments(app) {
   //parameter - comment or task
@@ -36,10 +39,11 @@ export function getAttachments(app) {
       return res.status(404).send({ ok: false, error: checkResult.error });
     }
     if (!fs.existsSync(path)) {
-      checkResult.Attachment.destroy();
+      //checkResult.Attachment.destroy();
       return res.status(404).send({ ok: false, error: 'Attachment was deleted from the server.' })
     }
-    res.sendFile(pathResolver.join(__dirname, `../../../${path}`));
+
+    res.sendFile(path, { root: './' });
   });
 }
 

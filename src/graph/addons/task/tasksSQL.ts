@@ -32,6 +32,10 @@ export const transformSortToQueryString = (sort, main, gantt = false) => {
       orderBy = `ISNULL(${main ? "Task" : "TaskData"}."${sort.key}") ASC, ${main ? "Task" : "TaskData"}."${sort.key}" ${order}`;
       break;
     }
+    case 'important': {
+      orderBy = `${main ? "Task" : "TaskData"}."important" ${order}`;
+      break;
+    }
     default: {
       orderBy = `${main ? "Task" : "TaskData"}."id" ${order}`;
     }
@@ -39,7 +43,8 @@ export const transformSortToQueryString = (sort, main, gantt = false) => {
   if (gantt) {
     return `ISNULL("Milestone.order") ASC,"Milestone.order" ASC, ${orderBy}, ${main ? "Task" : "TaskData"}."id" DESC`;
   }
-  return `${main ? "Task" : "TaskData"}."important" DESC, ${orderBy}, ${main ? "Task" : "TaskData"}."id" DESC`;
+
+  return `${orderBy}, ${main ? "Task" : "TaskData"}."id" DESC`;
 }
 
 export const filterToTaskWhereSQL = (filter, userId, companyId, projectId) => {
@@ -412,6 +417,7 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
     "Subtasks"."subtasksQuantity" as subtasksQuantity,
     "WorkTrips"."workTripsQuantity" as workTripsQuantity,
     "Materials"."materialsPrice" as materialsPrice,
+    ${createModelAttributes("ScheduledTasks", "ScheduledTasks", models.ScheduledTask)}
     ${createModelAttributes("assignedTos", "assignedTos", models.User)}
     ${generateFullNameSQL('assignedTos')}
     ${createModelAttributes("assignedTos->task_assignedTo", "assignedTos.task_assignedTo", null, 'assignedTosTaskMapAttributes')}
@@ -462,6 +468,7 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
       LEFT OUTER JOIN (
         "task_assignedTo" AS "assignedTos->task_assignedTo" INNER JOIN "users" AS "assignedTos" ON "assignedTos"."id" = "assignedTos->task_assignedTo"."UserId"
       ) ON "TaskData"."id" = "assignedTos->task_assignedTo"."TaskId"
+      LEFT OUTER JOIN "scheduled_task" AS "ScheduledTasks" ON "TaskData"."id" = "ScheduledTasks"."TaskId"
       LEFT OUTER JOIN (
         "task_has_tags" AS "Tags->task_has_tags" INNER JOIN "tags" AS "Tags" ON "Tags"."id" = "Tags->task_has_tags"."TagId"
       ) ON "TaskData"."id" = "Tags->task_has_tags"."TaskId"

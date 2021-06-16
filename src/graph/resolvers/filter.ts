@@ -135,14 +135,7 @@ const mutations = {
 
     //if project, must be at least read and exists
     if (projectId) {
-      const Project = await models.Project.findByPk(
-        projectId,
-        {
-          include: [
-            { model: models.ProjectRight }
-          ]
-        }
-      );
+      const Project = await models.Project.findByPk(projectId);
       if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
@@ -230,14 +223,7 @@ const mutations = {
 
     //if project, must be at least read and exists
     if (projectId) {
-      const Project = await models.Project.findByPk(
-        projectId,
-        {
-          include: [
-            { model: models.ProjectRight }
-          ]
-        }
-      );
+      const Project = await models.Project.findByPk(projectId);
       if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
@@ -383,14 +369,7 @@ const mutations = {
 
     //if project, must be at least read and exists
     if (projectId) {
-      const Project = await models.Project.findByPk(
-        projectId,
-        {
-          include: [
-            { model: models.ProjectRight }
-          ]
-        }
-      );
+      const Project = await models.Project.findByPk(projectId);
       if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
