@@ -30,6 +30,7 @@ import { TaskChangeMutations } from './entities/taskChange';
 import { TaskInvoiceMutations } from './entities/taskInvoice';
 import { TasklistColumnPreferenceMutations } from './entities/tasklistColumnPreference';
 import { TasklistGanttColumnPreferenceMutations } from './entities/tasklistGanttColumnPreference';
+import { TasklistSortMutations } from './entities/tasklistSort';
 import { TaskMetadataMutations } from './entities/taskMetadata';
 import { TaskTypeMutations } from './entities/taskType';
 import { TripTypeMutations } from './entities/tripType';
@@ -72,6 +73,7 @@ type Mutation {
   ${TaskInvoiceMutations}
   ${TasklistColumnPreferenceMutations}
   ${TasklistGanttColumnPreferenceMutations}
+  ${TasklistSortMutations}
   ${TaskMetadataMutations}
   ${TaskTypeMutations}
   ${TripTypeMutations}

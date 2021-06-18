@@ -13,11 +13,13 @@ type User {
   signature: String
   language: LanguageEnum!
   tasklistLayout: Int!
+  afterTaskCreate: Int!
   taskLayout: Int!
   role: BasicRole!
   company: BasicCompany!
   statuses: [Status]!
   groups: [ProjectGroup]!
+  tasklistSorts: [TasklistSort]!
 }
 
 enum LanguageEnum {
@@ -74,7 +76,9 @@ updateUser( id: Int!, username: String, email: String, name: String, surname: St
 loginToken: UserData
 logoutUser: Boolean
 logoutAll: String
+setTasklistSort( sort: String!, asc: Boolean!, layout: Int! ): User
 setUserStatuses( ids: [Int]! ): User
+setAfterTaskCreate( afterTaskCreate: Int! ): User
 setTasklistLayout( tasklistLayout: Int! ): User
 setTaskLayout( taskLayout: Int! ): User
 updateProfile( username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String, language: LanguageEnum ): UserData,

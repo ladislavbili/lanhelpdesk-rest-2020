@@ -120,6 +120,9 @@ const querries = {
       ))
     } else {
       const ProjectGroups = <ProjectGroupInstance[]>await User.getProjectGroups({
+        order: [
+          [models.Project, { model: models.Status, as: 'projectStatuses' }, 'order', 'ASC'],
+        ],
         include: [
           {
             model: models.Project,

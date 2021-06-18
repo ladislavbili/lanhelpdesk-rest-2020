@@ -48,3 +48,4 @@ export { TasklistColumnPreferenceInstance } from './taskListColumnPreference';
 export { TasklistGanttColumnPreferenceInstance } from './taskListGanttColumnPreference';
 export { ScheduledWorkInstance } from './scheduledWork';
 export { ProjectAttachmentInstance } from './projectAttachment';
+export { TasklistSortInstance } from './tasklistSort';

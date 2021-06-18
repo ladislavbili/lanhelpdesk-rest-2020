@@ -119,6 +119,7 @@ enum EnumSortTaskKey {
   startsAt
   createdAt
   deadline
+  updatedAt
 }
 
 input SortTasksInput {

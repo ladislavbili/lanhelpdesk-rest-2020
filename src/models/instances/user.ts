@@ -16,16 +16,18 @@ export interface UserInstance extends DefaultInstance {
   language: string;
   tasklistLayout: number;
   taskLayout: number;
+  afterTaskCreate: number;
 
+  createToken?: any;
+  createTasklistSort?: any;
 
   setTags?: any;
   setRole?: any;
-  getRole?: any;
   setStatuses?: any;
   setCompany?: any;
-  createToken?: any;
   setPricelist?: any;
 
+  getRole?: any;
   getRequesterTasks?: any;
   getSubtasks?: any;
   getWorkTrips?: any;
@@ -90,6 +92,11 @@ export default function defineUsers(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: 'sk',
       },
+      afterTaskCreate: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
       tasklistLayout: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -149,6 +156,8 @@ export function createUsersAssoc(models) {
   models.User.hasMany(models.TasklistColumnPreference, { onDelete: 'CASCADE', as: { singular: "TasklistColumnPreference", plural: "TasklistColumnPreferences" }, foreignKey: { name: 'UserId', allowNull: false } });
 
   models.User.hasMany(models.TasklistGanttColumnPreference, { onDelete: 'CASCADE', as: { singular: "TasklistGanttColumnPreference", plural: "TasklistGanttColumnPreferences" }, foreignKey: { name: 'UserId', allowNull: false } });
+
+  models.User.hasMany(models.TasklistSort, { onDelete: 'CASCADE' });
 
   //REPEAT TEMPLATE
   models.User.belongsToMany(models.RepeatTemplate, { as: { singular: "assignedToRepeatTemplate", plural: "assignedToRepeatTemplates" }, through: 'repeat_template_assignedTo' });

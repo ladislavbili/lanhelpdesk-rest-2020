@@ -29,6 +29,7 @@ import {
   ProjectInstance,
   ProjectGroupInstance,
   AccessRightsInstance,
+  TasklistSortInstance,
 } from '@/models/instances';
 import checkResolver from './checkResolver';
 import { USER_CHANGE, USER_DATA_CHANGE } from '@/configs/subscriptions';
@@ -87,6 +88,7 @@ const querries = {
       [
         models.Company,
         models.Status,
+        models.TasklistSort,
         {
           model: models.Role,
           include: [
@@ -487,6 +489,31 @@ const mutations = {
     });
   },
 
+  setTasklistSort: async (root, { sort, asc, layout }, { req }) => {
+    const User = await checkResolver(req,
+      [],
+      false,
+      [
+        models.TasklistSort
+      ]);
+    const TasklistSorts = <TasklistSortInstance[]>User.get('TasklistSorts');
+    const TasklistSort = TasklistSorts.find((TasklistSort) => TasklistSort.get('layout') === layout);
+    if (TasklistSort) {
+      await TasklistSort.update({ sort, asc });
+    } else {
+      await User.createTasklistSort({ sort, asc, layout });
+    }
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: User.get('id') });
+    return User;
+  },
+
+  setAfterTaskCreate: async (root, { afterTaskCreate }, { req }) => {
+    const User = await checkResolver(req);
+    await User.update({ afterTaskCreate: parseInt(afterTaskCreate) });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: User.get('id') });
+    return User;
+  },
+
   setTasklistLayout: async (root, { tasklistLayout }, { req }) => {
     const User = await checkResolver(req);
     await User.update({ tasklistLayout: parseInt(tasklistLayout) });
@@ -515,6 +542,9 @@ const attributes = {
     },
     async groups(user) {
       return getModelAttribute(user, 'ProjectGroups');
+    },
+    async tasklistSorts(user) {
+      return getModelAttribute(user, 'TasklistSorts');
     },
   },
   BasicUser: {

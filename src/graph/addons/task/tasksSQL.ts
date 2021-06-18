@@ -28,7 +28,7 @@ export const transformSortToQueryString = (sort, main, gantt = false) => {
       orderBy = `ISNULL("requester${separator}id") ASC, "requester${separator}name" ${order}, "requester${separator}surname" ${order}`;
       break;
     }
-    case 'id': case 'title': case 'deadline': case 'createdAt': case 'startsAt': {
+    case 'id': case 'title': case 'deadline': case 'createdAt': case 'startsAt': case 'updatedAt': {
       orderBy = `ISNULL(${main ? "Task" : "TaskData"}."${sort.key}") ASC, ${main ? "Task" : "TaskData"}."${sort.key}" ${order}`;
       break;
     }
