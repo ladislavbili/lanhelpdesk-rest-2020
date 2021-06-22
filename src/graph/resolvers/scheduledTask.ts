@@ -14,6 +14,9 @@ import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
 import {
+  allGroupRights,
+} from '@/configs/projectConstants';
+import {
   createScheduledTasksSQL,
   scheduledFilterSQL
 } from '@/graph/addons/scheduledTask';
@@ -143,11 +146,14 @@ const mutations = {
       { include: [models.TaskChangeMessage] }
     );
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
-    return models.ScheduledTask.create({
+    let newScheduledTask = <ScheduledTaskInstance>await models.ScheduledTask.create({
       TaskId: task,
       ...attributes,
       ...dates,
     });
+    newScheduledTask.Task = Task;
+    newScheduledTask.canEdit = true;
+    return newScheduledTask;
   },
 
   updateScheduledTask: async (root, { id, ...attributes }, { req }) => {
@@ -203,7 +209,9 @@ const attributes = {
       return getModelAttribute(scheduledTask, 'User');
     },
     async task(scheduledTask) {
-      return { ... (await getModelAttribute(scheduledTask, 'Task')), rights: { statusRead: true } };
+      let Task = (await getModelAttribute(scheduledTask, 'Task'));
+      Task.rights = { statusRead: true };
+      return Task;
     },
   },
 };

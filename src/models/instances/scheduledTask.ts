@@ -4,6 +4,9 @@ import DefaultInstance from './defaultInstance';
 export interface ScheduledTaskInstance extends DefaultInstance {
   from: number;
   to: number;
+  canEdit?: Boolean;
+  Task?: any;
+  getTask?: any;
 }
 
 export default function defineScheduledTasks(sequelize: Sequelize) {

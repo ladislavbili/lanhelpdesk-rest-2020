@@ -153,7 +153,7 @@ const querries = {
     if (search || stringFilter) {
       taskWhere = [
         ...taskWhere,
-        ...stringFilterToTaskWhereSQL(search, stringFilter),
+        ...stringFilterToTaskWhereSQL(search.charAt(search.length - 1) === " " ? search.substring(0, search.length - 1) : search, stringFilter),
       ]
     }
 

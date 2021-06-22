@@ -191,18 +191,22 @@ const mutations = {
     }
     const dates = extractDatesFromObject(params, ['originalTrigger', 'triggersAt']);
 
-    const NewRepeatTime = await models.RepeatTime.create({
+    let NewRepeatTime = <RepeatTimeInstance>await models.RepeatTime.create({
       RepeatId: repeatId,
       ...params,
       ...dates
     });
+    const projectGroupRights = (<RoleInstance>User.get('Role')).get('level') === 0 ? allGroupRights : (<ProjectGroupRightsInstance>ProjectGroups[0].get('ProjectGroupRight')).get();
+    NewRepeatTime.canEdit = projectGroupRights.repeatWrite;
+    NewRepeatTime.canCreateTask = projectGroupRights.repeatRead && projectGroupRights.addTasks;
+    NewRepeatTime.rights = projectGroupRights;
     repeatTimeEvent.emit('changed', repeatId);
     return NewRepeatTime;
   },
 
   updateRepeatTime: async (root, { id, ...params }, { req }) => {
     const User = <UserInstance>await checkResolver(req);
-    const RepeatTime = await models.RepeatTime.findByPk(id, {
+    let RepeatTime = <RepeatTimeInstance>await models.RepeatTime.findByPk(id, {
       include: [
         {
           model: models.Repeat,
@@ -238,6 +242,10 @@ const mutations = {
       ...dates,
     });
     repeatTimeEvent.emit('changed', RepeatTime.get('RepeatId'));
+    const projectGroupRights = (<RoleInstance>User.get('Role')).get('level') === 0 ? allGroupRights : (<ProjectGroupRightsInstance>ProjectGroups[0].get('ProjectGroupRight')).get();
+    RepeatTime.canEdit = projectGroupRights.repeatWrite;
+    RepeatTime.canCreateTask = projectGroupRights.repeatRead && projectGroupRights.addTasks;
+    RepeatTime.rights = projectGroupRights;
     return RepeatTime;
   },
 
