@@ -232,7 +232,7 @@ export const InvoicedTask = `
 `
 
 
-export const InvoicedTaskQuerries = `
+export const InvoicedTaskQueries = `
 
 `
 

@@ -62,7 +62,7 @@ enum WellKnownEnum {
 }
 `
 
-export const SmtpQuerries = `
+export const SmtpQueries = `
 smtps: [Smtp]
 smtp(id: Int!): Smtp
 `

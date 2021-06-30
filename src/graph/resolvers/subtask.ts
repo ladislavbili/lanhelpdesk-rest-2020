@@ -24,7 +24,7 @@ import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 const scheduledDates = ['from', 'to'];
 
-const querries = {
+const queries = {
   subtasks: async (root, { taskId }, { req }) => {
     const SourceUser = await checkResolver(req);
     await checkIfHasProjectRights(SourceUser.get('id'), taskId, undefined, ['vykazRead']);
@@ -463,5 +463,5 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }

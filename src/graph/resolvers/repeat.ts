@@ -70,7 +70,7 @@ import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 const scheduledDateNames = ['from', 'to'];
 
-const querries = {
+const queries = {
   repeats: async (root, { projectId, active, ...rangeDates }, { req, userID }) => {
     const User = await checkResolver(req);
 
@@ -1052,6 +1052,6 @@ const subscriptions = {
 export default {
   attributes,
   mutations,
-  querries,
+  queries,
   subscriptions,
 }

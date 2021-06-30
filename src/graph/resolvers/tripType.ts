@@ -8,7 +8,7 @@ import { TRIP_TYPE_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 
-const querries = {
+const queries = {
   tripTypes: async (root, args, { req }) => {
     await checkResolver(req);
     return models.TripType.findAll({
@@ -93,6 +93,6 @@ const subscriptions = {
 export default {
   attributes,
   mutations,
-  querries,
+  queries,
   subscriptions,
 }

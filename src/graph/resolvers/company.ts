@@ -18,7 +18,7 @@ import { COMPANY_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 
-const querries = {
+const queries = {
   companies: async (root, args, { req }) => {
     await checkResolver(req, ['companies']);
     return models.Company.findAll({
@@ -346,6 +346,6 @@ const subscriptions = {
 export default {
   attributes,
   mutations,
-  querries,
+  queries,
   subscriptions,
 }

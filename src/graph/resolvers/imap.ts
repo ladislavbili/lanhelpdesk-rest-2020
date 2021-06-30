@@ -6,7 +6,7 @@ import { multipleIdDoesExistsCheck, idDoesExistsCheck, addApolloError, getModelA
 import { imapEvent } from '@/services/imap/readEmails';
 import { testImap } from '@/services/imap/testImap';
 
-const querries = {
+const queries = {
   imaps: async (root, args, { req }) => {
     await checkResolver(req, ['imaps']);
     return models.Imap.findAll({
@@ -150,5 +150,5 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }

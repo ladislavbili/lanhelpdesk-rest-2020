@@ -12,7 +12,7 @@ type ErrorMessage {
 }
 `
 
-export const ErrorMessageQuerries = `
+export const ErrorMessageQueries = `
   errorMessages: [ErrorMessage]
   errorMessageCount: Int
 `

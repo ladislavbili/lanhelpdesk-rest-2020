@@ -11,7 +11,7 @@ type RepeatTemplateAttachment {
 }
 `
 
-export const RepeatTemplateAttachmentQuerries = `
+export const RepeatTemplateAttachmentQueries = `
 `
 
 export const RepeatTemplateAttachmentMutations = `

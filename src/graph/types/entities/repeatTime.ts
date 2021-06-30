@@ -13,7 +13,7 @@ type RepeatTime{
 }
 `
 
-export const RepeatTimeQuerries = `
+export const RepeatTimeQueries = `
 repeatTimes(
   active: Boolean
   repeatId: Int,

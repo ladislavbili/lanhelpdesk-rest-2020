@@ -15,7 +15,7 @@ type CustomItem {
 }
 `
 
-export const CustomItemQuerries = `
+export const CustomItemQueries = `
 customItems(taskId: Int!): [CustomItem]
 `
 

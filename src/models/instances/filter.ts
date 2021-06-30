@@ -56,6 +56,7 @@ export interface FilterInstance extends DefaultInstance {
   getFilterTaskTypes?: any;
   getFilterAssignedTos?: any;
   getFilterTags?: any;
+  getFilterStatuses?: any;
   getFilterOneOfs?: any;
   getFilterCreatedBy?: any;
   getFilterOfProject?: any;
@@ -63,6 +64,7 @@ export interface FilterInstance extends DefaultInstance {
   setRoles?: any;
   setFilterAssignedTos?: any;
   setFilterTags?: any;
+  setFilterStatuses?: any;
   setFilterRequesters?: any;
   setFilterCompanies?: any;
   setFilterTaskTypes?: any;
@@ -113,6 +115,7 @@ export default function defineFilter(sequelize: Sequelize) {
           const [
             assignedTos,
             tags,
+            statuses,
             requesters,
             companies,
             taskTypes,
@@ -120,6 +123,7 @@ export default function defineFilter(sequelize: Sequelize) {
           ] = await Promise.all([
             this.getFilterAssignedTos(),
             this.getFilterTags(),
+            this.getFilterStatuses(),
             this.getFilterRequesters(),
             this.getFilterCompanies(),
             this.getFilterTaskTypes(),
@@ -130,6 +134,7 @@ export default function defineFilter(sequelize: Sequelize) {
             assignedToCur: this.get('assignedToCur'),
             assignedTos,
             tags,
+            statuses,
             requesterCur: this.get('requesterCur'),
             requesters,
             companyCur: this.get('companyCur'),
@@ -341,7 +346,9 @@ export function createFilterAssoc(models) {
 
   models.Filter.belongsToMany(models.User, { as: { singular: "filterAssignedTo", plural: "filterAssignedTos" }, through: 'filter_assignedTo' });
 
-  models.Filter.belongsToMany(models.Tag, { as: { singular: "filterTags", plural: "filterTags" }, through: 'filter_tags' });
+  models.Filter.belongsToMany(models.Tag, { as: { singular: "filterTag", plural: "filterTags" }, through: 'filter_tags' });
+
+  models.Filter.belongsToMany(models.Status, { as: { singular: "filterStatus", plural: "filterStatuses" }, through: 'filter_statuses' });
 
   models.Filter.belongsToMany(models.User, { as: { singular: "filterRequester", plural: "filterRequesters" }, through: 'filter_requester' });
 

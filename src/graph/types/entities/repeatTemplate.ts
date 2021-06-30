@@ -78,7 +78,7 @@ input RepeatTemplateUpdateInput {
 }
 `
 
-export const RepeatTemplateQuerries = `
+export const RepeatTemplateQueries = `
 `
 
 export const RepeatTemplateMutations = `

@@ -16,7 +16,7 @@ type TaskChangeMessage {
 }
 `
 
-export const TaskChangeQuerries = `
+export const TaskChangeQueries = `
 taskChanges(taskId: Int!): [TaskChange]
 `
 

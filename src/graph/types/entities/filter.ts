@@ -41,6 +41,7 @@ type filter {
   companies: [BasicCompany]
   taskTypes: [TaskType]
   tags: [Tag]
+  statuses: [Status]
   oneOf: [OneOfEnum]!
 
   statusDateFrom: String
@@ -88,6 +89,7 @@ input FilterInput {
   companies: [Int]
   taskTypes: [Int]
   tags: [Int]
+  statuses: [Int]
   oneOf: [OneOfEnum]!
 
   statusDateFrom: String
@@ -122,7 +124,7 @@ input FilterInput {
 }
 `
 
-export const FilterQuerries = `
+export const FilterQueries = `
 myFilters: [BasicFilter]!
 myFilter(id: Int!): Filter
 publicFilters: [Filter]

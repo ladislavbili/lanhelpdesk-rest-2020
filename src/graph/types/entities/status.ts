@@ -37,7 +37,7 @@ input UpdateStatusInput {
 }
 `
 
-export const StatusQuerries = `
+export const StatusQueries = `
 statusTemplates: [Status]
 statusTemplate(id: Int!): Status
 statuses(projectId: Int!): [Status]

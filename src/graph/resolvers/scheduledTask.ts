@@ -43,7 +43,7 @@ const dateNames2 = [
   'scheduledTo',
 ];
 
-const querries = {
+const queries = {
   scheduledTasks: async (root, { projectId, filter, userId, ...rangeDates }, { req, userID: currentUserId }) => {
     const User = await checkResolver(req);
     const isAdmin = (<RoleInstance>User.get('Role')).get('level') === 0;
@@ -219,5 +219,5 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }

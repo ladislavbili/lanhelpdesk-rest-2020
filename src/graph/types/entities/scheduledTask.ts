@@ -17,7 +17,7 @@ input ScheduledTaskInput {
 }
 `
 
-export const ScheduledTaskQuerries = `
+export const ScheduledTaskQueries = `
 scheduledTasks(
   projectId: Int
   filter: FilterInput

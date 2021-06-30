@@ -4,7 +4,7 @@ import { ProjectInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 import { getModelAttribute } from '@/helperFunctions';
 
-const querries = {
+const queries = {
   /*
   tags: async (root, args, { req }) => {
     await checkResolver(req);
@@ -74,5 +74,5 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }

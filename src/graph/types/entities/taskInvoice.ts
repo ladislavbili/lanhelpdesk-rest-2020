@@ -137,7 +137,7 @@ enum ReportTypeAllowed {
 }
 `
 
-export const TaskInvoiceQuerries = `
+export const TaskInvoiceQueries = `
   getInvoiceCompanies( fromDate: String!, toDate: String!, type: ReportTypeAllowed! ) :[CompanyInvoiceInfo]
   getCompanyInvoiceData( fromDate: String!, toDate: String!, companyId: Int!, type: ReportTypeAllowed! ) :InvoiceList
   getCompanyInvoices( id:Int! ) :[TaskInvoice]

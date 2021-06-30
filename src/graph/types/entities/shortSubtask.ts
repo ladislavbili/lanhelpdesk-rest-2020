@@ -12,7 +12,7 @@ input ShortSubtaskInput{
 }
 `
 
-export const ShortSubtaskQuerries = `
+export const ShortSubtaskQueries = `
 `
 
 export const ShortSubtaskMutations = `

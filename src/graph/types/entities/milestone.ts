@@ -12,7 +12,7 @@ type Milestone {
 }
 `
 
-export const MilestoneQuerries = `
+export const MilestoneQueries = `
 milestone(id: Int!): Milestone
 `
 

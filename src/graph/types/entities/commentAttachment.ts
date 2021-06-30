@@ -11,7 +11,7 @@ type CommentAttachment {
 }
 `
 
-export const CommentAttachmentQuerries = `
+export const CommentAttachmentQueries = `
 `
 
 export const CommentAttachmentMutations = `

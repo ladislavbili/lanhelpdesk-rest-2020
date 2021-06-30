@@ -18,7 +18,7 @@ import {
 } from '@/models/instances';
 const dateNames = ['fromDate', 'toDate'];
 
-const querries = {
+const queries = {
   getInvoiceUsers: async (root, args, { req }) => {
     await checkResolver(req, ['vykazy'], true);
     const { fromDate, toDate } = extractDatesFromObject(args, dateNames);
@@ -272,5 +272,5 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }

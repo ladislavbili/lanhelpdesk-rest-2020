@@ -3,7 +3,7 @@ import { models } from '@/models';
 import { ProjectInstance } from '@/models/instances';
 import { getModelAttribute } from '@/helperFunctions';
 import checkResolver from './checkResolver';
-const querries = {
+const queries = {
 }
 
 const mutations = {
@@ -20,5 +20,5 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }

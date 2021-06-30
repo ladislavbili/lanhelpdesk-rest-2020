@@ -60,7 +60,7 @@ input WorkTripPairInput {
   assignedId: Int!
 }
 `
-export const UserQuerries = `
+export const UserQueries = `
 users: [User]
 user(id: Int!): User
 basicUsers: [BasicUser]

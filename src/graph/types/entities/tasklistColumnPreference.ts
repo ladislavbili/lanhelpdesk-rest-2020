@@ -30,7 +30,7 @@ type TasklistColumnPreference{
 }
 `
 
-export const TasklistColumnPreferenceQuerries = `
+export const TasklistColumnPreferenceQueries = `
 tasklistColumnPreference( projectId: Int ): TasklistColumnPreference
 `
 

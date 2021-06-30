@@ -2,7 +2,7 @@ import {
   getModelAttribute,
 } from '@/helperFunctions';
 
-const querries = {
+const queries = {
 }
 
 const mutations = {
@@ -61,5 +61,5 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries,
+  queries,
 }

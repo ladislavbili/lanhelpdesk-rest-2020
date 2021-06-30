@@ -8,7 +8,7 @@ type TasklistSort {
 }
 `
 
-export const TasklistSortQuerries = `
+export const TasklistSortQueries = `
 `
 
 export const TasklistSortMutations = `

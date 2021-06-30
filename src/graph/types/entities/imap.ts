@@ -25,7 +25,7 @@ type Imap {
 }
 `
 
-export const ImapQuerries = `
+export const ImapQueries = `
 imaps: [Imap]
 imap(id: Int!): Imap
 `

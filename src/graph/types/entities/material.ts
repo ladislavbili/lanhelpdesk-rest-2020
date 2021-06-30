@@ -16,7 +16,7 @@ type Material {
 }
 `
 
-export const MaterialQuerries = `
+export const MaterialQueries = `
 materials(taskId: Int!): [Material]
 `
 

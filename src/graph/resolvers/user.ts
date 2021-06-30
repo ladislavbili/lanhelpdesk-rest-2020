@@ -37,7 +37,7 @@ import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 
 
-const querries = {
+const queries = {
   users: async (root, args, { req }) => {
     await checkResolver(req, ['users']);
     return models.User.findAll({
@@ -579,7 +579,7 @@ const subscriptions = {
 export default {
   attributes,
   mutations,
-  querries,
+  queries,
   subscriptions,
 }
 

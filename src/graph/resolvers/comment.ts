@@ -33,7 +33,7 @@ export interface EmailResultInstance {
   error: boolean;
 }
 
-const querries = {
+const queries = {
   comments: async (root, { task }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { groupRights } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['viewComments']);
@@ -183,6 +183,6 @@ const subscriptions = {
 export default {
   attributes,
   mutations,
-  querries,
+  queries,
   subscriptions,
 }

@@ -11,7 +11,7 @@ type ProjectAttachment {
 }
 `
 
-export const ProjectAttachmentQuerries = `
+export const ProjectAttachmentQueries = `
 `
 
 export const ProjectAttachmentMutations = `

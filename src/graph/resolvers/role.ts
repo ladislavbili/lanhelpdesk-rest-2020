@@ -22,7 +22,7 @@ import { ROLE_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 
-const querries = {
+const queries = {
   roles: async (root, args, { req }) => {
     await checkResolver(req, ['roles', 'users'], true);
     return models.Role.findAll({
@@ -213,6 +213,6 @@ const subscriptions = {
 export default {
   attributes,
   mutations,
-  querries,
+  queries,
   subscriptions,
 }

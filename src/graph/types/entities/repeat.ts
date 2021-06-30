@@ -28,7 +28,7 @@ enum EnumRepeatInterval{
 }
 `
 
-export const RepeatQuerries = `
+export const RepeatQueries = `
 repeats(
   projectId: Int,
   active: Boolean,

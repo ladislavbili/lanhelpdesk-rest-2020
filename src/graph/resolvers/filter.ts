@@ -19,7 +19,7 @@ import { FILTER_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 
-const querries = {
+const queries = {
   myFilters: async (root, args, { req }) => {
     const User = await checkResolver(req);
     const Filters = <FilterInstance[]>await models.Filter.findAll({
@@ -145,10 +145,11 @@ const mutations = {
     }
 
     //Filter
-    const { assignedTos, tags, requesters, companies, taskTypes, oneOf, important, invoiced, pausal, overtime, ...directFilterParams } = filter;
+    const { assignedTos, tags, statuses, requesters, companies, taskTypes, oneOf, important, invoiced, pausal, overtime, ...directFilterParams } = filter;
     await Promise.all([
       idsDoExistsCheck(assignedTos, models.User),
       idsDoExistsCheck(tags, models.Tag),
+      idsDoExistsCheck(statuses, models.Status),
       idsDoExistsCheck(requesters, models.User),
       idsDoExistsCheck(companies, models.Company),
       idsDoExistsCheck(taskTypes, models.TaskType),
@@ -183,6 +184,7 @@ const mutations = {
         newFilter.setRoles(roles),
         newFilter.setFilterAssignedTos(assignedTos ? assignedTos : []),
         newFilter.setFilterTags(tags ? tags : []),
+        newFilter.setFilterStatuses(statuses ? statuses : []),
         newFilter.setFilterRequesters(requesters ? requesters : []),
         newFilter.setFilterCompanies(companies ? companies : []),
         newFilter.setFilterTaskTypes(taskTypes ? taskTypes : []),
@@ -208,6 +210,7 @@ const mutations = {
     await Promise.all([
       newFilter.setFilterAssignedTos(assignedTos ? assignedTos : []),
       newFilter.setFilterTags(tags ? tags : []),
+      newFilter.setFilterStatuses(statuses ? statuses : []),
       newFilter.setFilterRequesters(requesters ? requesters : []),
       newFilter.setFilterCompanies(companies ? companies : []),
       newFilter.setFilterTaskTypes(taskTypes ? taskTypes : []),
@@ -233,10 +236,11 @@ const mutations = {
     }
 
     //Filter
-    const { assignedTos, tags, requesters, companies, taskTypes, oneOf, important, invoiced, pausal, overtime, ...directFilterParams } = filter;
+    const { assignedTos, tags, statuses, requesters, companies, taskTypes, oneOf, important, invoiced, pausal, overtime, ...directFilterParams } = filter;
     await Promise.all([
       idsDoExistsCheck(assignedTos, models.User),
       idsDoExistsCheck(tags, models.Tag),
+      idsDoExistsCheck(statuses, models.Status),
       idsDoExistsCheck(requesters, models.User),
       idsDoExistsCheck(companies, models.Company),
       idsDoExistsCheck(taskTypes, models.TaskType),
@@ -268,6 +272,7 @@ const mutations = {
     await Promise.all([
       newFilter.setFilterAssignedTos(assignedTos ? assignedTos : []),
       newFilter.setFilterTags(tags ? tags : []),
+      newFilter.setFilterStatuses(statuses ? statuses : []),
       newFilter.setFilterRequesters(requesters ? requesters : []),
       newFilter.setFilterCompanies(companies ? companies : []),
       newFilter.setFilterTaskTypes(taskTypes ? taskTypes : []),
@@ -308,11 +313,12 @@ const mutations = {
     let promises = [];
     if (filter) {
       //Filter
-      const { assignedTos, tags, requesters, companies, taskTypes, important, invoiced, pausal, overtime, oneOf: oneOfs, ...directFilterParams } = filter;
+      const { assignedTos, tags, statuses, requesters, companies, taskTypes, important, invoiced, pausal, overtime, oneOf: oneOfs, ...directFilterParams } = filter;
       const dates = extractDatesFromObject(filter, dateNames);
       await Promise.all([
         idsDoExistsCheck(assignedTos, models.User),
         idsDoExistsCheck(tags, models.User),
+        idsDoExistsCheck(statuses, models.Status),
         idsDoExistsCheck(requesters, models.User),
         idsDoExistsCheck(companies, models.Company),
         idsDoExistsCheck(taskTypes, models.TaskType),
@@ -328,6 +334,7 @@ const mutations = {
       changes = { ...directFilterParams, ...dates, ...boolAttributes };
       assignedTos !== undefined && promises.push(Filter.setFilterAssignedTos(assignedTos));
       tags !== undefined && promises.push(Filter.setFilterTags(tags));
+      statuses !== undefined && promises.push(Filter.setFilterStatuses(statuses));
       requesters !== undefined && promises.push(Filter.setFilterRequesters(requesters));
       companies !== undefined && promises.push(Filter.setFilterCompanies(companies));
       taskTypes !== undefined && promises.push(Filter.setFilterTaskTypes(taskTypes));
@@ -380,11 +387,12 @@ const mutations = {
     let changes = {};
     let promises = [];
     if (filter) {
-      const { assignedTos, tags, requesters, companies, taskTypes, important, invoiced, pausal, overtime, oneOf: oneOfs, ...directFilterParams } = filter;
+      const { assignedTos, tags, statuses, requesters, companies, taskTypes, important, invoiced, pausal, overtime, oneOf: oneOfs, ...directFilterParams } = filter;
       const dates = extractDatesFromObject(filter, dateNames);
       await Promise.all([
         idsDoExistsCheck(assignedTos, models.User),
         idsDoExistsCheck(tags, models.User),
+        idsDoExistsCheck(statuses, models.Status),
         idsDoExistsCheck(requesters, models.User),
         idsDoExistsCheck(companies, models.Company),
         idsDoExistsCheck(taskTypes, models.TaskType),
@@ -400,6 +408,7 @@ const mutations = {
       changes = { ...directFilterParams, ...dates, ...boolAttributes };
       assignedTos !== undefined && promises.push(Filter.setFilterAssignedTos(assignedTos));
       tags !== undefined && promises.push(Filter.setFilterTags(tags));
+      statuses !== undefined && promises.push(Filter.setFilterStatuses(statuses));
       requesters !== undefined && promises.push(Filter.setFilterRequesters(requesters));
       companies !== undefined && promises.push(Filter.setFilterCompanies(companies));
       taskTypes !== undefined && promises.push(Filter.setFilterTaskTypes(taskTypes));
@@ -478,6 +487,6 @@ const subscriptions = {
 export default {
   attributes,
   mutations,
-  querries,
+  queries,
   subscriptions,
 }

@@ -146,7 +146,7 @@ input StringFilterInput {
 }
 `
 
-export const TaskQuerries = `
+export const TaskQueries = `
 tasks(
   projectId: Int
   milestoneId: Int

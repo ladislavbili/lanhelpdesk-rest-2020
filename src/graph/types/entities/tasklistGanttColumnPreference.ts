@@ -24,7 +24,7 @@ type TasklistGanttColumnPreference{
 }
 `
 
-export const TasklistGanttColumnPreferenceQuerries = `
+export const TasklistGanttColumnPreferenceQueries = `
 tasklistGanttColumnPreference( projectId: Int ): TasklistGanttColumnPreference
 `
 

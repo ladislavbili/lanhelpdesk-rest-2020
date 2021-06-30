@@ -14,7 +14,7 @@ input ScheduledWorkInput {
 }
 `
 
-export const ScheduledWorkQuerries = `
+export const ScheduledWorkQueries = `
 `
 
 export const ScheduledWorkMutations = `

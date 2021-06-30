@@ -17,7 +17,7 @@ type WorkTrip {
 }
 `
 
-export const WorkTripQuerries = `
+export const WorkTripQueries = `
 workTrips(taskId: Int!): [WorkTrip]
 `
 

@@ -66,7 +66,7 @@ input CompanyRentUpdateInput{
 
 `
 
-export const CompanyQuerries = `
+export const CompanyQueries = `
 companies: [Company]
 company(id: Int!): Company
 basicCompanies: [BasicCompany]

@@ -11,7 +11,7 @@ type TaskAttachment {
 }
 `
 
-export const TaskAttachmentQuerries = `
+export const TaskAttachmentQueries = `
 `
 
 export const TaskAttachmentMutations = `

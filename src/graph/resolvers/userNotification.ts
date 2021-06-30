@@ -9,7 +9,7 @@ import { USER_NOTIFICATION_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 
-const querries = {
+const queries = {
   userNotifications: async (root, { limit }, { req }) => {
     let includeLimit = {};
     if (limit) {
@@ -157,6 +157,6 @@ const subscriptions = {
 export default {
   attributes,
   mutations,
-  querries,
+  queries,
   subscriptions,
 }

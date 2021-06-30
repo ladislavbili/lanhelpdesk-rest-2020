@@ -146,7 +146,7 @@ input UserGroupUpdateInput {
 }
 `
 
-export const ProjectGroupQuerries = `
+export const ProjectGroupQueries = `
   projectGroups(id: Int!): [ProjectGroup]
 `
 

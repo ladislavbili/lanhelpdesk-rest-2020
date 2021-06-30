@@ -19,7 +19,7 @@ import {
   SubtaskInstance,
   ScheduledTaskInstance,
 } from '@/models/instances';
-const querries = {
+const queries = {
 }
 
 const mutations = {
@@ -83,5 +83,5 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }

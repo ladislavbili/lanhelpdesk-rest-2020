@@ -37,7 +37,7 @@ input UpdatePriceInput {
 }
 `
 
-export const PricelistQuerries = `
+export const PricelistQueries = `
 pricelists: [Pricelist]
 pricelist(id: Int!): Pricelist
 `

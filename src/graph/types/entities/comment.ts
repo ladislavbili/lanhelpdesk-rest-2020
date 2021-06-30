@@ -21,7 +21,7 @@ type Comment {
 }
 `
 
-export const CommentQuerries = `
+export const CommentQueries = `
 comments( task: Int! ): [Comment]
 `
 

@@ -11,7 +11,7 @@ import { filterUnique } from '@/helperFunctions';
 import TaskResolvers from './task';
 import TaskInvoiceResolvers from './taskInvoice';
 import moment from 'moment';
-const querries = {
+const queries = {
 }
 
 const mutations = {
@@ -100,7 +100,7 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }
 
 

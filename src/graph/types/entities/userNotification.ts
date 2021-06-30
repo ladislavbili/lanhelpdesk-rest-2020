@@ -11,7 +11,7 @@ type UserNotification {
   task: Task
 }
 `
-export const UserNotificationQuerries = `
+export const UserNotificationQueries = `
 userNotifications( limit: Int ): [UserNotification]
 userNotificationsCount: Int
 `

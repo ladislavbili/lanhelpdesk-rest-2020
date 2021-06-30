@@ -18,7 +18,7 @@ type Subtask {
 }
 `
 
-export const SubtaskQuerries = `
+export const SubtaskQueries = `
 subtasks(taskId: Int!): [Subtask]
 `
 

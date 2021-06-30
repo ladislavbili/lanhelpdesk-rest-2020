@@ -5,7 +5,7 @@ import checkResolver from './checkResolver';
 import { getModelAttribute } from '@/helperFunctions';
 
 
-const querries = {
+const queries = {
   tasklistColumnPreference: async (root, { projectId }, { req }) => {
     const User = await checkResolver(req);
     return models.TasklistColumnPreference.findOne({ where: { ProjectId: projectId ? projectId : null, UserId: User.get('id') } });
@@ -35,5 +35,5 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }

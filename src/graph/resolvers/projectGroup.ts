@@ -20,7 +20,7 @@ import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 
 
-const querries = {
+const queries = {
   projectGroups: async (root, { id }, { req }) => {
     const User = await checkResolver(req);
     if ((<RoleInstance>User.get('Role')).get('level') !== 0) {
@@ -78,6 +78,6 @@ const subscriptions = {
 export default {
   attributes,
   mutations,
-  querries,
+  queries,
   subscriptions,
 }

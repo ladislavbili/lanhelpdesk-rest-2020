@@ -118,7 +118,7 @@ const createBasicSort = (taskName, milestoneSort) => {
   return milestoneSort ? `"Milestone"."order" ASC, "${taskName}"."startsAt" DESC` : `"${taskName}"."important" DESC, "${taskName}"."id" DESC`;
 }
 
-const querries = {
+const queries = {
   tasks: async (root, { projectId, milestoneId, filter, sort, milestoneSort, search, stringFilter, limit, page, statuses }, { req, userID }) => {
     const mainOrderBy = sort ? transformSortToQueryString(sort, true, milestoneSort) : createBasicSort('Task', milestoneSort);
     const secondaryOrderBy = sort ? transformSortToQueryString(sort, false, milestoneSort) : createBasicSort('TaskData', milestoneSort);
@@ -1446,6 +1446,6 @@ const subscriptions = {
 export default {
   attributes,
   mutations,
-  querries,
+  queries,
   subscriptions
 }

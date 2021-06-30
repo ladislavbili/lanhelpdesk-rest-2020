@@ -35,7 +35,7 @@ const dateNames = ['fromDate', 'toDate'];
 
 let fakeID = 0;
 
-const querries = {
+const queries = {
   getInvoiceCompanies: async (root, { type, ...args }, { req }) => {
     await checkResolver(req, ['vykazy']);
 
@@ -650,7 +650,7 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }
 
 function splitTasksByPausal(tasks) {

@@ -13,7 +13,7 @@ import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import { TaskInstance, ShortSubtaskInstance, RepeatTemplateInstance } from '@/models/instances';
 import checkResolver from './checkResolver';
 
-const querries = {
+const queries = {
 }
 
 const mutations = {
@@ -129,5 +129,5 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }

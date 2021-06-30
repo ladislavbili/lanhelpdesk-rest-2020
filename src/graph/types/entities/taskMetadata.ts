@@ -13,7 +13,7 @@ type TaskMetadata {
 }
 `
 
-export const TaskMetadataQuerries = `
+export const TaskMetadataQueries = `
 `
 
 export const TaskMetadataMutations = `

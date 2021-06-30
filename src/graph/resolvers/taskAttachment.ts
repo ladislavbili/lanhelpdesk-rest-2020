@@ -11,7 +11,7 @@ import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
 import fs from 'fs';
-const querries = {
+const queries = {
 }
 
 const mutations = {
@@ -54,5 +54,5 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }

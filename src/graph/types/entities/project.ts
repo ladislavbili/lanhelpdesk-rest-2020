@@ -48,7 +48,7 @@ type UserWithRights {
 ${projectExtra}
 `
 
-export const ProjectQuerries = `
+export const ProjectQueries = `
 projects: [Project]
 project(id: Int!): Project
 myProjects: [MyProject]!

@@ -8,7 +8,7 @@ type TaskType {
 }
 `
 
-export const TaskTypeQuerries = `
+export const TaskTypeQueries = `
 taskTypes: [TaskType]
 taskType(id: Int!): TaskType
 `

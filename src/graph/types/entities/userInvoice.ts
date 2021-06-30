@@ -52,7 +52,7 @@ type UITypeTotals {
   tripProject: Float!
 }
 `
-export const UserInvoiceQuerries = `
+export const UserInvoiceQueries = `
   getInvoiceUsers( fromDate: String!, toDate: String! ) :[InvoicedUser]
   getUserInvoice( fromDate: String!, toDate: String!, userId: Int! ): UserInvoice
 `

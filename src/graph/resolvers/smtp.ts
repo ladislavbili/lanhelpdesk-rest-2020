@@ -3,7 +3,7 @@ import { models } from '@/models';
 import checkResolver from './checkResolver';
 import { testSmtp } from '@/services/smtp';
 
-const querries = {
+const queries = {
   smtps: async (root, args, { req }) => {
     await checkResolver(req, ['smtps']);
     return models.Smtp.findAll({
@@ -83,5 +83,5 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }

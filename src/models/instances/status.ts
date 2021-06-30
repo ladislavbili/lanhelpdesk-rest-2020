@@ -59,6 +59,7 @@ export function createStatusesAssoc(models) {
 
   models.Status.belongsTo(models.Project, { as: 'defStatus' });
 
+  models.Status.belongsToMany(models.Filter, { as: { singular: "statusFilter", plural: "statusFilters" }, through: 'filter_statuses' });
   models.Status.hasMany(models.Task);
   models.Status.hasMany(models.RepeatTemplate);
 }

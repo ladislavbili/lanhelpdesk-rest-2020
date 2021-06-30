@@ -57,7 +57,7 @@ input AccessRightsUpdateInput {
 }
 `
 
-export const RoleQuerries = `
+export const RoleQueries = `
 roles: [Role]
 role(id: Int!): Role
 basicRoles: [BasicRole]

@@ -14,7 +14,7 @@ import {
   ProjectInstance,
 } from '@/models/instances';
 
-const querries = {
+const queries = {
   customItems: async (root, { taskId }, { req }) => {
     const SourceUser = await checkResolver(req);
     await checkIfHasProjectRights(SourceUser.get('id'), taskId, undefined, ['vykazRead']);
@@ -292,5 +292,5 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }

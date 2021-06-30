@@ -44,7 +44,7 @@ import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 import { ApolloError } from 'apollo-server-express';
 
-const querries = {
+const queries = {
   projects: async (root, args, { req }) => {
     await checkResolver(req, ["projects"]);
     return models.Project.findAll({
@@ -671,6 +671,6 @@ const subscriptions = {
 export default {
   attributes,
   mutations,
-  querries,
+  queries,
   subscriptions,
 }

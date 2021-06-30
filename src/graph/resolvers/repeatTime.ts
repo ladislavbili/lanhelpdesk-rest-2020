@@ -19,7 +19,7 @@ import { getModelAttribute, extractDatesFromObject } from '@/helperFunctions';
 import { repeatTimeEvent } from '@/services/repeatTasks';
 
 
-const querries = {
+const queries = {
   repeatTimes: async (root, { repeatId, repeatIds, active, ...rangeDates }, { req }) => {
     const User = <UserInstance>await checkResolver(req);
     let repeatWhere = <any>{};
@@ -301,5 +301,5 @@ const attributes = {
 export default {
   attributes,
   mutations,
-  querries
+  queries
 }

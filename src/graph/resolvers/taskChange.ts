@@ -10,7 +10,7 @@ import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 
-const querries = {
+const queries = {
   taskChanges: async (root, { taskId }, { req }) => {
     const SourceUser = await checkResolver(req);
     await checkIfHasProjectRights(SourceUser.get('id'), taskId, undefined, ['history']);
@@ -60,6 +60,6 @@ const subscriptions = {
 export default {
   attributes,
   mutations,
-  querries,
+  queries,
   subscriptions,
 }

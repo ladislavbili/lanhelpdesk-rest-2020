@@ -8,7 +8,7 @@ type TripType {
 }
 `
 
-export const TripTypeQuerries = `
+export const TripTypeQueries = `
 tripTypes: [TripType]
 tripType(id: Int!): TripType
 `

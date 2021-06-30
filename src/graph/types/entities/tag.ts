@@ -24,7 +24,7 @@ input TagUpdateInput {
 }
 `
 
-export const TagQuerries = `
+export const TagQueries = `
 `
 
 export const TagMutations = `
