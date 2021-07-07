@@ -241,7 +241,7 @@ export const stringFilterToTaskWhere = (search, stringFilter) => {
     }
   }
   if (stringFilter) {
-    const filterItems = allStringFilters.map((key) => ({ value: stringFilter[key], key }))
+    const filterItems = allStringFilters.map((filter) => filter.key).map((key) => ({ value: stringFilter[key], key }))
       .filter((filterItem) => filterItem.value !== undefined && filterItem.value !== null && filterItem.value.length !== 0);
     filterItems.forEach((filterItem) => {
       switch (filterItem.key) {

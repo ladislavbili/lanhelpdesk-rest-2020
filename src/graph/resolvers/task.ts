@@ -142,18 +142,16 @@ const queries = {
         taskWhere.push(`"Task"."MilestoneId" = ${milestoneId}`);
       }
     }
-    if (statuses && statuses.length !== 0) {
-      taskWhere.push(`"Task"."StatusId" IN (${statuses.join(',')})`)
-    }
+
     if (filter) {
       const dates = extractDatesFromObject(filter, dateNames2);
-      taskWhere = taskWhere.concat(filterToTaskWhereSQL({ ...filter, ...dates }, userID, User.get('CompanyId'), projectId));
+      taskWhere = taskWhere.concat(filterToTaskWhereSQL({ ...filter, ...dates }, userID, User.get('CompanyId'), projectId, statuses));
     }
 
     if (search || stringFilter) {
       taskWhere = [
         ...taskWhere,
-        ...stringFilterToTaskWhereSQL(search.charAt(search.length - 1) === " " ? search.substring(0, search.length - 1) : search, stringFilter),
+        ...stringFilterToTaskWhereSQL(search && search.charAt(search.length - 1) === " " ? search.substring(0, search.length - 1) : search, stringFilter),
       ]
     }
 
@@ -424,85 +422,6 @@ const queries = {
         ItemApprovedBy: item.ItemApprovedBy.id === null ? null : item.ItemApprovedBy,
       })),
     }
-  },
-
-  oldTask: async (root, { id }, { req }) => {
-    const User = await checkResolver(req);
-    const FragmentedTask = await Promise.all([
-      models.Task.findByPk(
-        id,
-        {
-          include: [
-            { model: models.Project },
-            models.TaskAttachment,
-            { model: models.User, as: 'assignedTos' },
-            {
-              model: models.Company,
-              include: [
-                {
-                  model: models.Pricelist,
-                  include: [
-                    {
-                      model: models.Price,
-                      include: [models.TaskType, models.TripType]
-                    }
-                  ]
-                },
-              ]
-            },
-            { model: models.User, as: 'createdBy' },
-            models.Milestone,
-            { model: models.User, as: 'requester' },
-            models.Status,
-            models.Tag,
-            models.TaskType,
-            models.Repeat,
-            models.RepeatTime,
-            {
-              model: models.TaskMetadata,
-              as: 'TaskMetadata'
-            },
-          ]
-        }
-      ),
-      models.Task.findByPk(
-        id,
-        {
-          include: [
-            models.ShortSubtask,
-            models.ScheduledTask,
-            {
-              model: models.InvoicedTask,
-              include: [models.InvoicedTag, models.InvoicedAssignedTo]
-            },
-            {
-              model: models.Subtask,
-              include: [models.TaskType, models.InvoicedSubtask, { model: models.User, as: 'SubtaskApprovedBy', attributes: ['klok'] }, { model: models.User, include: [models.Company] }]
-            },
-            {
-              model: models.WorkTrip,
-              include: [models.TripType, models.InvoicedTrip, { model: models.User, as: 'TripApprovedBy' }, { model: models.User, include: [models.Company] }]
-            },
-            {
-              model: models.Material,
-              include: [models.InvoicedMaterial, { model: models.User, as: 'MaterialApprovedBy' }],
-            },
-            {
-              model: models.CustomItem,
-              include: [models.InvoicedCustomItem, { model: models.User, as: 'ItemApprovedBy' }],
-            },
-          ]
-        }
-      ),
-    ])
-
-    let Task = mergeFragmentedModel(FragmentedTask)
-    const { groupRights } = await checkIfHasProjectRights(User.get('id'), id);
-    if (!canViewTask(Task, User, groupRights, true)) {
-      throw CantViewTaskError;
-    }
-    Task.rights = groupRights;
-    return Task;
   },
 
   getNumberOfTasks: async (root, { projectId }, { req }) => {

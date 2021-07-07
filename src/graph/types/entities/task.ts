@@ -133,9 +133,12 @@ input StringFilterInput {
   title: String
   requester: String
   company: String
-  createdAt: String
-  startsAt: String
-  deadline: String
+  createdAtFrom: String
+  createdAtTo: String
+  startsAtFrom: String
+  startsAtTo: String
+  deadlineFrom: String
+  deadlineTo: String
   project: String
   taskType: String
   milestone: String

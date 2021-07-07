@@ -1,22 +1,22 @@
 export const allStringFilters = [
-  'id',
-  'title',
+  { key: 'id', isDate: false },
+  { key: 'title', isDate: false },
 
-  'overtime',
-  'pausal',
-  'startsAt',
-  'deadline',
-  'createdAt',
+  { key: 'overtime', isDate: false },
+  { key: 'pausal', isDate: false },
+  { key: 'startsAt', isDate: true },
+  { key: 'deadline', isDate: true },
+  { key: 'createdAt', isDate: true },
 
-  'status',
-  'company',
-  'project',
-  'taskType',
-  'milestone',
+  { key: 'status', isDate: false },
+  { key: 'company', isDate: false },
+  { key: 'project', isDate: false },
+  { key: 'taskType', isDate: false },
+  { key: 'milestone', isDate: false },
 
-  'requester',
+  { key: 'requester', isDate: false },
 
 
-  'assignedTo',
-  'tags',
+  { key: 'assignedTo', isDate: false },
+  { key: 'tags', isDate: false },
 ]

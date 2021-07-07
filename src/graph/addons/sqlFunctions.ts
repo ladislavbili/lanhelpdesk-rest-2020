@@ -32,7 +32,7 @@ export const generateFullNameSQL = (source, target = null) => {
   return ` CONCAT( "${source}"."name", ' ' , "${source}"."surname" ) as "${target}.fullName",`;
 }
 
-export const toDBDate = (date) => (new Date(date)).toISOString().slice(0, 19).replace('T', ' ');
+export const toDBDate = (date) => (new Date(parseInt(date))).toISOString().slice(0, 19).replace('T', ' ');
 
 
 export const removeLastComma = (string) => string.slice(0, string.lastIndexOf(','));

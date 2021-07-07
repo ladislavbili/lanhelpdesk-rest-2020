@@ -47,8 +47,17 @@ export const transformSortToQueryString = (sort, main, gantt = false) => {
   return `${orderBy}, ${main ? "Task" : "TaskData"}."id" DESC`;
 }
 
-export const filterToTaskWhereSQL = (filter, userId, companyId, projectId) => {
+export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statuses = null) => {
+  const overrideStatuses = statuses !== null && statuses !== undefined && statuses.length > 0;
+
   let where = [];
+  //statuses
+  const includeStatuses = overrideStatuses ? statuses : filter.statuses;
+
+  if (includeStatuses.length > 0) {
+    where.push(`"Task"."StatusId" IN (${includeStatuses.join(',')})`);
+  }
+
   // bool attributes
   [
     {
@@ -331,7 +340,24 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
       )`);
   }
   if (stringFilter) {
-    const filterItems = allStringFilters.map((key) => ({ value: stringFilter[key], key }))
+    const filterItems = allStringFilters.map((filter) => {
+      if (filter.isDate) {
+        if (stringFilter[filter.key + "From"] === null || stringFilter[filter.key + "To"] === null) {
+          return {
+            value: null,
+            key: filter.key
+          }
+        }
+        return {
+          value: {
+            from: stringFilter[filter.key + "From"],
+            to: stringFilter[filter.key + "To"],
+          },
+          key: filter.key
+        }
+      }
+      return { value: stringFilter[filter.key], key: filter.key }
+    })
       .filter((filterItem) => filterItem.value !== undefined && filterItem.value !== null && filterItem.value.length !== 0);
     filterItems.forEach((filterItem) => {
       switch (filterItem.key) {
@@ -348,18 +374,8 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
           break;
         }
         case 'startsAt': case 'deadline': case 'createdAt': {
-          let filterString = filterItem.value;
-          if (filterString.includes(":")) {
-            filterString = filterString.split(":");
-            if (filterString[0] && !isNaN(parseInt(filterString[0]))) {
-              filterString[0] = parseInt(filterString[0]) - 1;
-              filterString = filterString.join(':')
-            }
-          }
-
           where.push(`(
-            DATE_FORMAT("Task"."${filterItem.key}", '%H:%i %e.%c.%Y') LIKE '%${filterString}%' OR
-            DATE_FORMAT("Task"."${filterItem.key}", '%H:%i %d.%m.%Y') LIKE '%${filterString}%'
+            "Task"."${filterItem.key}" BETWEEN '${toDBDate(filterItem.value.from)}' AND '${toDBDate(filterItem.value.to)}'
             )`)
           break;
         }
