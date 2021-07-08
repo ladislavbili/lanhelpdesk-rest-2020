@@ -92,6 +92,7 @@ import {
   TASK_CHANGE,
   TASK_HISTORY_CHANGE,
   TASK_DELETE,
+  TASK_ADD,
 } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
@@ -767,6 +768,7 @@ const mutations = {
     ])
     sendTaskNotificationsToUsers(User, NewTask, [`Task was created by ${User.get('fullName')}`]);
     pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
+    pubsub.publish(TASK_ADD, { taskAddSubscription: User.get('id') });
     NewTask.rights = groupRights;
     return NewTask;
   },
@@ -1349,6 +1351,14 @@ const subscriptions = {
       () => pubsub.asyncIterator(TASK_CHANGE),
       async (data, args, { userID }) => {
         return true;
+      }
+    ),
+  },
+  taskAddSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(TASK_ADD),
+      async ({ taskAddSubscription }, args, { userID }) => {
+        return taskAddSubscription === userID;
       }
     ),
   },

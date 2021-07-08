@@ -226,5 +226,6 @@ deleteTask( id: Int! ): Task
 
 export const TaskSubscriptions = `
 tasksSubscription: Boolean
+taskAddSubscription: Int
 taskDeleteSubscription( taskId: Int! ): Int
 `
