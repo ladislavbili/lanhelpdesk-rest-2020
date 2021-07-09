@@ -11,7 +11,6 @@ export const scheduledFilterSQL = (from, to, userId) => {
   let where = [];
 
   if (from && !to) {
-    from = new Date(from);
     //from plati ak FROM je vacsi alebo rovnaky alebo TO je vacsi alebo rovnaky
     where.push(`(
       ("ScheduledTask"."from" >= '${toDBDate(from)}') OR
@@ -19,7 +18,6 @@ export const scheduledFilterSQL = (from, to, userId) => {
     )`)
   }
   if (!from && to) {
-    to = new Date(to);
     //to plati ak FROM je mensi alebo rovnaky alebo TO je mensi alebo rovnaky
     where.push(`(
       ("ScheduledTask"."from" <= '${toDBDate(to)}') OR
@@ -28,9 +26,6 @@ export const scheduledFilterSQL = (from, to, userId) => {
   };
 
   if (to && from) {
-    from = new Date(from);
-    to = new Date(to);
-
     where.push(`(
       (
         "ScheduledTask"."from" >= '${toDBDate(from)}'
