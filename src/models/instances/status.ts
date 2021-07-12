@@ -4,6 +4,7 @@ import DefaultInstance from './defaultInstance';
 export interface StatusInstance extends DefaultInstance {
   title: string;
   order: number;
+  template: boolean;
   color: string;
   icon: string;
   action: string;

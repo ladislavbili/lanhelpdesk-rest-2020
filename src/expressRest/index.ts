@@ -20,11 +20,11 @@ import {
   uploadRepeatTemplateAttachments,
 } from './rest';
 import {
-  useHttps
+  useHttps,
+  port
 } from '@/configs/constants';
 
 var running: boolean = false;
-const port = useHttps ? 8080 : 4000;
 
 export const startRest = () => {
   if (running) return;

@@ -141,7 +141,7 @@ const mutations = {
       }
       await checkIfHasProjectRights(User.get('id'), undefined, Project.get('id'))
     } else {
-      projectId: null
+      projectId = null;
     }
 
     //Filter
@@ -169,6 +169,7 @@ const mutations = {
           ...args,
           order,
           ProjectId: projectId,
+          filterOfProjectId: projectId,
           filterCreatedById: User.get('id'),
           ...directFilterParams,
           ...boolAttributes,
@@ -192,10 +193,12 @@ const mutations = {
       pubsub.publish(FILTER_CHANGE, { filtersSubscription: true });
       return newFilter;
     }
+
     const newFilter = <FilterInstance>await models.Filter.create(
       {
         ...args,
         ProjectId: projectId,
+        filterOfProjectId: projectId,
         filterCreatedById: User.get('id'),
         ...directFilterParams,
         ...boolAttributes,
@@ -232,7 +235,7 @@ const mutations = {
       }
       await checkIfHasProjectRights(User.get('id'), undefined, Project.get('id'))
     } else {
-      projectId: null
+      projectId = null;
     }
 
     //Filter
@@ -258,6 +261,7 @@ const mutations = {
       {
         ...args,
         ProjectId: projectId,
+        filterOfProjectId: projectId,
         filterCreatedById: User.get('id'),
         ...directFilterParams,
         ...boolAttributes,

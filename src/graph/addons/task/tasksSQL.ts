@@ -542,7 +542,7 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
     `
   );
 
-  if (where) {
+  if (where.length > 0 || !isAdmin) {
     sql = `
     ${sql}
     WHERE ${where} ${isAdmin ? '' : `${notAdminWhere}`}

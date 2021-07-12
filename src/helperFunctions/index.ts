@@ -16,6 +16,7 @@ export {
   createTaskMetadata,
   addDefaultDatabaseData,
   addUser,
+  addDefaultStatusTemplates,
 } from './database';
 
 export {
