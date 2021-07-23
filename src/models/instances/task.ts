@@ -168,8 +168,6 @@ export function createTasksAssoc(models) {
 
   models.Task.hasMany(models.ShortSubtask, { onDelete: 'CASCADE' });
 
-  models.Task.hasMany(models.ScheduledTask, { onDelete: 'CASCADE' });
-
   models.Task.hasMany(models.Subtask, { onDelete: 'CASCADE' });
 
   models.Task.hasMany(models.WorkTrip, { onDelete: 'CASCADE' });

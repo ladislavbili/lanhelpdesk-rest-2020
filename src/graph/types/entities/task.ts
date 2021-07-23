@@ -32,7 +32,6 @@ type Task {
   repeat: Repeat
   metadata: TaskMetadata!
   comments: [Comment]!
-  scheduled: [ScheduledTask]!
   shortSubtasks: [ShortSubtask]!
   subtasks: [Subtask]!
   workTrips: [WorkTrip]!
@@ -190,7 +189,6 @@ addTask(
   repeat: TaskRepeatInput
   ganttOrder: Int
   comments: [CommentInput]
-  scheduled: [ScheduledTaskInput]
   shortSubtasks: [ShortSubtaskInput]
   subtasks: [SubtaskInput]
   workTrips: [WorkTripInput]

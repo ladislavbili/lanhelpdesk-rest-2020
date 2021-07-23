@@ -42,9 +42,12 @@ const queries = {
 }
 
 const mutations = {
-  addSubtask: async (root, { task, type, assignedTo, scheduled, ...params }, { req }) => {
+  addSubtask: async (root, { task, type, assignedTo, scheduled, order, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
+    const allSubtasks = await Task.getSubtasks();
+    const newOrder = order ? order : allSubtasks.length;
+
     const [
       AssignedTos,
       TaskMetadata,
@@ -92,6 +95,7 @@ const mutations = {
         TaskTypeId: type,
         UserId: assignedTo,
         ...params,
+        order: newOrder,
         ScheduledWork: extractDatesFromObject(scheduled, scheduledDates),
       }, {
           include: [models.ScheduledWork]
@@ -102,6 +106,7 @@ const mutations = {
         TaskTypeId: type,
         UserId: assignedTo,
         ...params,
+        order: newOrder,
       });
     }
   },

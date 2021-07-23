@@ -17,6 +17,7 @@ export interface SubtaskInstance extends DefaultInstance {
   setTaskType?: any;
   setUser?: any;
   createScheduledWork?: any;
+  getScheduledWork?: any;
 }
 
 export default function defineSubtasks(sequelize: Sequelize) {

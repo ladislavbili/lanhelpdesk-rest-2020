@@ -10,7 +10,6 @@ type TasklistGanttColumnPreference{
   requester: Boolean!
   company: Boolean!
   assignedTo: Boolean!
-  scheduled: Boolean!
   createdAtV: Boolean!
   taskType: Boolean!
   overtime: Boolean!
@@ -38,7 +37,6 @@ addOrUpdateTasklistGanttColumnPreference(
   requester: Boolean
   company: Boolean
   assignedTo: Boolean
-  scheduled: Boolean
   createdAtV: Boolean
   taskType: Boolean
   overtime: Boolean

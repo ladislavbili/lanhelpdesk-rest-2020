@@ -167,8 +167,6 @@ export function createUsersAssoc(models) {
   models.User.hasMany(models.RepeatTemplate, { as: { singular: 'requesterRepeatTemplate', plural: 'requesterRepeatTemplates' } });
 
   //TASK ATTRIBUTES
-  models.User.hasMany(models.ScheduledTask, { onDelete: 'CASCADE' });
-
   models.User.hasMany(models.Subtask);
 
   models.User.hasMany(models.WorkTrip);

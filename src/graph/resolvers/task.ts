@@ -77,7 +77,6 @@ import {
   generateTagsSQL,
   generateCompanySQL,
   generateShortSubtasksSQL,
-  generateScheduledTasksSQL,
   generateSubtasksSQL,
   generateWorkTripsSQL,
   generateMaterialsSQL,
@@ -176,16 +175,12 @@ const queries = {
     responseTasks.forEach((Task) => {
       const hasAsssignedTo = Task.assignedTos !== null && Task.assignedTos.id !== null;
       const hasTag = Task.Tags !== null && Task.Tags.id !== null;
-      const hasScheduled = Task.ScheduledTasks !== null && Task.ScheduledTasks.id !== null;
 
       const taskIndex = tasks.findIndex((task) => Task.id === task.id);
       if (taskIndex !== -1) {
 
         if (hasAsssignedTo && !tasks[taskIndex].assignedTos.some((assignedTo) => assignedTo.id === Task.assignedTos.id)) {
           tasks[taskIndex].assignedTos.push(Task.assignedTos);
-        }
-        if (hasScheduled && !tasks[taskIndex].ScheduledTasks.some((ScheduledTask) => ScheduledTask.id === Task.ScheduledTasks.id)) {
-          tasks[taskIndex].ScheduledTasks.push(Task.ScheduledTasks);
         }
         if (hasTag && !tasks[taskIndex].Tags.some((tag) => tag.id === Task.Tags.id)) {
           tasks[taskIndex].Tags.push(Task.Tags);
@@ -194,7 +189,6 @@ const queries = {
         tasks.push({
           ...Task,
           assignedTos: !hasAsssignedTo ? [] : [Task.assignedTos],
-          ScheduledTasks: !hasScheduled ? [] : [Task.ScheduledTasks],
           Tags: !hasTag ? [] : [Task.Tags],
           subtasksQuantity: toFloatOrZero(Task.subtasksQuantity),
           workTripsQuantity: toFloatOrZero(Task.workTripsQuantity),
@@ -255,7 +249,6 @@ const queries = {
       reponseUsedTripPausal,
       reponseUsedSubtaskPausal,
       responseShortSubtasks,
-      responseScheduledTasks,
       responseSubtasks,
       responseWorkTrips,
       responseMaterials,
@@ -303,13 +296,6 @@ const queries = {
       }),
       sequelize.query(generateShortSubtasksSQL(id), {
         model: models.ShortSubtask,
-        type: QueryTypes.SELECT,
-        nest: true,
-        raw: true,
-        mapToModel: true
-      }),
-      sequelize.query(generateScheduledTasksSQL(id), {
-        model: models.ScheduledTask,
         type: QueryTypes.SELECT,
         nest: true,
         raw: true,
@@ -373,7 +359,6 @@ const queries = {
       rights: allGroupRights,
       Company,
       ShortSubtasks: responseShortSubtasks,
-      ScheduledTasks: responseScheduledTasks,
       Subtasks: (<any[]>responseSubtasks).map((subtask) => ({
         ...subtask,
         InvoicedSubtasks: [],
@@ -482,7 +467,7 @@ const mutations = {
 
     args = applyFixedOnAttributes(def, args, User, <StatusInstance[]>Project.get('projectStatuses'));
 
-    let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, shortSubtasks, scheduled, ...params } = args;
+    let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, shortSubtasks, ...params } = args;
 
     const groupRights = (
       (<RoleInstance>User.get('Role')).get('level') === 0 ?
@@ -699,16 +684,6 @@ const mutations = {
         ShortSubtasks: shortSubtasks
       }
     }
-    //Scheduled Subtasks
-    if (scheduled) {
-      params = {
-        ...params,
-        ScheduledTasks: scheduled.map((item) => ({
-          ...item,
-          ...extractDatesFromObject(item, ['from', 'to'])
-        }))
-      }
-    }
     //repeat processing
     if (repeat !== null && repeat !== undefined) {
       const Repeat = <RepeatInstance>await models.Repeat.create(
@@ -723,7 +698,6 @@ const mutations = {
           include: [{
             model: models.RepeatTemplate,
             include: [
-              models.ScheduledTask,
               models.ShortSubtask,
               { model: models.Subtask, include: [models.ScheduledWork] },
               { model: models.WorkTrip, include: [models.ScheduledWork] },
@@ -749,7 +723,6 @@ const mutations = {
       include: [
         models.Repeat,
         models.Comment,
-        models.ScheduledTask,
         models.ShortSubtask,
         { model: models.Subtask, include: [models.ScheduledWork] },
         { model: models.WorkTrip, include: [models.ScheduledWork] },
@@ -1296,12 +1269,6 @@ const attributes = {
         return [];
       }
       return getModelAttribute(task, 'ShortSubtasks');
-    },
-    async scheduled(task) {
-      if (!task.rights || !task.rights.assignedRead) {
-        return [];
-      }
-      return getModelAttribute(task, 'ScheduledTasks');
     },
     async subtasks(task) {
       if (!task.rights || (!task.rights.rozpocetRead && !task.rights.vykazRead)) {

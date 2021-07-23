@@ -49,7 +49,6 @@ import defineInvoicedMaterialTasks, { createInvoicedMaterialTasksAssoc } from '.
 import defineInvoicedTags, { createInvoicedTagsAssoc } from './instances/invoicedTag';
 import defineInvoicedAssignedTos, { createInvoicedAssignedTosAssoc } from './instances/invoicedAssignedTo';
 import defineShortSubtasks, { createShortSubtasksAssoc } from './instances/shortSubtask';
-import defineScheduledTasks, { createScheduledTasksAssoc } from './instances/scheduledTask';
 import defineProjectGroups, { createProjectGroupsAssoc } from './instances/projectGroup';
 import defineProjectGroupRights, { createProjectGroupRightsAssoc } from './instances/projectGroupRights';
 import defineTaskMetadata, { createTaskMetadataAssoc } from './instances/taskMetadata';
@@ -122,7 +121,6 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineInvoicedTags(sequelize);
   defineInvoicedAssignedTos(sequelize);
   defineShortSubtasks(sequelize);
-  defineScheduledTasks(sequelize);
   defineProjectGroups(sequelize);
   defineProjectGroupRights(sequelize);
   defineTaskMetadata(sequelize);
@@ -180,7 +178,6 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createInvoicedTagsAssoc(models);
   createInvoicedAssignedTosAssoc(models);
   createShortSubtasksAssoc(models);
-  createScheduledTasksAssoc(models);
 
   createProjectGroupsAssoc(models);
   createProjectGroupRightsAssoc(models);

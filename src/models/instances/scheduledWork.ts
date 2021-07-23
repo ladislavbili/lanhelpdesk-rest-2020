@@ -4,6 +4,11 @@ import DefaultInstance from './defaultInstance';
 export interface ScheduledWorkInstance extends DefaultInstance {
   from: number;
   to: number;
+  canEdit?: Boolean;
+  Task?: any;
+  User?: any;
+  Subtask?: any;
+  WorkTrip?: any;
 }
 
 export default function defineScheduledWorks(sequelize: Sequelize) {

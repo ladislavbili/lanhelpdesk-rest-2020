@@ -250,10 +250,12 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
   if (tagsWhere !== null) {
     where.push(tagsWhere);
   }
+  /*
   const scheduledWhere = getScheduledWhereSQL(filter, projectId);
   if (scheduledWhere !== null) {
     where.push(scheduledWhere);
   }
+  */
   return where;
 }
 
@@ -312,15 +314,15 @@ const getScheduledWhereSQL = (filter, projectId) => {
   if (from) {
     //from plati ak FROM je vacsi alebo rovnaky alebo TO je vacsi alebo rovnaky
     conditions.push(`(
-      ("ScheduledTasks"."from" >= '${from.toISOString().slice(0, 19).replace('T', ' ')}') OR
-      ("ScheduledTasks"."to" >= '${from.toISOString().slice(0, 19).replace('T', ' ')}')
+      ("ScheduledWorks"."from" >= '${from.toISOString().slice(0, 19).replace('T', ' ')}') OR
+      ("ScheduledWorks"."to" >= '${from.toISOString().slice(0, 19).replace('T', ' ')}')
     )`)
   }
   if (to) {
     //to plati ak FROM je mensi alebo rovnaky alebo TO je mensi alebo rovnaky
     conditions.push(`(
-      ("ScheduledTasks"."from" <= '${to.toISOString().slice(0, 19).replace('T', ' ')}') OR
-      ("ScheduledTasks"."to" <= '${to.toISOString().slice(0, 19).replace('T', ' ')}')
+      ("ScheduledWorks"."from" <= '${to.toISOString().slice(0, 19).replace('T', ' ')}') OR
+      ("ScheduledWorks"."to" <= '${to.toISOString().slice(0, 19).replace('T', ' ')}')
     )`)
   }
 
@@ -433,7 +435,6 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
     "Subtasks"."subtasksQuantity" as subtasksQuantity,
     "WorkTrips"."workTripsQuantity" as workTripsQuantity,
     "Materials"."materialsPrice" as materialsPrice,
-    ${createModelAttributes("ScheduledTasks", "ScheduledTasks", models.ScheduledTask)}
     ${createModelAttributes("assignedTos", "assignedTos", models.User)}
     ${generateFullNameSQL('assignedTos')}
     ${createModelAttributes("assignedTos->task_assignedTo", "assignedTos.task_assignedTo", null, 'assignedTosTaskMapAttributes')}
@@ -450,7 +451,6 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
       COUNT(*) OVER () as count,
       ${createModelAttributes("assignedTosFilter", "assignedTosFilter", models.User)}
       ${createModelAttributes("assignedTosFilter->task_assignedTo", "assignedTosFilter.task_assignedTo", null, 'assignedTosTaskMapAttributes')}
-      "ScheduledTasks"."id" AS "ScheduledTasks.id",
       ${createModelAttributes("Company", "Company", models.Company)}
       ${createModelAttributes("createdBy", "createdBy", models.User)}
       ${generateFullNameSQL('createdBy')}
@@ -484,7 +484,6 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
       LEFT OUTER JOIN (
         "task_assignedTo" AS "assignedTos->task_assignedTo" INNER JOIN "users" AS "assignedTos" ON "assignedTos"."id" = "assignedTos->task_assignedTo"."UserId"
       ) ON "TaskData"."id" = "assignedTos->task_assignedTo"."TaskId"
-      LEFT OUTER JOIN "scheduled_task" AS "ScheduledTasks" ON "TaskData"."id" = "ScheduledTasks"."TaskId"
       LEFT OUTER JOIN (
         "task_has_tags" AS "Tags->task_has_tags" INNER JOIN "tags" AS "Tags" ON "Tags"."id" = "Tags->task_has_tags"."TagId"
       ) ON "TaskData"."id" = "Tags->task_has_tags"."TaskId"
@@ -522,7 +521,6 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
     `
     ${sql}
     LEFT OUTER JOIN ( "task_assignedTo" AS "assignedTosFilter->task_assignedTo" INNER JOIN "users" AS "assignedTosFilter" ON "assignedTosFilter"."id" = "assignedTosFilter->task_assignedTo"."UserId") ON "Task"."id" = "assignedTosFilter->task_assignedTo"."TaskId"
-    LEFT OUTER JOIN "scheduled_task" AS "ScheduledTasks" ON "Task"."id" = "ScheduledTasks"."TaskId"
     LEFT OUTER JOIN "companies" AS "Company" ON "Task"."CompanyId" = "Company"."id"
     LEFT OUTER JOIN "users" AS "createdBy" ON "Task"."createdById" = "createdBy"."id"
     LEFT OUTER JOIN "milestone" AS "Milestone" ON "Task"."MilestoneId" = "Milestone"."id"

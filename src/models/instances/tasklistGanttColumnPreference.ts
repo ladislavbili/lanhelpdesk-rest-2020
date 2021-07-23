@@ -9,7 +9,6 @@ export interface TasklistGanttColumnPreferenceInstance extends DefaultInstance {
   requester: boolean;
   company: boolean;
   assignedTo: boolean;
-  scheduled: boolean;
   createdAtV: boolean;
   taskType: boolean;
   overtime: boolean;
@@ -59,11 +58,6 @@ export default function defineTasklistGanttColumnPreferences(sequelize: Sequeliz
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
-      },
-      scheduled: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
       },
       createdAtV: {
         type: DataTypes.BOOLEAN,

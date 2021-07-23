@@ -12,7 +12,6 @@ import project from './project';
 import projectAttachment from './projectAttachment';
 import projectGroup from './projectGroup';
 import role from './role';
-import scheduledTask from './scheduledTask';
 import scheduledWork from './scheduledWork';
 import shortSubtask from './shortSubtask';
 import smtp from './smtp';
@@ -58,7 +57,6 @@ export default {
     ...projectGroup.queries,
     ...role.queries,
     ...tag.queries,
-    ...scheduledTask.queries,
     ...scheduledWork.queries,
     ...shortSubtask.queries,
     ...smtp.queries,
@@ -100,7 +98,6 @@ export default {
     ...projectGroup.mutations,
     ...role.mutations,
     ...tag.mutations,
-    ...scheduledTask.mutations,
     ...scheduledWork.mutations,
     ...shortSubtask.mutations,
     ...smtp.mutations,
@@ -160,7 +157,6 @@ export default {
   ...projectGroup.attributes,
   ...role.attributes,
   ...tag.attributes,
-  ...scheduledTask.attributes,
   ...scheduledWork.attributes,
   ...shortSubtask.attributes,
   ...smtp.attributes,

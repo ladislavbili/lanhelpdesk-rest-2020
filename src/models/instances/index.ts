@@ -36,7 +36,6 @@ export { InvoicedTagInstance } from './invoicedTag';
 export { InvoicedAssignedToInstance } from './invoicedAssignedTo';
 export { InvoicedMaterialTaskInstance } from './invoicedMaterialTask';
 export { ShortSubtaskInstance } from './shortSubtask';
-export { ScheduledTaskInstance } from './scheduledTask';
 export { ProjectGroupInstance } from './projectGroup';
 export { ProjectGroupRightsInstance } from './projectGroupRights';
 export { RepeatTemplateInstance } from './repeatTemplate';

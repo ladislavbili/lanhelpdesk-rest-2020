@@ -13,64 +13,66 @@ export const scheduledFilterSQL = (from, to, userId) => {
   if (from && !to) {
     //from plati ak FROM je vacsi alebo rovnaky alebo TO je vacsi alebo rovnaky
     where.push(`(
-      ("ScheduledTask"."from" >= '${toDBDate(from)}') OR
-      ("ScheduledTask"."to" >= '${toDBDate(from)}')
+      ("ScheduledWork"."from" >= '${toDBDate(from)}') OR
+      ("ScheduledWork"."to" >= '${toDBDate(from)}')
     )`)
   }
   if (!from && to) {
     //to plati ak FROM je mensi alebo rovnaky alebo TO je mensi alebo rovnaky
     where.push(`(
-      ("ScheduledTask"."from" <= '${toDBDate(to)}') OR
-      ("ScheduledTask"."to" <= '${toDBDate(to)}')
+      ("ScheduledWork"."from" <= '${toDBDate(to)}') OR
+      ("ScheduledWork"."to" <= '${toDBDate(to)}')
     )`)
   };
 
   if (to && from) {
     where.push(`(
       (
-        "ScheduledTask"."from" >= '${toDBDate(from)}'
+        "ScheduledWork"."from" >= '${toDBDate(from)}'
         AND
-        "ScheduledTask"."from" <= '${toDBDate(to)}'
+        "ScheduledWork"."from" <= '${toDBDate(to)}'
       )
       OR
       (
-        "ScheduledTask"."to" >= '${toDBDate(from)}'
+        "ScheduledWork"."to" >= '${toDBDate(from)}'
         AND
-        "ScheduledTask"."to" <= '${toDBDate(to)}'
+        "ScheduledWork"."to" <= '${toDBDate(to)}'
       )
       OR
       (
-        "ScheduledTask"."from" <= '${toDBDate(from)}'
+        "ScheduledWork"."from" <= '${toDBDate(from)}'
         AND
-        "ScheduledTask"."to" >= '${toDBDate(to)}'
+        "ScheduledWork"."to" >= '${toDBDate(to)}'
       )
     )`)
 
   }
 
   if (userId) {
-    where.push(`"User"."id" = ${userId} `)
+    where.push(`(
+      "User"."id" = ${userId}
+    )`)
   }
 
   //podmienky platia ak CONDITION je splneny alebo nema pravo scheduled citat
   return where;
 }
 
-export const createScheduledTasksSQL = (where, currentUserId, isAdmin) => {
-  //sort by start date
-  //get attributes, task - (title id) ,task status (id color title), start, end
+//sort by start date
+//get attributes, task - (title id) ,task status (id color title), start, end
+export const createScheduledWorksSQL = (where, currentUserId, isAdmin, ofSubtask) => {
 
-  const notAdminWhere = `
-  ${ where.length > 0 ? 'AND ' : ''}
-  `;
+  const origin = ofSubtask ? "Subtask" : "WorkTrip";
 
   let sql = `
   SELECT
-  ${createModelAttributes("ScheduledTask", null, models.ScheduledTask)}
+  ${createModelAttributes("ScheduledWork", null, models.ScheduledWork)}
+  ${createModelAttributes(origin, origin, models[origin])}
+  ${ ofSubtask ? '' : createModelAttributes("TripType", "WorkTrip.TripType", models.TripType)}
   ${createModelAttributes("Task", "Task", models.Task)}
   ${createModelAttributes("User", "User", models.User)}
   ${ generateFullNameSQL('User')}
-  "Project->ProjectGroups->ProjectGroupRight"."assignedWrite" AS "canEdit",
+  ("Project->ProjectGroups->ProjectGroupRight"."assignedWrite" AND "Project->ProjectGroups->ProjectGroupRight"."vykazWrite") AS "canEdit",
   ${createModelAttributes("assignedTosFilter", "assignedTosFilter", models.User)}
   ${createModelAttributes("assignedTosFilter->task_assignedTo", "assignedTosFilter.task_assignedTo", null, 'assignedTosTaskMapAttributes')}
   ${createModelAttributes("Company", "Company", models.Company)}
@@ -85,10 +87,12 @@ export const createScheduledTasksSQL = (where, currentUserId, isAdmin) => {
   "Project->ProjectGroups->Users"."id" AS "Project.ProjectGroups.Users.id",
   ${removeLastComma(createModelAttributes("Project->ProjectGroups->Users->user_belongs_to_group", "Project.ProjectGroups.Users.user_belongs_to_group", null, 'userBelongsToGroupAttributes'))}
 
-  FROM "scheduled_task" AS "ScheduledTask"
-  INNER JOIN "tasks" AS "Task" ON "ScheduledTask"."TaskId" = "Task"."id"
+  FROM "scheduled_work" AS "ScheduledWork"
+  INNER JOIN ${ ofSubtask ? "subtasks" : "work_trips"} AS "${origin}" ON "ScheduledWork"."${origin}Id" = "${origin}"."id"
+  ${ ofSubtask ? '' : `INNER JOIN "trip_types" AS "TripType" ON "WorkTrip"."TripTypeId" = "TripType"."id"`}
+  INNER JOIN "tasks" AS "Task" ON "${origin}"."TaskId" = "Task"."id"
   INNER JOIN "projects" AS "Project" ON "Task"."ProjectId" = "Project"."id"
-  INNER JOIN "users" AS "User" ON "ScheduledTask"."UserId" = "User"."id"
+  INNER JOIN "users" AS "User" ON "${origin}"."UserId" = "User"."id"
   ${ isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group" AS "Project->ProjectGroups" ON "Project"."id" = "Project->ProjectGroups"."ProjectId"
   ${ isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
   ${ isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN(

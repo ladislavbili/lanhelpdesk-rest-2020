@@ -6,6 +6,9 @@ type ScheduledWork {
   to: String!
   subtask: Subtask
   workTrip: WorkTrip
+  task: Task
+  user: User
+  canEdit: Boolean
 }
 
 input ScheduledWorkInput {
@@ -15,8 +18,17 @@ input ScheduledWorkInput {
 `
 
 export const ScheduledWorkQueries = `
+scheduledWorks(
+  projectId: Int
+  filter: FilterInput
+  from: String
+  to: String
+  userId: Int
+): [ScheduledWork]
 `
 
 export const ScheduledWorkMutations = `
-  createSubtaskFromScheduled(id: Int!): Subtask
+  addScheduledWork( taskId: Int!, userId: Int!, from: String!, to: String! ): ScheduledWork
+  updateScheduledWork( id: Int!, from: String!, to: String! ): ScheduledWork
+  deleteScheduledWork( id: Int! ): ScheduledWork
 `

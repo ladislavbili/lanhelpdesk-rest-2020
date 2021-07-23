@@ -1,6 +1,7 @@
-import { createDoesNoExistsError } from '@/configs/errors';
+import { createDoesNoExistsError, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
 import {
   getModelAttribute,
+  extractDatesFromObject,
 } from '@/helperFunctions';
 import checkResolver from './checkResolver';
 import {
@@ -9,64 +10,241 @@ import {
 import {
   timestampToString
 } from '@/helperFunctions';
-import { models } from '@/models';
-
+import { models, sequelize } from '@/models';
+import moment from 'moment';
+import { QueryTypes } from 'sequelize';
+import {
+  createScheduledWorksSQL,
+  scheduledFilterSQL
+} from '@/graph/addons/scheduledWork';
+import {
+  filterToTaskWhereSQL,
+} from '@/graph/addons/task';
 import { pubsub } from './index';
 import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import {
-  UserInstance,
   TaskInstance,
+  RoleInstance,
   SubtaskInstance,
-  ScheduledTaskInstance,
+  WorkTripInstance,
+  TripTypeInstance,
+  ScheduledWorkInstance,
+  UserInstance,
+
 } from '@/models/instances';
+
+const scheduledDates = ['from', 'to'];
+const filterDates = [
+  'closeDateFrom',
+  'closeDateTo',
+  'deadlineFrom',
+  'deadlineTo',
+  'pendingDateFrom',
+  'pendingDateTo',
+  'statusDateFrom',
+  'statusDateTo',
+  'createdAtFrom',
+  'createdAtTo',
+  'scheduledFrom',
+  'scheduledTo',
+];
+
+const getTimeDifference = (fromDate, toDate) => {
+  if (fromDate === null || toDate === null) {
+    return null;
+  }
+  return (
+    moment.duration(toDate.diff(fromDate))
+      .asMinutes() / 60
+  )
+}
+
 const queries = {
+  scheduledWorks: async (root, { projectId, filter, userId, ...rangeDates }, { req, userID: currentUserId }) => {
+    const User = await checkResolver(req);
+    const isAdmin = (<RoleInstance>User.get('Role')).get('level') === 0;
+    const { from, to } = extractDatesFromObject(rangeDates, ['from', 'to']);
+    let where = [];
+    if (projectId) {
+      const Project = await models.Project.findByPk(projectId);
+      if (Project === null) {
+        throw createDoesNoExistsError('Project', projectId);
+      }
+      where.push(`"Task"."ProjectId" = ${projectId}`)
+    }
+    if (filter) {
+      const dates = extractDatesFromObject(filter, filterDates);
+      where = where.concat(filterToTaskWhereSQL({ ...filter, ...dates }, currentUserId, User.get('CompanyId'), projectId));
+    }
+
+    if (!userId) {
+      userId = currentUserId;
+    }
+    where = where.concat(scheduledFilterSQL(from, to, userId))
+
+    if (!isAdmin) {
+      where.push(`(
+        "Task"."createdById" = ${currentUserId} OR
+        "Task"."requesterId" = ${currentUserId} OR
+        "assignedTosFilter"."id" = ${currentUserId} OR
+        "Project->ProjectGroups->ProjectGroupRight"."allTasks" = true OR
+        ("Project->ProjectGroups->ProjectGroupRight"."companyTasks" = true AND "Task"."CompanyId" = ${User.get('CompanyId')})
+      )`);
+    }
+
+    const SQLSubtasks = createScheduledWorksSQL(where, currentUserId, isAdmin, true);
+    const SQLWorkTrips = createScheduledWorksSQL(where, currentUserId, isAdmin, false);
+    const [responseScheduled1, responseScheduled2] = await Promise.all([
+      sequelize.query(SQLSubtasks, {
+        model: models.ScheduledWork,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+      sequelize.query(SQLWorkTrips, {
+        model: models.ScheduledWork,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+    ]);
+
+    return [
+      ...(<ScheduledWorkInstance[]>responseScheduled1).map((scheduled) => ({ ...scheduled, WorkTrip: null })),
+      ...(<ScheduledWorkInstance[]>responseScheduled2).map((scheduled) => ({ ...scheduled, Subtask: null }))
+    ];
+  }
 }
 
 const mutations = {
-  createSubtaskFromScheduled: async (root, { id }, { req }) => {
+
+  addScheduledWork: async (root, { taskId, userId, ...newDates }, { req }) => {
     const User = await checkResolver(req);
-    const ScheduledTask = <ScheduledTaskInstance>await models.ScheduledTask.findByPk(id, {
+    const dates = extractDatesFromObject(newDates, scheduledDates);
+    const { Task } = await checkIfHasProjectRights(User.get('id'), taskId, undefined, ['assignedWrite', 'vykazWrite']);
+    const [
+      allSubtasks,
+      AssignedTos
+    ] = [
+        await Task.getSubtasks(),
+        await Task.getAssignedTos(),
+      ];
+    if (!(<UserInstance[]>AssignedTos).some((AssignedTo) => AssignedTo.get('id') === userId)) {
+      throw AssignedToUserNotSolvingTheTask;
+    }
+    const order = allSubtasks.length;
+
+    const Subtask = <SubtaskInstance>await models.Subtask.create({
+      TaskId: taskId,
+      TaskTypeId: Task.get('TaskTypeId'),
+      UserId: userId,
+      title: '',
+      order,
+      done: false,
+      quantity: getTimeDifference(moment(dates.from), moment(dates.to)) === null ? 0 : getTimeDifference(moment(dates.from), moment(dates.to)),
+      discount: 0,
+      approved: false,
+      ScheduledWork: dates,
+    }, {
+        include: [models.ScheduledWork]
+      });
+    let scheduledWork = <ScheduledWorkInstance>await Subtask.getScheduledWork();
+    scheduledWork.canEdit = true;
+    scheduledWork.Task = Task;
+    scheduledWork.User = (<UserInstance[]>AssignedTos).find((AssignedTo) => AssignedTo.get('id') === userId);
+    scheduledWork.Subtask = Subtask;
+    scheduledWork.WorkTrip = null;
+    return scheduledWork;
+  },
+
+  updateScheduledWork: async (root, { id, ...newDates }, { req }) => {
+    const User = await checkResolver(req);
+    const dates = extractDatesFromObject(newDates, scheduledDates);
+
+    let ScheduledWork = <ScheduledWorkInstance>await models.ScheduledWork.findByPk(id, {
       include: [
-        { model: models.Task, include: [models.Subtask] },
-        models.User,
+        {
+          model: models.WorkTrip,
+          include: [models.User, models.TripType]
+        },
+        {
+          model: models.Subtask,
+          include: [models.User]
+        },
       ]
     });
-    if (ScheduledTask === null) {
-      throw createDoesNoExistsError('ScheduledTask', id);
+    if (ScheduledWork === null) {
+      throw createDoesNoExistsError('Scheduled work', id);
     }
-    const Task = <TaskInstance>ScheduledTask.get('Task');
-    await checkIfHasProjectRights(User.get('id'), undefined, Task.get('ProjectId'), ['assignedWrite', 'vykazWrite']);
-    const quantity = (ScheduledTask.get('to') - ScheduledTask.get('from')) / 36e5;
-    const TargetUser = <UserInstance>ScheduledTask.get('User');
-    await Task.createTaskChange(
+
+    const WorkTrip = <WorkTripInstance>ScheduledWork.get('WorkTrip');
+    const Subtask = <SubtaskInstance>ScheduledWork.get('Subtask');
+    const ofSubtask = Subtask !== null && Subtask !== undefined;
+    const TaskId = ofSubtask ? Subtask.get('TaskId') : WorkTrip.get('TaskId');
+
+    const { Task } = await checkIfHasProjectRights(User.get('id'), TaskId, undefined, ['assignedWrite', 'vykazWrite']);
+    await (<TaskInstance>Task).createTaskChange(
       {
         UserId: User.get('id'),
         TaskChangeMessages: [{
-          type: 'subtask',
-          originalValue: null,
-          newValue: `${quantity},${0},${TargetUser.get('id')} ${TargetUser.get('name')} ${TargetUser.get('surname')}`,
-          message: `Subtask was created from Scheduled Task "from" ${timestampToString(ScheduledTask.get('from').valueOf())}, "to" ${timestampToString(ScheduledTask.get('to').valueOf())} for user ${TargetUser.get('name')} ${TargetUser.get('surname')}.`,
+          type: 'scheduledWork',
+          originalValue: `${ScheduledWork.get('from')},${ScheduledWork.get('to')}`,
+          newValue: `${newDates.from},${newDates.to}`,
+          message: `Scheduled work for ${ofSubtask ? 'subtask' : 'work trip'} "${ofSubtask ? Subtask.get('title') : (<TripTypeInstance>WorkTrip.get('TripType')).get('title')}" was changed from ${timestampToString(ScheduledWork.get('from'))}=>${timestampToString(dates.from)}, to ${timestampToString(ScheduledWork.get('to'))}=>${timestampToString(dates.to)}.`,
         }],
       },
       { include: [models.TaskChangeMessage] }
     );
-    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: Task.get('id') });
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: TaskId });
+    console.log(getTimeDifference(moment(dates.from), moment(dates.to)) === null ? 0 : getTimeDifference(moment(dates.from), moment(dates.to)));
 
-    return models.Subtask.create({
-      TaskId: Task.get('id'),
-      TaskTypeId: Task.get('TaskTypeId') ? Task.get('TaskTypeId') : null,
-      UserId: TargetUser.get('id'),
-      title: '',
-      order: (<SubtaskInstance[]>Task.get('Subtasks')).length,
-      done: false,
-      approved: false,
-      quantity,
-      discount: 0,
-      ScheduledWork: { from: ScheduledTask.get('from').valueOf(), to: ScheduledTask.get('to').valueOf() },
-    }, {
-        include: [models.ScheduledWork]
-      });
-  }
+    await ScheduledWork.update(dates);
+    if (ofSubtask) {
+      await Subtask.update({ quantity: getTimeDifference(moment(dates.from), moment(dates.to)) === null ? 0 : getTimeDifference(moment(dates.from), moment(dates.to)) });
+    } else {
+      await WorkTrip.update({ quantity: getTimeDifference(moment(dates.from), moment(dates.to)) === null ? 0 : getTimeDifference(moment(dates.from), moment(dates.to)) });
+    }
+    ScheduledWork.canEdit = true;
+    ScheduledWork.Task = Task;
+    ScheduledWork.User = ofSubtask ? Subtask.get('User') : WorkTrip.get('User');
+    return ScheduledWork;
+  },
+  deleteScheduledWork: async (root, { id }, { req }) => {
+    const User = await checkResolver(req);
+    const ScheduledWork = <ScheduledWorkInstance>await models.ScheduledWork.findByPk(id, {
+      include: [
+        { model: models.WorkTrip, include: [models.TripType] },
+        models.Subtask,
+      ]
+    });
+
+    if (ScheduledWork === null) {
+      throw createDoesNoExistsError('Scheduled work', id);
+    }
+
+    const WorkTrip = <WorkTripInstance>ScheduledWork.get('WorkTrip');
+    const Subtask = <SubtaskInstance>ScheduledWork.get('Subtask');
+    const ofSubtask = Subtask !== null && Subtask !== undefined;
+    const TaskId = ofSubtask ? Subtask.get('TaskId') : WorkTrip.get('TaskId');
+
+    const { Task } = await checkIfHasProjectRights(User.get('id'), TaskId, undefined, ['assignedWrite', 'vykazWrite']);
+    await (<TaskInstance>Task).createTaskChange(
+      {
+        UserId: User.get('id'),
+        TaskChangeMessages: [{
+          type: 'scheduledwork',
+          originalValue: `${ScheduledWork.get('from')},${ScheduledWork.get('to')}`,
+          newValue: null,
+          message: `Scheduled work for ${ofSubtask ? 'subtask' : 'work trip'} "${ofSubtask ? Subtask.get('title') : (<TripTypeInstance>WorkTrip.get('TripType')).get('title')}" from ${timestampToString(ScheduledWork.get('from'))} to ${timestampToString(ScheduledWork.get('to'))} was deleted.`,
+        }],
+      },
+      { include: [models.TaskChangeMessage] }
+    );
+    pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: TaskId });
+    return await ScheduledWork.destroy();
+  },
 }
 
 const attributes = {
@@ -76,6 +254,12 @@ const attributes = {
     },
     async workTrip(scheduledWork) {
       return getModelAttribute(scheduledWork, 'WorkTrip');
+    },
+    async task(scheduledWork) {
+      return scheduledWork.Task ? scheduledWork.Task : null;
+    },
+    async user(scheduledWork) {
+      return scheduledWork.User ? scheduledWork.User : null;
     },
   },
 };

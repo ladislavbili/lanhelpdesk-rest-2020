@@ -10,7 +10,6 @@ export interface TasklistColumnPreferenceInstance extends DefaultInstance {
   requester: boolean;
   company: boolean;
   assignedTo: boolean;
-  scheduled: boolean;
   createdAtV: boolean;
   startsAt: boolean;
   deadline: boolean;
@@ -70,11 +69,6 @@ export default function defineTasklistColumnPreferences(sequelize: Sequelize) {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
-      },
-      scheduled: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
       },
       createdAtV: {
         type: DataTypes.BOOLEAN,

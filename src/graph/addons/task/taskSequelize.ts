@@ -218,8 +218,6 @@ const getScheduledWhere = (filter) => {
   //for attribustes from to, if one of them is between
   return {
     [Op.or]: [
-      { '$ScheduledTasks.from$': conditions },
-      { '$ScheduledTasks.to$': conditions },
       { '$Project.ProjectGroups.ProjectGroupRight.assignedRead$': false },
     ]
   }

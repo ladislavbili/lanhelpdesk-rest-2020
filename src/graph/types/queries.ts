@@ -17,8 +17,8 @@ import { RepeatTemplateQueries } from './entities/repeatTemplate';
 import { RepeatTemplateAttachmentQueries } from './entities/repeatTemplateAttachment';
 import { RepeatTimeQueries } from './entities/repeatTime';
 import { RoleQueries } from './entities/role';
-import { ScheduledTaskQueries } from './entities/scheduledTask';
 import { ShortSubtaskQueries } from './entities/shortSubtask';
+import { ScheduledWorkQueries } from './entities/scheduledWork';
 import { SmtpQueries } from './entities/smtp';
 import { StatusQueries } from './entities/status';
 import { SubtaskQueries } from './entities/subtask';
@@ -59,8 +59,8 @@ type Query {
   ${RepeatTemplateAttachmentQueries}
   ${RepeatTimeQueries}
   ${RoleQueries}
-  ${ScheduledTaskQueries}
   ${ShortSubtaskQueries}
+  ${ScheduledWorkQueries}
   ${SmtpQueries}
   ${StatusQueries}
   ${SubtaskQueries}

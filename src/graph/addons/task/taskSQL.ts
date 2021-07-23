@@ -129,17 +129,6 @@ export const generateCompanyUsedSubtaskPausalSQL = (companyId) => {
   `.replace(/"/g, '`');
 }
 
-export const generateScheduledTasksSQL = (taskId) => {
-  return `
-  SELECT
-  ${createModelAttributes("ScheduledTasks", null, models.ScheduledTask)}
-  ${createModelAttributes("User", "User", models.User)}
-  ${removeLastComma(generateFullNameSQL("User"))}
-  FROM (SELECT * FROM "scheduled_task" WHERE "scheduled_task"."TaskId" = ${taskId} ) AS "ScheduledTasks"
-  LEFT OUTER JOIN "users" AS "User" ON "ScheduledTasks"."UserId" = "User"."id"
-  `.replace(/"/g, '`');
-}
-
 export const generateSubtasksSQL = (taskId) => {
   const attributes = (
     `
