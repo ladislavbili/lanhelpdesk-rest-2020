@@ -54,8 +54,12 @@ export interface TaskInstance extends DefaultInstance {
   getTaskMetadata?: any;
 
   subtasksQuantity?: number;
+  approvedSubtasksQuantity?: number;
+  pendingSubtasksQuantity?: number;
   workTripsQuantity?: number;
   materialsPrice?: number;
+  approvedMaterialsPrice?: number;
+  pendingMaterialsPrice?: number;
 
   rights?: any;
 }

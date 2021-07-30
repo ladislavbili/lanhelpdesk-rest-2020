@@ -41,9 +41,14 @@ type Task {
   taskAttachments: [TaskAttachment]!
   invoicedTasks: [InvoicedTask]!
   repeatTime: RepeatTime
+
   subtasksQuantity: Float
+  approvedSubtasksQuantity: Float
+  pendingSubtasksQuantity: Float
   workTripsQuantity: Float
   materialsPrice: Float
+  approvedMaterialsPrice: Float
+  pendingMaterialsPrice: Float
 }
 
 input CommentInput{

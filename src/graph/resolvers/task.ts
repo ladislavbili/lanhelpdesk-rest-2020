@@ -191,8 +191,12 @@ const queries = {
           assignedTos: !hasAsssignedTo ? [] : [Task.assignedTos],
           Tags: !hasTag ? [] : [Task.Tags],
           subtasksQuantity: toFloatOrZero(Task.subtasksQuantity),
+          approvedSubtasksQuantity: toFloatOrZero(Task.approvedSubtasksQuantity),
+          pendingSubtasksQuantity: toFloatOrZero(Task.pendingSubtasksQuantity),
           workTripsQuantity: toFloatOrZero(Task.workTripsQuantity),
           materialsPrice: toFloatOrZero(Task.materialsPrice),
+          approvedMaterialsPrice: toFloatOrZero(Task.approvedMaterialsPrice),
+          pendingMaterialsPrice: toFloatOrZero(Task.pendingMaterialsPrice),
         })
       }
     })
