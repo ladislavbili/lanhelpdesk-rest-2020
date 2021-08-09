@@ -18,6 +18,9 @@ export interface TasklistGanttColumnPreferenceInstance extends DefaultInstance {
   trips: boolean;
   materialsWithoutDPH: boolean;
   materialsWithDPH: boolean;
+  subtasks: boolean;
+  subtaskAssigned: boolean;
+  subtasksHours: boolean;
 }
 
 export default function defineTasklistGanttColumnPreferences(sequelize: Sequelize) {
@@ -100,6 +103,21 @@ export default function defineTasklistGanttColumnPreferences(sequelize: Sequeliz
         defaultValue: false,
       },
       materialsWithDPH: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      subtasks: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      subtaskAssigned: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      subtasksHours: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,

@@ -34,11 +34,45 @@ export interface EmailResultInstance {
 }
 
 const queries = {
-  comments: async (root, { task }, { req }) => {
+  comments: async (root, { task, limit, page }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { groupRights } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['viewComments']);
-
-    return models.Comment.findAll({
+    //TODO only show internal if should
+    if (limit && page) {
+      const { count, rows } = await models.Comment.findAndCountAll({
+        limit,
+        offset: (page - 1) * limit,
+        order: [
+          ['createdAt', 'DESC'],
+        ],
+        include: [
+          models.User,
+          models.EmailTarget,
+          models.CommentAttachment,
+          {
+            model: models.Comment,
+            include: [
+              models.User,
+              models.EmailTarget,
+              models.CommentAttachment,
+              models.Comment,
+            ]
+          }
+        ],
+        where: {
+          TaskId: task,
+          internal: {
+            [Op.or]: [false, groupRights.internal]
+          },
+          isParent: true
+        }
+      })
+      return (<any[]>rows).map((row) => {
+        row.messageCount = count;
+        return row;
+      });
+    }
+    const { count, rows } = await models.Comment.findAndCountAll({
       order: [
         ['createdAt', 'ASC'],
       ],
@@ -63,7 +97,11 @@ const queries = {
         },
         isParent: true
       }
-    })
+    });
+    return (<any[]>rows).map((row) => {
+      row.messageCount = count;
+      return row;
+    });
   },
 }
 

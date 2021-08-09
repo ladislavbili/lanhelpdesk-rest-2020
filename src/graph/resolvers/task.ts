@@ -175,6 +175,7 @@ const queries = {
     responseTasks.forEach((Task) => {
       const hasAsssignedTo = Task.assignedTos !== null && Task.assignedTos.id !== null;
       const hasTag = Task.Tags !== null && Task.Tags.id !== null;
+      const hasSubtask = Task.Subtasks !== null && Task.Subtasks.id !== null;
 
       const taskIndex = tasks.findIndex((task) => Task.id === task.id);
       if (taskIndex !== -1) {
@@ -185,11 +186,15 @@ const queries = {
         if (hasTag && !tasks[taskIndex].Tags.some((tag) => tag.id === Task.Tags.id)) {
           tasks[taskIndex].Tags.push(Task.Tags);
         }
+        if (hasSubtask && !tasks[taskIndex].Subtasks.some((subtask) => subtask.id === Task.Subtasks.id)) {
+          tasks[taskIndex].Subtasks.push(Task.Subtasks);
+        }
       } else {
         tasks.push({
           ...Task,
           assignedTos: !hasAsssignedTo ? [] : [Task.assignedTos],
           Tags: !hasTag ? [] : [Task.Tags],
+          Subtasks: !hasSubtask ? [] : [Task.Subtasks],
           subtasksQuantity: toFloatOrZero(Task.subtasksQuantity),
           approvedSubtasksQuantity: toFloatOrZero(Task.approvedSubtasksQuantity),
           pendingSubtasksQuantity: toFloatOrZero(Task.pendingSubtasksQuantity),

@@ -18,11 +18,12 @@ type Comment {
   commentAttachments: [CommentAttachment]
   emailError: String
   emailSend: Boolean
+  messageCount: Int
 }
 `
 
 export const CommentQueries = `
-comments( task: Int! ): [Comment]
+comments( task: Int!, limit: Int, page: Int ): [Comment]
 `
 
 export const CommentMutations = `

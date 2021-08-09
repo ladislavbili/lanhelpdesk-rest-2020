@@ -19,6 +19,9 @@ type TasklistGanttColumnPreference{
   trips: Boolean!
   materialsWithoutDPH: Boolean!
   materialsWithDPH: Boolean!
+  subtasks: Boolean!
+  subtaskAssigned: Boolean!
+  subtasksHours: Boolean!
   Project: Project
 }
 `
@@ -46,5 +49,8 @@ addOrUpdateTasklistGanttColumnPreference(
   trips: Boolean
   materialsWithoutDPH: Boolean
   materialsWithDPH: Boolean
+  subtasks: Boolean
+  subtaskAssigned: Boolean
+  subtasksHours: Boolean
 ): TasklistGanttColumnPreference
 `

@@ -432,9 +432,9 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
   const outerSQLTop = (
     `
     SELECT "TaskData".*,
-    "Subtasks"."subtasksQuantity" as subtasksQuantity,
-    "Subtasks"."approvedSubtasksQuantity" as approvedSubtasksQuantity,
-    "Subtasks"."pendingSubtasksQuantity" as pendingSubtasksQuantity,
+    "SubtaskCounts"."subtasksQuantity" as subtasksQuantity,
+    "SubtaskCounts"."approvedSubtasksQuantity" as approvedSubtasksQuantity,
+    "SubtaskCounts"."pendingSubtasksQuantity" as pendingSubtasksQuantity,
     "WorkTrips"."workTripsQuantity" as workTripsQuantity,
     "Materials"."materialsPrice" as materialsPrice,
     "Materials"."approvedMaterialsPrice" as approvedMaterialsPrice,
@@ -443,6 +443,9 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
     ${generateFullNameSQL('assignedTos')}
     ${createModelAttributes("assignedTos->task_assignedTo", "assignedTos.task_assignedTo", null, 'assignedTosTaskMapAttributes')}
     ${createModelAttributes("Tags", "Tags", models.Tag)}
+    ${createModelAttributes("Subtasks", "Subtasks", models.Subtask)}
+    ${createModelAttributes("Subtasks->User", "Subtasks.User", models.User)}
+    ${generateFullNameSQL('Subtasks->User', 'Subtasks.User')}
     ${removeLastComma(createModelAttributes("Tags->task_has_tags", "Tags.task_has_tags", null, 'tagsTaskMapAttributes'))}
 
     FROM (
@@ -491,6 +494,8 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
       LEFT OUTER JOIN (
         "task_has_tags" AS "Tags->task_has_tags" INNER JOIN "tags" AS "Tags" ON "Tags"."id" = "Tags->task_has_tags"."TagId"
       ) ON "TaskData"."id" = "Tags->task_has_tags"."TaskId"
+      LEFT OUTER JOIN "subtasks" AS "Subtasks" ON "TaskData"."id" = "Subtasks"."TaskId"
+      LEFT OUTER JOIN "users" AS "Subtasks->User" ON "Subtasks"."UserId" = "Subtasks->User"."id"
       LEFT OUTER JOIN (
         SELECT
         "Subtasks"."TaskId",
@@ -498,7 +503,7 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
         SUM( CASE WHEN "Subtasks"."approved" THEN "Subtasks"."quantity" ELSE 0 END ) as approvedSubtasksQuantity,
         SUM( CASE WHEN "Subtasks"."approved" THEN 0 ELSE "Subtasks"."quantity" END ) as pendingSubtasksQuantity
         FROM "subtasks" AS Subtasks GROUP BY "Subtasks"."TaskId"
-      ) AS "Subtasks" ON "Subtasks"."TaskId" = "TaskData"."id"
+      ) AS "SubtaskCounts" ON "SubtaskCounts"."TaskId" = "TaskData"."id"
       LEFT OUTER JOIN (
         SELECT "WorkTrips"."TaskId", COUNT( "WorkTrips"."id" ) as workTripsQuantity FROM "work_trips" AS WorkTrips GROUP BY "WorkTrips"."TaskId"
       ) AS "WorkTrips" ON "WorkTrips"."TaskId" = "TaskData"."id"

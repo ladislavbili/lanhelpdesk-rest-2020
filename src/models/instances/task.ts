@@ -6,6 +6,7 @@ export interface TaskInstance extends DefaultInstance {
   important: boolean;
   assignedTos: any;
   Tags: any;
+  Subtasks: any;
   ScheduledTasks: any;
   //tags
   //company - X
