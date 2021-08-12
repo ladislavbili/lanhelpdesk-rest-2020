@@ -110,7 +110,14 @@ enum EnumSubTaskChanged{
   update
 }
 
-${createExecClass("Task", false, 'count: Int!')}
+type TasksTotals{
+  approvedSubtasks: Float!
+  pendingSubtasks: Float!
+  approvedMaterials: Float!
+  pendingMaterials: Float!
+}
+
+${createExecClass("Task", false, 'count: Int! totals: TasksTotals! ')}
 ${createExecClass("Task", true)}
 
 enum EnumSortTaskKey {

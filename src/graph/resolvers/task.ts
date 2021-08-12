@@ -83,6 +83,7 @@ import {
   generateCustomItemsSQL,
   generateCompanyUsedTripPausalSQL,
   generateCompanyUsedSubtaskPausalSQL,
+  generateWorkCountsSQL,
 } from '@/graph/addons/task';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
@@ -160,19 +161,29 @@ const queries = {
     }
 
     const SQL = generateTasksSQL(projectId, userID, User.get('CompanyId'), isAdmin, taskWhere.join(' AND '), mainOrderBy, secondaryOrderBy, limit, (page - 1) * limit);
+    const totalsSQL = generateWorkCountsSQL(projectId, userID, User.get('CompanyId'), isAdmin, taskWhere.join(' AND '));
 
-    let responseTasks = <TaskInstance[]>await sequelize.query(SQL, {
-      model: models.Task,
-      type: QueryTypes.SELECT,
-      nest: true,
-      raw: true,
-      mapToModel: true
-    });
+    let [responseTasks, totals] = await Promise.all([
+      sequelize.query(SQL, {
+        model: models.Task,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+      sequelize.query(totalsSQL, {
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: false
+      })
+    ]);
+    totals = <any>totals[0];
 
     let databaseTime = 0;
     const databaseWatch = new Stopwatch(true);
     let tasks = [];
-    responseTasks.forEach((Task) => {
+    responseTasks.forEach((Task: TaskInstance) => {
       const hasAsssignedTo = Task.assignedTos !== null && Task.assignedTos.id !== null;
       const hasTag = Task.Tags !== null && Task.Tags.id !== null;
       const hasSubtask = Task.Subtasks !== null && Task.Subtasks.id !== null;
@@ -222,9 +233,16 @@ const queries = {
 
     databaseTime = databaseWatch.stop()
     const count = tasks.length > 0 ? (<any>tasks[0]).count : 0;
+
     return {
       tasks,
       count,
+      totals: {
+        approvedSubtasks: isNaN(parseFloat((<any>totals).approvedSubtasks)) ? 0 : parseFloat((<any>totals).approvedSubtasks),
+        pendingSubtasks: isNaN(parseFloat((<any>totals).pendingSubtasks)) ? 0 : parseFloat((<any>totals).pendingSubtasks),
+        approvedMaterials: isNaN(parseFloat((<any>totals).approvedMaterials)) ? 0 : parseFloat((<any>totals).approvedMaterials),
+        pendingMaterials: isNaN(parseFloat((<any>totals).pendingMaterials)) ? 0 : parseFloat((<any>totals).pendingMaterials),
+      },
       execTime: mainWatch.stop(),
       secondaryTimes: [
         { source: 'User check', time: checkUserTime },

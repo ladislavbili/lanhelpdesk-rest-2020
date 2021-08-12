@@ -599,3 +599,70 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
 
   return sql.replace(/"/g, '`');
 }
+
+export const generateWorkCountsSQL = (projectId, userId, companyId, isAdmin, where) => {
+  const notAdminWhere = (
+    `
+    ${where.length > 0 ? 'AND ' : ''}(
+      "Task"."createdById" = ${userId} OR
+      "Task"."requesterId" = ${userId} OR
+      "assignedTosFilter"."id" = ${userId} OR
+      "Project->ProjectGroups->ProjectGroupRight"."allTasks" = true OR
+      ("Project->ProjectGroups->ProjectGroupRight"."companyTasks" = true AND "Task"."CompanyId" = ${companyId})
+    )
+    `
+  );
+
+  const sql = (
+    `
+    SELECT
+    SUM( "SubtaskCounts"."approvedSubtasksQuantity" ) AS approvedSubtasks,
+    SUM( "SubtaskCounts"."pendingSubtasksQuantity" ) AS pendingSubtasks,
+    SUM( "MaterialCounts"."approvedMaterialsPrice" ) AS approvedMaterials,
+    SUM( "MaterialCounts"."pendingMaterialsPrice" ) AS pendingMaterials
+
+    FROM (
+      SELECT DISTINCT
+      ${removeLastComma(createModelAttributes("Task", null, models.Task))}
+      FROM "tasks" AS "Task"
+
+     LEFT OUTER JOIN ( "task_assignedTo" AS "assignedTosFilter->task_assignedTo" INNER JOIN "users" AS "assignedTosFilter" ON "assignedTosFilter"."id" = "assignedTosFilter->task_assignedTo"."UserId") ON "Task"."id" = "assignedTosFilter->task_assignedTo"."TaskId"
+     LEFT OUTER JOIN (
+       "task_has_tags" AS "tagsFilter->task_has_tags" INNER JOIN "tags" AS "tagsFilter" ON "tagsFilter"."id" = "tagsFilter->task_has_tags"."TagId"
+     ) ON "Task"."id" = "tagsFilter->task_has_tags"."TaskId"
+     INNER JOIN "projects" AS "Project" ON "Task"."ProjectId" = "Project"."id"
+     ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group" AS "Project->ProjectGroups" ON "Project"."id" = "Project->ProjectGroups"."ProjectId"
+     ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
+     ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN (
+       "user_belongs_to_group" AS "Project->ProjectGroups->Users->user_belongs_to_group" INNER JOIN "users" AS "Project->ProjectGroups->Users" ON "Project->ProjectGroups->Users"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."UserId"
+     ) ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."ProjectGroupId" AND "Project->ProjectGroups->Users"."id" = ${userId}
+     ${
+    where.length > 0 || !isAdmin ?
+      `WHERE ${where} ${isAdmin ? '' : `${notAdminWhere}`}` :
+      ''
+    }
+    GROUP BY "Task"."id"
+   ) AS Task
+   LEFT OUTER JOIN (
+     SELECT
+     "Subtasks"."TaskId",
+     SUM( "Subtasks"."quantity" ) as subtasksQuantity,
+     SUM( CASE WHEN "Subtasks"."approved" THEN "Subtasks"."quantity" ELSE 0 END ) as approvedSubtasksQuantity,
+     SUM( CASE WHEN "Subtasks"."approved" THEN 0 ELSE "Subtasks"."quantity" END ) as pendingSubtasksQuantity
+     FROM "subtasks" AS "Subtasks" GROUP BY "Subtasks"."TaskId"
+   ) AS "SubtaskCounts" ON "SubtaskCounts"."TaskId" = "Task"."id"
+
+   LEFT OUTER JOIN (
+     SELECT
+     "Materials"."TaskId",
+     SUM( "Materials"."quantity" * "Materials"."price" ) as materialsPrice,
+     SUM( CASE WHEN "Materials"."approved" THEN "Materials"."quantity" * "Materials"."price" ELSE 0 END ) as approvedMaterialsPrice,
+     SUM( CASE WHEN "Materials"."approved" THEN 0 ELSE "Materials"."quantity" * "Materials"."price" END ) as pendingMaterialsPrice
+     FROM "materials" AS "Materials" GROUP BY "Materials"."TaskId"
+   ) AS "MaterialCounts" ON "MaterialCounts"."TaskId" = "Task"."id"
+    `
+  );
+
+
+  return sql.replace(/"/g, '`');
+}
