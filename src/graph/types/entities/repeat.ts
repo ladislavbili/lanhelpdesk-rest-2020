@@ -31,6 +31,7 @@ enum EnumRepeatInterval{
 export const RepeatQueries = `
 repeats(
   projectId: Int,
+  milestoneId: Int,
   active: Boolean,
   from: String,
   to: String,
