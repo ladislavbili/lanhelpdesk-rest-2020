@@ -221,6 +221,7 @@ const mutations = {
     const newGroups = <ProjectGroupInstance[]>await Promise.all(
       groups.map((group) => newProject.createProjectGroup({
         title: group.title,
+        description: group.description,
         order: group.order,
         ProjectGroupRight: group.rights,
       }, {
@@ -350,6 +351,7 @@ const mutations = {
     const newGroups = <ProjectGroupInstance[]>await Promise.all(
       addGroups.map((newGroup) => Project.createProjectGroup({
         title: newGroup.title,
+        description: newGroup.description,
         order: newGroup.order,
         ProjectGroupRight: newGroup.rights,
       }, {
@@ -449,6 +451,7 @@ const mutations = {
       if (Group) {
         promises.push(Group.update({
           title: group.title,
+          description: group.description,
           order: group.order,
         }));
 

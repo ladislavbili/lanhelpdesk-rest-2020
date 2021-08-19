@@ -8,6 +8,7 @@ type Project {
   description: String!
   lockedRequester: Boolean!
   autoApproved: Boolean!
+  archived: Boolean!
   def: ProjectDefaults!
   filters: [BasicFilter]
   milestones: [Milestone]!
@@ -24,6 +25,7 @@ type BasicProject {
   title: String!
   lockedRequester: Boolean!
   autoApproved: Boolean!
+  archived: Boolean!
   description: String!
   def: ProjectDefaults!
   filters: [BasicFilter]
@@ -60,6 +62,7 @@ addProject(
   description: String!,
   lockedRequester: Boolean!,
   autoApproved: Boolean!,
+  archived: Boolean!,
   def: ProjectDefaultsInput!,
   tags: [NewTagInput]!,
   statuses: [NewStatusInput]!
@@ -72,6 +75,7 @@ updateProject(
   description: String,
   lockedRequester: Boolean,
   autoApproved: Boolean,
+  archived: Boolean,
   def: ProjectDefaultsInput,
   deleteTags: [Int]!,
   updateTags: [TagUpdateInput]!,

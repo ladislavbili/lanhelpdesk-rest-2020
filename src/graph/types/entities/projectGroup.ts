@@ -5,6 +5,7 @@ export const ProjectGroup = `
 type ProjectGroup {
   ${defaultAttributes}
   title: String!
+  description: String!
   order: Int!
   users: [BasicUser]!
   rights: ProjectGroupRights!
@@ -69,6 +70,7 @@ type ProjectGroupRights {
 input ProjectGroupInput {
   id: Int!,
   title: String!
+  description: String!
   order: Int!
   rights: ProjectGroupRightInput!
 }
@@ -76,6 +78,7 @@ input ProjectGroupInput {
 input ProjectGroupUpdateInput {
   id: Int!
   title: String
+  description: String
   order: Int
   rights: ProjectGroupRightInput
 }

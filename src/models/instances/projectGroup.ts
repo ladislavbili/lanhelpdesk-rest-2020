@@ -3,6 +3,7 @@ import DefaultInstance from './defaultInstance';
 
 export interface ProjectGroupInstance extends DefaultInstance {
   title: string;
+  description: string;
   order: number;
 
   addUser?: any;
@@ -16,6 +17,11 @@ export default function defineProjectGroups(sequelize: Sequelize) {
       title: {
         type: DataTypes.TEXT,
         allowNull: false,
+      },
+      description: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        defaultValue: '',
       },
       order: {
         type: DataTypes.INTEGER,

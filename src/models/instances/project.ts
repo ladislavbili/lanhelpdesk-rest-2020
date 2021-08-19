@@ -6,6 +6,7 @@ export interface ProjectInstance extends DefaultInstance {
   description: string;
   lockedRequester: boolean;
   autoApproved: boolean;
+  archived: boolean;
 
   defAssignedToDef: boolean;
   defAssignedToFixed: boolean;
@@ -83,6 +84,11 @@ export default function defineProjects(sequelize: Sequelize) {
         defaultValue: false,
       },
       autoApproved: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+      archived: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
