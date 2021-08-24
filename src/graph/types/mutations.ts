@@ -5,7 +5,6 @@ import { CustomItemMutations } from './entities/customItem';
 import { ErrorMessageMutations } from './entities/errorMessage';
 import { FilterMutations } from './entities/filter';
 import { ImapMutations } from './entities/imap';
-import { InvoicedTaskMutations } from './entities/invoicedTask';
 import { MaterialMutations } from './entities/material';
 import { MilestoneMutations } from './entities/milestone';
 import { PricelistMutations } from './entities/pricelist';
@@ -26,7 +25,6 @@ import { TagMutations } from './entities/tag';
 import { TaskMutations } from './entities/task';
 import { TaskAttachmentMutations } from './entities/taskAttachment';
 import { TaskChangeMutations } from './entities/taskChange';
-import { TaskInvoiceMutations } from './entities/taskInvoice';
 import { TasklistColumnPreferenceMutations } from './entities/tasklistColumnPreference';
 import { TasklistGanttColumnPreferenceMutations } from './entities/tasklistGanttColumnPreference';
 import { TasklistSortMutations } from './entities/tasklistSort';
@@ -47,7 +45,6 @@ type Mutation {
   ${ErrorMessageMutations}
   ${FilterMutations}
   ${ImapMutations}
-  ${InvoicedTaskMutations}
   ${MaterialMutations}
   ${MilestoneMutations}
   ${PricelistMutations}
@@ -68,7 +65,6 @@ type Mutation {
   ${TaskMutations}
   ${TaskAttachmentMutations}
   ${TaskChangeMutations}
-  ${TaskInvoiceMutations}
   ${TasklistColumnPreferenceMutations}
   ${TasklistGanttColumnPreferenceMutations}
   ${TasklistSortMutations}

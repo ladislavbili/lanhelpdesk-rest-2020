@@ -60,6 +60,4 @@ export function createCustomItemsAssoc(models) {
   models.CustomItem.belongsTo(models.User, { as: 'ItemApprovedBy' });
 
   models.CustomItem.belongsTo(models.RepeatTemplate);
-
-  models.CustomItem.hasMany(models.InvoicedCustomItem);
 }

@@ -378,7 +378,6 @@ const queries = {
 
     return {
       ...responseTask[0],
-      InvoicedTasks: [],
 
       TaskAttachments: responseTaskAttachments,
       assignedTos: responseAssignedTos,
@@ -388,7 +387,6 @@ const queries = {
       ShortSubtasks: responseShortSubtasks,
       Subtasks: (<any[]>responseSubtasks).map((subtask) => ({
         ...subtask,
-        InvoicedSubtasks: [],
         quantity: toFloatOrZero(subtask.quantity),
         discount: toFloatOrZero(subtask.discount),
         SubtaskApprovedBy: subtask.SubtaskApprovedBy.id === null ? null : subtask.SubtaskApprovedBy,
@@ -404,7 +402,6 @@ const queries = {
       })),
       WorkTrips: (<any[]>responseWorkTrips).map((workTrip) => ({
         ...workTrip,
-        InvoicedTrips: [],
         quantity: toFloatOrZero(workTrip.quantity),
         discount: toFloatOrZero(workTrip.discount),
         TripApprovedBy: workTrip.TripApprovedBy.id === null ? null : workTrip.TripApprovedBy,
@@ -420,7 +417,6 @@ const queries = {
       })),
       Materials: (<any[]>responseMaterials).map((material) => ({
         ...material,
-        InvoicedMaterials: [],
         quantity: toFloatOrZero(material.quantity),
         margin: toFloatOrZero(material.margin),
         price: toFloatOrZero(material.price),
@@ -428,7 +424,6 @@ const queries = {
       })),
       CustomItems: (<any[]>responseCustomItems).map((item) => ({
         ...item,
-        InvoicedCustomItems: [],
         quantity: toFloatOrZero(item.quantity),
         margin: toFloatOrZero(item.margin),
         price: toFloatOrZero(item.price),
@@ -1332,9 +1327,6 @@ const attributes = {
         return [];
       }
       return getModelAttribute(task, 'TaskAttachments');
-    },
-    async invoicedTasks(task) {
-      return getModelAttribute(task, 'InvoicedTasks');
     },
   }
 };

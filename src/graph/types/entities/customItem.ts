@@ -11,7 +11,6 @@ type CustomItem {
   price: Float!
   task: Task
   repeatTemplate: RepeatTemplate
-  invoicedData: [InvoicedCustomItem]
 }
 `
 

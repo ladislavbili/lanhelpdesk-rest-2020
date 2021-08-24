@@ -5,7 +5,6 @@ import { CustomItemQueries } from './entities/customItem';
 import { ErrorMessageQueries } from './entities/errorMessage';
 import { FilterQueries } from './entities/filter';
 import { ImapQueries } from './entities/imap';
-import { InvoicedTaskQueries } from './entities/invoicedTask';
 import { MaterialQueries } from './entities/material';
 import { MilestoneQueries } from './entities/milestone';
 import { PricelistQueries } from './entities/pricelist';
@@ -26,7 +25,6 @@ import { TagQueries } from './entities/tag';
 import { TaskQueries } from './entities/task';
 import { TaskAttachmentQueries } from './entities/taskAttachment';
 import { TaskChangeQueries } from './entities/taskChange';
-import { TaskInvoiceQueries } from './entities/taskInvoice';
 import { TasklistColumnPreferenceQueries } from './entities/tasklistColumnPreference';
 import { TasklistGanttColumnPreferenceQueries } from './entities/tasklistGanttColumnPreference';
 import { TasklistSortQueries } from './entities/tasklistSort';
@@ -47,7 +45,6 @@ type Query {
   ${ErrorMessageQueries}
   ${FilterQueries}
   ${ImapQueries}
-  ${InvoicedTaskQueries}
   ${MaterialQueries}
   ${MilestoneQueries}
   ${PricelistQueries}
@@ -68,7 +65,6 @@ type Query {
   ${TaskQueries}
   ${TaskAttachmentQueries}
   ${TaskChangeQueries}
-  ${TaskInvoiceQueries}
   ${TasklistColumnPreferenceQueries}
   ${TasklistGanttColumnPreferenceQueries}
   ${TasklistSortQueries}

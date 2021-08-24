@@ -71,7 +71,6 @@ companies: [Company]
 company(id: Int!): Company
 basicCompanies: [BasicCompany]
 basicCompany(id: Int!): BasicCompany
-companiesWithInvoices: [BasicCompany]
 `
 
 export const CompanyMutations = `

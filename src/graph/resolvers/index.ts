@@ -21,7 +21,6 @@ import tag from './tag';
 import task from './task';
 import taskAttachment from './taskAttachment';
 import taskChange from './taskChange';
-import taskInvoice from './taskInvoice';
 import tasklistColumnPreference from './tasklistColumnPreference';
 import tasklistGanttColumnPreference from './tasklistGanttColumnPreference';
 import taskType from './taskType';
@@ -29,7 +28,6 @@ import tripType from './tripType';
 import user from './user';
 import userInvoice from './userInvoice';
 import workTrip from './workTrip';
-import invoicedTask from './invoicedTask';
 import repeat from './repeat';
 import repeatTemplate from './repeatTemplate';
 import repeatTemplateAttachment from './repeatTemplateAttachment'
@@ -66,7 +64,6 @@ export default {
     ...task.queries,
     ...taskAttachment.queries,
     ...taskChange.queries,
-    ...taskInvoice.queries,
     ...tasklistColumnPreference.queries,
     ...tasklistGanttColumnPreference.queries,
     ...taskType.queries,
@@ -74,7 +71,6 @@ export default {
     ...user.queries,
     ...userInvoice.queries,
     ...workTrip.queries,
-    ...invoicedTask.queries,
     ...repeat.queries,
     ...repeatTemplate.queries,
     ...repeatTemplateAttachment.queries,
@@ -107,7 +103,6 @@ export default {
     ...task.mutations,
     ...taskAttachment.mutations,
     ...taskChange.mutations,
-    ...taskInvoice.mutations,
     ...tasklistColumnPreference.mutations,
     ...tasklistGanttColumnPreference.mutations,
     ...taskType.mutations,
@@ -115,7 +110,6 @@ export default {
     ...user.mutations,
     ...userInvoice.mutations,
     ...workTrip.mutations,
-    ...invoicedTask.mutations,
     ...repeat.mutations,
     ...repeatTemplate.mutations,
     ...repeatTemplateAttachment.mutations,
@@ -167,14 +161,12 @@ export default {
   ...taskAttachment.attributes,
   ...taskType.attributes,
   ...taskChange.attributes,
-  ...taskInvoice.attributes,
   ...tasklistColumnPreference.attributes,
   ...tasklistGanttColumnPreference.attributes,
   ...tripType.attributes,
   ...user.attributes,
   ...userInvoice.attributes,
   ...workTrip.attributes,
-  ...invoicedTask.attributes,
   ...repeat.attributes,
   ...repeatTemplate.attributes,
   ...repeatTemplateAttachment.attributes,

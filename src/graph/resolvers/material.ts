@@ -285,9 +285,6 @@ const attributes = {
     async repeatTemplate(material) {
       return getModelAttribute(material, 'RepeatTemplate');
     },
-    async invoicedData(material) {
-      return getModelAttribute(material, 'InvoicedMaterials');
-    },
   }
 };
 

@@ -27,14 +27,6 @@ const queries = {
       ]
     })
   },
-  companiesWithInvoices: async (root, args, { req }) => {
-    await checkResolver(req, ['vykazy'], true);
-    const Companies = await models.Company.findAll({
-      include: [{ model: models.TaskInvoice, required: true }]
-    });
-
-    return Companies;
-  },
   company: async (root, { id }, { req }) => {
     await checkResolver(req, ["companies"]);
     return models.Company.findByPk(id, {

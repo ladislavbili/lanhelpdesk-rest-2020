@@ -13,7 +13,6 @@ type Subtask {
   repeatTemplate: RepeatTemplate
   type: TaskType
   assignedTo: BasicUser!
-  invoicedData: [InvoicedSubtask]
   scheduled: ScheduledWork
 }
 `

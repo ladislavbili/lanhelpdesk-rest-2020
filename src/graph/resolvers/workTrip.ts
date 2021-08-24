@@ -439,9 +439,6 @@ const attributes = {
     async assignedTo(workTrip) {
       return getModelAttribute(workTrip, 'User');
     },
-    async invoicedData(workTrip) {
-      return getModelAttribute(workTrip, 'InvoicedTrips');
-    },
     async scheduled(workTrip) {
       return getModelAttribute(workTrip, 'ScheduledWork');
     },

@@ -12,7 +12,6 @@ type Material {
   price: Float!
   task: Task
   repeatTemplate: RepeatTemplate
-  invoicedData: [InvoicedMaterial]
 }
 `
 

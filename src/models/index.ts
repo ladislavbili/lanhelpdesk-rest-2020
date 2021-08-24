@@ -37,17 +37,6 @@ import defineTaskChanges, { createTaskChangesAssoc } from './instances/taskChang
 import defineTaskChangeMessages, { createTaskChangeMessagesAssoc } from './instances/taskChangeMessage';
 import defineTaskAttachments, { createTaskAttachmentsAssoc } from './instances/taskAttachment';
 import defineCommentAttachments, { createCommentAttachmentsAssoc } from './instances/commentAttachment';
-import defineInvoicedCompanies, { createInvoicedCompaniesAssoc } from './instances/invoicedCompany';
-import defineInvoicedSubtasks, { createInvoicedSubtasksAssoc } from './instances/invoicedSubtask';
-import defineInvoicedTasks, { createInvoicedTasksAssoc } from './instances/invoicedTask';
-import defineInvoicedTrips, { createInvoicedTripsAssoc } from './instances/invoicedTrip';
-import defineTaskInvoices, { createTaskInvoicesAssoc } from './instances/taskInvoice';
-import defineInvoicedCompanyRents, { createInvoicedCompanyRentsAssoc } from './instances/invoicedCompanyRent';
-import defineInvoicedCustomItems, { createInvoicedCustomItemsAssoc } from './instances/invoicedCustomItem';
-import defineInvoicedMaterials, { createInvoicedMaterialsAssoc } from './instances/invoicedMaterial';
-import defineInvoicedMaterialTasks, { createInvoicedMaterialTasksAssoc } from './instances/invoicedMaterialTask';
-import defineInvoicedTags, { createInvoicedTagsAssoc } from './instances/invoicedTag';
-import defineInvoicedAssignedTos, { createInvoicedAssignedTosAssoc } from './instances/invoicedAssignedTo';
 import defineShortSubtasks, { createShortSubtasksAssoc } from './instances/shortSubtask';
 import defineProjectGroups, { createProjectGroupsAssoc } from './instances/projectGroup';
 import defineProjectGroupRights, { createProjectGroupRightsAssoc } from './instances/projectGroupRights';
@@ -109,17 +98,6 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineTaskChangeMessages(sequelize);
   defineTaskAttachments(sequelize);
   defineCommentAttachments(sequelize);
-  defineInvoicedCompanies(sequelize);
-  defineInvoicedSubtasks(sequelize);
-  defineInvoicedTasks(sequelize);
-  defineInvoicedTrips(sequelize);
-  defineTaskInvoices(sequelize);
-  defineInvoicedCompanyRents(sequelize);
-  defineInvoicedCustomItems(sequelize);
-  defineInvoicedMaterials(sequelize);
-  defineInvoicedMaterialTasks(sequelize);
-  defineInvoicedTags(sequelize);
-  defineInvoicedAssignedTos(sequelize);
   defineShortSubtasks(sequelize);
   defineProjectGroups(sequelize);
   defineProjectGroupRights(sequelize);
@@ -165,18 +143,6 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createTaskChangeMessagesAssoc(models);
   createTaskAttachmentsAssoc(models);
   createCommentAttachmentsAssoc(models);
-
-  createTaskInvoicesAssoc(models);
-  createInvoicedTasksAssoc(models);
-  createInvoicedMaterialTasksAssoc(models);
-  createInvoicedCompaniesAssoc(models);
-  createInvoicedCompanyRentsAssoc(models);
-  createInvoicedSubtasksAssoc(models);
-  createInvoicedTripsAssoc(models);
-  createInvoicedCustomItemsAssoc(models);
-  createInvoicedMaterialsAssoc(models);
-  createInvoicedTagsAssoc(models);
-  createInvoicedAssignedTosAssoc(models);
   createShortSubtasksAssoc(models);
 
   createProjectGroupsAssoc(models);

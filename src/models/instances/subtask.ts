@@ -79,8 +79,6 @@ export function createSubtasksAssoc(models) {
 
   models.Subtask.belongsTo(models.User, { as: 'SubtaskApprovedBy' });
 
-  models.Subtask.hasMany(models.InvoicedSubtask);
-
   models.Subtask.hasOne(models.ScheduledWork, { onDelete: 'CASCADE' });
 
 }

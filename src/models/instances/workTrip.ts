@@ -67,7 +67,5 @@ export function createWorkTripsAssoc(models) {
 
   models.WorkTrip.belongsTo(models.User, { as: 'TripApprovedBy' });
 
-  models.WorkTrip.hasMany(models.InvoicedTrip);
-
   models.WorkTrip.hasOne(models.ScheduledWork, { onDelete: 'CASCADE' });
 }

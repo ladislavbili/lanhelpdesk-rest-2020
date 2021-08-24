@@ -12,7 +12,6 @@ type WorkTrip {
   repeatTemplate: RepeatTemplate
   type: TripType!
   assignedTo: BasicUser!
-  invoicedData: [InvoicedTrip]
   scheduled: ScheduledWork
 }
 `

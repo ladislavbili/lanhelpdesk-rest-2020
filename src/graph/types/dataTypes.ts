@@ -5,7 +5,6 @@ import { CustomItem } from './entities/customItem';
 import { ErrorMessage } from './entities/errorMessage';
 import { Filter } from './entities/filter';
 import { Imap } from './entities/imap';
-import { InvoicedTask } from './entities/invoicedTask';
 import { Material } from './entities/material';
 import { Milestone } from './entities/milestone';
 import { Pricelist } from './entities/pricelist';
@@ -26,7 +25,6 @@ import { Tag } from './entities/tag';
 import { Task } from './entities/task';
 import { TaskAttachment } from './entities/taskAttachment';
 import { TaskChange } from './entities/taskChange';
-import { TaskInvoice } from './entities/taskInvoice';
 import { TasklistColumnPreference } from './entities/tasklistColumnPreference';
 import { TasklistGanttColumnPreference } from './entities/tasklistGanttColumnPreference';
 import { TasklistSort } from './entities/tasklistSort';
@@ -46,7 +44,6 @@ ${CustomItem}
 ${ErrorMessage}
 ${Filter}
 ${Imap}
-${InvoicedTask}
 ${Material}
 ${Milestone}
 ${Pricelist}
@@ -67,7 +64,6 @@ ${Tag}
 ${Task}
 ${TaskAttachment}
 ${TaskChange}
-${TaskInvoice}
 ${TasklistColumnPreference}
 ${TasklistGanttColumnPreference}
 ${TasklistSort}

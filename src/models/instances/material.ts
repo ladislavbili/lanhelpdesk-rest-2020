@@ -64,6 +64,4 @@ export function createMaterialsAssoc(models) {
   models.Material.belongsTo(models.User, { as: 'MaterialApprovedBy' });
 
   models.Material.belongsTo(models.RepeatTemplate);
-
-  models.Material.hasMany(models.InvoicedMaterial);
 }

@@ -11,8 +11,6 @@ type UserInvoice {
   user: BasicUser!
   fromDate: String!
   toDate: String!
-  subtaskTasks: [InvoicedTask]!
-  tripTasks: [InvoicedTask]!
   subtaskTotals: [UISubtaskTotal]!
   tripTotals: [UITripTotal]!
   subtaskCounts: UISubtaskCounts!

@@ -39,7 +39,6 @@ type Task {
   customItems: [CustomItem]!
   taskChanges: [TaskChange]!
   taskAttachments: [TaskAttachment]!
-  invoicedTasks: [InvoicedTask]!
   repeatTime: RepeatTime
 
   subtasksQuantity: Float

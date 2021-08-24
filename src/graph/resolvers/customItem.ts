@@ -280,9 +280,6 @@ const attributes = {
     async approvedBy(customItem) {
       return getModelAttribute(customItem, 'ItemApprovedBy');
     },
-    async invoicedData(customItem) {
-      return getModelAttribute(customItem, 'InvoicedCustomItems');
-    },
     async repeatTemplate(customItem) {
       return getModelAttribute(customItem, 'RepeatTemplate');
     },
