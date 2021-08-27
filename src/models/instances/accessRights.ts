@@ -30,6 +30,12 @@ export interface AccessRightsInstance extends DefaultInstance {
   tripTypes: boolean;
   imaps: boolean;
   smtps: boolean;
+
+  //helpdesk
+  tasklistLayout: boolean;
+  tasklistCalendar: boolean;
+  tasklistPreferences: boolean;
+  customFilters: boolean;
 }
 
 export default function defineAccessRights(sequelize: Sequelize) {
@@ -161,6 +167,28 @@ export default function defineAccessRights(sequelize: Sequelize) {
         defaultValue: false,
       },
       smtps: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+
+      //helpdesk access
+      tasklistLayout: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      tasklistCalendar: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      tasklistPreferences: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      customFilters: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,

@@ -2,6 +2,7 @@ import { Sequelize, DataTypes } from "sequelize";
 import DefaultInstance from './defaultInstance';
 
 export interface CompanyInstance extends DefaultInstance {
+  def: boolean;
   title: string;
   dph: number;
   ico: string;
@@ -27,6 +28,11 @@ export default function defineCompanies(sequelize: Sequelize) {
   sequelize.define<CompanyInstance>(
     "Company",
     {
+      def: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       title: {
         type: DataTypes.TEXT,
         allowNull: false,

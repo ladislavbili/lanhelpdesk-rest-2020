@@ -1,6 +1,7 @@
 export { AccessRightsInstance } from './accessRights';
 export { ErrorMessageInstance } from './errorMessage';
 export { CompanyInstance } from './company';
+export { CompanyDefaultsInstance } from './companyDefaults';
 export { CompanyRentInstance } from './companyRent';
 export { ImapInstance } from './imap';
 export { FilterInstance } from './filter';

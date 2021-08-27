@@ -13,6 +13,7 @@ import defineTripTypes, { createTripTypesAssoc } from './instances/tripType';
 import definePricelists, { createPricelistsAssoc } from './instances/pricelist';
 import definePrices, { createPricesAssoc } from './instances/price';
 import defineCompanies, { createCompaniesAssoc } from './instances/company';
+import defineCompanyDefaults, { createCompanyDefaultsAssoc } from './instances/companyDefaults';
 import defineCompanyRents, { createCompanyRentsAssoc } from './instances/companyRent';
 import defineSmtps, { createSmtpsAssoc } from './instances/smtp';
 import defineImaps, { createImapsAssoc } from './instances/imap';
@@ -74,6 +75,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   definePricelists(sequelize);
   definePrices(sequelize);
   defineCompanies(sequelize);
+  defineCompanyDefaults(sequelize);
   defineCompanyRents(sequelize);
   defineSmtps(sequelize);
   defineImaps(sequelize);
@@ -120,6 +122,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createPricelistsAssoc(models);
   createPricesAssoc(models);
   createCompaniesAssoc(models);
+  createCompanyDefaultsAssoc(models);
   createCompanyRentsAssoc(models);
   createSmtpsAssoc(models);
   createImapsAssoc(models);

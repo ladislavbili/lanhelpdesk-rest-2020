@@ -61,7 +61,7 @@ const getTimeDifference = (fromDate, toDate) => {
 
 const queries = {
   scheduledWorks: async (root, { projectId, filter, userId, ...rangeDates }, { req, userID: currentUserId }) => {
-    const User = await checkResolver(req);
+    const User = await checkResolver(req, ['tasklistCalendar']);
     const isAdmin = (<RoleInstance>User.get('Role')).get('level') === 0;
     const { from, to } = extractDatesFromObject(rangeDates, ['from', 'to']);
     let where = [];
@@ -121,7 +121,7 @@ const queries = {
 const mutations = {
 
   addScheduledWork: async (root, { taskId, userId, ...newDates }, { req }) => {
-    const User = await checkResolver(req);
+    const User = await checkResolver(req, ['tasklistCalendar']);
     const dates = extractDatesFromObject(newDates, scheduledDates);
     const { Task } = await checkIfHasProjectRights(User.get('id'), taskId, undefined, ['assignedWrite', 'vykazWrite']);
     const [
@@ -160,7 +160,7 @@ const mutations = {
   },
 
   updateScheduledWork: async (root, { id, ...newDates }, { req }) => {
-    const User = await checkResolver(req);
+    const User = await checkResolver(req, ['tasklistCalendar']);
     const dates = extractDatesFromObject(newDates, scheduledDates);
 
     let ScheduledWork = <ScheduledWorkInstance>await models.ScheduledWork.findByPk(id, {

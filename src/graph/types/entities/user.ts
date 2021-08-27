@@ -87,5 +87,5 @@ deleteUser( id: Int!, taskPairs: [TaskPairInput]!, subtaskPairs: [SubtaskPairInp
 
 export const UserSubscriptions = `
   usersSubscription: Boolean
-  userDataSubscription: Int
+  userDataSubscription: [Int]
 `

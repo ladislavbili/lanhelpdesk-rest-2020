@@ -1,4 +1,10 @@
-import { createDoesNoExistsError, createCantBeNegativeError, EditedRentNotOfCompanyError } from '@/configs/errors';
+import {
+  createDoesNoExistsError,
+  createCantBeNegativeError,
+  createMissingRightsError,
+  EditedRentNotOfCompanyError,
+  CantDeleteDefCompanyError,
+} from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import { Sequelize } from "sequelize";
 import {
@@ -9,6 +15,8 @@ import {
   TaskInstance,
   ImapInstance,
   RepeatTemplateInstance,
+  AccessRightsInstance,
+  RoleInstance,
 } from '@/models/instances';
 import { splitArrayByFilter, addApolloError, getModelAttribute } from '@/helperFunctions';
 import { Op } from 'sequelize';
@@ -47,6 +55,14 @@ const queries = {
       ]
     });
   },
+  companyDefaults: async (root, args, { req }) => {
+    const User = await checkResolver(req, ["companies"]);
+    return (await models.CompanyDefaults.findAll())[0];
+  },
+  defCompany: async (root, args, { req }) => {
+    const User = await checkResolver(req, ["companies"]);
+    return (await models.Company.findAll({ where: { def: true } }))[0];
+  },
   basicCompanies: async (root, args, { req }) => {
     await checkResolver(req);
     return models.Company.findAll({
@@ -73,16 +89,37 @@ const queries = {
     await checkResolver(req);
     return models.Company.findByPk(id);
   },
+  pausalCompany: async (root, { id }, { req }) => {
+    await checkResolver(req, ["pausals"]);
+    return models.Company.findByPk(id, {
+      include: [
+        models.Pricelist,
+        models.CompanyRent
+      ]
+    });
+  },
 }
 
 const mutations = {
   addCompany: async (root, { pricelistId, monthly, monthlyPausal, taskWorkPausal, taskTripPausal, rents, ...attributes }, { req, userID }) => {
-    await checkResolver(req, ["companies"]);
+    const User = await checkResolver(req, ["companies"]);
+    const rights = <AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight');
 
     const Pricelist = await models.Pricelist.findByPk(pricelistId);
     if (Pricelist === null) {
       throw createDoesNoExistsError('Pricelist', pricelistId);
     }
+    if (!rights.pausals) {
+      if (!Pricelist.get('def')) {
+        throw createMissingRightsError('add Company', ['pausals']);
+      }
+      monthly = false;
+      monthlyPausal = 0;
+      taskWorkPausal = 0;
+      taskTripPausal = 0;
+      rents = [];
+    }
+
     //check pausals not negative
     const otherAttributes = { monthlyPausal, taskWorkPausal, taskTripPausal };
     if (monthly) {
@@ -124,8 +161,13 @@ const mutations = {
   },
 
   updateCompany: async (root, { id, pricelistId, rents, ...args }, { req, userID }) => {
-    await checkResolver(req, ["companies"]);
-    const TargetCompany = <CompanyInstance>(await models.Company.findByPk(id, { include: [{ model: models.CompanyRent }] }));
+    const User = await checkResolver(req, ["companies", 'pausals'], true);
+    const rights = <AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight');
+    const TargetCompany = <CompanyInstance>(await models.Company.findByPk(id, {
+      include: [
+        models.CompanyRent,
+      ]
+    }));
     if (TargetCompany === null) {
       throw createDoesNoExistsError('Company', id);
     }
@@ -156,7 +198,7 @@ const mutations = {
       }
 
       //rents
-      if (rents !== undefined) {
+      if (rents !== undefined && rights.pausals) {
         rents.forEach((rent) => {
           ['quantity', 'cost', 'price'].forEach((att) => {
             if (rent[att] < 0) {
@@ -187,12 +229,44 @@ const mutations = {
           .filter((compRent) => !existingRents.some((rent) => compRent.get('id') === rent.id))
           .forEach((compRent) => promises.push(compRent.destroy({ transaction: t })))
       }
+      let allowedParameters = <any>{ ...args };
+      if (!rights.companies) {
+        [
+          'title',
+          'dph',
+          'ico',
+          'dic',
+          'ic_dph',
+          'country',
+          'city',
+          'street',
+          'zip',
+          'email',
+          'phone',
+          'description',
+        ].forEach((attr) => delete allowedParameters[attr]);
+      }
+      if (!rights.pausals) {
+        [
+          'pricelistId',
+          'monthly',
+          'monthlyPausal',
+          'taskWorkPausal',
+          'taskTripPausal',
+        ].forEach((attr) => delete allowedParameters[attr]);
+      }
 
       promises.push(TargetCompany.update(args, { transaction: t }));
       await Promise.all(promises);
     })
     pubsub.publish(COMPANY_CHANGE, { companiesSubscription: true });
     return TargetCompany;
+  },
+
+  updateCompanyDefaults: async (root, { dph }, { req }) => {
+    const User = await checkResolver(req, ["companies"]);
+    await models.CompanyDefaults.update({ dph }, { where: {} });
+    return (await models.CompanyDefaults.findAll())[0];
   },
 
   deleteCompany: async (root, { id, newId }, { req }) => {
@@ -209,6 +283,9 @@ const mutations = {
         ]
       }
     );
+    if (OldCompany.get('def')) {
+      throw CantDeleteDefCompanyError;
+    }
     const NewCompany = await models.Company.findByPk(newId);
 
     if (OldCompany === null) {
@@ -321,6 +398,50 @@ const attributes = {
         return acc1 + task.get('WorkTrips').reduce((acc2, trip) => acc2 + trip.get('quantity'), 0)
       }, 0);
     }
+  },
+  PausalCompany: {
+    async pricelist(company) {
+      return getModelAttribute(company, 'Pricelist');
+    },
+    async companyRents(company) {
+      return getModelAttribute(company, 'CompanyRents');
+    },
+    async usedSubtaskPausal(company) {
+      if (company.usedSubtaskPausal !== undefined) {
+        return company.usedSubtaskPausal;
+      }
+      const fullTasks = await company.getTasks(
+        {
+          include: [{ model: models.Subtask }],
+          where: {
+            closeDate: {
+              [Op.gte]: moment().startOf('month').toDate()
+            }
+          }
+        }
+      );
+      return fullTasks.reduce((acc1, task) => {
+        return acc1 + task.get('Subtasks').reduce((acc2, subtask) => acc2 + parseInt(subtask.get('quantity')), 0)
+      }, 0);
+    },
+    async usedTripPausal(company) {
+      if (company.usedTripPausal !== undefined) {
+        return company.usedTripPausal;
+      }
+      const fullTasks = await company.getTasks(
+        {
+          include: [{ model: models.WorkTrip }],
+          where: {
+            closeDate: {
+              [Op.gte]: moment().startOf('month').toDate()
+            }
+          }
+        }
+      );
+      return fullTasks.reduce((acc1, task) => {
+        return acc1 + task.get('WorkTrips').reduce((acc2, trip) => acc2 + parseInt(trip.get('quantity')), 0)
+      }, 0);
+    },
   },
 };
 

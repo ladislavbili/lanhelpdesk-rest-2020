@@ -201,7 +201,7 @@ const queries = {
   },
 
   calendarRepeats: async (root, { projectId, active, ...rangeDates }, { req, userID }) => {
-    const User = await checkResolver(req);
+    const User = await checkResolver(req, ['tasklistCalendar']);
 
     const { from, to } = extractDatesFromObject(rangeDates, ['from', 'to']);
 
@@ -1022,7 +1022,7 @@ const mutations = {
       throw createDoesNoExistsError('Repeat', repeatId);
     }
     const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
-    const User = await checkResolver(req);
+    const User = await checkResolver(req, ['tasklistCalendar']);
 
     //Figure out project and if can change project
     await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['addTasks', 'repeatRead']);

@@ -11,6 +11,7 @@ import {
   NotAllowedToLoginError,
   UserDeactivatedError,
   createDoesNoExistsError,
+  createMissingRightsError,
   CantCreateUserLevelError,
   DeactivateUserLevelTooLowError,
   CantChangeYourRoleError,
@@ -259,7 +260,7 @@ const mutations = {
 
     const UpdatedUser = await TargetUser.update({ active });
     pubsub.publish(USER_CHANGE, { usersSubscription: true });
-    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: UpdatedUser.get('id') });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: [UpdatedUser.get('id')] });
     return UpdatedUser;
   },
 
@@ -343,7 +344,7 @@ const mutations = {
     }
     const UpdatedUser = await TargetUser.update(changes);
     pubsub.publish(USER_CHANGE, { usersSubscription: true });
-    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: UpdatedUser.get('id') });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: [UpdatedUser.get('id')] });
     return UpdatedUser;
   },
 
@@ -363,7 +364,7 @@ const mutations = {
     }
     const UpdatedUser = await User.update(changes);
     pubsub.publish(USER_CHANGE, { usersSubscription: true });
-    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: UpdatedUser.get('id') });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: [UpdatedUser.get('id')] });
 
     let loginKey = randomString();
     let expiresAt = moment().add(7, 'd').valueOf()
@@ -467,7 +468,7 @@ const mutations = {
     await Promise.all(promises);
     await TargetUser.destroy();
     pubsub.publish(USER_CHANGE, { usersSubscription: true });
-    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: TargetUser.get('id') });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: [TargetUser.get('id')] });
     return TargetUser;
   },
 
@@ -476,7 +477,7 @@ const mutations = {
     const User = await checkResolver(req);
     await idsDoExistsCheck(ids, models.Status);
     await User.setStatuses(ids);
-    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: User.get('id') });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: [User.get('id')] });
     return models.User.findByPk(User.get('id'), {
       include: [
         models.Status,
@@ -503,28 +504,35 @@ const mutations = {
     } else {
       await User.createTasklistSort({ sort, asc, layout });
     }
-    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: User.get('id') });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: [User.get('id')] });
     return User;
   },
 
   setAfterTaskCreate: async (root, { afterTaskCreate }, { req }) => {
     const User = await checkResolver(req);
     await User.update({ afterTaskCreate: parseInt(afterTaskCreate) });
-    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: User.get('id') });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: [User.get('id')] });
     return User;
   },
 
   setTasklistLayout: async (root, { tasklistLayout }, { req }) => {
     const User = await checkResolver(req);
+    const rights = <AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight');
+    if (
+      (tasklistLayout === 3 && !rights.tasklistCalendar) ||
+      (![0, 1, 3].includes(tasklistLayout) && !rights.tasklistLayout)
+    ) {
+      throw createMissingRightsError('change layout', ['tasklistLayout', 'tasklistCalendar']);
+    }
     await User.update({ tasklistLayout: parseInt(tasklistLayout) });
-    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: User.get('id') });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: [User.get('id')] });
     return User;
   },
 
   setTaskLayout: async (root, { taskLayout }, { req }) => {
     const User = await checkResolver(req);
     await User.update({ taskLayout: parseInt(taskLayout) });
-    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: User.get('id') });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: [User.get('id')] });
     return User;
   },
 }
@@ -570,7 +578,7 @@ const subscriptions = {
     subscribe: withFilter(
       () => pubsub.asyncIterator(USER_DATA_CHANGE),
       async ({ userDataSubscription }, args, { userID }) => {
-        return userDataSubscription === userID;
+        return userDataSubscription.includes(userID);
       }
     ),
   }

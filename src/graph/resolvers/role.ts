@@ -18,7 +18,7 @@ import {
   getModelAttribute
 } from '@/helperFunctions';
 import checkResolver from './checkResolver';
-import { ROLE_CHANGE } from '@/configs/subscriptions';
+import { ROLE_CHANGE, USER_DATA_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 
@@ -90,7 +90,7 @@ const mutations = {
   updateRole: async (root, { id, title, order, level, accessRights }, { req, userID }) => {
     //kontrola prav a ziskanie prav pouzivatela a upravovanej role
     const User = await checkResolver(req, ['roles']);
-    const TargetRole = <RoleInstance>await models.Role.findByPk(id, { include: [{ model: models.AccessRights }] });
+    const TargetRole = <RoleInstance>await models.Role.findByPk(id, { include: [{ model: models.AccessRights }, { model: models.User }] });
     if (TargetRole === null) {
       throw createDoesNoExistsError('Role', id);
     }
@@ -121,6 +121,8 @@ const mutations = {
     await TargetAccessRights.update(accessRights);
     await TargetRole.update({ title, order });
     pubsub.publish(ROLE_CHANGE, { rolesSubscription: true });
+    const allUsers = <UserInstance[]>TargetRole.get('Users');
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: allUsers.map((User) => User.get('id')) });
     return TargetRole;
   },
 
@@ -162,6 +164,7 @@ const mutations = {
     await Promise.all(Imaps.map((Imap) => Imap.setRole(newId)));
     await OldRole.destroy();
     pubsub.publish(ROLE_CHANGE, { rolesSubscription: true });
+    pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: allUsers.map((User) => User.get('id')) });
     return OldRole;
   },
 }

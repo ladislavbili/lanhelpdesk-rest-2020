@@ -29,6 +29,9 @@ export const createCantChangeRightsError = (rights): ApolloError => {
   return new ApolloError(`Your role can't change these rights: ${rights.toString()}!`, 'CANT_CHANGE_SOME_RIGHTS');
 }
 
+export const createMissingRightsError = (action, rights): ApolloError => {
+  return new ApolloError(`Your role can't ${action} because of missing rights: ${rights.toString()}!`, 'MISSING_RIGHT');
+}
 //TASK EDIT ATTRIBUTE
 
 export const createCantEditTaskAttributeError = (attribute): ApolloError => {
@@ -72,6 +75,9 @@ export const NotEveryUsersWorkTripWasCoveredError = new ApolloError("Not every w
 export const DeletePricelistNeedsNewDefaultError = new ApolloError("When deleting default pricelist, you must select a new one and pass it in the newDefId attribute!", "NEEDS_NEW_DEFAULT_PRICELIST");
 export const DeletePricelistCompaniesNeedsNewError = new ApolloError("When deleting default pricelist, you must select a new pricelist for the companies and pass it in the newId attribute!", "NEEDS_NEW_COMPANY_PRICELIST");
 export const PriceNotInPricelistError = new ApolloError("Some edited price does not belong to the pricelist!", "EDITED_PRICE_NOT_IN_PRICELIST");
+
+//company
+export const CantDeleteDefCompanyError = new ApolloError("You can't delete default company!", "CANT_DELETE_DEFAULT_COMPANY");
 
 //company rent
 export const EditedRentNotOfCompanyError = new ApolloError("Some edited rent does not belong to the company!", "EDITED_RENT_NOT_OF_COMPANY");

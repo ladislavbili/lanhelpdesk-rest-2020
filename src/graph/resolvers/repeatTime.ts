@@ -21,7 +21,7 @@ import { repeatTimeEvent } from '@/services/repeatTasks';
 
 const queries = {
   repeatTimes: async (root, { repeatId, repeatIds, active, ...rangeDates }, { req }) => {
-    const User = <UserInstance>await checkResolver(req);
+    const User = <UserInstance>await checkResolver(req, ['tasklistCalendar']);
     let repeatWhere = <any>{};
     let repeatTimeWhere = <any>{};
 
@@ -164,7 +164,7 @@ const queries = {
 
 const mutations = {
   addRepeatTime: async (root, { repeatId, ...params }, { req }) => {
-    const User = <UserInstance>await checkResolver(req);
+    const User = <UserInstance>await checkResolver(req, ['tasklistCalendar']);
     const Repeat = <RepeatInstance>await models.Repeat.findByPk(repeatId, {
       include: [
         models.RepeatTemplate
@@ -205,7 +205,7 @@ const mutations = {
   },
 
   updateRepeatTime: async (root, { id, ...params }, { req }) => {
-    const User = <UserInstance>await checkResolver(req);
+    const User = <UserInstance>await checkResolver(req, ['tasklistCalendar']);
     let RepeatTime = <RepeatTimeInstance>await models.RepeatTime.findByPk(id, {
       include: [
         {

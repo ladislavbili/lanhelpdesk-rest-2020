@@ -7,6 +7,7 @@ const createAccessRights = (required) => {
     'publicFilters',
     'addProjects',
     'viewErrors',
+
     'users',
     'companies',
     'pausals',
@@ -18,6 +19,11 @@ const createAccessRights = (required) => {
     'tripTypes',
     'imaps',
     'smtps',
+
+    'tasklistLayout',
+    'tasklistCalendar',
+    'tasklistPreferences',
+    'customFilters',
   ].reduce((acc, right) => {
     return acc + `${right}: Boolean${(required ? '!' : '')}\n`;
   }, '')

@@ -69,9 +69,9 @@ async function createCompany() {
   const Pricelist = await models.Pricelist.create({
     title: 'Lanhelpdesk pricelist', order: '1', afterHours: 4, def: true, materialMargin: 10, materialMarginExtra: 20
   });
-
+  await models.CompanyDefaults.create({ dph: 20 });
   return models.Company.create({
-    title: 'LanHelpdesk Team', dph: '20', ico: '', dic: '', ic_dph: '', country: 'Slovensko', city: 'Bratislava', street: 'Matuskova 13', zip: '844444', email: 'lanhelpdesk@test.sk', phone: '000', description: '', PricelistId: Pricelist.get('id'), monthly: false, monthlyPausal: 0, taskWorkPausal: 0, taskTripPausal: 0
+    title: 'LanHelpdesk Team', dph: '20', ico: '', dic: '', ic_dph: '', country: 'Slovensko', city: 'Bratislava', street: 'Matuskova 13', zip: '844444', email: 'lanhelpdesk@test.sk', phone: '000', description: '', PricelistId: Pricelist.get('id'), monthly: false, monthlyPausal: 0, taskWorkPausal: 0, taskTripPausal: 0, def: true,
   });
 }
 
@@ -93,7 +93,7 @@ function defaultUsers(roleId, companyId) {
 function createFullRights() {
   let rights = {};
   ['login', 'testSections', 'mailViaComment', 'vykazy', 'publicFilters', 'addProjects', 'viewVykaz', 'viewRozpocet', 'viewErrors', 'viewInternal',
-    'users', 'companies', 'pausals', 'projects', 'statuses', 'units', 'prices', 'suppliers', 'tags', 'invoices', 'roles', 'taskTypes', 'tripTypes', 'imaps', 'smtps'].forEach((right) => rights[right] = true)
+    'users', 'companies', 'pausals', 'projects', 'statuses', 'units', 'prices', 'suppliers', 'tags', 'invoices', 'roles', 'taskTypes', 'tripTypes', 'imaps', 'smtps', 'tasklistLayout', 'tasklistCalendar', 'tasklistPreferences', 'customFilters'].forEach((right) => rights[right] = true)
   return rights;
 }
 
