@@ -2,125 +2,113 @@ import { Sequelize, DataTypes } from "sequelize";
 import DefaultInstance from './defaultInstance';
 
 export interface ProjectGroupRightsInstance extends DefaultInstance {
-  assignedRead: boolean;
-  assignedWrite: boolean;
-  companyRead: boolean;
-  companyWrite: boolean;
-  deadlineRead: boolean;
-  deadlineWrite: boolean;
-  milestoneRead: boolean;
-  milestoneWrite: boolean;
-  overtimeRead: boolean;
-  overtimeWrite: boolean;
-  pausalRead: boolean;
-  pausalWrite: boolean;
+  //project
   projectRead: boolean;
   projectWrite: boolean;
-  projectPrimaryRead: boolean;
-  projectPrimaryWrite: boolean;
-  repeatRead: boolean;
-  repeatWrite: boolean;
-  requesterRead: boolean;
-  requesterWrite: boolean;
-  rozpocetRead: boolean;
-  rozpocetWrite: boolean;
-  scheduledRead: boolean;
-  scheduledWrite: boolean;
-  statusRead: boolean;
-  statusWrite: boolean;
-  tagsRead: boolean;
-  tagsWrite: boolean;
-  taskAttachmentsRead: boolean;
-  taskAttachmentsWrite: boolean;
-  taskDescriptionRead: boolean;
-  taskDescriptionWrite: boolean;
-  taskShortSubtasksRead: boolean;
-  taskShortSubtasksWrite: boolean;
-  typeRead: boolean;
-  typeWrite: boolean;
-  vykazRead: boolean;
-  vykazWrite: boolean;
-  addComments: boolean;
-  emails: boolean;
-  history: boolean;
-  internal: boolean;
-  projectSecondary: boolean;
-  pausalInfo: boolean;
-  taskTitleEdit: boolean;
-  viewComments: boolean;
+
+  //tasklist
   companyTasks: boolean;
   allTasks: boolean;
-  addTasks: boolean;
-  deleteTasks: boolean;
-  important: boolean;
-  statistics: boolean;
 
+  //tasklist view
+  tasklistDnD: boolean;
+  tasklistKalendar: boolean;
+  tasklistGantt: boolean;
+  tasklistStatistics: boolean;
+
+  //add task
+  addTask: boolean;
+
+  //edit task
+  deleteTask: boolean;
+  taskImportant: boolean;
+  taskTitleWrite: boolean;
+  taskProjectWrite: boolean;
+  taskDescriptionRead: boolean;
+  taskDescriptionWrite: boolean;
+  taskAttachmentsRead: boolean;
+  taskAttachmentsWrite: boolean;
+
+  taskSubtasksRead: boolean;
+  taskSubtasksWrite: boolean;
+  taskWorksRead: boolean;
+  taskWorksWrite: boolean;
+  taskWorksAdvancedRead: boolean;
+  taskWorksAdvancedWrite: boolean;
+  taskMaterialsRead: boolean;
+  taskMaterialsWrite: boolean;
+  taskPausalInfo: boolean;
+
+  //comments and history
+  viewComments: boolean;
+  addComments: boolean;
+  internal: boolean;
+  emails: boolean;
+  history: boolean;
+
+  //attributes
+
+  statusRequired: boolean;
+  statusAdd: boolean;
+  statusView: boolean;
+  statusEdit: boolean;
+
+  tagsRequired: boolean;
+  tagsAdd: boolean;
+  tagsView: boolean;
+  tagsEdit: boolean;
+
+  assignedRequired: boolean;
+  assignedAdd: boolean;
+  assignedView: boolean;
+  assignedEdit: boolean;
+
+  requesterRequired: boolean;
+  requesterAdd: boolean;
+  requesterView: boolean;
+  requesterEdit: boolean;
+
+  companyRequired: boolean;
+  companyAdd: boolean;
+  companyView: boolean;
+  companyEdit: boolean;
+
+  taskTypeRequired: boolean;
+  taskTypeAdd: boolean;
+  taskTypeView: boolean;
+  taskTypeEdit: boolean;
+
+
+  pausalRequired: boolean;
+  pausalAdd: boolean;
+  pausalView: boolean;
+  pausalEdit: boolean;
+
+  overtimeRequired: boolean;
+  overtimeAdd: boolean;
+  overtimeView: boolean;
+  overtimeEdit: boolean;
+
+  startsAtRequired: boolean;
+  startsAtAdd: boolean;
+  startsAtView: boolean;
+  startsAtEdit: boolean;
+
+  deadlineRequired: boolean;
+  deadlineAdd: boolean;
+  deadlineView: boolean;
+  deadlineEdit: boolean;
+
+  repeatAdd: boolean;
+  repeatView: boolean;
+  repeatEdit: boolean;
 }
 
 export default function defineProjectGroupRights(sequelize: Sequelize) {
   sequelize.define<ProjectGroupRightsInstance>(
     "ProjectGroupRights",
     {
-      assignedRead: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      assignedWrite: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      companyRead: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      companyWrite: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      deadlineRead: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      deadlineWrite: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      milestoneRead: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      milestoneWrite: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      overtimeRead: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      overtimeWrite: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      pausalRead: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      pausalWrite: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
+      //project
       projectRead: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -131,82 +119,65 @@ export default function defineProjectGroupRights(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: false,
       },
-      projectPrimaryRead: {
+
+      //tasklist
+      companyTasks: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      projectPrimaryWrite: {
+      allTasks: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      repeatRead: {
+
+      //tasklist view
+      tasklistDnD: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      repeatWrite: {
+      tasklistKalendar: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      requesterRead: {
+      tasklistGantt: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      requesterWrite: {
+      tasklistStatistics: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      rozpocetRead: {
+
+      //add task
+      addTask: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      rozpocetWrite: {
+
+      //edit task
+      deleteTask: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      scheduledRead: {
+      taskImportant: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      scheduledWrite: {
+      taskTitleWrite: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      statusRead: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      statusWrite: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      tagsRead: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      tagsWrite: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      taskAttachmentsRead: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      taskAttachmentsWrite: {
+      taskProjectWrite: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
@@ -221,37 +192,75 @@ export default function defineProjectGroupRights(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: false,
       },
-      taskShortSubtasksRead: {
+      taskAttachmentsRead: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      taskShortSubtasksWrite: {
+      taskAttachmentsWrite: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      typeRead: {
+
+      taskSubtasksRead: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      typeWrite: {
+      taskSubtasksWrite: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      vykazRead: {
+      taskWorksRead: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      vykazWrite: {
+      taskWorksWrite: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      taskWorksAdvancedRead: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      taskWorksAdvancedWrite: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      taskMaterialsRead: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      taskMaterialsWrite: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      taskPausalInfo: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+
+      //comments and history
+      viewComments: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
       addComments: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      internal: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
@@ -266,57 +275,292 @@ export default function defineProjectGroupRights(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: false,
       },
-      internal: {
+
+      attributes: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          return ({
+            status: {
+              required: this.get('statusRequired'),
+              add: this.get('statusAdd'),
+              view: this.get('statusView'),
+              edit: this.get('statusEdit'),
+            },
+            tags: {
+              required: this.get('tagsRequired'),
+              add: this.get('tagsAdd'),
+              view: this.get('tagsView'),
+              edit: this.get('tagsEdit'),
+            },
+            assigned: {
+              required: this.get('assignedRequired'),
+              add: this.get('assignedAdd'),
+              view: this.get('assignedView'),
+              edit: this.get('assignedEdit'),
+            },
+            requester: {
+              required: this.get('requesterRequired'),
+              add: this.get('requesterAdd'),
+              view: this.get('requesterView'),
+              edit: this.get('requesterEdit'),
+            },
+            company: {
+              required: this.get('companyRequired'),
+              add: this.get('companyAdd'),
+              view: this.get('companyView'),
+              edit: this.get('companyEdit'),
+            },
+            taskType: {
+              required: this.get('taskTypeRequired'),
+              add: this.get('taskTypeAdd'),
+              view: this.get('taskTypeView'),
+              edit: this.get('taskTypeEdit'),
+            },
+            pausal: {
+              required: this.get('pausalRequired'),
+              add: this.get('pausalAdd'),
+              view: this.get('pausalView'),
+              edit: this.get('pausalEdit'),
+            },
+            overtime: {
+              required: this.get('overtimeRequired'),
+              add: this.get('overtimeAdd'),
+              view: this.get('overtimeView'),
+              edit: this.get('overtimeEdit'),
+            },
+            startsAt: {
+              required: this.get('startsAtRequired'),
+              add: this.get('startsAtAdd'),
+              view: this.get('startsAtView'),
+              edit: this.get('startsAtEdit'),
+            },
+            deadline: {
+              required: this.get('deadlineRequired'),
+              add: this.get('deadlineAdd'),
+              view: this.get('deadlineView'),
+              edit: this.get('deadlineEdit'),
+            },
+            repeat: {
+              add: this.get('repeatAdd'),
+              view: this.get('repeatView'),
+              edit: this.get('repeatEdit'),
+            },
+          });
+        },
+      },
+
+      //attributes
+      statusRequired: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      projectSecondary: {
+      statusAdd: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      pausalInfo: {
+      statusView: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      taskTitleEdit: {
+      statusEdit: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      viewComments: {
+      tagsRequired: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      companyTasks: {
+      tagsAdd: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      allTasks: {
+      tagsView: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      addTasks: {
+      tagsEdit: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      deleteTasks: {
+      assignedRequired: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      important: {
+      assignedAdd: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
       },
-      statistics: {
+      assignedView: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      assignedEdit: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      requesterRequired: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      requesterAdd: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      requesterView: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      requesterEdit: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      companyRequired: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      companyAdd: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      companyView: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      companyEdit: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      taskTypeRequired: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      taskTypeAdd: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      taskTypeView: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      taskTypeEdit: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      pausalRequired: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      pausalAdd: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      pausalView: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      pausalEdit: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      overtimeRequired: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      overtimeAdd: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      overtimeView: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      overtimeEdit: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      startsAtRequired: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      startsAtAdd: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      startsAtView: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      startsAtEdit: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      deadlineRequired: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      deadlineAdd: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      deadlineView: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      deadlineEdit: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      repeatAdd: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      repeatView: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      repeatEdit: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,

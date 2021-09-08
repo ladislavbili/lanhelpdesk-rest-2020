@@ -90,6 +90,7 @@ export const ProjectNoNewStatus = new ApolloError("You can't create or edit this
 export const ProjectNoCloseStatus = new ApolloError("You can't create or edit this project! There is no close status.", "PROJECT_WITHOUT_CLOSE_STATUS");
 
 export const CantCreateTasksError = new ApolloError("You can't create task in this project!", "CANT_CREATE_TASK_IN_PROJECT");
+export const ProjectCantChangeDefaultGroupsError = new ApolloError("You can't change nor rename default groups in project!", "CANT_CHANGE_PROJECT_DEFAULT_GROUPS");
 
 //filters
 export const NoAccessToThisProjectError = new ApolloError("You can't access this project.", "NO_ACCESS_TO_PROJECT");

@@ -58,6 +58,9 @@ const attributes = {
     async rights(projectGroup) {
       return getModelAttribute(projectGroup, 'ProjectGroupRight');
     },
+    async attributeRights(projectGroup) {
+      return getModelAttribute(projectGroup, 'ProjectGroupRight').get('attributes');
+    },
     async project(projectGroup) {
       return getModelAttribute(projectGroup, 'Project');
     },

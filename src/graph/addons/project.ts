@@ -11,7 +11,8 @@ import {
   createDoesNoExistsError,
   InsufficientProjectAccessError,
   createProjectFixedAttributeError,
-  createCantEditTaskAttributeError
+  createCantEditTaskAttributeError,
+  ProjectCantChangeDefaultGroupsError,
 } from '@/configs/errors';
 import {
   ProjectGroupInstance,
@@ -21,7 +22,21 @@ import {
   UserInstance,
 } from '@/models/instances';
 
-export const checkIfHasProjectRights = async (userId, taskId = undefined, projectId = undefined, rights = []) => {
+const taskAttributes = [
+  { attribute: 'status', value: 'int' },
+  { attribute: 'tags', value: 'arr' },
+  { attribute: 'assigned', value: 'arr' },
+  { attribute: 'requester', value: 'int' },
+  { attribute: 'company', value: 'int' },
+  { attribute: 'taskType', value: 'int' },
+  { attribute: 'pausal', value: 'bool' },
+  { attribute: 'overtime', value: 'bool' },
+  { attribute: 'startsAt', value: 'date' },
+  { attribute: 'deadline', value: 'date' },
+  { attribute: 'repeat', value: 'int' },
+]
+
+export const checkIfHasProjectRights = async (userId, taskId = undefined, projectId = undefined, rights = [], attributeRights = []) => {
   if (taskId === undefined && projectId === undefined) {
     throw InsufficientProjectAccessError;
   }
@@ -51,6 +66,9 @@ export const checkIfHasProjectRights = async (userId, taskId = undefined, projec
     ],
   })
 
+  let groupRights = <any>{};
+  let Role = <any>{};
+
   if (User === null) {
     User = await models.User.findByPk(userId, {
       include: [
@@ -60,32 +78,28 @@ export const checkIfHasProjectRights = async (userId, taskId = undefined, projec
         }
       ],
     })
-    let Role = <RoleInstance>User.get('Role');
+    Role = <RoleInstance>User.get('Role');
 
     if (Role.get('level') === 0 || (<AccessRightsInstance>Role.get('AccessRight')).get('projects')) {
-      return { User, Role, groupRights: allGroupRights, Task };
+      groupRights = getProjectAdminRights(projectID);
+    } else {
+      addApolloError(
+        'Project',
+        InsufficientProjectAccessError,
+        userId,
+        projectID
+      );
+      throw InsufficientProjectAccessError;
     }
-    addApolloError(
-      'Project',
-      InsufficientProjectAccessError,
-      userId,
-      projectID
-    );
-    throw InsufficientProjectAccessError;
+  } else {
+    Role = <RoleInstance>User.get('Role');
+    groupRights = (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups'))[0].get('ProjectGroupRight')).get();
   }
 
-  let Role = <RoleInstance>User.get('Role');
-  let groupRights = (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups'))[0].get('ProjectGroupRight')).get();
-  if (Role.get('level') === 0) {
-    groupRights = allGroupRights;
-  }
-  if (rights.length === 0) {
-    return { User, Role, groupRights, Task };
-  }
-  if (Role.get('level') === 0 || (<AccessRightsInstance>Role.get('AccessRight')).get('projects')) {
-    return { User, Role, groupRights, Task };
-  }
-  if (rights.every((right) => groupRights[right])) {
+  if (
+    (rights.length === 0 || rights.every((right) => groupRights[right])) &&
+    (attributeRights.length === 0 || attributeRights.every((rightPair) => groupRights.get('attributes')[rightPair.right][rightPair.action]))
+  ) {
     return { User, Role, groupRights, Task };
   }
   addApolloError(
@@ -97,163 +111,95 @@ export const checkIfHasProjectRights = async (userId, taskId = undefined, projec
   throw InsufficientProjectAccessError;
 }
 
-export const checkDefIntegrity = (def) => {
-  const { assignedTo, company, overtime, pausal, requester, status, tag, type } = def;
-  if (
-    !assignedTo.required ||
-    !company.required ||
-    !overtime.required ||
-    !pausal.required ||
-    !status.required
-  ) {
-    throw new ApolloError(
-      'Right now only tags, task type and requester can be not required.',
-      'PROJECT_DEF_INTEGRITY'
-    );
-  }
-  if (assignedTo.fixed && !assignedTo.def) {
-    throw new ApolloError('In default values, assigned to is set to be fixed, but is not set to default value.', 'PROJECT_DEF_INTEGRITY');
-  } else if (assignedTo.fixed && (assignedTo.value === null || assignedTo.value === [])) {
-    throw new ApolloError('In default values, assigned to is set to be fixed, but fixed value can\'t be empty.', 'PROJECT_DEF_INTEGRITY');
-  }
-
-  if (company.fixed && !company.def) {
-    throw new ApolloError('In default values, company is set to be fixed, but is not set to default value.', 'PROJECT_DEF_INTEGRITY');
-  } else if (company.fixed && (company.value === null)) {
-    throw new ApolloError('In default values, company is set to be fixed, but fixed value can\'t be null.', 'PROJECT_DEF_INTEGRITY');
-  }
-
-  if (overtime.fixed && !overtime.def) {
-    throw new ApolloError('In default values, overtime is set to be fixed, but is not set to default value.', 'PROJECT_DEF_INTEGRITY');
-  } else if (overtime.fixed && !([true, false].includes(overtime.value))) {
-    throw new ApolloError('In default values, overtime is set to be fixed, but fixed value can be only true or false.', 'PROJECT_DEF_INTEGRITY');
-  }
-
-  if (pausal.fixed && !pausal.def) {
-    throw new ApolloError('In default values, pausal is set to be fixed, but is not set to default value.', 'PROJECT_DEF_INTEGRITY');
-  } else if (pausal.fixed && !([true, false].includes(pausal.value))) {
-    throw new ApolloError('In default values, pausal is set to be fixed, but fixed value can be only true or false.', 'PROJECT_DEF_INTEGRITY');
-  }
-
-  if (requester.fixed && !requester.def) {
-    throw new ApolloError('In default values, requester is set to be fixed, but is not set to default value.', 'PROJECT_DEF_INTEGRITY');
-  }
-
-  if (type.fixed && !type.def) {
-    throw new ApolloError('In default values, type is set to be fixed, but is not set to default value.', 'PROJECT_DEF_INTEGRITY');
-  }
-
-  if (status.fixed && !status.def) {
-    throw new ApolloError('In default values, status is set to be fixed, but is not set to default value.', 'PROJECT_DEF_INTEGRITY');
-  } else if (status.fixed && (status.value === null)) {
-    throw new ApolloError('In default values, status is set to be fixed, but fixed value can\'t be null.', 'PROJECT_DEF_INTEGRITY');
-  }
-
-  if (tag.fixed && !tag.def) {
-    throw new ApolloError('In default values, tag is set to be fixed, but is not set to default value.', 'PROJECT_DEF_INTEGRITY');
-  } else if (tag.required && tag.value.length === 0) {
-    throw new ApolloError('In default values, tag is set to be required, but no tags were selected.', 'PROJECT_DEF_INTEGRITY');
-  }
+export const getProjectAdminRights = async (projectId) => {
+  const Project = await models.Project.findByPk(projectId, {
+    include: [{
+      model: models.ProjectGroup,
+      where: {
+        def: true,
+        admin: true,
+      },
+      include: [models.ProjectGroupRights]
+    }]
+  });
+  return <ProjectGroupRightsInstance>(Project.get('ProjectGroupRights')[0]);
 }
 
-export const updateDef = (def) => {
-  let newDef = { ...def };
-  [
-    'assignedTo',
-    'company',
-    'overtime',
-    'pausal',
-    'requester',
-    'status',
-    'tag',
-    'type',
-  ].forEach((key) => {
-    if (newDef[key].required) {
-      newDef[key].def = true;
+export const applyAttributeRightsRequirements = (groups, projectAttributes) => {
+  let updatedGroups = [];
+  groups.forEach((group) => {
+    let newGroup = {
+      ...group
+    };
+    taskAttributes.map((attr) => attr.attribute).forEach((attribute) => {
+      if (attribute !== 'repeat' && projectAttributes[attribute].fixed) {
+        newGroup.attributes[attribute].required = false;
+        newGroup.attributes[attribute].add = false;
+        newGroup.attributes[attribute].edit = false;
+      } else {
+        if (newGroup.attributes[attribute].edit) {
+          newGroup.attributes[attribute].view = true;
+        }
+        if (newGroup.attributes[attribute].required) {
+          newGroup.attributes[attribute].add = true;
+        }
+      }
+    })
+    updatedGroups.push(newGroup);
+  })
+  return updatedGroups;
+}
+
+export const checkFixedAttributes = (projectAttributes) => {
+  taskAttributes.forEach((taskAttribute) => {
+    const attribute = projectAttributes[taskAttribute.attribute];
+    if (
+      attribute.fixed && (
+        (taskAttribute.value === 'bool' && !([true, false].includes(attribute.value))) ||
+        (taskAttribute.value === 'int' && attribute.value === null) ||
+        (taskAttribute.value === 'arr' && attribute.value.length === 0 && !['tags'].includes(taskAttribute.attribute)) ||
+        (taskAttribute.value === 'date' && isNaN(parseInt(attribute.value)))
+      )
+    ) {
+      throw new ApolloError(`In default values, ${taskAttribute.attribute} to is set to be fixed, but fixed value can\'t be empty.`, 'PROJECT_ATTRIBUTE_FIXED_INTEGRITY');
     }
   })
-  return newDef;
 }
 
-const checkSingleAttribute = (newAttr, oldAttr) => {
-  return ['def', 'fixed', 'required'].some((key) => newAttr[key] !== oldAttr[key]);
-};
-
-const checkAllAttributes = (newAttrs, oldAttrs) => {
-  return ['assignedTo', 'company', 'overtime', 'pausal', 'requester', 'status', 'tag', 'type'].some((key) => checkSingleAttribute(newAttrs[key], oldAttrs[key]));
-}
-
-const checkAttributeValue = (newAttr, oldAttr) => {
-  return (
-    (oldAttr.value === null && newAttr.value !== null) ||
-    (oldAttr.value !== null && newAttr.value === null) ||
-    (
-      oldAttr.value !== null &&
-      newAttr.value !== null &&
-      oldAttr.value.get('id') !== newAttr.value
-    )
-  )
-}
-
-export const checkIfChanged = async (attributes, Project) => {
-  if (
-    (attributes.deleteTags !== undefined && attributes.deleteTags.length !== 0) ||
-    (attributes.updateTags !== undefined && attributes.updateTags.length !== 0) ||
-    (attributes.addTags !== undefined && attributes.addTags.length !== 0) ||
-    (attributes.deleteStatuses !== undefined && attributes.deleteStatuses.length !== 0) ||
-    (attributes.updateStatuses !== undefined && attributes.updateStatuses.length !== 0) ||
-    (attributes.addStatuses !== undefined && attributes.addStatuses.length !== 0) ||
-    (attributes.addGroups !== undefined && attributes.addGroups.length !== 0) ||
-    (attributes.updateGroups !== undefined && attributes.updateGroups.length !== 0) ||
-    (attributes.deleteGroups !== undefined && attributes.deleteGroups.length !== 0) ||
-    (attributes.lockedRequester !== undefined && attributes.lockedRequester !== Project.get('lockedRequester'))
-  ) {
-    return true;
+export const checkIfDefGroupsExists = (groups) => {
+  const defGroups = groups.filter((group) => group.def);
+  if (defGroups.length !== 3 || groups.filter((group) => group.admin).length !== 1) {
+    throw ProjectCantChangeDefaultGroupsError;
   }
-  let newUserGroups = attributes.userGroups;
-  let originalUserGroups = Project.get('ProjectGroups').map((ProjectGroup) => ({
-    groupId: ProjectGroup.get('id'),
-    userIds: ProjectGroup.get('Users').map((User) => User.get('id'))
-  }))
-  if (newUserGroups.length !== originalUserGroups.length) {
-    return true;
+  const adminGroup = defGroups.find((group) => group.admin && group.title === 'Admin');
+  const agentGroup = defGroups.find((group) => group.title === 'Agent');
+  const customerGroup = defGroups.find((group) => group.title === 'Customer');
+  if ([adminGroup, agentGroup, customerGroup].some((group) => group === undefined) || !adminGroup.rights.projectRead || !adminGroup.rights.projectWrite) {
+    throw ProjectCantChangeDefaultGroupsError;
   }
+}
+
+export const checkIfDefGroupsChanged = (addGroups, updateGroups, deleteGroups, originalGroups) => {
   if (
-    newUserGroups.some((newUserGroup) => {
-      let originalUserGroup = originalUserGroups.find((originalUserGroup) => newUserGroup.groupId === originalUserGroup.groupId);
-      if (originalUserGroup === undefined) {
-        return true;
+    addGroups.some((group) => group.def || group.admin) ||
+    originalGroups.filter((Group) => deleteGroups.includes(Group.get('id'))).some((Group) => (Group.get('def') || Group.get('admin'))) ||
+    updateGroups.some((updateGroup) => {
+      const originalGroup = originalGroups.find((Group) => updateGroup.id === Group.get('id'));
+      if (originalGroup.get('def') || originalGroup.get('admin')) {
+        if (
+          updateGroup.title !== originalGroup.get('title') ||
+          updateGroup.def !== originalGroup.get('def') ||
+          updateGroup.admin !== originalGroup.get('admin') ||
+          originalGroup.get('admin') && (!updateGroup.rights.projectRead || !updateGroup.rights.projectWrite)
+        ) {
+          return true;
+        }
       }
-      return (
-        newUserGroup.userIds.length !== originalUserGroup.userIds.length ||
-        !newUserGroup.userIds.every((userId) => originalUserGroup.userIds.includes(userId))
-      )
+      return false;
     })
   ) {
-    return true;
+    throw ProjectCantChangeDefaultGroupsError;
   }
-  if (attributes.def === undefined) {
-    return false;
-  }
-  let origDef = await Project.get('def');
-  let newDef = attributes.def;
-  if (
-    checkAllAttributes(newDef, origDef) ||
-    origDef.assignedTo.value.length !== newDef.assignedTo.value.length ||
-    !origDef.assignedTo.value.every((User) => newDef.assignedTo.value.includes(User.get('id'))) ||
-    origDef.tag.value.length !== newDef.tag.value.length ||
-    checkAttributeValue(newDef.company, origDef.company) ||
-    checkAttributeValue(newDef.requester, origDef.requester) ||
-    checkAttributeValue(newDef.type, origDef.type) ||
-    checkAttributeValue(newDef.status, origDef.status) ||
-    origDef.status.value !== newDef.status.value ||
-    origDef.overtime.value !== newDef.overtime.value ||
-    origDef.pausal.value !== newDef.pausal.value
-  ) {
-    return true;
-  }
-
-  return false;
 }
 
 //TASK RELATED

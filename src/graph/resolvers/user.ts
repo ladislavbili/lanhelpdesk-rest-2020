@@ -28,6 +28,7 @@ import {
   UserInstance,
   RoleInstance,
   ProjectInstance,
+  ProjectAttributesInstance,
   ProjectGroupInstance,
   AccessRightsInstance,
   TasklistSortInstance,
@@ -388,8 +389,8 @@ const mutations = {
       {
         include: [
           { model: models.Role },
-          { model: models.Project, as: 'defAssignedTos', include: [{ model: models.User, as: 'defAssignedTos' }] },
-          { model: models.Project, as: 'defRequester' },
+          { model: models.ProjectAttributes, as: 'defAssigned', include: [{ model: models.User, as: 'assigned' }] },
+          { model: models.ProjectAttributes, as: 'defRequester' },
         ]
       }
     );
@@ -451,14 +452,14 @@ const mutations = {
 
     // DELETING AND UPDATING
     let promises = [
-      ...(<ProjectInstance[]>TargetUser.get('defAssignedTos')).map((project) => {
-        if ((<UserInstance[]>project.get('defAssignedTos')).length === 1 && project.get('defAssignedToFixed')) {
-          return Promise.all([project.removeDefAssignedTo(TargetUser.get('id')), project.update({ defAssignedToDef: false, defAssignedToFixed: false, defAssignedToShow: true })])
+      ...(<ProjectAttributesInstance[]>TargetUser.get('defAssigned')).map((ProjectAttributes) => {
+        if ((<UserInstance[]>ProjectAttributes.get('assigned')).length === 1 && ProjectAttributes.get('assignedFixed')) {
+          return Promise.all([ProjectAttributes.removeAssignedOne(TargetUser.get('id')), ProjectAttributes.update({ assignedFixed: false })])
         }
-        return project.removeDefAssignedTo(TargetUser.get('id'));
+        return ProjectAttributes.removeAssignedOne(TargetUser.get('id'));
       }),
-      ...(<ProjectInstance[]>TargetUser.get('defRequester')).map((project) => {
-        return project.setDefRequester(null);
+      ...(<ProjectAttributesInstance[]>TargetUser.get('defRequester')).map((ProjectAttributes) => {
+        return ProjectAttributes.setDefRequester(null);
       }),
       ...taskPairs.map((taskPair) => tasks.find((Task) => Task.get('id') === taskPair.taskId).setRequester(taskPair.requesterId)),
       ...subtaskPairs.map((subtaskPair) => subtasks.find((Subtask) => Subtask.get('id') === subtaskPair.subtaskId).setUser(subtaskPair.assignedId)),

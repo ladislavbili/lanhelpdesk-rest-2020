@@ -298,7 +298,7 @@ const mutations = {
       ...(<UserInstance[]>OldCompany.get('Users')).map((user) => user.setCompany(newId)),
       ...(<TaskInstance[]>OldCompany.get('Tasks')).map((task) => task.setCompany(newId)),
       ...(<ImapInstance[]>OldCompany.get('Imaps')).map((imap) => imap.setCompany(newId)),
-      ...(<ProjectInstance[]>OldCompany.get('defCompany')).map((project) => project.setDefCompany(newId)),
+      //TODO ...(<ProjectInstance[]>OldCompany.get('defCompany')).map((project) => project.setDefCompany(newId)),
       ...(<RepeatTemplateInstance[]>OldCompany.get('RepeatTemplates')).map((repeatTemplate) => repeatTemplate.setCompany(newId)),
     ];
     await Promise.all(promises);

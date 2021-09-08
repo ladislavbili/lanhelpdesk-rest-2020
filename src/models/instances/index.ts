@@ -9,6 +9,7 @@ export { MilestoneInstance } from './milestone';
 export { PriceInstance } from './price';
 export { PricelistInstance } from './pricelist';
 export { ProjectInstance } from './project';
+export { ProjectAttributesInstance } from './projectAttributes';
 export { RoleInstance } from './role';
 export { StatusInstance } from './status';
 export { TagInstance } from './tag';

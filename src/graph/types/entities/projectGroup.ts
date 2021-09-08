@@ -1,14 +1,15 @@
 import defaultAttributes from './defaultAttributes';
-import projectExtra from './projectExtra';
 
 export const ProjectGroup = `
 type ProjectGroup {
   ${defaultAttributes}
+  def: Boolean!
   title: String!
   description: String!
   order: Int!
   users: [BasicUser]!
   rights: ProjectGroupRights!
+  attributeRights: ProjectGroupAttributeRights!
   project: Project!
 }
 
@@ -67,12 +68,42 @@ type ProjectGroupRights {
   statistics: Boolean!
 }
 
+type ProjectGroupAttributeRights {
+  status: ProjectGroupAttributeRight!
+  tags: ProjectGroupAttributeRight!
+  assigned: ProjectGroupAttributeRight!
+  requester: ProjectGroupAttributeRight!
+  company: ProjectGroupAttributeRight!
+  taskType: ProjectGroupAttributeRight!
+  pausal: ProjectGroupAttributeRight!
+  overtime: ProjectGroupAttributeRight!
+  startsAt: ProjectGroupAttributeRight!
+  deadline: ProjectGroupAttributeRight!
+  repeat: ProjectGroupRepeatAttributeRight!
+}
+
+type ProjectGroupAttributeRight {
+  required: Boolean!
+  add: Boolean!
+  view: Boolean!
+  edit: Boolean!
+}
+
+type ProjectGroupRepeatAttributeRight {
+  add: Boolean!
+  view: Boolean!
+  edit: Boolean!
+}
+
 input ProjectGroupInput {
-  id: Int!,
+  id: Int!
+  def: Boolean
+  admin: Boolean
   title: String!
   description: String!
   order: Int!
   rights: ProjectGroupRightInput!
+  attributeRights: ProjectGroupAttributeRightsInput!
 }
 
 input ProjectGroupUpdateInput {
@@ -81,6 +112,7 @@ input ProjectGroupUpdateInput {
   description: String
   order: Int
   rights: ProjectGroupRightInput
+  attributeRights: ProjectGroupAttributeRightsInput
 }
 
 input ProjectGroupRightInput {
@@ -137,6 +169,34 @@ input ProjectGroupRightInput {
   important: Boolean!
   statistics: Boolean!
 }
+
+input ProjectGroupAttributeRightsInput {
+  status: ProjectGroupAttributeRightInput!
+  tags: ProjectGroupAttributeRightInput!
+  assigned: ProjectGroupAttributeRightInput!
+  requester: ProjectGroupAttributeRightInput!
+  company: ProjectGroupAttributeRightInput!
+  taskType: ProjectGroupAttributeRightInput!
+  pausal: ProjectGroupAttributeRightInput!
+  overtime: ProjectGroupAttributeRightInput!
+  startsAt: ProjectGroupAttributeRightInput!
+  deadline: ProjectGroupAttributeRightInput!
+  repeat: ProjectGroupRepeatAttributeRightInput!
+}
+
+input ProjectGroupAttributeRightInput {
+  required: Boolean!
+  add: Boolean!
+  view: Boolean!
+  edit: Boolean!
+}
+
+input ProjectGroupRepeatAttributeRightInput {
+  add: Boolean!
+  view: Boolean!
+  edit: Boolean!
+}
+
 
 input UserGroupInput {
   userId: Int!

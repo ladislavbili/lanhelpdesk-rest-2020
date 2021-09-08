@@ -2,6 +2,8 @@ import { Sequelize, DataTypes } from "sequelize";
 import DefaultInstance from './defaultInstance';
 
 export interface ProjectGroupInstance extends DefaultInstance {
+  def: boolean;
+  admin: boolean;
   title: string;
   description: string;
   order: number;
@@ -14,6 +16,16 @@ export default function defineProjectGroups(sequelize: Sequelize) {
   sequelize.define<ProjectGroupInstance>(
     "ProjectGroup",
     {
+      def: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
+      admin: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       title: {
         type: DataTypes.TEXT,
         allowNull: false,

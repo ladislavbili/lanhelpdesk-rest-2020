@@ -131,9 +131,9 @@ export function createUsersAssoc(models) {
 
   models.User.belongsToMany(models.Status, { through: 'user_set_statuses' });
 
-  models.User.belongsToMany(models.Project, { as: { singular: "defAssignedTo", plural: "defAssignedTos" }, through: 'project_def_assignedTos' });
+  models.User.belongsToMany(models.ProjectAttributes, { as: { singular: "defAssignedOne", plural: "defAssigned" }, through: 'project_def_assigned' });
 
-  models.User.hasMany(models.Project, { as: 'defRequester' });
+  models.User.hasMany(models.ProjectAttributes, { as: 'defRequester' });
 
   models.User.hasMany(models.ErrorMessage);
 

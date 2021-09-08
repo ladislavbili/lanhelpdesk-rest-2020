@@ -158,7 +158,7 @@ const queries = {
             const Template = Repeat.get('RepeatTemplate');
             return canViewTask(Template, User, userRights)
           }).map((Repeat) => {
-            Repeat.canEdit = <boolean>(<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).repeatWrite;
+            //TODO: Repeat.canEdit = <boolean>(<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).repeatWrite;
             return Repeat;
           })
         ]

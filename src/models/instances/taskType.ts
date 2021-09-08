@@ -33,7 +33,7 @@ export default function defineTaskTypes(sequelize: Sequelize) {
 export function createTaskTypesAssoc(models) {
   models.TaskType.hasMany(models.Price);
 
-  models.TaskType.hasMany(models.Project, { as: 'defTaskType' });
+  models.TaskType.hasMany(models.ProjectAttributes, { as: 'defTaskType' });
 
   models.TaskType.belongsToMany(models.Filter, { as: { singular: "filterTaskType", plural: "filterTaskTypes" }, through: 'filter_task_type' });
 

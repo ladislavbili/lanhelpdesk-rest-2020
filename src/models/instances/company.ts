@@ -133,7 +133,7 @@ export function createCompaniesAssoc(models) {
 
   models.Company.hasMany(models.Imap, { foreignKey: { allowNull: false } });
 
-  models.Company.hasMany(models.Project, { as: 'defCompany' });
+  models.Company.hasMany(models.ProjectAttributes, { as: 'defCompany' });
 
   models.Company.belongsToMany(models.Filter, { as: { singular: "filterCompany", plural: "filterCompanies" }, through: 'filter_company' });
 

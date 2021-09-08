@@ -1,5 +1,4 @@
 import defaultAttributes from './defaultAttributes';
-import projectExtra from './projectExtra';
 
 export const Project = `
 type Project {
@@ -8,8 +7,9 @@ type Project {
   description: String!
   lockedRequester: Boolean!
   autoApproved: Boolean!
+  hideApproved: Boolean!
   archived: Boolean!
-  def: ProjectDefaults!
+  projectAttributes: ProjectAttributes!
   filters: [BasicFilter]
   milestones: [Milestone]!
   imaps: [Imap]!
@@ -25,9 +25,10 @@ type BasicProject {
   title: String!
   lockedRequester: Boolean!
   autoApproved: Boolean!
+  hideApproved: Boolean!
   archived: Boolean!
   description: String!
-  def: ProjectDefaults!
+  projectAttributes: ProjectAttributes!
   filters: [BasicFilter]
   milestones: [Milestone]!
   right: ProjectGroupRights!
@@ -46,8 +47,6 @@ type UserWithRights {
   user: BasicUser!
   assignable: Boolean!
 }
-
-${projectExtra}
 `
 
 export const ProjectQueries = `
@@ -62,21 +61,24 @@ addProject(
   description: String!,
   lockedRequester: Boolean!,
   autoApproved: Boolean!,
+  hideApproved: Boolean!,
   archived: Boolean!,
-  def: ProjectDefaultsInput!,
+  projectAttributes: ProjectAttributesInput!,
   tags: [NewTagInput]!,
   statuses: [NewStatusInput]!
   groups: [ProjectGroupInput]!
   userGroups: [UserGroupInput]!
 ): Project
+
 updateProject(
   id: Int!,
   title: String,
   description: String,
   lockedRequester: Boolean,
   autoApproved: Boolean,
+  hideApproved: Boolean,
   archived: Boolean,
-  def: ProjectDefaultsInput,
+  projectAttributes: ProjectAttributesInput,
   deleteTags: [Int]!,
   updateTags: [TagUpdateInput]!,
   addTags: [NewTagInput]!,
@@ -88,6 +90,7 @@ updateProject(
   updateGroups: [ProjectGroupInput]!,
   deleteGroups: [Int]!,
 ): Project
+
 deleteProject( id: Int!, newId: Int! ): Project
 `
 

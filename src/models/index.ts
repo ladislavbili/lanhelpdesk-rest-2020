@@ -7,6 +7,7 @@ import defineTags, { createTagsAssoc } from './instances/tag';
 import defineTokens, { createTokensAssoc } from './instances/token';
 import defineUsers, { createUsersAssoc } from './instances/user';
 import defineProjects, { createProjectsAssoc } from './instances/project';
+import defineProjectAttributes, { createProjectAttributesAssoc } from './instances/projectAttributes';
 import defineRoles, { createRolesAssoc } from './instances/role';
 import defineTaskTypes, { createTaskTypesAssoc } from './instances/taskType';
 import defineTripTypes, { createTripTypesAssoc } from './instances/tripType';
@@ -81,6 +82,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineImaps(sequelize);
   defineStatuses(sequelize);
   defineProjects(sequelize);
+  defineProjectAttributes(sequelize);
   defineErrorMessages(sequelize);
   defineUserNotifications(sequelize);
   defineFilter(sequelize);
@@ -116,6 +118,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createAccessRightsAssoc(models);
   createTokensAssoc(models);
   createProjectsAssoc(models);
+  createProjectAttributesAssoc(models);
   createTagsAssoc(models);
   createTaskTypesAssoc(models);
   createTripTypesAssoc(models);
@@ -160,7 +163,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
 
   //LOG FUNCTIONS
 
-  //logFunctionsOfModel(models.Subtask);
+  //logFunctionsOfModel(models.ProjectAttributes);
 
 
   if (ignoreUpdating) {

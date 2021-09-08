@@ -9,6 +9,7 @@ import { Material } from './entities/material';
 import { Milestone } from './entities/milestone';
 import { Pricelist } from './entities/pricelist';
 import { Project } from './entities/project';
+import { ProjectAttributes } from './entities/projectAttributes';
 import { ProjectAttachment } from './entities/projectAttachment';
 import { ProjectGroup } from './entities/projectGroup';
 import { Repeat } from './entities/repeat';
@@ -48,6 +49,7 @@ ${Material}
 ${Milestone}
 ${Pricelist}
 ${Project}
+${ProjectAttributes}
 ${ProjectAttachment}
 ${ProjectGroup}
 ${Repeat}

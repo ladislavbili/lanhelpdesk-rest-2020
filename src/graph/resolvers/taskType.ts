@@ -4,7 +4,7 @@ import checkResolver from './checkResolver';
 import {
   getModelAttribute
 } from '@/helperFunctions';
-import { PricelistInstance, ProjectInstance, TaskTypeInstance } from '@/models/instances';
+import { PricelistInstance, ProjectAttributesInstance, TaskTypeInstance } from '@/models/instances';
 
 import { TASK_TYPE_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
@@ -58,7 +58,7 @@ const mutations = {
     const OldTaskType = <TaskTypeInstance>await models.TaskType.findByPk(id,
       {
         include: [
-          { model: models.Project, as: 'defTaskType' }
+          { model: models.ProjectAttribute, as: 'defTaskType' }
         ]
       }
     )
@@ -71,8 +71,8 @@ const mutations = {
     }
     Promise.all([
       models.Price.destroy({ where: { type: 'TaskType', TaskTypeId: id } }),
-      ...(<ProjectInstance[]>OldTaskType.get('defTaskType')).map((project) => {
-        return project.setDefTaskType(newId);
+      ...(<ProjectAttributesInstance[]>OldTaskType.get('defTaskType')).map((ProjectAttribute) => {
+        return ProjectAttribute.setDefTaskType(newId);
       }),
     ])
     const allTasks = await OldTaskType.getTasks();
