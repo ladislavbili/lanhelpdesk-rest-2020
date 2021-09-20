@@ -2,7 +2,9 @@ import { models } from '@/models';
 import { ApolloError } from 'apollo-server-express';
 import moment from 'moment';
 import {
-  addApolloError
+  addApolloError,
+  idsDoExistsCheck,
+  extractDatesFromObject,
 } from '@/helperFunctions';
 import {
   allGroupRights
@@ -122,7 +124,8 @@ export const getProjectAdminRights = async (projectId) => {
       include: [models.ProjectGroupRights]
     }]
   });
-  return <ProjectGroupRightsInstance>(Project.get('ProjectGroupRights')[0]);
+  const ProjectGroup = <ProjectGroupInstance>Project.get('ProjectGroups')[0];
+  return <ProjectGroupRightsInstance>(ProjectGroup.get('ProjectGroupRight'));
 }
 
 export const applyAttributeRightsRequirements = (groups, projectAttributes) => {
@@ -131,17 +134,18 @@ export const applyAttributeRightsRequirements = (groups, projectAttributes) => {
     let newGroup = {
       ...group
     };
+
     taskAttributes.map((attr) => attr.attribute).forEach((attribute) => {
       if (attribute !== 'repeat' && projectAttributes[attribute].fixed) {
-        newGroup.attributes[attribute].required = false;
-        newGroup.attributes[attribute].add = false;
-        newGroup.attributes[attribute].edit = false;
+        newGroup.attributeRights[attribute].required = false;
+        newGroup.attributeRights[attribute].add = false;
+        newGroup.attributeRights[attribute].edit = false;
       } else {
-        if (newGroup.attributes[attribute].edit) {
-          newGroup.attributes[attribute].view = true;
+        if (newGroup.attributeRights[attribute].edit) {
+          newGroup.attributeRights[attribute].view = true;
         }
-        if (newGroup.attributes[attribute].required) {
-          newGroup.attributes[attribute].add = true;
+        if (newGroup.attributeRights[attribute].required) {
+          newGroup.attributeRights[attribute].add = true;
         }
       }
     })
@@ -151,13 +155,13 @@ export const applyAttributeRightsRequirements = (groups, projectAttributes) => {
 }
 
 export const checkFixedAttributes = (projectAttributes) => {
-  taskAttributes.forEach((taskAttribute) => {
+  taskAttributes.filter((taskAttribute) => taskAttribute.attribute !== 'repeat').forEach((taskAttribute) => {
     const attribute = projectAttributes[taskAttribute.attribute];
     if (
       attribute.fixed && (
         (taskAttribute.value === 'bool' && !([true, false].includes(attribute.value))) ||
-        (taskAttribute.value === 'int' && attribute.value === null) ||
-        (taskAttribute.value === 'arr' && attribute.value.length === 0 && !['tags'].includes(taskAttribute.attribute)) ||
+        (taskAttribute.value === 'int' && attribute.value === null && !['requester', 'company'].includes(taskAttribute.attribute)) ||
+        (taskAttribute.value === 'arr' && attribute.value.length === 0 && !['tags', 'assigned'].includes(taskAttribute.attribute)) ||
         (taskAttribute.value === 'date' && isNaN(parseInt(attribute.value)))
       )
     ) {
@@ -273,6 +277,149 @@ const checkedAttributes = [
   'taskType',
   'status',
 ];
+
+const groupMissesRight = (groups, right) => groups.some((group) => !group.attributeRights[right].view);
+
+const dateNames = ['statusDateFrom', 'statusDateTo', 'pendingDateFrom', 'pendingDateTo', 'closeDateFrom', 'closeDateTo', 'deadlineFrom', 'deadlineTo', 'scheduledFrom', 'scheduledTo', 'createdAtFrom', 'createdAtTo'];
+
+export const postProcessFilters = (filters, newGroups, existingGroups, fakeGroupIds, ProjectId, userId, hasId = false) => {
+  let newFilters = [];
+  filters.map((filterData) => {
+    const filter = filterData.filter;
+    const dates = extractDatesFromObject(filterData.filter, dateNames);
+    let newFilter = <any>{
+      active: filterData.active,
+      title: filterData.title,
+      description: filterData.description,
+      pub: true,
+      global: false,
+      dashboard: false,
+      ofProject: true,
+      ProjectId,
+      filterOfProjectId: ProjectId,
+      important: filterData.filter.important,
+      invoiced: filterData.filter.invoiced,
+      pausal: filterData.filter.pausal,
+      overtime: filterData.filter.overtime,
+      assignedToCur: filterData.filter.assignedToCur,
+      requesterCur: filterData.filter.requesterCur,
+      companyCur: filterData.filter.companyCur,
+      ...dates,
+      aditionalData: {
+        assignedTos: filterData.filter.assignedTos ? filterData.filter.assignedTos : [],
+        tags: filterData.filter.tags ? filterData.filter.tags : [],
+        requesters: filterData.filter.requesters ? filterData.filter.requesters : [],
+        companies: filterData.filter.companies ? filterData.filter.companies : [],
+        taskTypes: filterData.filter.taskTypes ? filterData.filter.taskTypes : [],
+        statuses: filterData.filter.statuses ? filterData.filter.statuses : [],
+      }
+    };
+
+    if (isNaN(parseInt(filterData.order))) {
+      newFilter.order = 0;
+    } else {
+      newFilter.order = parseInt(filterData.order);
+    }
+
+    if (!hasId) {
+      newFilter.filterCreatedById = userId;
+    }
+
+    if (!filterData.groups) {
+      newFilter.aditionalData.groups = [];
+    } else {
+      newFilter.aditionalData.groups = filterData.groups.map((groupId) => {
+        if (groupId < 0) {
+          let index = fakeGroupIds.findIndex((fakeGroupId) => groupId === fakeGroupId);
+          return newGroups[index].get('id');
+        }
+        return existingGroups.some((Group) => Group.get('id') === groupId) ? groupId : null;
+      }).filter((value) => value !== null)
+    }
+
+    if (hasId) {
+      newFilter.aditionalData.id = filterData.id;
+    }
+    newFilters.push(newFilter);
+  });
+  return newFilters;
+}
+
+export const fixProjectFilters = async (filters, allGroups) => {
+  let newFilters = [];
+  let promises = [];
+  let usersToCheck = [];
+  let companiesToCheck = [];
+  let taskTypesToCheck = [];
+
+  filters.map((filterData) => {
+    const filter = filterData.filter;
+    let newFilter = { ...filterData };
+    const groups = allGroups.filter((group) => newFilter.groups.includes(group.id));
+    if (filter.active) {
+      if (groupMissesRight(groups, 'assigned')) {
+        newFilter.filter.assignedToCur = false;
+        newFilter.filter.assignedTos = [];
+      }
+      if (groupMissesRight(groups, 'requester')) {
+        newFilter.filter.requesterCur = false;
+        newFilter.filter.requesters = [];
+      }
+      if (groupMissesRight(groups, 'taskType')) {
+        newFilter.filter.taskTypes = [];
+      }
+      if (groupMissesRight(groups, 'company')) {
+        newFilter.filter.companyCur = false;
+        newFilter.filter.companies = [];
+      }
+      if (groupMissesRight(groups, 'overtime')) {
+        newFilter.filter.overtime = null;
+      }
+      if (groupMissesRight(groups, 'pausal')) {
+        newFilter.filter.pausal = null;
+      }
+      if (groupMissesRight(groups, 'deadline')) {
+        newFilter.filter.deadlineFromNow = false;
+        newFilter.filter.deadlineFrom = null;
+        newFilter.filter.deadlineToNow = false;
+        newFilter.filter.deadlineTo = null;
+      }
+      if (groupMissesRight(groups, 'status')) {
+        newFilter.filter.pausal = null;
+        newFilter.filter.statuses = [];
+        newFilter.filter.statusDateFromNow = false;
+        newFilter.filter.statusDateFrom = null;
+        newFilter.filter.statusDateToNow = false;
+        newFilter.filter.statusDateTo = null;
+        newFilter.filter.closeDateFromNow = false;
+        newFilter.filter.closeDateFrom = null;
+        newFilter.filter.closeDateToNow = false;
+        newFilter.filter.closeDateTo = null;
+        newFilter.filter.pendingDateFromNow = false;
+        newFilter.filter.pendingDateFrom = null;
+        newFilter.filter.pendingDateToNow = false;
+        newFilter.filter.pendingDateTo = null;
+      }
+      if (groupMissesRight(groups, 'taskWorks')) {
+        newFilter.filter.scheduledFromNow = false;
+        newFilter.filter.scheduledFrom = null;
+        newFilter.filter.scheduledToNow = false;
+        newFilter.filter.scheduledTo = null;
+      }
+    }
+    usersToCheck = [...usersToCheck, ...filter.assignedTos, ...filter.requesters]
+    companiesToCheck = [...companiesToCheck, ...filter.companies]
+    taskTypesToCheck = [...taskTypesToCheck, ...filter.taskTypes]
+    newFilters.push(newFilter);
+  })
+  await Promise.all([
+    idsDoExistsCheck(usersToCheck, models.User),
+    idsDoExistsCheck(companiesToCheck, models.Company),
+    idsDoExistsCheck(taskTypesToCheck, models.TaskType),
+  ]);
+  return newFilters;
+}
+
 export const checkDefRequiredSatisfied = (def, originalData, newData, newTask = true) => {
   let mergedData = newData;
   if (originalData) {

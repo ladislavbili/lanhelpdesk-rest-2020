@@ -10,12 +10,14 @@ export interface ProjectInstance extends DefaultInstance {
   archived: boolean;
 
   createTag?: any;
+  createFilterOfProject?: any;
   createProjectStatus?: any;
   createProjectGroup?: any;
   createProjectAttachment?: any;
+  createProjectAttribute?: any;
 
   getTasks?: any;
-  getProjectAttributes?: any;
+  getProjectAttribute?: any;
 }
 
 export default function defineProjects(sequelize: Sequelize) {

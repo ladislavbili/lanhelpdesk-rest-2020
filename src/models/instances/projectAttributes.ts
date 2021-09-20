@@ -56,6 +56,7 @@ export default function defineProjectAttributes(sequelize: Sequelize) {
             this.getCompany(),
             this.getTaskType()
           ]);
+
           return {
             status: {
               fixed: this.get('statusFixed'),
@@ -152,22 +153,22 @@ export default function defineProjectAttributes(sequelize: Sequelize) {
       },
       pausal: {
         type: DataTypes.BOOLEAN,
-        allowNull: false,
+        allowNull: true,
         defaultValue: false,
       },
       overtime: {
         type: DataTypes.BOOLEAN,
-        allowNull: false,
+        allowNull: true,
         defaultValue: false,
       },
       startsAt: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
+        type: DataTypes.DATE,
+        allowNull: true,
         defaultValue: false,
       },
       deadline: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
+        type: DataTypes.DATE,
+        allowNull: true,
         defaultValue: false,
       },
     },

@@ -170,7 +170,7 @@ const mutations = {
     }
 
     //Filter
-    const { assignedTos, tags, requesters, companies, taskTypes, oneOf, important, invoiced, pausal, overtime, ...directFilterParams } = filter;
+    const { assignedTos, tags, requesters, companies, taskTypes, oneOf, ...directFilterParams } = filter;
     await Promise.all([
       idsDoExistsCheck(assignedTos, models.User),
       idsDoExistsCheck(tags, models.Tag),
@@ -178,13 +178,6 @@ const mutations = {
       idsDoExistsCheck(companies, models.Company),
       idsDoExistsCheck(taskTypes, models.TaskType),
     ])
-
-    const boolAttributes = {
-      important: important === null ? null : important === 'yes',
-      invoiced: invoiced === null ? null : invoiced === 'yes',
-      pausal: pausal === null ? null : pausal === 'yes',
-      overtime: overtime === null ? null : overtime === 'yes',
-    }
 
     if (pub) {
       await idsDoExistsCheck(roles, models.Role);
@@ -196,7 +189,6 @@ const mutations = {
           filterOfProjectId: projectId,
           filterCreatedById: User.get('id'),
           ...directFilterParams,
-          ...boolAttributes,
           ...dates,
           pub: true,
           FilterOneOfs: oneOf.map((item) => ({ input: item })),
@@ -224,7 +216,6 @@ const mutations = {
         filterOfProjectId: projectId,
         filterCreatedById: User.get('id'),
         ...directFilterParams,
-        ...boolAttributes,
         ...dates,
         pub: false,
         FilterOneOfs: oneOf.map((item) => ({ input: item })),
@@ -261,7 +252,7 @@ const mutations = {
     }
 
     //Filter
-    const { assignedTos, tags, requesters, companies, taskTypes, oneOf, important, invoiced, pausal, overtime, ...directFilterParams } = filter;
+    const { assignedTos, tags, requesters, companies, taskTypes, oneOf, ...directFilterParams } = filter;
     await Promise.all([
       idsDoExistsCheck(assignedTos, models.User),
       idsDoExistsCheck(tags, models.Tag),
@@ -271,13 +262,6 @@ const mutations = {
       idsDoExistsCheck(roles, models.Role),
     ])
 
-    const boolAttributes = {
-      important: important === null ? null : important === 'yes',
-      invoiced: invoiced === null ? null : invoiced === 'yes',
-      pausal: pausal === null ? null : pausal === 'yes',
-      overtime: overtime === null ? null : overtime === 'yes',
-    }
-
     const newFilter = <FilterInstance>await models.Filter.create(
       {
         ...args,
@@ -285,7 +269,6 @@ const mutations = {
         filterOfProjectId: projectId,
         filterCreatedById: User.get('id'),
         ...directFilterParams,
-        ...boolAttributes,
         ...dates,
         pub: true,
         FilterOneOfs: oneOf.map((item) => ({ input: item })),
@@ -343,7 +326,7 @@ const mutations = {
     let promises = [];
     if (filter) {
       //Filter
-      const { assignedTos, tags, requesters, companies, taskTypes, important, invoiced, pausal, overtime, oneOf: oneOfs, ...directFilterParams } = filter;
+      const { assignedTos, tags, requesters, companies, taskTypes, oneOf: oneOfs, ...directFilterParams } = filter;
       const dates = extractDatesFromObject(filter, dateNames);
       await Promise.all([
         idsDoExistsCheck(assignedTos, models.User),
@@ -354,13 +337,7 @@ const mutations = {
         idsDoExistsCheck(roles, models.Role),
       ])
 
-      const boolAttributes = {
-        important: (important === null || important === undefined) ? important : important === 'yes',
-        invoiced: (invoiced === null || invoiced === undefined) ? invoiced : invoiced === 'yes',
-        pausal: (pausal === null || pausal === undefined) ? pausal : pausal === 'yes',
-        overtime: (overtime === null || overtime === undefined) ? overtime : overtime === 'yes',
-      }
-      changes = { ...directFilterParams, ...dates, ...boolAttributes };
+      changes = { ...directFilterParams, ...dates };
       assignedTos !== undefined && promises.push(Filter.setFilterAssignedTos(assignedTos));
       tags !== undefined && promises.push(Filter.setFilterTags(tags));
       requesters !== undefined && promises.push(Filter.setFilterRequesters(requesters));
@@ -415,7 +392,7 @@ const mutations = {
     let changes = {};
     let promises = [];
     if (filter) {
-      const { assignedTos, tags, requesters, companies, taskTypes, important, invoiced, pausal, overtime, oneOf: oneOfs, ...directFilterParams } = filter;
+      const { assignedTos, tags, requesters, companies, taskTypes, oneOf: oneOfs, ...directFilterParams } = filter;
       const dates = extractDatesFromObject(filter, dateNames);
       await Promise.all([
         idsDoExistsCheck(assignedTos, models.User),
@@ -425,14 +402,7 @@ const mutations = {
         idsDoExistsCheck(taskTypes, models.TaskType),
         idsDoExistsCheck(roles, models.Role),
       ])
-
-      const boolAttributes = {
-        important: (important === null || important === undefined) ? important : important === 'yes',
-        invoiced: (invoiced === null || invoiced === undefined) ? invoiced : invoiced === 'yes',
-        pausal: (pausal === null || pausal === undefined) ? pausal : pausal === 'yes',
-        overtime: (overtime === null || overtime === undefined) ? overtime : overtime === 'yes',
-      }
-      changes = { ...directFilterParams, ...dates, ...boolAttributes };
+      changes = { ...directFilterParams, ...dates };
       assignedTos !== undefined && promises.push(Filter.setFilterAssignedTos(assignedTos));
       tags !== undefined && promises.push(Filter.setFilterTags(tags));
       requesters !== undefined && promises.push(Filter.setFilterRequesters(requesters));
@@ -484,6 +454,9 @@ const attributes = {
     async roles(filter) {
       return getModelAttribute(filter, 'Roles');
     },
+    async groups(filter) {
+      return getModelAttribute(filter, 'ProjectGroups');
+    },
     async project(filter) {
       return getModelAttribute(filter, 'filterOfProject', 'getFilterOfProject');
     },
@@ -491,6 +464,9 @@ const attributes = {
   BasicFilter: {
     async roles(filter) {
       return getModelAttribute(filter, 'Roles');
+    },
+    async groups(filter) {
+      return getModelAttribute(filter, 'ProjectGroups');
     },
     async project(filter) {
       return getModelAttribute(filter, 'filterOfProject', 'getFilterOfProject');

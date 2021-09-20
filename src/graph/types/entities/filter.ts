@@ -5,25 +5,33 @@ type Filter {
   ${defaultAttributes}
   createdBy: User!
   title: String!
+  description: String!
   pub: Boolean!
+  active: Boolean!
+  projectGroups: [ProjectGroup]
   global: Boolean!
   dashboard: Boolean!
   order: Int
   filter: filter!
   roles: [BasicRole]
+  groups: [BasicProjectGroup]
   project: BasicProject
 }
 
 type BasicFilter{
   ${defaultAttributes}
   title: String!
+  description: String!
   pub: Boolean!
+  active: Boolean!
+  projectGroups: [ProjectGroup]
   global: Boolean!
   dashboard: Boolean!
   order: Int
   filter: filter!
   project: BasicProject
   roles: [BasicRole]
+  groups: [BasicProjectGroup]
 }
 
 enum OneOfEnum {
@@ -69,15 +77,20 @@ type filter {
   createdAtTo: String
   createdAtToNow: Boolean!
 
-  important: BooleanSelectEnum
-  invoiced: BooleanSelectEnum
-  pausal: BooleanSelectEnum
-  overtime: BooleanSelectEnum
+  important: Boolean
+  invoiced: Boolean
+  pausal: Boolean
+  overtime: Boolean
 }
 
-enum BooleanSelectEnum {
-  yes
-  no
+input ProjectFilterInput {
+  id: Int
+  title: String!
+  description: String!
+  filter: FilterInput!
+  active: Boolean!
+  order: Int
+  groups: [Int]
 }
 
 input FilterInput {
@@ -90,7 +103,7 @@ input FilterInput {
   taskTypes: [Int]
   tags: [Int]
   statuses: [Int]
-  oneOf: [OneOfEnum]!
+  oneOf: [OneOfEnum]
 
   statusDateFrom: String
   statusDateFromNow: Boolean!
@@ -117,10 +130,10 @@ input FilterInput {
   createdAtTo: String
   createdAtToNow: Boolean!
 
-  important: BooleanSelectEnum
-  invoiced: BooleanSelectEnum
-  pausal: BooleanSelectEnum
-  overtime: BooleanSelectEnum
+  important: Boolean
+  invoiced: Boolean
+  pausal: Boolean
+  overtime: Boolean
 }
 `
 
@@ -132,7 +145,16 @@ filter(id: Int!): Filter
 `
 
 export const FilterMutations = `
-addFilter( title: String!, pub: Boolean!, global: Boolean!, dashboard: Boolean!, filter: FilterInput!, order: Int, roles: [Int], projectId: Int ): Filter
+addFilter(
+  title: String!,
+  pub: Boolean!,
+  global: Boolean!,
+  dashboard: Boolean!,
+  filter: FilterInput!,
+  order: Int,
+  roles: [Int],
+  projectId: Int
+): Filter
 updateFilter( id: Int!, title: String, pub: Boolean!, global: Boolean!, dashboard: Boolean!, filter: FilterInput, order: Int, roles: [Int], projectId: Int ): Filter
 addPublicFilter( title: String!, global: Boolean!, dashboard: Boolean!, order: Int!, filter: FilterInput!, roles: [Int]!, projectId: Int ): Filter
 updatePublicFilter( id: Int!, title: String, global: Boolean!, dashboard: Boolean!, order: Int, filter: FilterInput, roles: [Int], projectId: Int ): Filter

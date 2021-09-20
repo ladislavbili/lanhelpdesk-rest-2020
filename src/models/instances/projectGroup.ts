@@ -10,6 +10,9 @@ export interface ProjectGroupInstance extends DefaultInstance {
 
   addUser?: any;
   setUsers?: any;
+
+  addCompany?: any;
+  setCompanies?: any;
 }
 
 export default function defineProjectGroups(sequelize: Sequelize) {
@@ -53,4 +56,6 @@ export function createProjectGroupsAssoc(models) {
   models.ProjectGroup.belongsTo(models.Project);
   models.ProjectGroup.hasOne(models.ProjectGroupRights, { onDelete: 'CASCADE' });
   models.ProjectGroup.belongsToMany(models.User, { through: 'user_belongs_to_group' });
+  models.ProjectGroup.belongsToMany(models.Company, { through: 'company_belongs_to_group' });
+  models.ProjectGroup.belongsToMany(models.Filter, { through: 'filter_groups' });
 }

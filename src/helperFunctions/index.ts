@@ -17,6 +17,8 @@ export {
   addDefaultDatabaseData,
   addUser,
   addDefaultStatusTemplates,
+  addAttributesToProjects,
+  createFixedGroupsForProjects,
 } from './database';
 
 export {

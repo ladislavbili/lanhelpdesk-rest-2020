@@ -3,10 +3,13 @@ import DefaultInstance from './defaultInstance';
 
 export interface FilterInstance extends DefaultInstance {
   title: string;
+  description: string;
   pub: boolean;
   global: boolean;
   dashboard: boolean;
   order: number;
+  ofProject: boolean;
+  active: boolean;
 
   assignedToCur: false;
   //assignedTo: cur;
@@ -62,6 +65,7 @@ export interface FilterInstance extends DefaultInstance {
   getFilterOfProject?: any;
 
   setRoles?: any;
+  setProjectGroups?: any;
   setFilterAssignedTos?: any;
   setFilterTags?: any;
   setFilterStatuses?: any;
@@ -83,6 +87,11 @@ export default function defineFilter(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: 'Filter',
       },
+      description: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        defaultValue: ""
+      },
       pub: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -102,6 +111,16 @@ export default function defineFilter(sequelize: Sequelize) {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0
+      },
+      active: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+      },
+      ofProject: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
       },
       createdBy: {
         type: DataTypes.VIRTUAL,
@@ -140,10 +159,10 @@ export default function defineFilter(sequelize: Sequelize) {
             companyCur: this.get('companyCur'),
             companies,
             taskTypes,
-            important: this.get('important') === null ? null : (this.get('important') ? 'yes' : 'no'),
-            invoiced: this.get('invoiced') === null ? null : (this.get('invoiced') ? 'yes' : 'no'),
-            pausal: this.get('pausal') === null ? null : (this.get('pausal') ? 'yes' : 'no'),
-            overtime: this.get('overtime') === null ? null : (this.get('overtime') ? 'yes' : 'no'),
+            important: this.get('important'),
+            invoiced: this.get('invoiced'),
+            pausal: this.get('pausal'),
+            overtime: this.get('overtime'),
             oneOf: oneOfResponse.map((oneOf) => oneOf.get('input')),
 
             statusDateFrom: this.get('statusDateFrom'),
@@ -359,4 +378,6 @@ export function createFilterAssoc(models) {
   models.Filter.belongsTo(models.Project, { as: 'filterOfProject' });
 
   models.Filter.belongsToMany(models.Role, { through: 'filter_access_roles' });
+
+  models.Filter.belongsToMany(models.ProjectGroup, { through: 'filter_groups' });
 }

@@ -472,6 +472,14 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
       ${createModelAttributes("TaskType", "TaskType", models.TaskType)}
       ${createModelAttributes("Repeat", "Repeat", models.Repeat)}
       ${createModelAttributes("TaskMetadata", "TaskMetadata", models.TaskMetadata)}
+      ${
+    !isAdmin ?
+      '' :
+      `
+        ${createModelAttributes("Project->AdminProjectGroups", "Project.AdminProjectGroups", models.ProjectGroup)}
+        ${createModelAttributes("Project->AdminProjectGroups->ProjectGroupRight", "Project.AdminProjectGroups.ProjectGroupRight", models.ProjectGroupRights)}
+        `
+    }
       ${createModelAttributes("Project->ProjectGroups", "Project.ProjectGroups", models.ProjectGroup)}
       ${createModelAttributes("Project->ProjectGroups->ProjectGroupRight", "Project.ProjectGroups.ProjectGroupRight", models.ProjectGroupRights)}
       ${createModelAttributes("Project->ProjectGroups->Users", "Project.ProjectGroups.Users", models.User)}
@@ -551,6 +559,17 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
     LEFT OUTER JOIN "task_types" AS "TaskType" ON "Task"."TaskTypeId" = "TaskType"."id"
     LEFT OUTER JOIN "repeat" AS "Repeat" ON "Task"."RepeatId" = "Repeat"."id"
     LEFT OUTER JOIN "task_metadata" AS "TaskMetadata" ON "Task"."id" = "TaskMetadata"."TaskId"
+    ${
+    !isAdmin ?
+      '' :
+      `
+      INNER JOIN "project_group" AS "Project->AdminProjectGroups" ON 
+        "Project.id" = "Project->AdminProjectGroups"."ProjectId" AND
+        "Project->AdminProjectGroups"."admin" = true AND
+        "Project->AdminProjectGroups"."def" = true
+      INNER JOIN "project_group_rights" AS "Project->AdminProjectGroups->ProjectGroupRight" ON "Project->AdminProjectGroups"."id" = "Project->AdminProjectGroups->ProjectGroupRight"."ProjectGroupId"
+      `
+    }
     ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group" AS "Project->ProjectGroups" ON "Project.id" = "Project->ProjectGroups"."ProjectId"
     ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
     ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN (

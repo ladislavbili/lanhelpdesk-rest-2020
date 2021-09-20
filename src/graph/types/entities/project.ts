@@ -11,6 +11,7 @@ type Project {
   archived: Boolean!
   projectAttributes: ProjectAttributes!
   filters: [BasicFilter]
+  projectFilters: [Filter]
   milestones: [Milestone]!
   imaps: [Imap]!
   right: ProjectGroupRights
@@ -30,6 +31,7 @@ type BasicProject {
   description: String!
   projectAttributes: ProjectAttributes!
   filters: [BasicFilter]
+  projectFilters: [BasicFilter]
   milestones: [Milestone]!
   right: ProjectGroupRights!
   tags: [Tag]!
@@ -40,6 +42,7 @@ type BasicProject {
 type MyProject {
   project: BasicProject!
   right: ProjectGroupRights!
+  attributeRights: ProjectGroupAttributeRights!
   usersWithRights: [UserWithRights]!
 }
 
@@ -66,29 +69,40 @@ addProject(
   projectAttributes: ProjectAttributesInput!,
   tags: [NewTagInput]!,
   statuses: [NewStatusInput]!
-  groups: [ProjectGroupInput]!
+  filters: [ProjectFilterInput]!
   userGroups: [UserGroupInput]!
+  companyGroups: [CompanyGroupInput]!
+  groups: [ProjectGroupInput]!
 ): Project
 
 updateProject(
-  id: Int!,
-  title: String,
-  description: String,
-  lockedRequester: Boolean,
-  autoApproved: Boolean,
-  hideApproved: Boolean,
-  archived: Boolean,
-  projectAttributes: ProjectAttributesInput,
-  deleteTags: [Int]!,
-  updateTags: [TagUpdateInput]!,
-  addTags: [NewTagInput]!,
-  deleteStatuses: [Int]!,
-  updateStatuses: [UpdateStatusInput]!,
-  addStatuses: [NewStatusInput]!,
-  userGroups: [UserGroupUpdateInput]!,
-  addGroups: [ProjectGroupInput]!,
-  updateGroups: [ProjectGroupInput]!,
-  deleteGroups: [Int]!,
+  id: Int!
+  title: String
+  description: String
+  lockedRequester: Boolean
+  autoApproved: Boolean
+  hideApproved: Boolean
+  archived: Boolean
+  projectAttributes: ProjectAttributesInput
+
+  addTags: [NewTagInput]!
+  updateTags: [TagUpdateInput]!
+  deleteTags: [Int]!
+
+  addStatuses: [NewStatusInput]!
+  updateStatuses: [UpdateStatusInput]!
+  deleteStatuses: [Int]!
+
+  addFilters: [ProjectFilterInput]!
+  updateFilters: [ProjectFilterInput]!
+  deleteFilters: [Int]!
+
+  userGroups: [UserGroupUpdateInput]!
+  companyGroups: [CompanyGroupUpdateInput]!
+
+  addGroups: [ProjectGroupInput]!
+  updateGroups: [ProjectGroupInput]!
+  deleteGroups: [Int]!
 ): Project
 
 deleteProject( id: Int!, newId: Int! ): Project

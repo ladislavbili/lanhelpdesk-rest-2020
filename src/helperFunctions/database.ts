@@ -5,6 +5,8 @@ import { hash } from 'bcrypt';
 import { randomString } from '@/helperFunctions';
 import {
   TaskInstance,
+  ProjectInstance,
+  ProjectGroupInstance,
 } from '@/models/instances';
 
 export const createTaskMetadata = async () => {
@@ -143,4 +145,192 @@ export const addDefaultStatusTemplates = async () => {
     ].map((statusData) => models.Status.create(statusData))
   )
   console.log('statuses created!')
+}
+
+export const addAttributesToProjects = async () => {
+  const Projects = <any[]>await models.Project.findAll({ include: [models.ProjectAttributes] });
+  if (Projects.filter((Project) => !Project.get('ProjectAttribute')).length !== 0) {
+    await Promise.all(Projects.filter((Project) => !Project.get('ProjectAttribute')).map((Project) => Project.createProjectAttribute()));
+    console.log('all projects have attributes');
+  } else {
+    console.log('No need for update, all projects have attributes');
+  }
+}
+
+const expectedGroups = {
+  admin: {
+    order: 0,
+    def: true,
+    admin: true,
+    title: 'Admin',
+    description: 'Default admin group'
+  },
+  agent: {
+    order: 1,
+    def: true,
+    admin: false,
+    title: 'Agent',
+    description: 'Default agent group'
+  },
+  customer: {
+    order: 2,
+    def: true,
+    admin: false,
+    title: 'Customer',
+    description: 'Default customer group'
+  },
+
+}
+
+const compareModelInstanceToObject = (modelInstance, object) => {
+  return Object.keys(object).every((key) => object[key] === modelInstance.get(key));
+}
+
+export const createFixedGroupsForProjects = async () => {
+  const Projects = <ProjectInstance[]>await models.Project.findAll({ include: [models.ProjectGroup] });
+  const FailingProjects = Projects.filter((Project) => {
+    const ProjectGroups = <ProjectGroupInstance[]>Project.get('ProjectGroups');
+    const AdminProjectGroup = ProjectGroups.find((ProjectGroup) => compareModelInstanceToObject(ProjectGroup, expectedGroups.admin));
+    const AgentProjectGroup = ProjectGroups.find((ProjectGroup) => compareModelInstanceToObject(ProjectGroup, expectedGroups.agent));
+    const CustomerProjectGroup = ProjectGroups.find((ProjectGroup) => compareModelInstanceToObject(ProjectGroup, expectedGroups.customer));
+    return (
+      ProjectGroups.some((ProjectGroup) => (
+        ProjectGroup.get('def') &&
+        (!AdminProjectGroup || ProjectGroup.get('id') !== AdminProjectGroup.get('id')) &&
+        (!AgentProjectGroup || ProjectGroup.get('id') !== AgentProjectGroup.get('id')) &&
+        (!CustomerProjectGroup || ProjectGroup.get('id') !== CustomerProjectGroup.get('id'))
+      )) ||
+      !AdminProjectGroup ||
+      !AgentProjectGroup ||
+      !CustomerProjectGroup
+    );
+  });
+  if (FailingProjects.length === 0) {
+    console.log('No need for update, all projects have default groups OK.');
+    return;
+  }
+
+  await Promise.all(
+    Projects.reduce((acc, Project) => {
+
+      let promises = [];
+      let updatedGroups = [];
+      const ProjectGroups = <ProjectGroupInstance[]>Project.get('ProjectGroups');
+      let GroupsToFix = ProjectGroups.filter((ProjectGroup) => (
+        ProjectGroup.get('def') &&
+        (!AdminProjectGroup || ProjectGroup.get('id') !== AdminProjectGroup.get('id')) &&
+        (!AgentProjectGroup || ProjectGroup.get('id') !== AgentProjectGroup.get('id')) &&
+        (!CustomerProjectGroup || ProjectGroup.get('id') !== CustomerProjectGroup.get('id'))
+      ));
+
+      let AdminProjectGroup = ProjectGroups.find((ProjectGroup) => compareModelInstanceToObject(ProjectGroup, expectedGroups.admin));
+      let hasCorrectAdmin = AdminProjectGroup !== undefined;
+      let AgentProjectGroup = ProjectGroups.find((ProjectGroup) => compareModelInstanceToObject(ProjectGroup, expectedGroups.agent));
+      let hasCorrectAgent = AdminProjectGroup !== undefined;
+      let CustomerProjectGroup = ProjectGroups.find((ProjectGroup) => compareModelInstanceToObject(ProjectGroup, expectedGroups.customer));
+      let hasCorrectCustomer = AdminProjectGroup !== undefined;
+      //ak nieje admin, skus najst admina, daj mu def aj admin, ak neexistuje, vytvor rolu admina
+      if (!AdminProjectGroup) {
+        AdminProjectGroup = ProjectGroups.find((ProjectGroup) => ProjectGroup.get('def') && ProjectGroup.get('admin'));
+      }
+      if (!AdminProjectGroup) {
+        AdminProjectGroup = ProjectGroups.find((ProjectGroup) => ProjectGroup.get('admin'));
+      }
+      if (!AdminProjectGroup) {
+        AdminProjectGroup = ProjectGroups.find((ProjectGroup) => ProjectGroup.get('title') === 'Admin');
+      }
+      if (!AdminProjectGroup) {
+        AdminProjectGroup = ProjectGroups.find((ProjectGroup) => ProjectGroup.get('title').toLowerCase().includes('admin'));
+      }
+      if (!hasCorrectAdmin) {
+        if (AdminProjectGroup) {
+          promises.push(AdminProjectGroup.update(expectedGroups.admin));
+          GroupsToFix = GroupsToFix.filter((Group) => Group.get('id') !== AdminProjectGroup.get('id'));
+        } else {
+          promises.push(Project.createProjectGroup(
+            {
+              ...expectedGroups.admin,
+              ProjectGroupRight: {
+                projectRead: true,
+                projectWrite: true,
+                companyTasks: true,
+                allTasks: true,
+              },
+            },
+            {
+              include: [models.ProjectGroupRights]
+            }
+          ));
+
+        }
+      }
+
+      if (!AgentProjectGroup) {
+        AgentProjectGroup = ProjectGroups.find((ProjectGroup) => ProjectGroup.get('title') === 'Agent' && ProjectGroup.get('def'));
+      }
+      if (!AgentProjectGroup) {
+        AgentProjectGroup = ProjectGroups.find((ProjectGroup) => ProjectGroup.get('title').toLowerCase().includes('agent') && ProjectGroup.get('def'));
+      }
+      if (!AgentProjectGroup) {
+        AgentProjectGroup = ProjectGroups.find((ProjectGroup) => ProjectGroup.get('title') === 'Agent');
+      }
+      if (!AgentProjectGroup) {
+        AgentProjectGroup = ProjectGroups.find((ProjectGroup) => ProjectGroup.get('title').toLowerCase().includes('agent'));
+      }
+
+      if (!hasCorrectAgent) {
+        if (AgentProjectGroup) {
+          promises.push(AgentProjectGroup.update(expectedGroups.agent));
+          GroupsToFix = GroupsToFix.filter((Group) => Group.get('id') !== AgentProjectGroup.get('id'));
+        } else {
+          promises.push(Project.createProjectGroup(
+            {
+              ...expectedGroups.agent,
+              ProjectGroupRight: {
+                projectRead: false,
+              },
+            },
+            {
+              include: [models.ProjectGroupRights]
+            }
+          ));
+        }
+      }
+
+      if (!CustomerProjectGroup) {
+        CustomerProjectGroup = ProjectGroups.find((ProjectGroup) => ProjectGroup.get('title') === 'Customer' && ProjectGroup.get('def'));
+      }
+      if (!CustomerProjectGroup) {
+        CustomerProjectGroup = ProjectGroups.find((ProjectGroup) => ProjectGroup.get('title').toLowerCase().includes('customer') && ProjectGroup.get('def'));
+      }
+      if (!CustomerProjectGroup) {
+        CustomerProjectGroup = ProjectGroups.find((ProjectGroup) => ProjectGroup.get('title') === 'Customer');
+      }
+      if (!CustomerProjectGroup) {
+        CustomerProjectGroup = ProjectGroups.find((ProjectGroup) => ProjectGroup.get('title').toLowerCase().includes('customer'));
+      }
+
+      if (!hasCorrectCustomer) {
+        if (CustomerProjectGroup) {
+          promises.push(CustomerProjectGroup.update(expectedGroups.customer));
+          GroupsToFix = GroupsToFix.filter((Group) => Group.get('id') !== CustomerProjectGroup.get('id'));
+        } else {
+          promises.push(Project.createProjectGroup(
+            {
+              ...expectedGroups.customer,
+              ProjectGroupRight: {
+                projectRead: false,
+              },
+            },
+            {
+              include: [models.ProjectGroupRights]
+            }
+          ));
+        }
+      }
+      promises.push(GroupsToFix.map((Group) => Group.update({ def: false, admin: false })))
+      return [...acc, ...promises];
+    }, [])
+  );
+  console.log('all projects were updated to have default groups.');
 }

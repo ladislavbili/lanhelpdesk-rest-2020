@@ -59,10 +59,13 @@ const attributes = {
       return getModelAttribute(projectGroup, 'ProjectGroupRight');
     },
     async attributeRights(projectGroup) {
-      return getModelAttribute(projectGroup, 'ProjectGroupRight').get('attributes');
+      return (await getModelAttribute(projectGroup, 'ProjectGroupRight')).get('attributes');
     },
     async project(projectGroup) {
       return getModelAttribute(projectGroup, 'Project');
+    },
+    async companies(projectGroup) {
+      return getModelAttribute(projectGroup, 'Companies');
     },
   },
 };

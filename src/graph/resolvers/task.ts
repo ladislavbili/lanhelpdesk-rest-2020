@@ -226,7 +226,10 @@ const queries = {
       })
     } else {
       tasks = tasks.map((Task) => {
-        Task.rights = allGroupRights;
+        const Project = Task.Project;
+        const Groups = Project.AdminProjectGroups;
+        const GroupRight = Groups.ProjectGroupRight;
+        Task.rights = GroupRight;
         return Task;
       })
     }

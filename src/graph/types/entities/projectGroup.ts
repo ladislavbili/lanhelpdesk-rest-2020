@@ -3,69 +3,65 @@ import defaultAttributes from './defaultAttributes';
 export const ProjectGroup = `
 type ProjectGroup {
   ${defaultAttributes}
+  admin: Boolean!
   def: Boolean!
   title: String!
   description: String!
   order: Int!
   users: [BasicUser]!
+  companies: [BasicCompany]!
   rights: ProjectGroupRights!
   attributeRights: ProjectGroupAttributeRights!
   project: Project!
 }
 
+type BasicProjectGroup {
+  ${defaultAttributes}
+  admin: Boolean!
+  def: Boolean!
+  title: String!
+  description: String!
+  order: Int!
+}
+
 type ProjectGroupRights {
-  assignedRead: Boolean!
-  assignedWrite: Boolean!
-  companyRead: Boolean!
-  companyWrite: Boolean!
-  deadlineRead: Boolean!
-  deadlineWrite: Boolean!
-  milestoneRead: Boolean!
-  milestoneWrite: Boolean!
-  overtimeRead: Boolean!
-  overtimeWrite: Boolean!
-  pausalRead: Boolean!
-  pausalWrite: Boolean!
   projectRead: Boolean!
   projectWrite: Boolean!
-  projectPrimaryRead: Boolean!
-  projectPrimaryWrite: Boolean!
-  repeatRead: Boolean!
-  repeatWrite: Boolean!
-  requesterRead: Boolean!
-  requesterWrite: Boolean!
-  rozpocetRead: Boolean!
-  rozpocetWrite: Boolean!
-  scheduledRead: Boolean!
-  scheduledWrite: Boolean!
-  statusRead: Boolean!
-  statusWrite: Boolean!
-  tagsRead: Boolean!
-  tagsWrite: Boolean!
-  taskAttachmentsRead: Boolean!
-  taskAttachmentsWrite: Boolean!
-  taskDescriptionRead: Boolean!
-  taskDescriptionWrite: Boolean!
-  taskShortSubtasksRead: Boolean!
-  taskShortSubtasksWrite: Boolean!
-  typeRead: Boolean!
-  typeWrite: Boolean!
-  vykazRead: Boolean!
-  vykazWrite: Boolean!
-  addComments: Boolean!
-  emails: Boolean!
-  history: Boolean!
-  internal: Boolean!
-  projectSecondary: Boolean!
-  pausalInfo: Boolean!
-  taskTitleEdit: Boolean!
-  viewComments: Boolean!
+
   companyTasks: Boolean!
   allTasks: Boolean!
-  addTasks: Boolean!
-  deleteTasks: Boolean!
-  important: Boolean!
-  statistics: Boolean!
+
+  tasklistDnD: Boolean!
+  tasklistKalendar: Boolean!
+  tasklistGantt: Boolean!
+  tasklistStatistics: Boolean!
+
+  addTask: Boolean!
+
+  deleteTask: Boolean!
+  taskImportant: Boolean!
+  taskTitleWrite: Boolean!
+  taskProjectWrite: Boolean!
+  taskDescriptionRead: Boolean!
+  taskDescriptionWrite: Boolean!
+  taskAttachmentsRead: Boolean!
+  taskAttachmentsWrite: Boolean!
+
+  taskSubtasksRead: Boolean!
+  taskSubtasksWrite: Boolean!
+  taskWorksRead: Boolean!
+  taskWorksWrite: Boolean!
+  taskWorksAdvancedRead: Boolean!
+  taskWorksAdvancedWrite: Boolean!
+  taskMaterialsRead: Boolean!
+  taskMaterialsWrite: Boolean!
+  taskPausalInfo: Boolean!
+
+  viewComments: Boolean!
+  addComments: Boolean!
+  internal: Boolean!
+  emails: Boolean!
+  history: Boolean!
 }
 
 type ProjectGroupAttributeRights {
@@ -116,58 +112,43 @@ input ProjectGroupUpdateInput {
 }
 
 input ProjectGroupRightInput {
-  assignedRead: Boolean!
-  assignedWrite: Boolean!
-  companyRead: Boolean!
-  companyWrite: Boolean!
-  deadlineRead: Boolean!
-  deadlineWrite: Boolean!
-  milestoneRead: Boolean!
-  milestoneWrite: Boolean!
-  overtimeRead: Boolean!
-  overtimeWrite: Boolean!
-  pausalRead: Boolean!
-  pausalWrite: Boolean!
   projectRead: Boolean!
   projectWrite: Boolean!
-  projectPrimaryRead: Boolean!
-  projectPrimaryWrite: Boolean!
-  repeatRead: Boolean!
-  repeatWrite: Boolean!
-  requesterRead: Boolean!
-  requesterWrite: Boolean!
-  rozpocetRead: Boolean!
-  rozpocetWrite: Boolean!
-  scheduledRead: Boolean!
-  scheduledWrite: Boolean!
-  statusRead: Boolean!
-  statusWrite: Boolean!
-  tagsRead: Boolean!
-  tagsWrite: Boolean!
-  taskAttachmentsRead: Boolean!
-  taskAttachmentsWrite: Boolean!
-  taskDescriptionRead: Boolean!
-  taskDescriptionWrite: Boolean!
-  taskShortSubtasksRead: Boolean!
-  taskShortSubtasksWrite: Boolean!
-  typeRead: Boolean!
-  typeWrite: Boolean!
-  vykazRead: Boolean!
-  vykazWrite: Boolean!
-  addComments: Boolean!
-  emails: Boolean!
-  history: Boolean!
-  internal: Boolean!
-  projectSecondary: Boolean!
-  pausalInfo: Boolean!
-  taskTitleEdit: Boolean!
-  viewComments: Boolean!
+
   companyTasks: Boolean!
   allTasks: Boolean!
-  addTasks: Boolean!
-  deleteTasks: Boolean!
-  important: Boolean!
-  statistics: Boolean!
+
+  tasklistDnD: Boolean!
+  tasklistKalendar: Boolean!
+  tasklistGantt: Boolean!
+  tasklistStatistics: Boolean!
+
+  addTask: Boolean!
+
+  deleteTask: Boolean!
+  taskImportant: Boolean!
+  taskTitleWrite: Boolean!
+  taskProjectWrite: Boolean!
+  taskDescriptionRead: Boolean!
+  taskDescriptionWrite: Boolean!
+  taskAttachmentsRead: Boolean!
+  taskAttachmentsWrite: Boolean!
+
+  taskSubtasksRead: Boolean!
+  taskSubtasksWrite: Boolean!
+  taskWorksRead: Boolean!
+  taskWorksWrite: Boolean!
+  taskWorksAdvancedRead: Boolean!
+  taskWorksAdvancedWrite: Boolean!
+  taskMaterialsRead: Boolean!
+  taskMaterialsWrite: Boolean!
+  taskPausalInfo: Boolean!
+
+  viewComments: Boolean!
+  addComments: Boolean!
+  internal: Boolean!
+  emails: Boolean!
+  history: Boolean!
 }
 
 input ProjectGroupAttributeRightsInput {
@@ -203,9 +184,19 @@ input UserGroupInput {
   groupId: Int!
 }
 
+input CompanyGroupInput {
+  companyId: Int!
+  groupId: Int!
+}
+
 input UserGroupUpdateInput {
   groupId: Int!
   userIds: [Int]!
+}
+
+input CompanyGroupUpdateInput {
+  groupId: Int!
+  companyIds: [Int]!
 }
 `
 

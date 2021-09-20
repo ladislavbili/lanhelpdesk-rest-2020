@@ -78,7 +78,6 @@ export interface ProjectGroupRightsInstance extends DefaultInstance {
   taskTypeView: boolean;
   taskTypeEdit: boolean;
 
-
   pausalRequired: boolean;
   pausalAdd: boolean;
   pausalView: boolean;

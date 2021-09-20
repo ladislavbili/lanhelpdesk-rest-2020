@@ -163,7 +163,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
 
   //LOG FUNCTIONS
 
-  //logFunctionsOfModel(models.ProjectAttributes);
+  //logFunctionsOfModel(models.Project);
 
 
   if (ignoreUpdating) {
