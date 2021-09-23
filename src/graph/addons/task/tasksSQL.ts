@@ -77,14 +77,14 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
       value: filter.pausal,
       withRight: true,
       path: '"Task".',
-      right: 'pausalRead'
+      right: 'pausalView'
     },
     {
       key: 'overtime',
       value: filter.overtime,
       withRight: true,
       path: '"Task".',
-      right: 'overtimeRead'
+      right: 'overtimeView'
     },
   ].forEach((attribute) => {
     if (attribute.value !== null && attribute.value !== undefined) {
@@ -263,7 +263,7 @@ const getAssignedTosWhereSQL = (filter, userId, projectId) => {
   const ids = filter.assignedToCur ? [...filter.assignedTos, userId] : filter.assignedTos;
   if (ids.length > 0) {
     return `(
-      ${projectId ? `( ${rightsExists} AND "Project->ProjectGroups->ProjectGroupRight"."assignedRead" = false ) OR ` : ''}
+      ${projectId ? `( ${rightsExists} AND "Project->ProjectGroups->ProjectGroupRight"."assignedView" = false ) OR ` : ''}
       "assignedTosFilter"."id" IN (${ids.toString()})
     )
     `
@@ -275,7 +275,7 @@ const getTagsWhereSQL = (filter, userId, projectId) => {
   const ids = filter.tags;
   if (ids.length > 0) {
     return `(
-      ${projectId ? `( ${rightsExists} AND "Project->ProjectGroups->ProjectGroupRight"."tagsRead" = false ) OR ` : ''}
+      ${projectId ? `( ${rightsExists} AND "Project->ProjectGroups->ProjectGroupRight"."tagsView" = false ) OR ` : ''}
       "tagsFilter"."id" IN (${ids.toString()})
     )
     `
@@ -328,7 +328,7 @@ const getScheduledWhereSQL = (filter, projectId) => {
 
   //podmienky platia ak CONDITION je splneny alebo nema pravo scheduled citat
   return `(
-  ${projectId ? `( ${rightsExists} AND "Project->ProjectGroups->ProjectGroupRight"."assignedRead" = false ) OR ` : ''}
+  ${projectId ? `( ${rightsExists} AND "Project->ProjectGroups->ProjectGroupRight"."assignedView" = false ) OR ` : ''}
     (${conditions.join(' AND ')})
   )`;
 }
@@ -429,6 +429,7 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
 }
 
 export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, mainOrderBy, secondaryOrderBy, limit, offset) => {
+
   const outerSQLTop = (
     `
     SELECT "TaskData".*,
@@ -472,12 +473,11 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
       ${createModelAttributes("TaskType", "TaskType", models.TaskType)}
       ${createModelAttributes("Repeat", "Repeat", models.Repeat)}
       ${createModelAttributes("TaskMetadata", "TaskMetadata", models.TaskMetadata)}
-      ${
-    !isAdmin ?
+      ${ !isAdmin ?
       '' :
       `
-        ${createModelAttributes("Project->AdminProjectGroups", "Project.AdminProjectGroups", models.ProjectGroup)}
-        ${createModelAttributes("Project->AdminProjectGroups->ProjectGroupRight", "Project.AdminProjectGroups.ProjectGroupRight", models.ProjectGroupRights)}
+        ${createModelAttributes("Project->AdminProjectGroups", "Project.AdminProjectGroup", models.ProjectGroup)}
+        ${createModelAttributes("Project->AdminProjectGroups->ProjectGroupRight", "Project.AdminProjectGroup.ProjectGroupRight", models.ProjectGroupRights)}
         `
     }
       ${createModelAttributes("Project->ProjectGroups", "Project.ProjectGroups", models.ProjectGroup)}
@@ -534,6 +534,10 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
       "assignedTosFilter"."id" = ${userId} OR
       "Project->ProjectGroups->ProjectGroupRight"."allTasks" = true OR
       ("Project->ProjectGroups->ProjectGroupRight"."companyTasks" = true AND "Task"."CompanyId" = ${companyId})
+    ) AND
+    (
+      "Project->ProjectGroups->Users"."id" IS NOT NULL OR
+      "Project->ProjectGroups->Companies"."CompanyId" IS NOT NULL
     )
     `
   );
@@ -563,18 +567,19 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
     !isAdmin ?
       '' :
       `
-      INNER JOIN "project_group" AS "Project->AdminProjectGroups" ON 
+      INNER JOIN "project_group" AS "Project->AdminProjectGroups" ON
         "Project.id" = "Project->AdminProjectGroups"."ProjectId" AND
         "Project->AdminProjectGroups"."admin" = true AND
         "Project->AdminProjectGroups"."def" = true
       INNER JOIN "project_group_rights" AS "Project->AdminProjectGroups->ProjectGroupRight" ON "Project->AdminProjectGroups"."id" = "Project->AdminProjectGroups->ProjectGroupRight"."ProjectGroupId"
       `
     }
-    ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group" AS "Project->ProjectGroups" ON "Project.id" = "Project->ProjectGroups"."ProjectId"
-    ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
-    ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN (
+    LEFT OUTER JOIN "project_group" AS "Project->ProjectGroups" ON "Project.id" = "Project->ProjectGroups"."ProjectId"
+    LEFT OUTER JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
+    LEFT OUTER JOIN (
       "user_belongs_to_group" AS "Project->ProjectGroups->Users->user_belongs_to_group" INNER JOIN "users" AS "Project->ProjectGroups->Users" ON "Project->ProjectGroups->Users"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."UserId"
     ) ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."ProjectGroupId" AND "Project->ProjectGroups->Users"."id" = ${userId}
+    LEFT OUTER JOIN "company_belongs_to_group" AS "Project->ProjectGroups->Companies" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Companies"."ProjectGroupId" AND "Project->ProjectGroups->Companies"."CompanyId" = ${companyId}
     `
   );
 
@@ -628,6 +633,10 @@ export const generateWorkCountsSQL = (projectId, userId, companyId, isAdmin, whe
       "assignedTosFilter"."id" = ${userId} OR
       "Project->ProjectGroups->ProjectGroupRight"."allTasks" = true OR
       ("Project->ProjectGroups->ProjectGroupRight"."companyTasks" = true AND "Task"."CompanyId" = ${companyId})
+    ) AND
+    (
+      "Project->ProjectGroups->Users"."id" IS NOT NULL OR
+      "Project->ProjectGroups->Companies"."CompanyId" IS NOT NULL
     )
     `
   );
@@ -650,11 +659,12 @@ export const generateWorkCountsSQL = (projectId, userId, companyId, isAdmin, whe
        "task_has_tags" AS "tagsFilter->task_has_tags" INNER JOIN "tags" AS "tagsFilter" ON "tagsFilter"."id" = "tagsFilter->task_has_tags"."TagId"
      ) ON "Task"."id" = "tagsFilter->task_has_tags"."TaskId"
      INNER JOIN "projects" AS "Project" ON "Task"."ProjectId" = "Project"."id"
-     ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group" AS "Project->ProjectGroups" ON "Project"."id" = "Project->ProjectGroups"."ProjectId"
-     ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
-     ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN (
+     LEFT OUTER JOIN "project_group" AS "Project->ProjectGroups" ON "Project.id" = "Project->ProjectGroups"."ProjectId"
+     LEFT OUTER JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
+     LEFT OUTER JOIN (
        "user_belongs_to_group" AS "Project->ProjectGroups->Users->user_belongs_to_group" INNER JOIN "users" AS "Project->ProjectGroups->Users" ON "Project->ProjectGroups->Users"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."UserId"
      ) ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."ProjectGroupId" AND "Project->ProjectGroups->Users"."id" = ${userId}
+     LEFT OUTER JOIN "company_belongs_to_group" AS "Project->ProjectGroups->Companies" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Companies"."ProjectGroupId" AND "Project->ProjectGroups->Companies"."CompanyId" = ${companyId}
      ${
     where.length > 0 || !isAdmin ?
       `WHERE ${where} ${isAdmin ? '' : `${notAdminWhere}`}` :

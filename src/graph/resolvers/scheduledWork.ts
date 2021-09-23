@@ -1,4 +1,8 @@
-import { createDoesNoExistsError, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
+import {
+  createDoesNoExistsError,
+  AssignedToUserNotSolvingTheTask,
+  InsufficientProjectAccessError,
+} from '@/configs/errors';
 import {
   getModelAttribute,
   extractDatesFromObject,
@@ -25,6 +29,7 @@ import { TASK_HISTORY_CHANGE } from '@/configs/subscriptions';
 import {
   TaskInstance,
   RoleInstance,
+  AccessRightsInstance,
   SubtaskInstance,
   WorkTripInstance,
   TripTypeInstance,
@@ -61,7 +66,7 @@ const getTimeDifference = (fromDate, toDate) => {
 
 const queries = {
   scheduledWorks: async (root, { projectId, filter, userId, ...rangeDates }, { req, userID: currentUserId }) => {
-    const User = await checkResolver(req, ['tasklistCalendar']);
+    const User = await checkResolver(req);
     const isAdmin = (<RoleInstance>User.get('Role')).get('level') === 0;
     const { from, to } = extractDatesFromObject(rangeDates, ['from', 'to']);
     let where = [];
@@ -90,10 +95,19 @@ const queries = {
         "Project->ProjectGroups->ProjectGroupRight"."allTasks" = true OR
         ("Project->ProjectGroups->ProjectGroupRight"."companyTasks" = true AND "Task"."CompanyId" = ${User.get('CompanyId')})
       )`);
+      where.push(`(
+        "UserBelongsToGroup"."UserId" IS NOT NULL OR
+        "CompanyBelongsToGroup"."CompanyId" IS NOT NULL
+      )`);
+    }
+    if (!isAdmin && !(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRights')).get('tasklistCalendar')) {
+      where.push(`(
+        "Project->ProjectGroups->ProjectGroupRight"."tasklistKalendar" = true
+      )`);
     }
 
-    const SQLSubtasks = createScheduledWorksSQL(where, currentUserId, isAdmin, true);
-    const SQLWorkTrips = createScheduledWorksSQL(where, currentUserId, isAdmin, false);
+    const SQLSubtasks = createScheduledWorksSQL(where, currentUserId, User.get('CompanyId'), isAdmin, true);
+    const SQLWorkTrips = createScheduledWorksSQL(where, currentUserId, User.get('CompanyId'), isAdmin, false);
     const [responseScheduled1, responseScheduled2] = await Promise.all([
       sequelize.query(SQLSubtasks, {
         model: models.ScheduledWork,
@@ -121,9 +135,12 @@ const queries = {
 const mutations = {
 
   addScheduledWork: async (root, { taskId, userId, ...newDates }, { req }) => {
-    const User = await checkResolver(req, ['tasklistCalendar']);
+    const User = await checkResolver(req);
     const dates = extractDatesFromObject(newDates, scheduledDates);
-    const { Task } = await checkIfHasProjectRights(User.get('id'), taskId, undefined, ['assignedWrite', 'vykazWrite']);
+    const { Task, groupRights } = await checkIfHasProjectRights(User, taskId, undefined, ['taskWorksWrite'], [{ right: 'assigned', action: 'write' }]);
+    if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
+      throw InsufficientProjectAccessError;
+    }
     const [
       allSubtasks,
       AssignedTos
@@ -160,7 +177,7 @@ const mutations = {
   },
 
   updateScheduledWork: async (root, { id, ...newDates }, { req }) => {
-    const User = await checkResolver(req, ['tasklistCalendar']);
+    const User = await checkResolver(req);
     const dates = extractDatesFromObject(newDates, scheduledDates);
 
     let ScheduledWork = <ScheduledWorkInstance>await models.ScheduledWork.findByPk(id, {
@@ -183,8 +200,10 @@ const mutations = {
     const Subtask = <SubtaskInstance>ScheduledWork.get('Subtask');
     const ofSubtask = Subtask !== null && Subtask !== undefined;
     const TaskId = ofSubtask ? Subtask.get('TaskId') : WorkTrip.get('TaskId');
-
-    const { Task } = await checkIfHasProjectRights(User.get('id'), TaskId, undefined, ['assignedWrite', 'vykazWrite']);
+    const { Task, groupRights } = await checkIfHasProjectRights(User, TaskId, undefined, ['taskWorksWrite'], [{ right: 'assigned', action: 'write' }]);
+    if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
+      throw InsufficientProjectAccessError;
+    }
     await (<TaskInstance>Task).createTaskChange(
       {
         UserId: User.get('id'),
@@ -198,7 +217,6 @@ const mutations = {
       { include: [models.TaskChangeMessage] }
     );
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: TaskId });
-    console.log(getTimeDifference(moment(dates.from), moment(dates.to)) === null ? 0 : getTimeDifference(moment(dates.from), moment(dates.to)));
 
     await ScheduledWork.update(dates);
     if (ofSubtask) {
@@ -229,7 +247,10 @@ const mutations = {
     const ofSubtask = Subtask !== null && Subtask !== undefined;
     const TaskId = ofSubtask ? Subtask.get('TaskId') : WorkTrip.get('TaskId');
 
-    const { Task } = await checkIfHasProjectRights(User.get('id'), TaskId, undefined, ['assignedWrite', 'vykazWrite']);
+    const { Task, groupRights } = await checkIfHasProjectRights(User, TaskId, undefined, ['taskWorksWrite'], [{ right: 'assigned', action: 'write' }]);
+    if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
+      throw InsufficientProjectAccessError;
+    }
     await (<TaskInstance>Task).createTaskChange(
       {
         UserId: User.get('id'),

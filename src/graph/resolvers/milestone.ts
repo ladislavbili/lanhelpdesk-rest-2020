@@ -20,7 +20,7 @@ const queries = {
     if (Milestone === null) {
       return null;
     }
-    await checkIfHasProjectRights(User.get('id'), undefined, Milestone.get('ProjectId'), ['milestoneRead']);
+    await checkIfHasProjectRights(User, undefined, Milestone.get('ProjectId'), []);
     return Milestone;
   },
 }
@@ -30,7 +30,7 @@ const mutations = {
     const User = await checkResolver(req);
     const dates = extractDatesFromObject(args, ['startsAt', 'endsAt']);
 
-    await checkIfHasProjectRights(User.get('id'), undefined, projectId, ['milestoneWrite']);
+    await checkIfHasProjectRights(User, undefined, projectId, []);
     const NewMilestone = <MilestoneInstance>await models.Milestone.create({ ...args, ...dates, ProjectId: projectId });
     pubsub.publish(MILESTONE_CHANGE, { milestonesSubscription: true });
     return NewMilestone;
@@ -44,7 +44,7 @@ const mutations = {
     }
     const dates = extractDatesFromObject(args, ['startsAt', 'endsAt']);
 
-    await checkIfHasProjectRights(User.get('id'), undefined, Milestone.get('ProjectId'), ['milestoneWrite']);
+    await checkIfHasProjectRights(User, undefined, Milestone.get('ProjectId'), []);
 
     await Milestone.update({ ...args, ...dates });
     pubsub.publish(MILESTONE_CHANGE, { milestonesSubscription: true });
@@ -57,7 +57,7 @@ const mutations = {
     if (Milestone === null) {
       throw createDoesNoExistsError('Milestone', id);
     }
-    await checkIfHasProjectRights(User.get('id'), undefined, Milestone.get('ProjectId'), ['milestoneWrite']);
+    await checkIfHasProjectRights(User, undefined, Milestone.get('ProjectId'), []);
     await models.Task.update({ pendingChangable: true }, { where: { pendingChangable: false, MilestoneId: id } });
     await Milestone.destroy();
     pubsub.publish(MILESTONE_CHANGE, { milestonesSubscription: true });

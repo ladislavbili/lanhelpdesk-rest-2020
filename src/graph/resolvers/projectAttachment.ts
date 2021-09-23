@@ -20,7 +20,7 @@ const mutations = {
     if (ProjectAttachment === null) {
       throw createDoesNoExistsError('Project attachment', id);
     }
-    await checkIfHasProjectRights(User.get('id'), undefined, ProjectAttachment.get('ProjectId'), ['projectPrimaryWrite']);
+    await checkIfHasProjectRights(User, undefined, ProjectAttachment.get('ProjectId'), ['projectWrite']);
     try {
       fs.unlinkSync(<string>ProjectAttachment.get('path'));
     } catch (err) {

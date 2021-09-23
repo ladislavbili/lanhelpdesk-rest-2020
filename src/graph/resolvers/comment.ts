@@ -36,8 +36,7 @@ export interface EmailResultInstance {
 const queries = {
   comments: async (root, { task, limit, page }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const { groupRights } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['viewComments']);
-    //TODO only show internal if should
+    const { groupRights } = await checkIfHasProjectRights(SourceUser, task, undefined, ['viewComments']);
     if (limit && page) {
       const { count, rows } = await models.Comment.findAndCountAll({
         limit,
@@ -62,7 +61,7 @@ const queries = {
         where: {
           TaskId: task,
           internal: {
-            [Op.or]: [false, groupRights.internal]
+            [Op.or]: [false, groupRights.project.internal]
           },
           isParent: true
         }
@@ -93,7 +92,7 @@ const queries = {
       where: {
         TaskId: task,
         internal: {
-          [Op.or]: [false, groupRights.internal]
+          [Op.or]: [false, groupRights.project.internal]
         },
         isParent: true
       }
@@ -117,7 +116,7 @@ const mutations = {
     if (Comment === null) {
       throw createDoesNoExistsError('Comment', messageId);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), Comment.get('TaskId'), undefined, ['emails']);
+    await checkIfHasProjectRights(SourceUser, Comment.get('TaskId'), undefined, ['emails']);
     if (!Comment.get('isEmail')) {
       throw CommentNotEmailError;
     }

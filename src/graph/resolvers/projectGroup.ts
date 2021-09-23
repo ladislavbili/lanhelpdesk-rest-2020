@@ -24,7 +24,7 @@ const queries = {
   projectGroups: async (root, { id }, { req }) => {
     const User = await checkResolver(req);
     if ((<RoleInstance>User.get('Role')).get('level') !== 0) {
-      await checkIfHasProjectRights(User.get('id'), undefined, id, ['projectSecondary']);
+      await checkIfHasProjectRights(User, undefined, id, ['projectWrite']);
     }
     return models.ProjectGroup.findAll({
       where: {
@@ -42,7 +42,7 @@ const mutations = {
       throw createDoesNoExistsError('Project Group', id);
     }
     await idsDoExistsCheck([userId], models.User);
-    await checkIfHasProjectRights(User.get('id'), undefined, ProjectGroup.get('ProjectId'), ['projectSecondary']);
+    await checkIfHasProjectRights(User, undefined, ProjectGroup.get('ProjectId'), ['projectWrite']);
     await ProjectGroup.addUser(userId);
     pubsub.publish(PROJECT_CHANGE, { projectsSubscription: true });
     pubsub.publish(PROJECT_GROUP_CHANGE, { projectGroupsSubscription: ProjectGroup.get('ProjectId') });

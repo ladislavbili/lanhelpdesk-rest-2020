@@ -19,7 +19,7 @@ const queries = {
 const mutations = {
   addShortSubtask: async (root, { task, ...attributes }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['taskShortSubtasksWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskSubtasksWrite']);
     await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -45,7 +45,7 @@ const mutations = {
     if (ShortSubtask === null) {
       throw createDoesNoExistsError('Short subtask', id);
     }
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), ShortSubtask.get('TaskId'), undefined, ['taskShortSubtasksWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser, ShortSubtask.get('TaskId'), undefined, ['taskSubtasksWrite']);
     await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -68,7 +68,7 @@ const mutations = {
     if (ShortSubtask === null) {
       throw createDoesNoExistsError('Short subtask', id);
     }
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), ShortSubtask.get('TaskId'), undefined, ['taskShortSubtasksWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser, ShortSubtask.get('TaskId'), undefined, ['taskSubtasksWrite']);
     await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -92,7 +92,7 @@ const mutations = {
       throw createDoesNoExistsError('Repeat template', repeatTemplate);
     }
 
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['taskShortSubtasksWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, RepeatTemplate.get('ProjectId'), ['taskSubtasksWrite']);
 
     return models.ShortSubtask.create({
       RepeatTemplateId: repeatTemplate,
@@ -106,7 +106,7 @@ const mutations = {
     if (ShortSubtask === null) {
       throw createDoesNoExistsError('Short subtask', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>ShortSubtask.get('RepeatTemplate')).get('ProjectId'), ['taskShortSubtasksWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, (<RepeatTemplateInstance>ShortSubtask.get('RepeatTemplate')).get('ProjectId'), ['taskSubtasksWrite']);
     return ShortSubtask.update(args);
   },
 
@@ -116,7 +116,7 @@ const mutations = {
     if (ShortSubtask === null) {
       throw createDoesNoExistsError('Short subtask', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>ShortSubtask.get('RepeatTemplate')).get('ProjectId'), ['taskShortSubtasksWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, (<RepeatTemplateInstance>ShortSubtask.get('RepeatTemplate')).get('ProjectId'), ['taskSubtasksWrite']);
     return ShortSubtask.destroy();
   },
 }

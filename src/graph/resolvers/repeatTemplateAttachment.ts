@@ -22,10 +22,11 @@ const mutations = {
       throw createDoesNoExistsError('Repeat template attachment', id);
     }
     await checkIfHasProjectRights(
-      User.get('id'),
+      User,
       undefined,
       (<RepeatTemplateInstance>RepeatTemplateAttachment.get('RepeatTemplate')).get('ProjectId'),
-      ['taskAttachmentsWrite', 'repeatWrite']
+      ['taskAttachmentsWrite'],
+      [{ right: 'repeat', action: 'edit' }]
     );
     try {
       fs.unlinkSync(<string>RepeatTemplateAttachment.get('path'));

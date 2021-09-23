@@ -21,7 +21,7 @@ const mutations = {
     if (TaskAttachment === null) {
       throw createDoesNoExistsError('Task attachment', id);
     }
-    const { Task } = await checkIfHasProjectRights(User.get('id'), TaskAttachment.get('TaskId'), undefined, ['taskAttachmentsWrite']);
+    const { Task } = await checkIfHasProjectRights(User, TaskAttachment.get('TaskId'), undefined, ['taskAttachmentsWrite']);
     try {
       fs.unlinkSync(<string>TaskAttachment.get('path'));
     } catch (err) {

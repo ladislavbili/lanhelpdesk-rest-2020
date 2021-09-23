@@ -7,7 +7,7 @@ import {
   removeLastComma,
 } from '../sqlFunctions';
 
-export const generateTaskSQL = (taskId, userId, isAdmin) => {
+export const generateTaskSQL = (taskId, userId, companyId, isAdmin) => {
 
   const attributes = (
     `SELECT DISTINCT
@@ -40,18 +40,27 @@ export const generateTaskSQL = (taskId, userId, isAdmin) => {
     LEFT OUTER JOIN "task_metadata" AS "TaskMetadata" ON "Task"."id" = "TaskMetadata"."TaskId"
     LEFT OUTER JOIN "repeat_times" AS "RepeatTime" ON "Task"."RepeatTimeId" = "RepeatTime"."id"
 
-
-    ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group" AS "Project->ProjectGroups" ON "Project"."id" = "Project->ProjectGroups"."ProjectId"
-    ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
-    ${isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN ( "user_belongs_to_group" AS "Project->ProjectGroups->Users->user_belongs_to_group" INNER JOIN "users" AS "Project->ProjectGroups->Users" ON "Project->ProjectGroups->Users"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."UserId") ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."ProjectGroupId" AND "Project->ProjectGroups->Users"."id" = ${userId}
+    LEFT OUTER JOIN "project_group" AS "Project->ProjectGroups" ON "Project"."id" = "Project->ProjectGroups"."ProjectId"
+    LEFT OUTER JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
+    LEFT OUTER JOIN (
+      "user_belongs_to_group" AS "Project->ProjectGroups->Users->user_belongs_to_group" INNER JOIN "users" AS "Project->ProjectGroups->Users" ON "Project->ProjectGroups->Users"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."UserId"
+    ) ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."ProjectGroupId" AND "Project->ProjectGroups->Users"."id" = ${userId}
+    LEFT OUTER JOIN "company_belongs_to_group" AS "Project->ProjectGroups->Companies" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Companies"."ProjectGroupId" AND "Project->ProjectGroups->Companies"."CompanyId" = ${companyId}
     `
   )
 
   let sql = `
   ${attributes.slice(0, attributes.lastIndexOf(","))}
   FROM ( SELECT * FROM "tasks" WHERE "tasks"."id" = ${taskId} ) AS "Task"
+  ${isAdmin ?
+      '' :
+      ` AND (
+      "Project->ProjectGroups->Users"."id" IS NOT NULL OR
+      "Project->ProjectGroups->Companies"."CompanyId" IS NOT NULL
+    )`
+    }
   ${associations}
-  `
+  `;
   return sql.replace(/"/g, '`');
 }
 

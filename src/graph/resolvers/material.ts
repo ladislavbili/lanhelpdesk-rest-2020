@@ -17,7 +17,7 @@ import {
 const queries = {
   materials: async (root, { taskId }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser.get('id'), taskId, undefined, ['vykazRead']);
+    await checkIfHasProjectRights(SourceUser, taskId, undefined, ['taskMaterialsRead'], []);
     return models.Material.findAll({
       order: [
         ['order', 'ASC'],
@@ -33,7 +33,7 @@ const queries = {
 const mutations = {
   addMaterial: async (root, { task, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskMaterialsWrite'], []);
     const [
       TaskMetadata,
       Project,
@@ -106,7 +106,7 @@ const mutations = {
         message: `Material ${Material.get('title')}${params.title && params.title !== Material.get('title') ? `/${params.title}` : ''} was updated.`,
       }
     ]
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskMaterialsWrite'], []);
     if (params.approved === false && Material.get('approved') === true) {
       params = {
         ...params,
@@ -195,7 +195,7 @@ const mutations = {
     const Task = <TaskInstance>Material.get('Task');
     const Project = <ProjectInstance>Task.get('Project');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskMaterialsWrite'], []);
     await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -227,8 +227,7 @@ const mutations = {
     if (RepeatTemplate === null) {
       throw createDoesNoExistsError('Repeat template', repeatTemplate);
     }
-
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, RepeatTemplate.get('ProjectId'), ['taskMaterialsWrite'], [{ right: 'repeat', action: 'edit' }]);
     if (params.approved) {
       params = {
         ...params,
@@ -247,7 +246,7 @@ const mutations = {
     if (Material === null) {
       throw createDoesNoExistsError('Material', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>Material.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, (<RepeatTemplateInstance>Material.get('RepeatTemplate')).get('ProjectId'), ['taskMaterialsWrite'], [{ right: 'repeat', action: 'edit' }]);
     if (params.approved === false && Material.get('approved') === true) {
       params = {
         ...params,
@@ -268,7 +267,7 @@ const mutations = {
     if (Material === null) {
       throw createDoesNoExistsError('Material', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>Material.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, (<RepeatTemplateInstance>Material.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite'], [{ right: 'repeat', action: 'edit' }]);
     return Material.destroy();
   },
 

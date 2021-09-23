@@ -4,7 +4,7 @@ import {
   createModelAttributes,
 } from './sqlFunctions';
 
-export const generateRepeatSQL = (active, from, to, projectId, userId, isAdmin) => {
+export const generateRepeatSQL = (active, from, to, projectId, userId, companyId, calendarRight, isAdmin) => {
   const nextTrigger = `(
     FROM_UNIXTIME((
       ${Math.floor(from / 1000)} +
@@ -33,9 +33,21 @@ export const generateRepeatSQL = (active, from, to, projectId, userId, isAdmin) 
       ( '${toDBDate(from)}' <= "Repeat"."startsAt" ) AND ( '${toDBDate(to)}' >= "Repeat"."startsAt" )
     )
   )`);
+
+  //either user has calendar right or check if has proj
   if (!isAdmin) {
-    where.push(`( "ProjectGroupRight"."repeatRead" = true )`)
+    if (!calendarRight) {
+      where.push(`(
+        "ProjectGroupRight"."tasklistKalendar" = true
+      )`);
+    }
+    where.push(`( "ProjectGroupRight"."repeatRead" = true )`);
+    where.push(`(
+    "UserBelongsToGroup"."UserId" IS NOT NULL OR
+    "CompanyBelongsToGroup"."CompanyId" IS NOT NULL
+  )`);
   }
+
 
   let sql = `
   SELECT
@@ -47,8 +59,8 @@ export const generateRepeatSQL = (active, from, to, projectId, userId, isAdmin) 
       true as "canEdit"
       ` :
       `
-      "ProjectGroupRight"."repeatRead" AND "ProjectGroupRight"."addTasks" as "canCreateTask",
-      "ProjectGroupRight"."repeatWrite" as "canEdit"
+      "ProjectGroupRight"."repeatRead" IS NOT NULL AND "ProjectGroupRight"."repeatRead" AND "ProjectGroupRight"."addTasks" as "canCreateTask",
+      "ProjectGroupRight"."repeatWrite" IS NOT NULL AND "ProjectGroupRight"."repeatWrite" as "canEdit"
       `
     }
   FROM "repeat" AS "Repeat"
@@ -58,7 +70,8 @@ export const generateRepeatSQL = (active, from, to, projectId, userId, isAdmin) 
       `
     INNER JOIN "projects" AS "Project" ON "Project"."id" = "RepeatTemplate"."ProjectId"
     INNER JOIN "project_group" AS "ProjectGroup" ON "ProjectGroup"."ProjectId" = "Project"."id"
-    INNER JOIN "user_belongs_to_group" AS "UserBelongsToGroup" ON "UserBelongsToGroup"."ProjectGroupId" = "ProjectGroup"."id" AND "UserBelongsToGroup"."UserId" = ${userId}
+    LEFT OUTER JOIN "user_belongs_to_group" AS "UserBelongsToGroup" ON "UserBelongsToGroup"."ProjectGroupId" = "ProjectGroup"."id" AND "UserBelongsToGroup"."UserId" = ${userId}
+    LEFT OUTER JOIN "company_belongs_to_group" AS "CompanyBelongsToGroup" ON "CompanyBelongsToGroup"."ProjectGroupId" = "ProjectGroup"."id" AND "CompanyBelongsToGroup"."CompanyId" = ${companyId}
     INNER JOIN "project_group_rights" AS "ProjectGroupRight" ON "ProjectGroupRight"."ProjectGroupId" = "ProjectGroup"."id"
     `
     }

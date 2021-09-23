@@ -13,7 +13,7 @@ const { withFilter } = require('apollo-server-express');
 const queries = {
   taskChanges: async (root, { taskId }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser.get('id'), taskId, undefined, ['history']);
+    await checkIfHasProjectRights(SourceUser, taskId, undefined, ['history']);
     return models.TaskChange.findAll({
       include: [
         models.TaskChangeMessage,

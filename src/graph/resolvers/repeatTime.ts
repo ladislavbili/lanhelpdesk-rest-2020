@@ -10,10 +10,12 @@ import {
   ProjectGroupRightsInstance,
   RoleInstance,
   UserInstance,
+  AccessRightsInstance,
 } from '@/models/instances';
 import {
-  allGroupRights
-} from '@/configs/projectConstants';
+  mergeGroupRights,
+  checkIfHasProjectRights,
+} from '@/graph/addons/project';
 import checkResolver from './checkResolver';
 import { getModelAttribute, extractDatesFromObject } from '@/helperFunctions';
 import { repeatTimeEvent } from '@/services/repeatTasks';
@@ -21,7 +23,8 @@ import { repeatTimeEvent } from '@/services/repeatTasks';
 
 const queries = {
   repeatTimes: async (root, { repeatId, repeatIds, active, ...rangeDates }, { req }) => {
-    const User = <UserInstance>await checkResolver(req, ['tasklistCalendar']);
+    const User = <UserInstance>await checkResolver(req);
+    const canUserSeeCalendarGlobally = (<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRights')).get('tasklistCalendar');
     let repeatWhere = <any>{};
     let repeatTimeWhere = <any>{};
 
@@ -66,75 +69,100 @@ const queries = {
     }
 
     if ((<RoleInstance>User.get('Role')).get('level') !== 0) {
-      const ProjectGroups = <ProjectGroupInstance[]>await User.getProjectGroups({
-        attributes: ['id'],
-        include: [
-          {
-            model: models.ProjectGroupRights,
-            required: true,
-            where: {
-              repeatRead: true,
-            }
-          },
-          {
-            model: models.Project,
-            attributes: ['id'],
-            required: true,
+      const userProjectsResponse = <any[]>(<any[]>
+        await Promise.all([
+          models.Project.findAll({
             include: [
               {
+                model: models.ProjectGroup,
                 required: true,
-                model: models.RepeatTemplate,
-                attributes: ['id', 'title'],
                 include: [
                   {
+                    model: models.User,
                     required: true,
-                    model: models.Repeat,
-                    where: repeatWhere,
-                    include: [{
-                      model: models.RepeatTime,
-                      required: true,
-                      where: repeatTimeWhere,
-                      include: [
-                        {
-                          model: models.Task,
-                          include: [models.Status]
-                        }
-                      ]
-                    }]
+                    where: { id: User.get('id') },
+                  },
+                  {
+                    model: models.ProjectGroupRights,
+                    required: true,
+                    where: {
+                      repeatView: true,
+                      ...(canUserSeeCalendarGlobally ? {} : { tasklistKalendar: true })
+                    },
                   }
-                ]
+                ],
               }
             ]
-          }
+          }),
+          models.Project.findAll({
+            include: [
+              {
+                model: models.ProjectGroup,
+                required: true,
+                include: [
+                  {
+                    model: models.Company,
+                    required: true,
+                    where: { id: User.get('Company') },
+                  },
+                  {
+                    model: models.ProjectGroupRights,
+                    required: true,
+                    where: {
+                      repeatView: true,
+                      ...(canUserSeeCalendarGlobally ? {} : { tasklistKalendar: true })
+                    }
+                  }
+                ],
+              }
+            ]
+          })
+        ])
+      ).reduce((acc, Projects) => {
+        return [
+          ...acc,
+          ...(<ProjectInstance[]>Projects).map((Project) => { return { id: Project.get('id'), groupRights: <ProjectGroupRightsInstance>(<ProjectGroupInstance[]>Project.get("ProjectGroups"))[0].get('ProjectGroupRight') } }),
+        ]
+      }, []);
+
+      let userProjects = [];
+      userProjectsResponse.forEach(async (userProject) => {
+        const sameProjects = userProjectsResponse.filter((userProject2) => userProject2.id === userProject.id);
+        if (!userProjects.some((userProject2) => userProject2.id === userProject.id)) {
+          userProjects.push({ id: userProject.id, groupRights: await mergeGroupRights(sameProjects[0].groupRights, sameProjects[1] ? sameProjects[1].groupRights : null) });
+        }
+      })
+
+      const RepeatTimes = <RepeatTimeInstance[]>await models.RepeatTime.findAll({
+        where: repeatTimeWhere,
+        include: [
+          {
+            model: models.Task,
+            include: [models.Status]
+          },
+          {
+            model: models.Repeat,
+            include: [{
+              model: models.RepeatTemplate,
+              required: true,
+              where: {
+                ProjectId: userProjects.map((userProject) => userProject.id)
+              },
+            }],
+            where: repeatWhere
+          },
         ]
       });
 
-      return <RepeatTimeInstance[]>ProjectGroups.reduce((acc, ProjectGroup) => {
-        const ProjectGroupRights = <ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight');
-        const Project = <ProjectInstance>ProjectGroup.get('Project');
-
-        return [
-          ...acc,
-          ...(<RepeatInstance[]>(<RepeatTemplateInstance[]>Project.get('RepeatTemplates'))
-            .map((RepeatTemplate) => {
-              let Repeat = <RepeatInstance>RepeatTemplate.get('Repeat');
-              Repeat.RepeatTemplate = RepeatTemplate;
-              return Repeat;
-            }))
-            .reduce((acc2, Repeat) => {
-              return [
-                ...acc2,
-                ...(<RepeatTimeInstance[]>Repeat.get('RepeatTimes')).map((RepeatTime) => {
-                  RepeatTime.Repeat = Repeat;
-                  RepeatTime.canEdit = <boolean>ProjectGroupRights.get('repeatWrite');
-                  RepeatTime.canCreateTask = <boolean>ProjectGroupRights.get('repeatRead') && <boolean>ProjectGroupRights.get('addTasks');
-                  RepeatTime.rights = ProjectGroupRights.get();
-                  return RepeatTime;
-                })
-              ]
-            }, []),
-        ]
-      }, []);
+      return RepeatTimes.map((RepeatTime) => {
+        const Repeat = <RepeatInstance>RepeatTime.get('Repeat');
+        const Template = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
+        const groupRights = userProjects.find((userProject) => userProject.id === Template.get('ProjectId')).groupRights;
+        RepeatTime.canEdit = <boolean>groupRights.attributes.repeat.edit;
+        RepeatTime.canCreateTask = <boolean>(groupRights.attributes.repeat.view && groupRights.project.addTask);
+        RepeatTime.rights = groupRights;
+        return RepeatTime;
+      })
 
     } else {
       const RepeatTimes = <RepeatTimeInstance[]>await models.RepeatTime.findAll({
@@ -146,16 +174,47 @@ const queries = {
           },
           {
             model: models.Repeat,
-            include: [models.RepeatTemplate],
+            include: [
+              {
+                model: models.RepeatTemplate,
+                required: true,
+                include: [
+                  {
+                    model: models.Project,
+                    required: true,
+                    include: [{
+                      model: models.ProjectGroups,
+                      where: {
+                        admin: true,
+                        def: true,
+                      },
+                      include: [models.ProjectGroupRights]
+                    }],
+                  },
+                ]
+              }
+            ],
             where: repeatWhere
           },
         ]
       });
 
-      return RepeatTimes.map((RepeatTime) => {
-        RepeatTime.canEdit = <boolean>true;
-        RepeatTime.canCreateTask = <boolean>true;
-        RepeatTime.rights = allGroupRights;
+      return RepeatTimes.map(async (RepeatTime) => {
+        const GroupRights = (
+          <ProjectGroupRightsInstance>(
+            <ProjectGroupInstance[]>(
+              <ProjectInstance>(
+                <RepeatTemplateInstance>(
+                  <RepeatInstance>RepeatTime.get('Repeat')
+                ).get('RepeatTemplate')
+              ).get('Project')
+            ).get('ProjectGroups')
+          )[0].get('ProjectGroupRight')
+        );
+        const groupRights = await mergeGroupRights(GroupRights);
+        RepeatTime.canEdit = <boolean>groupRights.attributes.repeat.edit;
+        RepeatTime.canCreateTask = <boolean>(groupRights.attributes.repeat.view && groupRights.project.addTask);
+        RepeatTime.rights = groupRights;
         return RepeatTime;
       })
     }
@@ -164,31 +223,19 @@ const queries = {
 
 const mutations = {
   addRepeatTime: async (root, { repeatId, ...params }, { req }) => {
-    const User = <UserInstance>await checkResolver(req, ['tasklistCalendar']);
+    const User = <UserInstance>await checkResolver(req);
     const Repeat = <RepeatInstance>await models.Repeat.findByPk(repeatId, {
       include: [
         models.RepeatTemplate
       ]
     });
-    const ProjectGroups = <ProjectGroupInstance[]>await User.getProjectGroups({
-      attributes: ['id'],
-      include: [
-        {
-          model: models.ProjectGroupRights,
-          required: true,
-          attributes: ['repeatWrite'],
-          where: {
-            repeatWrite: true,
-          }
-        },
-      ],
-      where: {
-        ProjectId: (<RepeatTemplateInstance>Repeat.get('RepeatTemplate')).get('ProjectId')
-      }
-    });
-    if (ProjectGroups.length === 0 && (<RoleInstance>User.get('Role')).get('level') !== 0) {
+    const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
+
+    const { groupRights } = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), [], [{ right: 'repeat', action: 'write' }]);
+    if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
       throw CantAddOrEditRepeatError;
     }
+
     const dates = extractDatesFromObject(params, ['originalTrigger', 'triggersAt']);
 
     let NewRepeatTime = <RepeatTimeInstance>await models.RepeatTime.create({
@@ -196,16 +243,16 @@ const mutations = {
       ...params,
       ...dates
     });
-    const projectGroupRights = (<RoleInstance>User.get('Role')).get('level') === 0 ? allGroupRights : (<ProjectGroupRightsInstance>ProjectGroups[0].get('ProjectGroupRight')).get();
-    NewRepeatTime.canEdit = projectGroupRights.repeatWrite;
-    NewRepeatTime.canCreateTask = projectGroupRights.repeatRead && projectGroupRights.addTasks;
-    NewRepeatTime.rights = projectGroupRights;
+
+    NewRepeatTime.canEdit = <boolean>groupRights.attributes.repeat.edit;
+    NewRepeatTime.canCreateTask = <boolean>(groupRights.attributes.repeat.view && groupRights.project.addTask);
+    NewRepeatTime.rights = groupRights;
     repeatTimeEvent.emit('changed', repeatId);
     return NewRepeatTime;
   },
 
   updateRepeatTime: async (root, { id, ...params }, { req }) => {
-    const User = <UserInstance>await checkResolver(req, ['tasklistCalendar']);
+    const User = <UserInstance>await checkResolver(req);
     let RepeatTime = <RepeatTimeInstance>await models.RepeatTime.findByPk(id, {
       include: [
         {
@@ -217,65 +264,45 @@ const mutations = {
     if (RepeatTime === null) {
       throw createDoesNoExistsError('Repeat time', id);
     }
-    const ProjectGroups = <ProjectGroupInstance[]>await User.getProjectGroups({
-      attributes: ['id'],
-      include: [
-        {
-          model: models.ProjectGroupRights,
-          required: true,
-          attributes: ['repeatWrite'],
-          where: {
-            repeatWrite: true,
-          }
-        },
-      ],
-      where: {
-        ProjectId: (<RepeatTemplateInstance>(<RepeatInstance>RepeatTime.get('Repeat')).get('RepeatTemplate')).get('ProjectId')
-      }
-    });
-    if (ProjectGroups.length === 0 && (<RoleInstance>User.get('Role')).get('level') !== 0) {
+    const RepeatTemplate = <RepeatTemplateInstance>(<RepeatInstance>RepeatTime.get('Repeat')).get('RepeatTemplate');
+
+    const { groupRights } = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), [], [{ right: 'repeat', action: 'write' }]);
+    if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
       throw CantAddOrEditRepeatError;
     }
+
     const dates = params.triggersAt ? extractDatesFromObject(params, ['triggersAt']) : {};
     await RepeatTime.update({
       ...params,
       ...dates,
     });
     repeatTimeEvent.emit('changed', RepeatTime.get('RepeatId'));
-    const projectGroupRights = (<RoleInstance>User.get('Role')).get('level') === 0 ? allGroupRights : (<ProjectGroupRightsInstance>ProjectGroups[0].get('ProjectGroupRight')).get();
-    RepeatTime.canEdit = projectGroupRights.repeatWrite;
-    RepeatTime.canCreateTask = projectGroupRights.repeatRead && projectGroupRights.addTasks;
-    RepeatTime.rights = projectGroupRights;
+    RepeatTime.canEdit = <boolean>groupRights.attributes.repeat.edit;
+    RepeatTime.canCreateTask = <boolean>(groupRights.attributes.repeat.view && groupRights.project.addTask);
+    RepeatTime.rights = groupRights;
     return RepeatTime;
   },
 
   deleteRepeatTime: async (root, { id }, { req }) => {
     const User = <UserInstance>await checkResolver(req);
     const RepeatTime = await models.RepeatTime.findByPk(id, {
-      include: [models.Repeat]
+      include: [
+        {
+          model: models.Repeat,
+          include: [models.RepeatTemplate]
+        }
+      ]
     });
     if (RepeatTime === null) {
       throw createDoesNoExistsError('Repeat time', id);
     }
-    const ProjectGroups = <ProjectGroupInstance[]>await User.getProjectGroups({
-      attributes: ['id'],
-      include: [
-        {
-          model: models.ProjectGroupRights,
-          required: true,
-          attributes: ['repeatWrite'],
-          where: {
-            repeatWrite: true,
-          }
-        },
-      ],
-      where: {
-        ProjectId: (<RepeatTemplateInstance>(<RepeatInstance>RepeatTime.get('Repeat')).get('RepeatTemplate')).get('ProjectId')
-      }
-    });
-    if (ProjectGroups.length === 0 && (<RoleInstance>User.get('Role')).get('level') !== 0) {
+    const RepeatTemplate = <RepeatTemplateInstance>(<RepeatInstance>RepeatTime.get('Repeat')).get('RepeatTemplate');
+
+    const { groupRights } = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), [], [{ right: 'repeat', action: 'write' }]);
+    if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
       throw CantAddOrEditRepeatError;
     }
+
     const repeatId = RepeatTime.get('RepeatId');
     await RepeatTime.destroy();
     repeatTimeEvent.emit('changed', repeatId);

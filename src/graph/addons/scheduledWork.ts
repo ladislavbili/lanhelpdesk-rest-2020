@@ -60,7 +60,7 @@ export const scheduledFilterSQL = (from, to, userId) => {
 
 //sort by start date
 //get attributes, task - (title id) ,task status (id color title), start, end
-export const createScheduledWorksSQL = (where, currentUserId, isAdmin, ofSubtask) => {
+export const createScheduledWorksSQL = (where, userId, companyId, isAdmin, ofSubtask) => {
 
   const origin = ofSubtask ? "Subtask" : "WorkTrip";
 
@@ -93,11 +93,12 @@ export const createScheduledWorksSQL = (where, currentUserId, isAdmin, ofSubtask
   INNER JOIN "tasks" AS "Task" ON "${origin}"."TaskId" = "Task"."id"
   INNER JOIN "projects" AS "Project" ON "Task"."ProjectId" = "Project"."id"
   INNER JOIN "users" AS "User" ON "${origin}"."UserId" = "User"."id"
-  ${ isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group" AS "Project->ProjectGroups" ON "Project"."id" = "Project->ProjectGroups"."ProjectId"
-  ${ isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
-  ${ isAdmin ? 'LEFT OUTER' : 'INNER'} JOIN(
+  LEFT OUTER JOIN "project_group" AS "Project->ProjectGroups" ON "Project"."id" = "Project->ProjectGroups"."ProjectId"
+  LEFT OUTER JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
+  LEFT OUTER JOIN(
     "user_belongs_to_group" AS "Project->ProjectGroups->Users->user_belongs_to_group" INNER JOIN "users" AS "Project->ProjectGroups->Users" ON "Project->ProjectGroups->Users"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."UserId"
-  ) ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."ProjectGroupId" AND "Project->ProjectGroups->Users"."id" = ${currentUserId}
+  ) ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."ProjectGroupId" AND "Project->ProjectGroups->Users"."id" = ${userId}
+  LEFT OUTER JOIN "company_belongs_to_group" AS "Project->ProjectGroups->Companies" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Companies"."ProjectGroupId" AND "Project->ProjectGroups->Companies"."CompanyId" = ${companyId}
 
   LEFT OUTER JOIN(
     "task_assignedTo" AS "assignedTosFilter->task_assignedTo" INNER JOIN "users" AS "assignedTosFilter" ON "assignedTosFilter"."id" = "assignedTosFilter->task_assignedTo"."UserId"

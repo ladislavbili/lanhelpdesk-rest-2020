@@ -106,6 +106,9 @@ export const MilestoneNotPartOfProject = new ApolloError("Milestone is not from 
 export const createProjectFixedAttributeError = (name): ApolloError => {
   return new ApolloError(`Parameter ${name} is fixed by the project and is not the same!`, 'FIXED_ATTRIBUTE_BY_PROJECT');
 }
+export const createProjectRequiredAttributeError = (name): ApolloError => {
+  return new ApolloError(`Parameter ${name} is required by the project and is emty!`, 'REQUIRED_ATTRIBUTE_BY_PROJECT');
+}
 export const StatusPendingAttributesMissing = new ApolloError("If status is set to action pending, you must pass both, pendingDate and pendingChangable.", "INSUFFICIENT_PENDING_ATTRIBUTES");
 
 export const TaskNotNullAttributesPresent = new ApolloError("Task can't have null value for company, project and status.", "TASK_NOT_NULL_ATTRIBUTES");

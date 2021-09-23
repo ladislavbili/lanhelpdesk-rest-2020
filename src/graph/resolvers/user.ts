@@ -518,13 +518,6 @@ const mutations = {
 
   setTasklistLayout: async (root, { tasklistLayout }, { req }) => {
     const User = await checkResolver(req);
-    const rights = <AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight');
-    if (
-      (tasklistLayout === 3 && !rights.tasklistCalendar) ||
-      (![0, 1, 3].includes(tasklistLayout) && !rights.tasklistLayout)
-    ) {
-      throw createMissingRightsError('change layout', ['tasklistLayout', 'tasklistCalendar']);
-    }
     await User.update({ tasklistLayout: parseInt(tasklistLayout) });
     pubsub.publish(USER_DATA_CHANGE, { userDataSubscription: [User.get('id')] });
     return User;

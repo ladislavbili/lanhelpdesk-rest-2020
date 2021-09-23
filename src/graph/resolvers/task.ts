@@ -14,15 +14,13 @@ import {
   CantCreateTasksError,
   CantViewTaskError
 } from '@/configs/errors';
-import {
-  allGroupRights
-} from '@/configs/projectConstants';
 import { models, sequelize } from '@/models';
 import { Op, QueryTypes } from 'sequelize';
 import {
   TaskInstance,
   MilestoneInstance,
   ProjectInstance,
+  ProjectAttributesInstance,
   ProjectGroupInstance,
   ProjectGroupRightsInstance,
   StatusInstance,
@@ -58,9 +56,9 @@ import {
 import {
   canViewTask,
   checkIfHasProjectRights,
-  checkDefRequiredSatisfied,
   checkIfCanEditTaskAttributes,
-  applyFixedOnAttributes,
+  mergeGroupRights,
+  checkAndApplyFixedAndRequiredOnAttributes,
 } from '@/graph/addons/project';
 import {
   calculateMetadata,
@@ -257,8 +255,9 @@ const queries = {
   task: async (root, { id }, { req }) => {
     const User = await checkResolver(req);
     const isAdmin = (<RoleInstance>User.get('Role')).get('level') === 0;
+    const { groupRights } = await checkIfHasProjectRights(User, id, undefined, [], []);
 
-    const SQL = generateTaskSQL(id, User.get('id'), isAdmin);
+    const SQL = generateTaskSQL(id, User.get('id'), User.get('CompanyId'), isAdmin);
     let responseTask = <any>await sequelize.query(SQL, {
       model: models.Task,
       type: QueryTypes.SELECT,
@@ -376,16 +375,14 @@ const queries = {
         TaskType: Price.TaskType.id !== null ? Price.TaskType : null,
         TripType: Price.TripType.id !== null ? Price.TripType : null,
       }
-    }
-    );
+    });
 
     return {
       ...responseTask[0],
-
       TaskAttachments: responseTaskAttachments,
       assignedTos: responseAssignedTos,
       Tags: responseTags,
-      rights: allGroupRights,
+      rights: groupRights,
       Company,
       ShortSubtasks: responseShortSubtasks,
       Subtasks: (<any[]>responseSubtasks).map((subtask) => ({
@@ -437,19 +434,20 @@ const queries = {
 
   getNumberOfTasks: async (root, { projectId }, { req }) => {
     const User = await checkResolver(req);
-    await checkIfHasProjectRights(User.get('id'), undefined, projectId, ['projectWrite']);
+    await checkIfHasProjectRights(User, undefined, projectId, ['projectWrite']);
     return models.Task.count({ where: { ProjectId: projectId } })
   },
 }
 
 const mutations = {
   addTask: async (root, args, { req }) => {
+    const User = await checkResolver(req);
     const project = args.project;
     const Project = await models.Project.findByPk(
       project,
       {
         include: [
-          models.Milestone,
+          models.ProjectAttributes,
           {
             model: models.Tag,
             as: 'tags'
@@ -462,6 +460,7 @@ const mutations = {
             model: models.ProjectGroup,
             include: [
               models.User,
+              { model: models.Company, include: [models.User] },
               models.ProjectGroupRights
             ]
           },
@@ -472,35 +471,29 @@ const mutations = {
       throw createDoesNoExistsError('project', project);
     }
 
-    const User = await checkResolver(
-      req,
-      [],
-      false,
-      [
-        {
-          model: models.ProjectGroup,
-          required: false,
-          include: [models.ProjectGroupRights],
-          where: {
-            ProjectId: project,
-          }
-        },
-      ]
-    );
+    const ProjectStatuses = <StatusInstance[]>Project.get('projectStatuses');
+    const ProjectAttributes = <ProjectAttributesInstance>Project.get('ProjectAttribute');
+    const ProjectGroups = <ProjectGroupInstance[]>Project.get('ProjectGroups');
+    //get users rights in the project
+    let userGroupRights = <any>{};
+    const UserProjectGroupRights = <ProjectGroupRightsInstance[]>ProjectGroups.filter((ProjectGroup) => (
+      (<UserInstance[]>ProjectGroup.get('Users')).some((GroupUser) => GroupUser.get('id') === User.get('id')) ||
+      (<CompanyInstance[]>ProjectGroup.get('Companies')).some((Company) => Company.get('id') === User.get('CompanyId'))
+    )).map((ProjectGroup) => ProjectGroup.get('ProjectGroupRight'));
 
-    const def = await Project.get('def');
+    if ((<RoleInstance>User.get('Role')).get('level') === 0) {
+      userGroupRights = await mergeGroupRights(ProjectGroups.find((ProjectGroup) => ProjectGroup.get('admin') && ProjectGroup.get('def')).get('ProjectGroupRight'))
+    } else if (UserProjectGroupRights.length === 0) {
+      throw InsufficientProjectAccessError;
+    } else {
+      userGroupRights = await mergeGroupRights(UserProjectGroupRights[0], UserProjectGroupRights[1]);
+    }
 
-    args = applyFixedOnAttributes(def, args, User, <StatusInstance[]>Project.get('projectStatuses'));
+    args = checkAndApplyFixedAndRequiredOnAttributes(await ProjectAttributes.get('attributes'), userGroupRights.attributes, args, User, ProjectStatuses);
 
     let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, shortSubtasks, ...params } = args;
 
-    const groupRights = (
-      (<RoleInstance>User.get('Role')).get('level') === 0 ?
-        allGroupRights :
-        (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('ProjectId') === project).get('ProjectGroupRight')).get()
-    )
-
-    if (!groupRights.addTasks && (<RoleInstance>User.get('Role')).get('level') !== 0) {
+    if (!userGroupRights.project.addTask) {
       addApolloError(
         'Project',
         CantCreateTasksError,
@@ -511,35 +504,47 @@ const mutations = {
     }
 
     //check all Ids if exists
-    const pairsToCheck = [{ id: company, model: models.Company }, { id: status, model: models.Status }];
+    const pairsToCheck = [];
+    company !== undefined && pairsToCheck.push({ id: company, model: models.Company });
+    project !== undefined && pairsToCheck.push({ id: project, model: models.Project });
     (taskType !== undefined && taskType !== null) && pairsToCheck.push({ id: taskType, model: models.TaskType });
     (requester !== undefined && requester !== null) && pairsToCheck.push({ id: requester, model: models.User });
-    (milestone !== undefined && milestone !== null) && pairsToCheck.push({ id: milestone, model: models.Milestone });
     await idsDoExistsCheck(assignedTos, models.User);
     await idsDoExistsCheck(tags, models.Tag);
     await multipleIdDoesExistsCheck(pairsToCheck);
-    checkDefRequiredSatisfied(def, null, args, true);
 
     tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
     if (!(<StatusInstance[]>Project.get('projectStatuses')).some((Status) => Status.get('id') === status)) {
       throw createDoesNoExistsError('Status', status);
     }
     //Rights and project def
-    checkIfCanEditTaskAttributes(User, def, project, args, null, ['title', 'description']);
+    await checkIfCanEditTaskAttributes(User, project, args, ProjectStatuses, null, ['title', 'description']);
 
     const groupUsers = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
-      return [...acc, ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id'))]
-    }, [])
-
-    const groupUsersWithRights = <any[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
-      const rights = ProjectGroup.get('ProjectGroupRight');
       return [
         ...acc,
-        ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => ({ user: User, rights }))
-      ]
+        ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id')),
+        ...(<UserInstance[]>ProjectGroup.get('Companies')).reduce((acc, Company) => {
+          return [...acc, ...(<UserInstance[]>Company.get('Users')).map((User) => User.get('id'))]
+        }, []),
+      ];
     }, []);
 
-    const assignableUserIds = groupUsersWithRights.filter((user) => user.rights.assignedWrite).map((userWithRights) => userWithRights.user.get('id'));
+    const assignableUserIds = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups'))
+      .filter((ProjectGroup) => {
+        const GroupRights = <ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight');
+        return GroupRights.get('assignedEdit');
+      })
+      .reduce((acc, ProjectGroup) => {
+        return [
+          ...acc,
+          ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id')),
+          ...(<UserInstance[]>ProjectGroup.get('Companies')).reduce((acc, Company) => {
+            return [...acc, ...(<UserInstance[]>Company.get('Users')).map((User) => User.get('id'))]
+          }, []),
+        ];
+      }, []);
+
     assignedTos = assignedTos.filter((id) => assignableUserIds.includes(id));
 
     //requester must be in project or project is open
@@ -548,9 +553,6 @@ const mutations = {
     }
 
     //milestone must be of project
-    if (milestone && !(<MilestoneInstance[]>Project.get('Milestones')).some((projectMilestone) => projectMilestone.get('id') === milestone)) {
-      throw MilestoneNotPartOfProject;
-    }
 
     const dates = extractDatesFromObject(params, dateNames);
     //status corresponds to data - closedate, pendingDate
@@ -579,7 +581,7 @@ const mutations = {
       createdById: User.get('id'),
       CompanyId: company,
       ProjectId: project,
-      MilestoneId: milestone === undefined ? null : milestone,
+      MilestoneId: null,
       requesterId: requester === undefined ? null : requester,
       TaskTypeId: taskType,
       StatusId: status,
@@ -623,7 +625,7 @@ const mutations = {
     //comments processing
     if (comments) {
       comments.forEach((comment) => {
-        if (comment.internal && !groupRights.internal) {
+        if (comment.internal && !userGroupRights.internal) {
           throw InternalMessagesNotAllowed;
         }
       })
@@ -767,11 +769,12 @@ const mutations = {
     sendTaskNotificationsToUsers(User, NewTask, [`Task was created by ${User.get('fullName')}`]);
     pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
     pubsub.publish(TASK_ADD, { taskAddSubscription: User.get('id') });
-    NewTask.rights = groupRights;
+    NewTask.rights = userGroupRights;
     return NewTask;
   },
 
   updateTask: async (root, args, { req }) => {
+    const User = await checkResolver(req);
     const Task = <TaskInstance>await models.Task.findByPk(
       args.id,
       {
@@ -781,6 +784,8 @@ const mutations = {
           models.Status,
           models.Subtask,
           models.WorkTrip,
+          models.Material,
+          models.CustomItem,
           models.TaskType,
           models.Company,
           models.Milestone,
@@ -793,7 +798,7 @@ const mutations = {
           {
             model: models.Project,
             include: [
-              models.Milestone,
+              models.ProjectAttributes,
               {
                 model: models.Tag,
                 as: 'tags'
@@ -804,7 +809,7 @@ const mutations = {
               },
               {
                 model: models.ProjectGroup,
-                include: [models.User, models.ProjectGroupRights]
+                include: [models.User, { model: models.Company, include: [models.User] }, models.ProjectGroupRights]
               },
             ]
           }
@@ -815,29 +820,17 @@ const mutations = {
       throw createDoesNoExistsError('Task', args.id);
     }
 
-    const User = await checkResolver(
-      req,
-      [],
-      false,
-      [
-        {
-          model: models.ProjectGroup,
-          required: false,
-          where: {
-            ProjectId: [args.project, Task.get('ProjectId')].filter((id) => id),
-          },
-          include: [models.ProjectGroupRights],
-        }
-      ]
-    );
-
     let taskChangeMessages = [];
-
     //Figure out project and if can change project
+    let groupRights = null;
+    const requiredGroupRights = args.project !== undefined && args.project !== Task.get('ProjectId') ? ['taskProjectWrite'] : [];
+    const TestData1 = await checkIfHasProjectRights(User, undefined, Task.get('ProjectId'), requiredGroupRights, []);
+    groupRights = <any>TestData1.groupRights;
     if (args.project !== undefined && args.project !== Task.get('ProjectId')) {
-      await checkIfHasProjectRights(User.get('id'), undefined, Task.get('ProjectId'), ['projectWrite']);
-      await checkIfHasProjectRights(User.get('id'), undefined, args.project, ['projectWrite']);
+      const TestData2 = await checkIfHasProjectRights(User, undefined, args.project, ['taskProjectWrite'], []);
+      groupRights = <any>TestData2.groupRights;
     }
+
     const project = args.project ? args.project : Task.get('ProjectId');
     let Project = <ProjectInstance>Task.get('Project');
     let OriginalProject = <ProjectInstance>Task.get('Project');
@@ -846,7 +839,7 @@ const mutations = {
         project,
         {
           include: [
-            models.Milestone,
+            models.ProjectAttributes,
             {
               model: models.Tag,
               as: 'tags'
@@ -854,10 +847,6 @@ const mutations = {
             {
               model: models.Status,
               as: 'projectStatuses'
-            },
-            {
-              model: models.ProjectGroup,
-              include: [models.User, models.ProjectGroupRights]
             },
           ],
         }
@@ -867,20 +856,17 @@ const mutations = {
       }
     }
 
-    const def = await Project.get('def');
+    const ProjectStatuses = <StatusInstance[]>Project.get('projectStatuses');
+    const ProjectAttributes = <ProjectAttributesInstance>Project.get('ProjectAttribute');
 
-    args = applyFixedOnAttributes(def, args);
+    args = checkAndApplyFixedAndRequiredOnAttributes(await ProjectAttributes.get('attributes'), groupRights.attributes, args, User, ProjectStatuses, false, Task);
 
     let { id, assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, ...params } = args;
     const dates = extractDatesFromObject(params, dateNames);
     params = { ...params, ...dates };
-    const groupRights = (
-      (<RoleInstance>User.get('Role')).get('level') === 0 ?
-        allGroupRights :
-        (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('ProjectId') === project).get('ProjectGroupRight')).get()
-    )
+
     //can you even open this task
-    if (!canViewTask(Task, User, groupRights, true)) {
+    if (!canViewTask(Task, User, groupRights.project, true)) {
       throw CantViewTaskError;
     }
 
@@ -899,31 +885,37 @@ const mutations = {
     (status !== undefined) && pairsToCheck.push({ id: status, model: models.Status });
     (taskType !== undefined && taskType !== null) && pairsToCheck.push({ id: taskType, model: models.TaskType });
     (requester !== undefined && requester !== null) && pairsToCheck.push({ id: requester, model: models.User });
-    (milestone !== undefined && milestone !== null) && pairsToCheck.push({ id: milestone, model: models.Milestone });
     await multipleIdDoesExistsCheck(pairsToCheck);
 
-    checkDefRequiredSatisfied(
-      def,
-      {
-        assignedTo: (<UserInstance[]>Task.get('assignedTos')).map((User) => User.get('id')),
-        tags: (<TagInstance[]>Task.get('Tags')).map((Tag) => Tag.get('id')),
-        company: Task.get('CompanyId'),
-        requester: Task.get('RequesterId'),
-        status: Task.get('StatusId'),
-      },
-      args,
-    );
-
     //Rights and project def
-    checkIfCanEditTaskAttributes(User, def, project, args);
+    await checkIfCanEditTaskAttributes(User, Project.get('id'), args, ProjectStatuses, args.project ? null : Task);
 
     if (tags) {
       tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
     }
 
     const groupUsers = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
-      return [...acc, ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id'))]
-    }, [])
+      return [
+        ...acc,
+        ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id')),
+        ...(<UserInstance[]>ProjectGroup.get('Companies')).reduce((acc, Company) => {
+          return [...acc, ...(<UserInstance[]>Company.get('Users')).map((User) => User.get('id'))]
+        }, []),
+      ];
+    }, []);
+
+    const assignableUserIds = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).filter((ProjectGroup) => {
+      const GroupRights = <ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight');
+      return GroupRights.get('assignedEdit');
+    }).reduce((acc, ProjectGroup) => {
+      return [
+        ...acc,
+        ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id')),
+        ...(<UserInstance[]>ProjectGroup.get('Companies')).reduce((acc, Company) => {
+          return [...acc, ...(<UserInstance[]>Company.get('Users')).map((User) => User.get('id'))]
+        }, []),
+      ];
+    }, []);
 
     let promises = [];
 
@@ -931,9 +923,8 @@ const mutations = {
       if (project && project !== Task.get('ProjectId')) {
         taskChangeMessages.push(await createChangeMessage('Project', models.Project, 'Project', project, Task.get('Project')));
         promises.push(Task.setProject(project, { transaction }));
-        if (milestone === undefined || milestone === null) {
-          promises.push(Task.setMilestone(null, { transaction }));
-        }
+        //here was milestone with condition if exists
+
         //Update metadata
         if (Project.get('autoApproved') !== OriginalProject.get('autoApproved')) {
           const Metadata = <TaskMetadataInstance>Task.get('TaskMetadata');
@@ -1008,16 +999,7 @@ const mutations = {
       if (assignedTos) {
         await idsDoExistsCheck(assignedTos, models.User);
 
-        const groupUsersWithRights = <any[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
-          const rights = ProjectGroup.get('ProjectGroupRight');
-          return [
-            ...acc,
-            ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => ({ user: User, rights }))
-          ]
-        }, []);
-
-        //assignedTo must be in project group and assignable
-        const assignableUserIds = groupUsersWithRights.filter((user) => user.rights.assignedWrite).map((userWithRights) => userWithRights.user.get('id'));
+        //assignedTo must be in project group
         assignedTos = assignedTos.filter((id) => assignableUserIds.includes(id));
         taskChangeMessages.push(await createChangeMessage('AssignedTo', models.User, 'Assigned to users', assignedTos, Task.get('assignedTos'), 'fullName'));
 
@@ -1037,14 +1019,7 @@ const mutations = {
         promises.push(Task.setRequester(requester, { transaction }))
       }
 
-      if (milestone || milestone === null) {
-        //milestone must be of project
-        if (milestone !== null && !(<MilestoneInstance[]>Project.get('Milestones')).some((projectMilestone) => projectMilestone.get('id') === milestone)) {
-          throw MilestoneNotPartOfProject;
-        }
-        taskChangeMessages.push(await createChangeMessage('Milestone', models.Milestone, 'Milestone', milestone, Task.get('Milestone')));
-        promises.push(Task.setMilestone(milestone, { transaction }))
-      }
+      //here was milestone with condition if and of project
       if (taskType !== undefined) {
         taskChangeMessages.push(await createChangeMessage('TaskType', models.TaskType, 'Task type', taskType, Task.get('TaskType')));
         promises.push(Task.setTaskType(taskType, { transaction }))
@@ -1172,9 +1147,9 @@ const mutations = {
     );
     const Project = <ProjectInstance>Task.get('Project');
     //must right to delete project
-    const { groupRights } = await checkIfHasProjectRights(User.get('id'), undefined, Task.get('ProjectId'), ['deleteTasks']);
+    const { groupRights } = await checkIfHasProjectRights(User, undefined, Task.get('ProjectId'), ['deleteTasks']);
     //can you even open this task
-    if (!canViewTask(Task, User, groupRights, true)) {
+    if (!canViewTask(Task, User, groupRights.project, true)) {
       throw CantViewTaskError;
     }
     await sendTaskNotificationsToUsers(User, Task, [`Task named "${Task.get('title')}" with id ${Task.get('id')} was deleted.`], true);
@@ -1191,16 +1166,16 @@ const attributes = {
       if (!task.rights) {
         return null;
       }
-      return task.rights;
+      return { ...task.rights.project, attributes: task.rights.attributes };
     },
     async assignedTo(task) {
-      if (!task.rights || !task.rights.assignedRead) {
+      if (!task.rights || !task.rights.attributes.assigned.view) {
         return [];
       }
       return getModelAttribute(task, 'assignedTos');
     },
     async company(task) {
-      if (!task.rights || !task.rights.companyRead) {
+      if (!task.rights || !task.rights.attributes.company.view) {
         return null;
       }
       return getModelAttribute(task, 'Company');
@@ -1209,43 +1184,43 @@ const attributes = {
       return getModelAttribute(task, 'createdBy');
     },
     async milestone(task) {
-      if (!task.rights || !task.rights.milestoneRead) {
-        return null;
-      }
       return getModelAttribute(task, 'Milestone');
     },
     async project(task) {
       return getModelAttribute(task, 'Project');
     },
     async requester(task) {
-      if (!task.rights || !task.rights.requesterRead) {
+      if (!task.rights || !task.rights.attributes.requester.view) {
         return null;
       }
       return getModelAttribute(task, 'requester');
     },
     async status(task) {
+      if (!task.rights || !task.rights.attributes.status.view) {
+        return null;
+      }
       return getModelAttribute(task, 'Status');
     },
     async tags(task) {
-      if (!task.rights || !task.rights.tagsRead) {
+      if (!task.rights || !task.rights.attributes.tags.view) {
         return [];
       }
       return getModelAttribute(task, 'Tags');
     },
     async taskType(task) {
-      if (!task.rights || !task.rights.typeRead) {
+      if (!task.rights || !task.rights.attributes.taskType.view) {
         return null;
       }
       return getModelAttribute(task, 'TaskType');
     },
     async repeat(task) {
-      if (!task.rights || !task.rights.repeatRead) {
+      if (!task.rights || !task.rights.attributes.repeat.view) {
         return null;
       }
       return getModelAttribute(task, 'Repeat');
     },
     async repeatTime(task) {
-      if (!task.rights || !task.rights.repeatRead) {
+      if (!task.rights || !task.rights.attributes.repeat.view) {
         return null;
       }
       return getModelAttribute(task, 'RepeatTime');
@@ -1255,7 +1230,7 @@ const attributes = {
     },
 
     async comments(task, body, { req, userID }) {
-      if (!task.rights || !task.rights.viewComments) {
+      if (!task.rights || !task.rights.project.viewComments) {
         return [];
       }
       const [
@@ -1263,70 +1238,50 @@ const attributes = {
         Comments,
 
       ] = await Promise.all([
-        checkResolver(
-          req,
-          [],
-          false,
-          [
-            {
-              model: models.ProjectGroup,
-              required: false,
-              where: {
-                ProjectId: task.get('ProjectId'),
-              },
-              include: [models.ProjectGroupRights],
-            }
-          ]
-        ),
+        checkResolver(req),
         getModelAttribute(task, 'Comments', 'getComments', { order: [['createdAt', 'DESC']] })
       ])
-      const groupRights = (<RoleInstance>SourceUser.get('Role')).get('level') === 0 ?
-        allGroupRights :
-        (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>SourceUser.get('ProjectGroups'))[0].get('ProjectGroupRight')).get();
-      if (!groupRights.viewComments) {
-        return [];
-      }
-      return Comments.filter((Comment) => Comment.get('isParent') && (!Comment.get('internal') || groupRights.internal))
+      return Comments.filter((Comment) => Comment.get('isParent') && (!Comment.get('internal') || task.rights.project.internal))
     },
 
     async shortSubtasks(task) {
-      if (!task.rights || !task.rights.taskShortSubtasksRead) {
+      if (!task.rights || !task.rights.project.taskSubtasksRead) {
         return [];
       }
       return getModelAttribute(task, 'ShortSubtasks');
     },
     async subtasks(task) {
-      if (!task.rights || (!task.rights.rozpocetRead && !task.rights.vykazRead)) {
+      if (!task.rights || (!task.rights.project.taskWorksRead && !task.rights.project.taskWorksAdvancedRead)) {
         return [];
       }
       return getModelAttribute(task, 'Subtasks');
     },
     async workTrips(task) {
-      if (!task.rights || (!task.rights.rozpocetRead && !task.rights.vykazRead)) {
+      if (!task.rights || (!task.rights.project.taskWorksRead && !task.rights.project.taskWorksAdvancedRead)) {
         return [];
       }
       return getModelAttribute(task, 'WorkTrips');
     },
     async materials(task) {
-      if (!task.rights || (!task.rights.rozpocetRead && !task.rights.vykazRead)) {
+      if (!task.rights || !task.rights.project.taskMaterialsRead) {
         return [];
       }
       return getModelAttribute(task, 'Materials');
     },
     async customItems(task) {
-      if (!task.rights || (!task.rights.rozpocetRead && !task.rights.vykazRead)) {
+      if (!task.rights || !task.rights.project.taskMaterialsRead) {
         return [];
       }
       return getModelAttribute(task, 'CustomItems');
     },
     async taskChanges(task) {
-      if (!task.rights || !task.rights.history) {
+      if (!task.rights || !task.rights.project.history) {
         return [];
       }
       return getModelAttribute(task, 'TaskChanges', 'getTaskChanges', { order: [['createdAt', 'DESC']] });
     },
     async taskAttachments(task) {
-      if (!task.rights || !task.rights.taskAttachmentsRead) {
+      if (!task.rights || !task.rights.project.taskAttachmentsRead) {
         return [];
       }
       return getModelAttribute(task, 'TaskAttachments');

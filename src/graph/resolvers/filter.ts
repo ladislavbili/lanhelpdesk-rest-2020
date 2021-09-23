@@ -164,7 +164,7 @@ const mutations = {
       if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
-      await checkIfHasProjectRights(User.get('id'), undefined, Project.get('id'))
+      await checkIfHasProjectRights(User, undefined, Project.get('id'))
     } else {
       projectId = null;
     }
@@ -246,7 +246,7 @@ const mutations = {
       if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
-      await checkIfHasProjectRights(User.get('id'), undefined, Project.get('id'))
+      await checkIfHasProjectRights(User, undefined, Project.get('id'))
     } else {
       projectId = null;
     }
@@ -318,7 +318,7 @@ const mutations = {
       if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
-      await checkIfHasProjectRights(User.get('id'), undefined, Project.get('id'))
+      await checkIfHasProjectRights(User, undefined, Project.get('id'))
     }
 
     //BUILDING changes
@@ -385,7 +385,7 @@ const mutations = {
       if (Project === null) {
         throw createDoesNoExistsError('Project', projectId);
       }
-      await checkIfHasProjectRights(User.get('id'), undefined, Project.get('id'))
+      await checkIfHasProjectRights(User, undefined, Project.get('id'))
     }
 
     //BUILDING changes

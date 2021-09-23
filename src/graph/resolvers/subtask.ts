@@ -27,7 +27,7 @@ const scheduledDates = ['from', 'to'];
 const queries = {
   subtasks: async (root, { taskId }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser.get('id'), taskId, undefined, ['vykazRead']);
+    await checkIfHasProjectRights(SourceUser, taskId, undefined, ['taskWorksRead']);
     return models.Subtask.findAll({
       order: [
         ['order', 'ASC'],
@@ -44,7 +44,7 @@ const queries = {
 const mutations = {
   addSubtask: async (root, { task, type, assignedTo, scheduled, order, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskWorksWrite']);
     const allSubtasks = await Task.getSubtasks();
     const newOrder = order ? order : allSubtasks.length;
 
@@ -147,7 +147,7 @@ const mutations = {
       newValue: `${params.title},${params.done},${params.quantity},${params.discount},${type},${assignedTo}`,
       message: `Subtask ${Subtask.get('title')}${params.title !== Subtask.get('title') ? `/${params.title}` : ''} was updated.`,
     }]
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Task.get('ProjectId'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, Task.get('ProjectId'), ['taskWorksWrite']);
     if (assignedTo !== undefined) {
       if (Subtask.get('UserId') !== assignedTo && !AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
         throw AssignedToUserNotSolvingTheTask;
@@ -275,7 +275,7 @@ const mutations = {
     const Project = <ProjectInstance>Task.get('Project');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
 
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskWorksWrite']);
     const originalValue = `${Subtask.get('title')}${Subtask.get('done').toString()},${Subtask.get('quantity')},${Subtask.get('discount')},${(<TaskTypeInstance>Subtask.get('TaskType')).get('id')},${Subtask.get('UserId')}`;
     await (<TaskInstance>Task).createTaskChange(
       {
@@ -312,7 +312,7 @@ const mutations = {
       throw createDoesNoExistsError('Repeat template', repeatTemplate);
     }
 
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, RepeatTemplate.get('ProjectId'), ['taskWorksWrite'], [{ right: 'repeat', action: 'edit' }]);
     const AssignedTos = <UserInstance[]>RepeatTemplate.get('assignedTos');
     if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
       throw AssignedToUserNotSolvingTheTask;
@@ -364,7 +364,7 @@ const mutations = {
     if (Subtask === null) {
       throw createDoesNoExistsError('Subtask', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>Subtask.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, (<RepeatTemplateInstance>Subtask.get('RepeatTemplate')).get('ProjectId'), ['taskWorksWrite'], [{ right: 'repeat', action: 'edit' }]);
     if (assignedTo !== undefined) {
       const AssignedTos = <UserInstance[]>(<RepeatTemplateInstance>Subtask.get('RepeatTemplate')).get('assignedTos');
       if (Subtask.get('UserId') !== assignedTo && !AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
@@ -433,7 +433,7 @@ const mutations = {
     if (Subtask === null) {
       throw createDoesNoExistsError('Subtask', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>Subtask.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, (<RepeatTemplateInstance>Subtask.get('RepeatTemplate')).get('ProjectId'), ['taskWorksWrite'], [{ right: 'repeat', action: 'edit' }]);
     return Subtask.destroy();
   },
 

@@ -7,9 +7,6 @@ import {
 import { models } from '@/models';
 import checkResolver from './checkResolver';
 import {
-  allGroupRights
-} from '@/configs/projectConstants';
-import {
   flattenObject,
   idsDoExistsCheck,
   multipleIdDoesExistsCheck,
@@ -63,7 +60,7 @@ const queries = {
   project: async (root, { id }, { req }) => {
     const User = await checkResolver(req);
     if ((<RoleInstance>User.get('Role')).get('level') !== 0) {
-      await checkIfHasProjectRights(User.get('id'), undefined, id, ['projectRead']);
+      await checkIfHasProjectRights(User, undefined, id, ['projectRead']);
     }
     return models.Project.findByPk(id, {
       include: [
@@ -402,12 +399,11 @@ const mutations = {
     if (Project === null) {
       throw createDoesNoExistsError('Project', id);
     }
-    await checkIfHasProjectRights(User.get('id'), undefined, id, ['projectWrite']);
+    await checkIfHasProjectRights(User, undefined, id, ['projectWrite']);
 
     //applyAttributeRightsRequirements - fixne updated groups a add groups
     addGroups = applyAttributeRightsRequirements(addGroups, projectAttributes ? projectAttributes : Project.get('ProjectAttribute'));
     updateGroups = applyAttributeRightsRequirements(updateGroups, projectAttributes ? projectAttributes : Project.get('ProjectAttribute'));
-    console.log(updateGroups[0]);
 
     //checkIfDefGroupsChanged - def a admin musia zostat, ziskaj update a delete existujuci equivalent a porovnaj
     checkIfDefGroupsChanged(addGroups, updateGroups, deleteGroups, Project.get('ProjectGroups'))
@@ -774,7 +770,7 @@ const mutations = {
     if (
       !(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('projects')
     ) {
-      await checkIfHasProjectRights(User.get('id'), undefined, id, ['projectEdit']);
+      await checkIfHasProjectRights(User, undefined, id, ['projectEdit']);
     }
     const Tasks = <TaskInstance[]>await Project.get('Tasks');
     const Imaps = <ImapInstance[]>await Project.get('Imaps');

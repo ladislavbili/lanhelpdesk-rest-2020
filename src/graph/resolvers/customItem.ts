@@ -17,7 +17,7 @@ import {
 const queries = {
   customItems: async (root, { taskId }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser.get('id'), taskId, undefined, ['vykazRead']);
+    await checkIfHasProjectRights(SourceUser, taskId, undefined, ['taskMaterialsRead'], []);
     return models.CustomItem.findAll({
       order: [
         ['order', 'ASC'],
@@ -33,7 +33,7 @@ const queries = {
 const mutations = {
   addCustomItem: async (root, { task, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskMaterialsWrite'], []);
     const [
       TaskMetadata,
       Project,
@@ -97,7 +97,7 @@ const mutations = {
     const Task = <TaskInstance>CustomItem.get('Task');
     const Project = <ProjectInstance>Task.get('Project');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskMaterialsWrite'], []);
     let TaskChangeMessages = [
       {
         type: 'customItem',
@@ -192,7 +192,7 @@ const mutations = {
     const Task = <TaskInstance>CustomItem.get('Task');
     const Project = <ProjectInstance>Task.get('Project');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskMaterialsWrite'], []);
     await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -225,7 +225,7 @@ const mutations = {
       throw createDoesNoExistsError('Repeat template', repeatTemplate);
     }
 
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, RepeatTemplate.get('ProjectId'), ['taskMaterialsWrite'], [{ right: 'repeat', action: 'edit' }]);
     if (params.approved) {
       params = {
         ...params,
@@ -244,7 +244,7 @@ const mutations = {
     if (CustomItem === null) {
       throw createDoesNoExistsError('CustomItem', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>CustomItem.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, (<RepeatTemplateInstance>CustomItem.get('RepeatTemplate')).get('ProjectId'), ['taskMaterialsWrite'], [{ right: 'repeat', action: 'edit' }]);
     if (params.approved === false && CustomItem.get('approved') === true) {
       params = {
         ...params,
@@ -266,7 +266,7 @@ const mutations = {
       throw createDoesNoExistsError('CustomItem', id);
     }
 
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>CustomItem.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, (<RepeatTemplateInstance>CustomItem.get('RepeatTemplate')).get('ProjectId'), ['taskMaterialsWrite'], [{ right: 'repeat', action: 'edit' }]);
 
     return CustomItem.destroy();
   },

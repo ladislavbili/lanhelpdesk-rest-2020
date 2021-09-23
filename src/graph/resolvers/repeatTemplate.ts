@@ -52,8 +52,8 @@ const attributes = {
     async customItems(repeatTemplate) {
       return getModelAttribute(repeatTemplate, 'CustomItems');
     },
-    async repeatTemplateAttachments(task) {
-      return getModelAttribute(task, 'RepeatTemplateAttachments');
+    async repeatTemplateAttachments(repeatTemplate) {
+      return getModelAttribute(repeatTemplate, 'RepeatTemplateAttachments');
     },
   }
 };

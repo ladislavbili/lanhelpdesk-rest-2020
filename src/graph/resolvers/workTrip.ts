@@ -27,7 +27,7 @@ const scheduledDates = ['from', 'to'];
 const queries = {
   workTrips: async (root, { taskId }, { req }) => {
     const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser.get('id'), taskId, undefined, ['vykazRead']);
+    await checkIfHasProjectRights(SourceUser, taskId, undefined, ['taskWorksRead']);
     return models.WorkTrip.findAll({
       order: [
         ['order', 'ASC'],
@@ -44,7 +44,7 @@ const queries = {
 const mutations = {
   addWorkTrip: async (root, { task, type, assignedTo, scheduled, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const { Task } = await checkIfHasProjectRights(SourceUser.get('id'), task, undefined, ['vykazWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskWorksWrite']);
     const [
       AssignedTos,
       TaskMetadata,
@@ -145,7 +145,7 @@ const mutations = {
         message: `Work trip ${(<TripTypeInstance>WorkTrip.get('TripType')).get('title')} was updated.`,
       }
     ];
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Task.get('ProjectId'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, Task.get('ProjectId'), ['taskWorksWrite']);
     if (assignedTo !== undefined) {
       if (WorkTrip.get('UserId') !== assignedTo && !AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
         throw AssignedToUserNotSolvingTheTask;
@@ -266,7 +266,7 @@ const mutations = {
     const Project = <ProjectInstance>Task.get('Project');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
 
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, Project.get('id'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskWorksWrite']);
     const originalValue = `${WorkTrip.get('done').toString()},${WorkTrip.get('quantity')},${WorkTrip.get('discount')},${(<TripTypeInstance>WorkTrip.get('TripType')).get('id')},${WorkTrip.get('UserId')}`;
     await (<TaskInstance>Task).createTaskChange(
       {
@@ -302,7 +302,7 @@ const mutations = {
     if (RepeatTemplate === null) {
       throw createDoesNoExistsError('Repeat template', repeatTemplate);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, RepeatTemplate.get('ProjectId'), ['taskWorksWrite'], [{ right: 'repeat', action: 'edit' }]);
     const AssignedTos = <UserInstance[]>RepeatTemplate.get('assignedTos');
     if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
       throw AssignedToUserNotSolvingTheTask;
@@ -355,7 +355,7 @@ const mutations = {
     if (WorkTrip === null) {
       throw createDoesNoExistsError('WorkTrip', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>WorkTrip.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, (<RepeatTemplateInstance>WorkTrip.get('RepeatTemplate')).get('ProjectId'), ['taskWorksWrite'], [{ right: 'repeat', action: 'edit' }]);
     if (assignedTo !== undefined) {
       const AssignedTos = <UserInstance[]>(<RepeatTemplateInstance>WorkTrip.get('RepeatTemplate')).get('assignedTos');
       if (WorkTrip.get('UserId') !== assignedTo && !AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
@@ -416,7 +416,7 @@ const mutations = {
     if (WorkTrip === null) {
       throw createDoesNoExistsError('WorkTrip', id);
     }
-    await checkIfHasProjectRights(SourceUser.get('id'), undefined, (<RepeatTemplateInstance>WorkTrip.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, (<RepeatTemplateInstance>WorkTrip.get('RepeatTemplate')).get('ProjectId'), ['taskWorksWrite'], [{ right: 'repeat', action: 'edit' }]);
     return WorkTrip.destroy();
   },
 

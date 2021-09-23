@@ -14,14 +14,12 @@ import {
   CantCreateTasksError,
   CantViewTaskError
 } from '@/configs/errors';
-import {
-  allGroupRights
-} from '@/configs/projectConstants';
 import { models, sequelize } from '@/models';
 import {
   TaskInstance,
   MilestoneInstance,
   ProjectInstance,
+  ProjectAttributesInstance,
   ProjectGroupInstance,
   ProjectGroupRightsInstance,
   StatusInstance,
@@ -43,21 +41,17 @@ import {
   idsDoExistsCheck,
   multipleIdDoesExistsCheck,
   extractDatesFromObject,
-  filterUnique,
   getModelAttribute,
   mergeFragmentedModel,
   addApolloError,
   getMinutes,
 } from '@/helperFunctions';
 import {
-  filterObjectToFilter
-} from '@/graph/addons/filter';
-import {
   checkIfHasProjectRights,
-  checkDefRequiredSatisfied,
   checkIfCanEditTaskAttributes,
-  applyFixedOnAttributes,
+  checkAndApplyFixedAndRequiredOnAttributes,
   canViewTask,
+  mergeGroupRights,
 } from '@/graph/addons/project';
 import { repeatEvent, repeatTimeEvent, addTask } from '@/services/repeatTasks';
 import checkResolver from './checkResolver';
@@ -86,83 +80,108 @@ const queries = {
         ProjectId: projectId
       }
     }
-    if (milestoneId) {
-      templateWhere = {
-        ...templateWhere,
-        MilestoneId: milestoneId
-      }
-    }
 
     const { from, to } = extractDatesFromObject(rangeDates, ['from', 'to'], false);
 
     if ((<RoleInstance>User.get('Role')).get('level') !== 0) {
-      const ProjectGroups = <ProjectGroupInstance[]>await User.getProjectGroups({
-        include: [
-          {
-            required: true,
-            model: models.ProjectGroupRights,
-            where: {
-              repeatRead: true
-            }
-          },
-          {
-            model: models.Project,
-            required: true,
+      const userProjectsResponse = <any[]>(<any[]>
+        await Promise.all([
+          models.Project.findAll({
             include: [
               {
-                model: models.RepeatTemplate,
+                model: models.ProjectGroup,
+                required: true,
                 include: [
                   {
-                    model: models.Repeat,
-                    where: repeatWhere,
-                    include: [
-                      {
-                        model: models.RepeatTime,
-                        include: [{
-                          model: models.Task,
-                        }]
-                      },
-                      {
-                        model: models.RepeatTemplate,
-                        include: [
-                          { model: models.User, as: 'createdBy' },
-                          { model: models.User, as: 'assignedTos' },
-                          { model: models.User, as: 'requester' },
-                          models.Company,
-                          models.Milestone,
-                          models.Project,
-                          models.Status,
-                          models.Tag,
-                          models.TaskType,
-                        ]
-                      }
-                    ]
+                    model: models.User,
+                    required: true,
+                    where: { id: User.get('id') },
+                  },
+                  {
+                    model: models.ProjectGroupRights,
+                    required: true,
+                    where: { repeatView: true },
                   }
-                ]
+                ],
               }
+            ]
+          }),
+          models.Project.findAll({
+            include: [
+              {
+                model: models.ProjectGroup,
+                required: true,
+                include: [
+                  {
+                    model: models.Company,
+                    required: true,
+                    where: { id: User.get('Company') },
+                  },
+                  {
+                    model: models.ProjectGroupRights,
+                    required: true,
+                    where: { repeatView: true },
+                  }
+                ],
+              }
+            ]
+          })
+        ])
+      ).reduce((acc, Projects) => {
+        return [
+          ...acc,
+          ...(<ProjectInstance[]>Projects).map((Project) => { return { id: Project.get('id'), groupRights: <ProjectGroupRightsInstance>(<ProjectGroupInstance[]>Project.get("ProjectGroups"))[0].get('ProjectGroupRight') } }),
+        ]
+      }, []);
+
+      let userProjects = [];
+      userProjectsResponse.forEach(async (userProject) => {
+        const sameProjects = userProjectsResponse.filter((userProject2) => userProject2.id === userProject.id);
+        if (!userProjects.some((userProject2) => userProject2.id === userProject.id)) {
+          userProjects.push({ id: userProject.id, groupRights: await mergeGroupRights(sameProjects[0].groupRights, sameProjects[1] ? sameProjects[1].groupRights : null) });
+        }
+      })
+
+      const RepeatsResponse = <RepeatInstance[]>await models.Repeat.findAll({
+        where: repeatWhere,
+        include: [
+          {
+            model: models.RepeatTime,
+            include: [{
+              model: models.Task,
+            }]
+          },
+          {
+            model: models.RepeatTemplate,
+            required: true,
+            where: {
+              ProjectId: userProjects.map((userProject) => userProject.id)
+            },
+            include: [
+              { model: models.User, as: 'createdBy' },
+              { model: models.User, as: 'assignedTos' },
+              { model: models.User, as: 'requester' },
+              models.Company,
+              models.Milestone,
+              models.Project,
+              models.Status,
+              models.Tag,
+              models.TaskType,
             ]
           }
         ]
+      });
+
+      const Repeats = RepeatsResponse.filter((Repeat) => {
+        const Template = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
+        const groupRights = userProjects.find((userProject) => userProject.id === Template.get('ProjectId')).groupRights;
+        return canViewTask(Template, User, groupRights.project);
+      }).map((Repeat) => {
+        const Template = Repeat.get('RepeatTemplate');
+        const groupRights = userProjects.find((userProject) => userProject.id === Template.get('ProjectId')).groupRights;
+        Repeat.canEdit = <boolean>groupRights.attributes.repeat.edit;
+        return Repeat;
       })
-
-      const Repeats = ProjectGroups.reduce((acc, ProjectGroup) => {
-        const Project = <ProjectInstance>ProjectGroup.get('Project');
-        const userRights = (<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).get();
-
-        return [
-          ...acc,
-          ...(<RepeatInstance[]>
-            (<RepeatTemplateInstance[]>Project.get('RepeatTemplates'))
-              .map((RepeatTemplate) => RepeatTemplate.get('Repeat'))
-          ).filter((Repeat) => {
-            const Template = Repeat.get('RepeatTemplate');
-            return canViewTask(Template, User, userRights)
-          }).map((Repeat) => {
-            //TODO: Repeat.canEdit = <boolean>(<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).repeatWrite;
-            return Repeat;
-          })
-        ]
-      }, []);
       return Repeats;
     }
     const Repeats = <RepeatInstance[]>await models.Repeat.findAll({
@@ -185,6 +204,14 @@ const queries = {
             {
               model: models.Project,
               required: true,
+              include: [{
+                model: models.ProjectGroups,
+                where: {
+                  admin: true,
+                  def: true,
+                },
+                include: [models.ProjectGroupRights]
+              }],
             },
             models.Status,
             models.Tag,
@@ -195,17 +222,34 @@ const queries = {
       ]
     });
     return Repeats.map((Repeat) => {
-      Repeat.canEdit = <boolean>true;
+      Repeat.canEdit = (
+        <ProjectGroupRightsInstance>(
+          <ProjectGroupInstance[]>(
+            <ProjectInstance>(
+              <RepeatTemplateInstance>Repeat.get('RepeatTemplate')
+            ).get('Project')
+          ).get('ProjectGroups')
+        )[0].get('ProjectGroupRight')
+      ).get('repeatEdit');
       return Repeat;
     })
   },
 
   calendarRepeats: async (root, { projectId, active, ...rangeDates }, { req, userID }) => {
-    const User = await checkResolver(req, ['tasklistCalendar']);
+    const User = await checkResolver(req);
 
     const { from, to } = extractDatesFromObject(rangeDates, ['from', 'to']);
 
-    const SQL = generateRepeatSQL(active, from, to, projectId, userID, (<RoleInstance>User.get('Role')).get('level') === 0);
+    const SQL = generateRepeatSQL(
+      active,
+      from,
+      to,
+      projectId,
+      userID,
+      User.get('CompanyId'),
+      (<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar'),
+      (<RoleInstance>User.get('Role')).get('level') === 0
+    )
     let responseRepeats = await sequelize.query(SQL, {
       model: models.Repeat,
       type: QueryTypes.SELECT,
@@ -290,8 +334,9 @@ const queries = {
     ])
 
     const RepeatTemplate = mergeFragmentedModel(FragmentedRepeat.map((Repeat) => Repeat.get('RepeatTemplate')))
-    const { groupRights } = await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['repeatRead']);
-    if (!canViewTask(RepeatTemplate, User, groupRights, true)) {
+    const { groupRights } = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), [], [{ right: 'repeat', action: 'view' }]);
+
+    if (!canViewTask(RepeatTemplate, User, groupRights.project, true)) {
       throw CantViewTaskError;
     }
     return mergeFragmentedModel([
@@ -305,14 +350,15 @@ const queries = {
 
 const mutations = {
   addRepeat: async (root, { taskId, repeatEvery, repeatInterval, active, repeatTemplate: args, ...argDates }, { req }) => {
-
+    const User = await checkResolver(req);
+    //TODO: clean milestones EVERYWHERE
     const project = args.project;
     const { startsAt } = extractDatesFromObject(argDates, ['startsAt']);
     const Project = await models.Project.findByPk(
       project,
       {
         include: [
-          models.Milestone,
+          models.ProjectAttributes,
           {
             model: models.Tag,
             as: 'tags'
@@ -323,7 +369,11 @@ const mutations = {
           },
           {
             model: models.ProjectGroup,
-            include: [models.User]
+            include: [
+              models.User,
+              { model: models.Company, include: [models.User] },
+              models.ProjectGroupRights
+            ]
           },
         ]
       }
@@ -332,8 +382,24 @@ const mutations = {
       throw createDoesNoExistsError('project', project);
     }
 
-    const def = <any>await Project.get('def');
-    args = applyFixedOnAttributes(def, args);
+    const ProjectStatuses = <StatusInstance[]>Project.get('projectStatuses');
+    const ProjectAttributes = <ProjectAttributesInstance>Project.get('ProjectAttribute');
+    const ProjectGroups = <ProjectGroupInstance[]>Project.get('ProjectGroups');
+    //get users rights in the project
+    let userGroupRights = <any>{};
+    const UserProjectGroupRights = <ProjectGroupRightsInstance[]>ProjectGroups.filter((ProjectGroup) => (
+      (<UserInstance[]>ProjectGroup.get('Users')).some((GroupUser) => GroupUser.get('id') === User.get('id')) ||
+      (<CompanyInstance[]>ProjectGroup.get('Companies')).some((Company) => Company.get('id') === User.get('CompanyId'))
+    )).map((ProjectGroup) => ProjectGroup.get('ProjectGroupRight'));
+
+    if ((<RoleInstance>User.get('Role')).get('level') === 0) {
+      userGroupRights = await mergeGroupRights(ProjectGroups.find((ProjectGroup) => ProjectGroup.get('admin') && ProjectGroup.get('def')).get('ProjectGroupRight'))
+    } else if (UserProjectGroupRights.length === 0) {
+      throw InsufficientProjectAccessError;
+    } else {
+      userGroupRights = await mergeGroupRights(UserProjectGroupRights[0], UserProjectGroupRights[1]);
+    }
+    args = checkAndApplyFixedAndRequiredOnAttributes(await ProjectAttributes.get('attributes'), userGroupRights.attributes, args, User, ProjectStatuses);
 
     const Task = await models.Task.findByPk(taskId, {
       include: [
@@ -352,43 +418,21 @@ const mutations = {
         assignedTos = (<UserInstance[]>Task.get('assignedTos')).map((User) => User.get('id'));
         changedAttributes.push('assignedTo');
       }
-      if (!requester && def.requester.required) {
+      if (!requester && userGroupRights.attributes.requester.required) {
         requester = Task.get('requesterId');
         changedAttributes.push('requester');
       }
-      if ((!tags || tags.length === 0) && def.tag.required) {
+      if ((!tags || tags.length === 0) && userGroupRights.attributes.tags.required) {
         tags = (<TagInstance[]>Task.get('Tags')).map((Tag) => Tag.get('id'))
         changedAttributes.push('tags');
       }
-      if (!taskType && def.type.required) {
+      if (!taskType && userGroupRights.attributes.taskType.required) {
         taskType = Task.get('TaskTypeId');
         changedAttributes.push('taskType');
       }
-
     }
 
-    const User = await checkResolver(
-      req,
-      [],
-      false,
-      [
-        {
-          required: false,
-          model: models.ProjectGroup,
-          include: [models.ProjectGroupRights],
-          where: {
-            ProjectId: project,
-          }
-        }
-      ]
-    );
-    const groupRights = (
-      (<RoleInstance>User.get('Role')).get('level') === 0 ?
-        allGroupRights :
-        (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('ProjectId') === project).get('ProjectGroupRight')).get()
-    )
-
-    if (!groupRights.repeatWrite && (<RoleInstance>User.get('Role')).get('level') !== 0) {
+    if (!userGroupRights.attributes.repeat.edit) {
       addApolloError(
         'Project',
         CantCreateTasksError,
@@ -401,50 +445,45 @@ const mutations = {
     const pairsToCheck = [{ id: company, model: models.Company }, { id: status, model: models.Status }];
     (taskType !== undefined && taskType !== null) && pairsToCheck.push({ id: taskType, model: models.TaskType });
     (requester !== undefined && requester !== null) && pairsToCheck.push({ id: requester, model: models.User });
-    (milestone !== undefined && milestone !== null) && pairsToCheck.push({ id: milestone, model: models.Milestone });
     await idsDoExistsCheck(assignedTos, models.User);
     await idsDoExistsCheck(tags, models.Tag);
     await multipleIdDoesExistsCheck(pairsToCheck);
-    checkDefRequiredSatisfied(def, null, {
-      ...args,
-      company,
-      assignedTo: assignedTos,
-      requester,
-      tags,
-      taskType,
-    }, true);
 
     tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
-    if (!(<StatusInstance[]>Project.get('projectStatuses')).some((Status) => Status.get('id') === status)) {
+    if (!ProjectStatuses.some((Status) => Status.get('id') === status)) {
       throw createDoesNoExistsError('Status', status);
     }
     //Rights and project def
-    checkIfCanEditTaskAttributes(User, def, project, args, null, changedAttributes);
-
+    await checkIfCanEditTaskAttributes(User, project, args, ProjectStatuses, null, changedAttributes);
 
     const groupUsers = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
-      return [...acc, ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id'))]
-    }, [])
-
-    const groupUsersWithRights = <any[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
-      const rights = ProjectGroup.get('ProjectGroupRight');
       return [
         ...acc,
-        ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => ({ user: User, rights }))
-      ]
+        ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id')),
+        ...(<UserInstance[]>ProjectGroup.get('Companies')).reduce((acc, Company) => {
+          return [...acc, ...(<UserInstance[]>Company.get('Users')).map((User) => User.get('id'))]
+        }, []),
+      ];
     }, []);
 
-    const assignableUserIds = groupUsersWithRights.filter((user) => user.rights.assignedWrite).map((userWithRights) => userWithRights.user.get('id'));
-    assignedTos = assignedTos.filter((id) => assignableUserIds.includes(id));
+    const assignableUserIds = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups'))
+      .filter((ProjectGroup) => {
+        const GroupRights = <ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight');
+        return GroupRights.get('assignedEdit');
+      })
+      .reduce((acc, ProjectGroup) => {
+        return [
+          ...acc,
+          ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id')),
+          ...(<UserInstance[]>ProjectGroup.get('Companies')).reduce((acc, Company) => {
+            return [...acc, ...(<UserInstance[]>Company.get('Users')).map((User) => User.get('id'))]
+          }, []),
+        ];
+      }, []);
 
     //requester must be in project or project is open
     if (requester && Project.get('lockedRequester') && !groupUsers.includes(requester)) {
       throw createUserNotPartOfProjectError('requester');
-    }
-
-    //milestone must be of project
-    if (milestone && !(<MilestoneInstance[]>Project.get('Milestones')).some((projectMilestone) => projectMilestone.get('id') === milestone)) {
-      throw MilestoneNotPartOfProject;
     }
 
     const dates = extractDatesFromObject(params, dateNames);
@@ -456,7 +495,7 @@ const mutations = {
       createdById: User.get('id'),
       CompanyId: company,
       ProjectId: project,
-      MilestoneId: milestone === undefined ? null : milestone,
+      MilestoneId: null,
       requesterId: requester === undefined ? null : requester,
       TaskTypeId: taskType,
       StatusId: status,
@@ -467,6 +506,7 @@ const mutations = {
       statusChange: moment().valueOf(),
       invoicedDate: null,
     }
+
     const Status = await models.Status.findByPk(status);
     switch (Status.get('action')) {
       case 'CloseDate': {
@@ -497,6 +537,7 @@ const mutations = {
       default:
         break;
     }
+
     //Subtask
     if (subtasks) {
       if (subtasks.some((subtask) => !assignedTos.includes(subtask.assignedTo))) {
@@ -614,6 +655,7 @@ const mutations = {
   },
 
   updateRepeat: async (root, { id, repeatEvery, repeatInterval, active, repeatTemplate: args, ...argDates }, { req }) => {
+    const User = await checkResolver(req);
     const { startsAt } = extractDatesFromObject(argDates, ['startsAt']);
 
     if (!args) {
@@ -634,13 +676,12 @@ const mutations = {
               models.WorkTrip,
               models.TaskType,
               models.Company,
-              models.Milestone,
               { model: models.User, as: 'requester' },
               models.Tag,
               {
                 model: models.Project,
                 include: [
-                  models.Milestone,
+                  models.ProjectAttributes,
                   {
                     model: models.Tag,
                     as: 'tags'
@@ -651,7 +692,7 @@ const mutations = {
                   },
                   {
                     model: models.ProjectGroup,
-                    include: [models.User, models.ProjectGroupRights]
+                    include: [models.User, { model: models.Company, include: [models.User] }, models.ProjectGroupRights]
                   },
                 ]
               }
@@ -666,27 +707,16 @@ const mutations = {
     }
     const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
 
-    const User = await checkResolver(
-      req,
-      [],
-      false,
-      [
-        {
-          model: models.ProjectGroup,
-          required: false,
-          where: {
-            ProjectId: [args.project, RepeatTemplate.get('ProjectId')].filter((id) => id),
-          },
-          include: [models.ProjectGroupRights],
-        }
-      ]
-    );
-
     //Figure out project and if can change project
-    await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['repeatWrite']);
+    let userGroupRights = null;
+    const requiredGroupRights = args.project !== undefined && args.project !== RepeatTemplate.get('ProjectId') ? ['taskProjectWrite'] : [];
+    const TestData1 = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), requiredGroupRights, [{ right: 'repeat', action: 'edit' }]);
+    userGroupRights = <any>TestData1.groupRights;
     if (args.project !== undefined && args.project !== RepeatTemplate.get('ProjectId')) {
-      await checkIfHasProjectRights(User.get('id'), undefined, args.project, ['projectWrite', 'repeatWrite']);
+      const TestData2 = await checkIfHasProjectRights(User, undefined, args.project, ['taskProjectWrite'], [{ right: 'repeat', action: 'edit' }]);
+      userGroupRights = <any>TestData2.groupRights;
     }
+
     const project = args.project ? args.project : RepeatTemplate.get('ProjectId');
     let Project = <ProjectInstance>RepeatTemplate.get('Project');
     if (project && project !== Project.get('id')) {
@@ -694,7 +724,7 @@ const mutations = {
         project,
         {
           include: [
-            models.Milestone,
+            models.ProjectAttributes,
             {
               model: models.Tag,
               as: 'tags'
@@ -702,10 +732,6 @@ const mutations = {
             {
               model: models.Status,
               as: 'projectStatuses'
-            },
-            {
-              model: models.ProjectGroup,
-              include: [models.User, models.ProjectGroupRights]
             },
           ],
         }
@@ -715,20 +741,17 @@ const mutations = {
       }
     }
 
-    const def = await Project.get('def');
-    args = applyFixedOnAttributes(def, args);
+    const ProjectStatuses = <StatusInstance[]>Project.get('projectStatuses');
+    const ProjectAttributes = <ProjectAttributesInstance>Project.get('ProjectAttribute');
+
+    args = checkAndApplyFixedAndRequiredOnAttributes(await ProjectAttributes.get('attributes'), userGroupRights.attributes, args, User, ProjectStatuses, false, RepeatTemplate);
 
     let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, ...params } = args;
     const dates = extractDatesFromObject(params, dateNames);
     params = { ...params, ...dates };
-    const groupRights = (
-      (<RoleInstance>User.get('Role')).get('level') === 0 ?
-        allGroupRights :
-        (<ProjectGroupRightsInstance>(<ProjectGroupInstance[]>User.get('ProjectGroups')).find((ProjectGroup) => ProjectGroup.get('ProjectId') === project).get('ProjectGroupRight')).get()
-    )
 
     //can you even open this task
-    if (!canViewTask(RepeatTemplate, User, groupRights, true)) {
+    if (!canViewTask(RepeatTemplate, User, userGroupRights.project, true)) {
       throw CantViewTaskError;
     }
 
@@ -742,58 +765,55 @@ const mutations = {
     }
     //check all Ids if exists
     const pairsToCheck = [];
-    (company !== undefined) && pairsToCheck.push({ id: company, model: models.Company });
-    (project !== undefined) && pairsToCheck.push({ id: project, model: models.Project });
-    (status !== undefined) && pairsToCheck.push({ id: status, model: models.Status });
+    company !== undefined && pairsToCheck.push({ id: company, model: models.Company });
+    project !== undefined && pairsToCheck.push({ id: project, model: models.Project });
+    status !== undefined && pairsToCheck.push({ id: status, model: models.Status });
     (taskType !== undefined && taskType !== null) && pairsToCheck.push({ id: taskType, model: models.TaskType });
     (requester !== undefined && requester !== null) && pairsToCheck.push({ id: requester, model: models.User });
-    (milestone !== undefined && milestone !== null) && pairsToCheck.push({ id: milestone, model: models.Milestone });
     await multipleIdDoesExistsCheck(pairsToCheck);
 
-    checkDefRequiredSatisfied(
-      def,
-      {
-        assignedTo: (<UserInstance[]>RepeatTemplate.get('assignedTos')).map((User) => User.get('id')),
-        tags: (<TagInstance[]>RepeatTemplate.get('Tags')).map((Tag) => Tag.get('id')),
-        company: RepeatTemplate.get('CompanyId'),
-        requester: RepeatTemplate.get('RequesterId'),
-        status: RepeatTemplate.get('StatusId'),
-      },
-      args,
-    );
 
     //Rights and project def
-    checkIfCanEditTaskAttributes(User, def, project, args);
+    await checkIfCanEditTaskAttributes(User, Project.get('id'), args, ProjectStatuses, args.project ? null : RepeatTemplate);
 
     if (tags) {
       tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
     }
 
     const groupUsers = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
-      return [...acc, ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id'))]
-    }, [])
+      return [
+        ...acc,
+        ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id')),
+        ...(<UserInstance[]>ProjectGroup.get('Companies')).reduce((acc, Company) => {
+          return [...acc, ...(<UserInstance[]>Company.get('Users')).map((User) => User.get('id'))]
+        }, []),
+      ];
+    }, []);
+
+    const assignableUserIds = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).filter((ProjectGroup) => {
+      const GroupRights = <ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight');
+      return GroupRights.get('assignedEdit');
+    }).reduce((acc, ProjectGroup) => {
+      return [
+        ...acc,
+        ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id')),
+        ...(<UserInstance[]>ProjectGroup.get('Companies')).reduce((acc, Company) => {
+          return [...acc, ...(<UserInstance[]>Company.get('Users')).map((User) => User.get('id'))]
+        }, []),
+      ];
+    }, []);
 
     let promises = [];
 
     await sequelize.transaction(async (transaction) => {
       if (project && project !== (<ProjectInstance>RepeatTemplate.get('Project')).get('id')) {
         promises.push(RepeatTemplate.setProject(project, { transaction }));
-        if (milestone === undefined || milestone === null) {
-          promises.push(RepeatTemplate.setMilestone(null, { transaction }));
-        }
+        //here was milestone with condition if exists
       }
       if (assignedTos) {
         await idsDoExistsCheck(assignedTos, models.User);
-        //assignedTo must be in project group
-        const groupUsersWithRights = <any[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
-          const rights = ProjectGroup.get('ProjectGroupRight');
-          return [
-            ...acc,
-            ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => ({ user: User, rights }))
-          ]
-        }, []);
-        const assignableUserIds = groupUsersWithRights.filter((user) => user.rights.assignedWrite).map((userWithRights) => userWithRights.user.get('id'));
 
+        //assignedTo must be in project group
         assignedTos = assignedTos.filter((assignedTo) => assignableUserIds.includes(assignedTo));
         //all subtasks and worktrips must be assigned
         const Subtasks = <SubtaskInstance[]>await RepeatTemplate.get('Subtasks');
@@ -818,14 +838,7 @@ const mutations = {
         }
         promises.push(RepeatTemplate.setRequester(requester, { transaction }))
       }
-
-      if (milestone || milestone === null) {
-        //milestone must be of project
-        if (milestone !== null && !(<MilestoneInstance[]>Project.get('Milestones')).some((projectMilestone) => projectMilestone.get('id') === milestone)) {
-          throw MilestoneNotPartOfProject;
-        }
-        promises.push(RepeatTemplate.setMilestone(milestone, { transaction }))
-      }
+      //here was milestone with condition if and of project
       if (taskType !== undefined) {
         promises.push(RepeatTemplate.setTaskType(taskType, { transaction }))
       }
@@ -923,7 +936,6 @@ const mutations = {
           ));
         });
       } else if (repeatInterval || repeatEvery) {
-
         const originalTriggerEvery = 1000 * 60 * getMinutes(
           Repeat.get('repeatEvery'),
           Repeat.get('repeatInterval')
@@ -990,9 +1002,9 @@ const mutations = {
     const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
     const Project = <ProjectInstance>RepeatTemplate.get('Project');
     //must right to delete project
-    const { groupRights } = await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['repeatWrite']);
-    //can you even open this task
-    if (!canViewTask(RepeatTemplate, User, groupRights, true)) {
+    const { groupRights } = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), [], [{ right: 'repeat', action: 'edit' }]);
+    //can you even view this task
+    if (!canViewTask(RepeatTemplate, User, groupRights.project, true)) {
       throw CantViewTaskError;
     }
     repeatEvent.emit('delete', id);
@@ -1022,10 +1034,16 @@ const mutations = {
       throw createDoesNoExistsError('Repeat', repeatId);
     }
     const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
-    const User = await checkResolver(req, ['tasklistCalendar']);
+    const User = await checkResolver(req);
 
-    //Figure out project and if can change project
-    await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['addTasks', 'repeatRead']);
+    //Figure out project and if can create tasks and sees repeats
+    const { groupRights } = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), ['addTask'], [{ right: 'repeat', action: 'read' }]);
+
+    //check if can trigger repeat
+    if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
+      throw InsufficientProjectAccessError;
+    }
+
     const NewTask = await addTask(repeatId, repeatTimeId, originalTrigger, true);
     repeatTimeEvent.emit('changed', repeatId);
     //get or create repeatTime and set it as triggered
