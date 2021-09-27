@@ -74,12 +74,13 @@ export const checkIfHasProjectRights = async (User, taskId = undefined, projectI
   )).map((ProjectGroup) => ProjectGroup.get('ProjectGroupRight'));
 
   if ((<RoleInstance>User.get('Role')).get('level') === 0) {
-    groupRights = await mergeGroupRights(ProjectGroups.find((ProjectGroup) => ProjectGroup.get('admin') && ProjectGroup.get('def')).get('ProjectGroupRight'))
+    groupRights = await mergeGroupRights(ProjectGroups.find((ProjectGroup) => ProjectGroup.get('admin') && ProjectGroup.get('def')).get('ProjectGroupRight'));
   } else if (UserProjectGroupRights.length === 0) {
     throw InsufficientProjectAccessError;
   } else {
     groupRights = await mergeGroupRights(UserProjectGroupRights[0], UserProjectGroupRights[1]);
   }
+
   //END get group rights
 
   if (
@@ -110,6 +111,124 @@ export const getProjectAdminRights = async (projectId) => {
   });
   const ProjectGroup = <ProjectGroupInstance>Project.get('ProjectGroups')[0];
   return <ProjectGroupRightsInstance>(ProjectGroup.get('ProjectGroupRight'));
+}
+
+export const convertSQLProjectGroupRightsToRights = (SQLRights) => {
+  return {
+    project: {
+      //project
+      projectRead: SQLRights.projectRead > 0,
+      projectWrite: SQLRights.projectWrite > 0,
+
+      //tasklist
+      companyTasks: SQLRights.companyTasks > 0,
+      allTasks: SQLRights.allTasks > 0,
+
+      //tasklist view
+      tasklistDnD: SQLRights.tasklistDnD > 0,
+      tasklistKalendar: SQLRights.tasklistKalendar > 0,
+      tasklistGantt: SQLRights.tasklistGantt > 0,
+      tasklistStatistics: SQLRights.tasklistStatistics > 0,
+
+      //add task
+      addTask: SQLRights.addTask > 0,
+
+      //edit task
+      deleteTask: SQLRights.deleteTask > 0,
+      taskImportant: SQLRights.taskImportant > 0,
+      taskTitleWrite: SQLRights.taskTitleWrite > 0,
+      taskProjectWrite: SQLRights.taskProjectWrite > 0,
+      taskDescriptionRead: SQLRights.taskDescriptionRead > 0,
+      taskDescriptionWrite: SQLRights.taskDescriptionWrite > 0,
+      taskAttachmentsRead: SQLRights.taskAttachmentsRead > 0,
+      taskAttachmentsWrite: SQLRights.taskAttachmentsWrite > 0,
+
+      taskSubtasksRead: SQLRights.taskSubtasksRead > 0,
+      taskSubtasksWrite: SQLRights.taskSubtasksWrite > 0,
+      taskWorksRead: SQLRights.taskWorksRead > 0,
+      taskWorksWrite: SQLRights.taskWorksWrite > 0,
+      taskWorksAdvancedRead: SQLRights.taskWorksAdvancedRead > 0,
+      taskWorksAdvancedWrite: SQLRights.taskWorksAdvancedWrite > 0,
+      taskMaterialsRead: SQLRights.taskMaterialsRead > 0,
+      taskMaterialsWrite: SQLRights.taskMaterialsWrite > 0,
+      taskPausalInfo: SQLRights.taskPausalInfo > 0,
+
+      //comments and history
+      viewComments: SQLRights.viewComments > 0,
+      addComments: SQLRights.addComments > 0,
+      internal: SQLRights.internal > 0,
+      emails: SQLRights.emails > 0,
+      history: SQLRights.history > 0,
+    },
+    attributes: {
+      status: {
+        required: SQLRights.statusRequired > 0,
+        add: SQLRights.statusAdd > 0,
+        view: SQLRights.statusView > 0,
+        edit: SQLRights.statusEdit > 0,
+      },
+      tags: {
+        required: SQLRights.tagsRequired > 0,
+        add: SQLRights.tagsAdd > 0,
+        view: SQLRights.tagsView > 0,
+        edit: SQLRights.tagsEdit > 0,
+      },
+      assigned: {
+        required: SQLRights.assignedRequired > 0,
+        add: SQLRights.assignedAdd > 0,
+        view: SQLRights.assignedView > 0,
+        edit: SQLRights.assignedEdit > 0,
+      },
+      requester: {
+        required: SQLRights.requesterRequired > 0,
+        add: SQLRights.requesterAdd > 0,
+        view: SQLRights.requesterView > 0,
+        edit: SQLRights.requesterEdit > 0,
+      },
+      company: {
+        required: SQLRights.companyRequired > 0,
+        add: SQLRights.companyAdd > 0,
+        view: SQLRights.companyView > 0,
+        edit: SQLRights.companyEdit > 0,
+      },
+      taskType: {
+        required: SQLRights.taskTypeRequired > 0,
+        add: SQLRights.taskTypeAdd > 0,
+        view: SQLRights.taskTypeView > 0,
+        edit: SQLRights.taskTypeEdit > 0,
+      },
+      pausal: {
+        required: SQLRights.pausalRequired > 0,
+        add: SQLRights.pausalAdd > 0,
+        view: SQLRights.pausalView > 0,
+        edit: SQLRights.pausalEdit > 0,
+      },
+      overtime: {
+        required: SQLRights.overtimeRequired > 0,
+        add: SQLRights.overtimeAdd > 0,
+        view: SQLRights.overtimeView > 0,
+        edit: SQLRights.overtimeEdit > 0,
+      },
+      startsAt: {
+        required: SQLRights.startsAtRequired > 0,
+        add: SQLRights.startsAtAdd > 0,
+        view: SQLRights.startsAtView > 0,
+        edit: SQLRights.startsAtEdit > 0,
+      },
+      deadline: {
+        required: SQLRights.deadlineRequired > 0,
+        add: SQLRights.deadlineAdd > 0,
+        view: SQLRights.deadlineView > 0,
+        edit: SQLRights.deadlineEdit > 0,
+      },
+      repeat: {
+        add: SQLRights.repeatAdd > 0,
+        view: SQLRights.repeatView > 0,
+        edit: SQLRights.repeatEdit > 0,
+      },
+
+    }
+  }
 }
 
 export const mergeGroupRights = async (right1, right2 = null) => {
@@ -462,6 +581,7 @@ export const fixProjectFilters = async (filters, allGroups) => {
 
 //TASK RELATED
 export const canViewTask = (Task, User, groupRights, checkAdmin = false) => {
+
   return (
     groupRights.allTasks ||
     (groupRights.companyTasks && Task.get('CompanyId') === User.get('CompanyId')) ||
@@ -474,6 +594,7 @@ export const canViewTask = (Task, User, groupRights, checkAdmin = false) => {
 
 export const checkAndApplyFixedAndRequiredOnAttributes = (projectAttributes, groupAttributeRights, args, User = null, statuses = [], newTask = true, taskData = null) => {
   projectAttributes.assignedTo = projectAttributes.assigned;
+  groupAttributeRights.assignedTo = groupAttributeRights.assigned;
   (['assignedTo', 'tags']).forEach((key) => {
     if (projectAttributes[key].fixed && args[key]) {
       let values = projectAttributes[key].value.map((value) => value.get('id'));

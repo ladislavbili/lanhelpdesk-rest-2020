@@ -14,6 +14,7 @@ type Project {
   projectFilters: [Filter]
   milestones: [Milestone]!
   imaps: [Imap]!
+  attributeRights: ProjectGroupAttributeRights
   right: ProjectGroupRights
   tags: [Tag]!
   statuses: [Status]!
@@ -33,6 +34,7 @@ type BasicProject {
   filters: [BasicFilter]
   projectFilters: [BasicFilter]
   milestones: [Milestone]!
+  attributeRights: ProjectGroupAttributeRights!
   right: ProjectGroupRights!
   tags: [Tag]!
   statuses: [Status]!
@@ -41,8 +43,8 @@ type BasicProject {
 
 type MyProject {
   project: BasicProject!
-  right: ProjectGroupRights!
   attributeRights: ProjectGroupAttributeRights!
+  right: ProjectGroupRights!
   usersWithRights: [UserWithRights]!
 }
 

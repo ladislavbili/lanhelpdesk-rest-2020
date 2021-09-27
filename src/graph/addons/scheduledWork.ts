@@ -72,7 +72,7 @@ export const createScheduledWorksSQL = (where, userId, companyId, isAdmin, ofSub
   ${createModelAttributes("Task", "Task", models.Task)}
   ${createModelAttributes("User", "User", models.User)}
   ${ generateFullNameSQL('User')}
-  ("Project->ProjectGroups->ProjectGroupRight"."assignedWrite" AND "Project->ProjectGroups->ProjectGroupRight"."vykazWrite") AS "canEdit",
+  ("Project->ProjectGroups->ProjectGroupRight"."assignedEdit" AND "Project->ProjectGroups->ProjectGroupRight"."taskWorksWrite") AS "canEdit",
   ${createModelAttributes("assignedTosFilter", "assignedTosFilter", models.User)}
   ${createModelAttributes("assignedTosFilter->task_assignedTo", "assignedTosFilter.task_assignedTo", null, 'assignedTosTaskMapAttributes')}
   ${createModelAttributes("Company", "Company", models.Company)}

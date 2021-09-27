@@ -100,7 +100,7 @@ const queries = {
         "CompanyBelongsToGroup"."CompanyId" IS NOT NULL
       )`);
     }
-    if (!isAdmin && !(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRights')).get('tasklistCalendar')) {
+    if (!isAdmin && !(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar')) {
       where.push(`(
         "Project->ProjectGroups->ProjectGroupRight"."tasklistKalendar" = true
       )`);

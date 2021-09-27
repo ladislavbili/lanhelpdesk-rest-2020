@@ -24,7 +24,7 @@ import { repeatTimeEvent } from '@/services/repeatTasks';
 const queries = {
   repeatTimes: async (root, { repeatId, repeatIds, active, ...rangeDates }, { req }) => {
     const User = <UserInstance>await checkResolver(req);
-    const canUserSeeCalendarGlobally = (<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRights')).get('tasklistCalendar');
+    const canUserSeeCalendarGlobally = (<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar');
     let repeatWhere = <any>{};
     let repeatTimeWhere = <any>{};
 
@@ -183,7 +183,7 @@ const queries = {
                     model: models.Project,
                     required: true,
                     include: [{
-                      model: models.ProjectGroups,
+                      model: models.ProjectGroup,
                       where: {
                         admin: true,
                         def: true,

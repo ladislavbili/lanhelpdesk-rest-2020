@@ -43,7 +43,8 @@ const queries = {
         ['title', 'ASC'],
       ],
       where: {
-        [Op.or]: where
+        [Op.or]: where,
+        ofProject: false,
       },
       include: [
         models.Role,
@@ -76,7 +77,8 @@ const queries = {
       const Filter = await models.Filter.findOne({
         where: {
           id,
-          [Op.or]: where
+          [Op.or]: where,
+          ofProject: false,
         },
         include: [
           models.Role,

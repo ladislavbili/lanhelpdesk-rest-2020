@@ -28,6 +28,7 @@ type Task {
   invoiced: Boolean!
   ganttOrder: Int
 
+  attributeRights: ProjectGroupAttributeRights
   rights: ProjectGroupRights
   repeat: Repeat
   metadata: TaskMetadata!

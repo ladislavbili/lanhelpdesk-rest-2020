@@ -205,12 +205,16 @@ const queries = {
               model: models.Project,
               required: true,
               include: [{
-                model: models.ProjectGroups,
+                model: models.ProjectGroup,
                 where: {
                   admin: true,
                   def: true,
                 },
-                include: [models.ProjectGroupRights]
+                include: [{
+                  model: models.ProjectGroupRights,
+                  required: true,
+                  where: { repeatView: true }
+                }]
               }],
             },
             models.Status,
@@ -354,7 +358,7 @@ const mutations = {
     //TODO: clean milestones EVERYWHERE
     const project = args.project;
     const { startsAt } = extractDatesFromObject(argDates, ['startsAt']);
-    const Project = await models.Project.findByPk(
+    const Project = <ProjectInstance>await models.Project.findByPk(
       project,
       {
         include: [
@@ -367,14 +371,6 @@ const mutations = {
             model: models.Status,
             as: 'projectStatuses'
           },
-          {
-            model: models.ProjectGroup,
-            include: [
-              models.User,
-              { model: models.Company, include: [models.User] },
-              models.ProjectGroupRights
-            ]
-          },
         ]
       }
     );
@@ -384,7 +380,11 @@ const mutations = {
 
     const ProjectStatuses = <StatusInstance[]>Project.get('projectStatuses');
     const ProjectAttributes = <ProjectAttributesInstance>Project.get('ProjectAttribute');
-    const ProjectGroups = <ProjectGroupInstance[]>Project.get('ProjectGroups');
+    const ProjectGroups = <ProjectGroupInstance[]>await Project.getProjectGroups({
+      model: models.ProjectGroup,
+      attributes: ['id'],
+      include: [{ model: models.User, attributes: ['id'] }, { model: models.Company, attributes: ['id'], include: [{ model: models.User, attributes: ['id'] }] }, models.ProjectGroupRights]
+    });
     //get users rights in the project
     let userGroupRights = <any>{};
     const UserProjectGroupRights = <ProjectGroupRightsInstance[]>ProjectGroups.filter((ProjectGroup) => (
@@ -456,7 +456,7 @@ const mutations = {
     //Rights and project def
     await checkIfCanEditTaskAttributes(User, project, args, ProjectStatuses, null, changedAttributes);
 
-    const groupUsers = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
+    const groupUsers = <number[]>ProjectGroups.reduce((acc, ProjectGroup) => {
       return [
         ...acc,
         ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id')),
@@ -466,7 +466,7 @@ const mutations = {
       ];
     }, []);
 
-    const assignableUserIds = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups'))
+    const assignableUserIds = <number[]>ProjectGroups
       .filter((ProjectGroup) => {
         const GroupRights = <ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight');
         return GroupRights.get('assignedEdit');
@@ -690,10 +690,6 @@ const mutations = {
                     model: models.Status,
                     as: 'projectStatuses'
                   },
-                  {
-                    model: models.ProjectGroup,
-                    include: [models.User, { model: models.Company, include: [models.User] }, models.ProjectGroupRights]
-                  },
                 ]
               }
             ]
@@ -780,7 +776,12 @@ const mutations = {
       tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));
     }
 
-    const groupUsers = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
+    const ProjectGroups = <ProjectGroupInstance[]>await Project.getProjectGroups({
+      model: models.ProjectGroup,
+      attributes: ['id'],
+      include: [{ model: models.User, attributes: ['id'] }, { model: models.Company, attributes: ['id'], include: [{ model: models.User, attributes: ['id'] }] }, models.ProjectGroupRights]
+    });
+    const groupUsers = <number[]>ProjectGroups.reduce((acc, ProjectGroup) => {
       return [
         ...acc,
         ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id')),
@@ -790,7 +791,7 @@ const mutations = {
       ];
     }, []);
 
-    const assignableUserIds = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).filter((ProjectGroup) => {
+    const assignableUserIds = <number[]>ProjectGroups.filter((ProjectGroup) => {
       const GroupRights = <ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight');
       return GroupRights.get('assignedEdit');
     }).reduce((acc, ProjectGroup) => {

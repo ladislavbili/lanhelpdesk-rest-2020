@@ -111,21 +111,21 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
       value: filter.taskTypes,
       withRight: true,
       path: `"Task".`,
-      right: 'typeRead',
+      right: 'taskTypeView',
     },
     {
       key: 'CompanyId',
       value: filter.companyCur ? [...filter.companies, companyId] : filter.companies,
       withRight: true,
       path: `"Task".`,
-      right: 'companyRead',
+      right: 'companyView',
     },
     {
       key: 'requesterId',
       value: filter.requesterCur ? [...filter.requesters, userId] : filter.requesters,
       withRight: true,
       path: `"Task".`,
-      right: 'requesterRead',
+      right: 'requesterView',
     },
   ].forEach((attribute) => {
     if (attribute.value.length > 0) {
@@ -155,7 +155,7 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
       to: filter.statusDateTo,
       path: '"Task".',
       withRight: true,
-      right: 'statusRead',
+      right: 'statusView',
     },
     {
       target: 'pendingDate',
@@ -174,7 +174,7 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
       to: filter.closeDateTo,
       path: '"Task".',
       withRight: true,
-      right: 'statusRead',
+      right: 'statusView',
     },
     {
       target: 'deadline',
@@ -184,7 +184,7 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
       to: filter.deadlineTo,
       path: '"Task".',
       withRight: true,
-      right: 'deadlineRead',
+      right: 'deadlineView',
     },
     {
       target: 'createdAt',
@@ -476,8 +476,8 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
       ${ !isAdmin ?
       '' :
       `
-        ${createModelAttributes("Project->AdminProjectGroups", "Project.AdminProjectGroup", models.ProjectGroup)}
-        ${createModelAttributes("Project->AdminProjectGroups->ProjectGroupRight", "Project.AdminProjectGroup.ProjectGroupRight", models.ProjectGroupRights)}
+          ${createModelAttributes("Project->AdminProjectGroups", "Project.AdminProjectGroup", models.ProjectGroup)}
+          ${createModelAttributes("Project->AdminProjectGroups->ProjectGroupRight", "Project.AdminProjectGroup.ProjectGroupRight", models.ProjectGroupRights)}
         `
     }
       ${createModelAttributes("Project->ProjectGroups", "Project.ProjectGroups", models.ProjectGroup)}
@@ -659,7 +659,7 @@ export const generateWorkCountsSQL = (projectId, userId, companyId, isAdmin, whe
        "task_has_tags" AS "tagsFilter->task_has_tags" INNER JOIN "tags" AS "tagsFilter" ON "tagsFilter"."id" = "tagsFilter->task_has_tags"."TagId"
      ) ON "Task"."id" = "tagsFilter->task_has_tags"."TaskId"
      INNER JOIN "projects" AS "Project" ON "Task"."ProjectId" = "Project"."id"
-     LEFT OUTER JOIN "project_group" AS "Project->ProjectGroups" ON "Project.id" = "Project->ProjectGroups"."ProjectId"
+     LEFT OUTER JOIN "project_group" AS "Project->ProjectGroups" ON "Project"."id" = "Project->ProjectGroups"."ProjectId"
      LEFT OUTER JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
      LEFT OUTER JOIN (
        "user_belongs_to_group" AS "Project->ProjectGroups->Users->user_belongs_to_group" INNER JOIN "users" AS "Project->ProjectGroups->Users" ON "Project->ProjectGroups->Users"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."UserId"

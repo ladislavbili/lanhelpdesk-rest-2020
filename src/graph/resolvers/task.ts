@@ -59,6 +59,7 @@ import {
   checkIfCanEditTaskAttributes,
   mergeGroupRights,
   checkAndApplyFixedAndRequiredOnAttributes,
+  convertSQLProjectGroupRightsToRights,
 } from '@/graph/addons/project';
 import {
   calculateMetadata,
@@ -219,15 +220,16 @@ const queries = {
         const Project = Task.Project;
         const Groups = Project.ProjectGroups;
         const GroupRight = Groups.ProjectGroupRight;
-        Task.rights = GroupRight;
+        Task.rights = convertSQLProjectGroupRightsToRights(GroupRight);
         return Task;
       })
     } else {
       tasks = tasks.map((Task) => {
+
         const Project = Task.Project;
-        const Groups = Project.AdminProjectGroups;
+        const Groups = Project.AdminProjectGroup;
         const GroupRight = Groups.ProjectGroupRight;
-        Task.rights = GroupRight;
+        Task.rights = convertSQLProjectGroupRightsToRights(GroupRight);
         return Task;
       })
     }
@@ -1166,7 +1168,13 @@ const attributes = {
       if (!task.rights) {
         return null;
       }
-      return { ...task.rights.project, attributes: task.rights.attributes };
+      return task.rights.project;
+    },
+    async attributeRights(task) {
+      if (!task.rights) {
+        return null;
+      }
+      return task.rights.attributes;
     },
     async assignedTo(task) {
       if (!task.rights || !task.rights.attributes.assigned.view) {

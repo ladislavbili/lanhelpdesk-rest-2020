@@ -18,6 +18,7 @@ export interface ProjectInstance extends DefaultInstance {
 
   getTasks?: any;
   getProjectAttribute?: any;
+  getProjectGroups?: any;
 }
 
 export default function defineProjects(sequelize: Sequelize) {

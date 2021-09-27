@@ -790,7 +790,7 @@ const attributes = {
       return (await getModelAttribute(project, 'projectAttribute')).get('attributes');
     },
     async filters(project) {
-      return getModelAttribute(project, 'filterOfProjects');
+      return getModelAttribute(project, 'filterOfProjects', null, { where: { ofProject: false } });
     },
     async projectFilters(project) {
       return getModelAttribute(project, 'filterOfProjects', null, { where: { ofProject: true } });
@@ -807,28 +807,15 @@ const attributes = {
     async statuses(project) {
       return getModelAttribute(project, 'projectStatuses');
     },
-    async right(project, _, { userID }, __) {
-      if (project.getProjectGroups) {
-        const Groups = await project.getProjectGroups({
-          attributes: ['id', 'title'],
-          include: [
-            { model: models.ProjectGroupRights, attributes: { exclude: ['ProjectGroupId', 'updatedAt', 'createdAt', 'id'] } },
-            { model: models.User, where: { id: userID } }
-          ]
-        });
-        if (Groups.length === 1) {
-          return Groups[0].get('ProjectGroupRight').get();
-        }
-        return null;
-      } else {
-        if (project.ProjectGroupRight) {
-          if (Object.keys(project.ProjectGroupRight).some((key) => project.ProjectGroupRight[key] !== null && project.ProjectGroupRight[key] !== undefined)) {
-            return project.ProjectGroupRight;
-          }
-          return null;
-        }
-        return null;
-      }
+    async right(project, _, { req }, __) {
+      const User = await checkResolver(req);
+      const { groupRights } = await checkIfHasProjectRights(User, undefined, project.get('id'));
+      return groupRights.project;
+    },
+    async attributeRights(project, _, { req }, __) {
+      const User = await checkResolver(req);
+      const { groupRights } = await checkIfHasProjectRights(User, undefined, project.get('id'));
+      return groupRights.attributes;
     },
     async groups(project) {
       return getModelAttribute(project, 'ProjectGroups');
@@ -839,11 +826,63 @@ const attributes = {
   },
 
   BasicProject: {
-    async filters(project) {
-      return getModelAttribute(project, 'filterOfProjects');
+    async projectFilters(project, _, { req }, __) {
+      const User = await checkResolver(req);
+      if ((<RoleInstance>User.get('Role')).get('level') === 0) {
+        const ProjectAdmin = <ProjectGroupInstance[]>await project.getProjectGroups({ where: { admin: true, def: true } });
+        return getModelAttribute(
+          project,
+          'filterOfProjects',
+          null,
+          {
+            where: { ofProject: true, active: true },
+            include: [{ model: models.ProjectGroup, required: true, where: { id: ProjectAdmin[0].get('id') } }]
+          }
+        );
+      }
+      const filterResponses = await Promise.all([
+        getModelAttribute(project, 'filterOfProjects', null, {
+          where: { ofProject: true, active: true },
+          include: [
+            {
+              model: models.ProjectGroup,
+              include: [
+                {
+                  model: models.User,
+                  required: true,
+                  where: { id: User.get('id') },
+                },
+                {
+                  model: models.ProjectGroupRights,
+                }
+              ],
+            }
+          ]
+        }),
+        getModelAttribute(project, 'filterOfProjects', null, {
+          where: { ofProject: true, active: true },
+          include: [
+            {
+              model: models.ProjectGroup,
+              include: [
+                {
+                  model: models.Company,
+                  required: true,
+                  where: { id: User.get('CompanyId') },
+                },
+                {
+                  model: models.ProjectGroupRights,
+                }
+              ],
+            }
+          ]
+        }),
+      ]);
+      const filters = [...filterResponses[0], ...filterResponses[1]];
+      return filters.filter((filter, index) => filters.findIndex((filter2) => filter.get('id') === filter2.get('id')) === index)
     },
-    async projectFilters(project) {
-      return getModelAttribute(project, 'filterOfProjects');
+    async filters(project) {
+      return getModelAttribute(project, 'filterOfProjects', null, { where: { ofProject: false } });
     },
     async projectAttributes(project) {
       return (await getModelAttribute(project, 'projectAttribute')).get('attributes');
@@ -851,18 +890,15 @@ const attributes = {
     async milestones(project) {
       return getModelAttribute(project, 'Milestones');
     },
-    async right(project, _, { userID }, __) {
-      const Groups = await project.getProjectGroups({
-        attributes: ['id', 'title'],
-        include: [
-          { model: models.ProjectGroupRights, attributes: { exclude: ['ProjectGroupId', 'updatedAt', 'createdAt', 'id'] } },
-          { model: models.User, where: { id: userID } }
-        ]
-      });
-      if (Groups.length === 1) {
-        return Groups[0].get('ProjectGroupRight').get();
-      }
-      return null;
+    async right(project, _, { req }, __) {
+      const User = await checkResolver(req);
+      const { groupRights } = await checkIfHasProjectRights(User, undefined, project.get('id'));
+      return groupRights.project;
+    },
+    async attributeRights(project, _, { req }, __) {
+      const User = await checkResolver(req);
+      const { groupRights } = await checkIfHasProjectRights(User, undefined, project.get('id'));
+      return groupRights.attributes;
     },
     async tags(project) {
       return getModelAttribute(project, 'tags');
