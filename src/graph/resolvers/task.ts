@@ -1149,7 +1149,7 @@ const mutations = {
     );
     const Project = <ProjectInstance>Task.get('Project');
     //must right to delete project
-    const { groupRights } = await checkIfHasProjectRights(User, undefined, Task.get('ProjectId'), ['deleteTasks']);
+    const { groupRights } = await checkIfHasProjectRights(User, undefined, Task.get('ProjectId'), ['deleteTask']);
     //can you even open this task
     if (!canViewTask(Task, User, groupRights.project, true)) {
       throw CantViewTaskError;

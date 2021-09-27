@@ -808,7 +808,7 @@ export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, st
 
   //attributes
   //ak nemoze editovat assigned, bud je rovnaky ako v tasku, alebo def alebo fixed/user
-  if (!attributeRights.assigned.edit && (editingTask || !attributeRights.assigned.add) && newAttrs.assignedTo !== undefined && !ignoreAttributes.includes('assignedTo')) {
+  if (!attributeRights.assigned.edit && (editingTask || !attributeRights.assigned.add) && ![undefined, null].includes(newAttrs.assignedTo) && !ignoreAttributes.includes('assignedTo')) {
     if (
       (
         !editingTask &&
@@ -828,7 +828,7 @@ export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, st
       throw createCantEditTaskAttributeError('assignedTo');
     }
   }
-  if (!attributeRights.tags.edit && (editingTask || !attributeRights.tags.add) && newAttrs.tags !== undefined && !ignoreAttributes.includes('tags')) {
+  if (!attributeRights.tags.edit && (editingTask || !attributeRights.tags.add) && ![undefined, null].includes(newAttrs.tags) && !ignoreAttributes.includes('tags')) {
     if (
       (
         !editingTask &&
@@ -849,7 +849,7 @@ export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, st
     }
   }
 
-  if (!attributeRights.company.edit && (editingTask || !attributeRights.company.add) && newAttrs.company !== undefined && !ignoreAttributes.includes('company')) {
+  if (!attributeRights.company.edit && (editingTask || !attributeRights.company.add) && ![undefined, null].includes(newAttrs.company) && !ignoreAttributes.includes('company')) {
     if (
       (
         !editingTask &&
@@ -866,7 +866,7 @@ export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, st
       throw createCantEditTaskAttributeError('company');
     }
   }
-  if (!attributeRights.requester.edit && (editingTask || !attributeRights.requester.add) && newAttrs.requester !== undefined && !ignoreAttributes.includes('requester')) {
+  if (!attributeRights.requester.edit && (editingTask || !attributeRights.requester.add) && ![undefined, null].includes(newAttrs.requester) && !ignoreAttributes.includes('requester')) {
     if (
       (
         !editingTask &&
@@ -883,7 +883,7 @@ export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, st
       throw createCantEditTaskAttributeError('requester');
     }
   }
-  if (!attributeRights.status.edit && (editingTask || !attributeRights.status.add) && newAttrs.status !== undefined) {
+  if (!attributeRights.status.edit && (editingTask || !attributeRights.status.add) && ![undefined, null].includes(newAttrs.status)) {
     if (
       (
         !editingTask && (
@@ -906,7 +906,7 @@ export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, st
     }
   }
 
-  if (!attributeRights.taskType.edit && (editingTask || !attributeRights.taskType.add) && newAttrs.taskType !== undefined && !ignoreAttributes.includes('taskType')) {
+  if (!attributeRights.taskType.edit && (editingTask || !attributeRights.taskType.add) && ![undefined, null].includes(newAttrs.taskType) && !ignoreAttributes.includes('taskType')) {
     if (
       (
         !editingTask &&
@@ -924,10 +924,11 @@ export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, st
     }
   }
 
-  if (!attributeRights.overtime.edit && (editingTask || !attributeRights.overtime.add) && newAttrs.overtime !== undefined && !ignoreAttributes.includes('overtime')) {
+  if (!attributeRights.overtime.edit && (editingTask || !attributeRights.overtime.add) && ![undefined, null].includes(newAttrs.overtime) && !ignoreAttributes.includes('overtime')) {
     if (
       (
         !editingTask &&
+        projectAttributes.overtime.value !== null &&
         projectAttributes.overtime.value !== newAttrs.overtime
       ) ||
       (
@@ -938,10 +939,11 @@ export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, st
       throw createCantEditTaskAttributeError('overtime');
     }
   }
-  if (!attributeRights.pausal.edit && (editingTask || !attributeRights.pausal.add) && newAttrs.pausal !== undefined && !ignoreAttributes.includes('pausal')) {
+  if (!attributeRights.pausal.edit && (editingTask || !attributeRights.pausal.add) && ![undefined, null].includes(newAttrs.pausal) && !ignoreAttributes.includes('pausal')) {
     if (
       (
         !editingTask &&
+        projectAttributes.pausal.value !== null &&
         projectAttributes.pausal.value !== newAttrs.pausal
       ) ||
       (
@@ -953,7 +955,7 @@ export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, st
     }
   }
 
-  if (!attributeRights.repeat.edit && (editingTask || !attributeRights.repeat.add) && newAttrs.repeat !== undefined && !ignoreAttributes.includes('repeat')) {
+  if (!attributeRights.repeat.edit && (editingTask || !attributeRights.repeat.add) && ![undefined, null].includes(newAttrs.repeat) && !ignoreAttributes.includes('repeat')) {
     if (
       (
         !editingTask &&
@@ -969,7 +971,7 @@ export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, st
     }
   }
 
-  if (!attributeRights.startsAt.edit && (editingTask || !attributeRights.startsAt.add) && newAttrs.startsAt !== undefined && !ignoreAttributes.includes('startsAt')) {
+  if (!attributeRights.startsAt.edit && (editingTask || !attributeRights.startsAt.add) && ![undefined, null].includes(newAttrs.startsAt) && !ignoreAttributes.includes('startsAt')) {
     if (
       (
         !editingTask &&
@@ -984,7 +986,7 @@ export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, st
     }
   }
 
-  if (!attributeRights.deadline.edit && (editingTask || !attributeRights.deadline.add) && newAttrs.deadline !== undefined && !ignoreAttributes.includes('deadline')) {
+  if (!attributeRights.deadline.edit && (editingTask || !attributeRights.deadline.add) && ![undefined, null].includes(newAttrs.deadline) && !ignoreAttributes.includes('deadline')) {
     if (
       (
         !editingTask &&
@@ -999,7 +1001,7 @@ export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, st
     }
   }
 
-  if (!attributeRights.status.edit && (editingTask || !attributeRights.status.add) && newAttrs.closeDate !== undefined && !ignoreAttributes.includes('closeDate')) {
+  if (!attributeRights.status.edit && (editingTask || !attributeRights.status.add) && ![undefined, null].includes(newAttrs.closeDate) && !ignoreAttributes.includes('closeDate')) {
     if (
       !editingTask ||
       (
@@ -1011,7 +1013,7 @@ export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, st
     }
   }
 
-  if (!attributeRights.status.edit && (editingTask || !attributeRights.status.add) && newAttrs.pendingDate !== undefined && !ignoreAttributes.includes('pendingDate')) {
+  if (!attributeRights.status.edit && (editingTask || !attributeRights.status.add) && ![undefined, null].includes(newAttrs.pendingDate) && !ignoreAttributes.includes('pendingDate')) {
     if (
       !editingTask ||
       (
