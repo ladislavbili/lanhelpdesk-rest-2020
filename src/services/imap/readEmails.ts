@@ -4,6 +4,7 @@ import ImapData from './ImapData';
 import lodash from 'lodash';
 import events from 'events';
 import { models } from '@/models';
+import { logWithDate } from '@/helperFunctions';
 
 export const imapEvent = new events.EventEmitter();
 
@@ -13,7 +14,7 @@ export function readEmails() {
   imapEvent.on('update', updateImap);
   imapEvent.on('delete', deleteImap);
   models.Imap.findAll({ where: { active: true } }).then((imapResponse) => {
-    console.log('Loaded imaps', imapResponse.length);
+    logWithDate('Loaded imaps', imapResponse.length);
     imapResponse.forEach((imap) => addImap(imap));
   });
 }

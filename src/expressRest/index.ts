@@ -23,6 +23,9 @@ import {
   useHttps,
   port
 } from '@/configs/constants';
+import {
+  logWithDate
+} from '@/helperFunctions';
 
 var running: boolean = false;
 
@@ -62,6 +65,6 @@ export const startRest = () => {
   }
   server.installSubscriptionHandlers(httpServer);
   httpServer.listen({ port }, () => {
-    console.log(`Now browse to ${useHttps ? 'https' : 'http'}://localhost:${port}${server.graphqlPath}`)
+    logWithDate(`Now browse to ${useHttps ? 'https' : 'http'}://localhost:${port}${server.graphqlPath}`)
   });
 }

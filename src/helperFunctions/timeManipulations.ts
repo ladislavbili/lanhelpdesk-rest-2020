@@ -62,9 +62,11 @@ const multipliers = {
 export const getMinutes = (repeatEvery, repeatInterval) => {
   let multiplier = multipliers[repeatInterval];
   if (multiplier === undefined || repeatEvery === 0) {
-    console.log('aaa', multiplier, repeatEvery);
-
     return multipliers.day;
   }
   return multiplier * repeatEvery;
+}
+
+export const logWithDate = (...args) => {
+  console.log(`[${moment().format('HH:mm:ss DD.MM.YYYY')}]`, ...args);
 }

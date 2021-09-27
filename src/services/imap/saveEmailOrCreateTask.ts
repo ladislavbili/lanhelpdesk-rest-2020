@@ -10,7 +10,7 @@ import {
   TagInstance,
 } from '@/models/instances';
 import { models } from '@/models';
-import { randomString, addUser } from '@/helperFunctions';
+import { randomString, addUser, logWithDate } from '@/helperFunctions';
 import moment from 'moment';
 import fs from 'fs';
 
@@ -18,7 +18,7 @@ import fs from 'fs';
 export default async function processEmail(email, Imap) {
 
   if (email.from.some((from) => !validator.validate(from.address))) {
-    console.log("invalid e-mail!");
+    logWithDate("invalid e-mail!");
     sendEmail('Your message has not been delivered as your e-mail address was rejected. \n In case you feel like you are not breaking any rules please contact administrator.', '', 'Your message hasn\'t been delivered', email.from.map((item) => item.address), 'test@lanhelpdesk.com');
     return;
   }
@@ -234,7 +234,7 @@ async function createTask(email, Imap, User, secret) {
       ]
     }
   );
-  console.log(`task created ${NewTask.get('id')} with company ID ${NewTask.get('CompanyId')}`);
+  logWithDate(`task created ${NewTask.get('id')} with company ID ${NewTask.get('CompanyId')}`);
   if (defaults.assignedTo.def) {
     NewTask.setAssignedTos(defaults.assignedTo.value.map((value) => value.get('id')));
   }

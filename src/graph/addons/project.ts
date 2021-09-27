@@ -65,6 +65,7 @@ export const checkIfHasProjectRights = async (User, taskId = undefined, projectI
   );
 
   const Role = <RoleInstance>User.get('Role');
+  let adminOfProjects = (<RoleInstance>Role.get('AccessRight')).get('projects');
   let groupRights = <any>{};
   const ProjectGroups = <ProjectGroupInstance[]>Project.get('ProjectGroups');
   //START get group rights
@@ -73,14 +74,13 @@ export const checkIfHasProjectRights = async (User, taskId = undefined, projectI
     (<CompanyInstance[]>ProjectGroup.get('Companies')).some((Company) => Company.get('id') === User.get('CompanyId'))
   )).map((ProjectGroup) => ProjectGroup.get('ProjectGroupRight'));
 
-  if ((<RoleInstance>User.get('Role')).get('level') === 0) {
+  if ((<RoleInstance>User.get('Role')).get('level') === 0 || adminOfProjects) {
     groupRights = await mergeGroupRights(ProjectGroups.find((ProjectGroup) => ProjectGroup.get('admin') && ProjectGroup.get('def')).get('ProjectGroupRight'));
   } else if (UserProjectGroupRights.length === 0) {
     throw InsufficientProjectAccessError;
   } else {
     groupRights = await mergeGroupRights(UserProjectGroupRights[0], UserProjectGroupRights[1]);
   }
-
   //END get group rights
 
   if (

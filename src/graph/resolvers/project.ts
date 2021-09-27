@@ -23,6 +23,7 @@ import {
   applyAttributeRightsRequirements,
   fixProjectFilters,
   postProcessFilters,
+  mergeGroupRights,
 } from '@/graph/addons/project';
 import {
   ProjectInstance,
@@ -41,7 +42,8 @@ import {
   ProjectAttributesInstance,
   ProjectGroupInstance,
   ProjectGroupRightsInstance,
-  UserInstance
+  UserInstance,
+  CompanyInstance,
 } from '@/models/instances';
 import { PROJECT_CHANGE, PROJECT_GROUP_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
@@ -59,9 +61,8 @@ const queries = {
   },
   project: async (root, { id }, { req }) => {
     const User = await checkResolver(req);
-    if ((<RoleInstance>User.get('Role')).get('level') !== 0) {
-      await checkIfHasProjectRights(User, undefined, id, ['projectRead']);
-    }
+    await checkIfHasProjectRights(User, undefined, id, ['projectRead']);
+
     return models.Project.findByPk(id, {
       include: [
         models.ProjectAttachment,
@@ -106,6 +107,7 @@ const queries = {
             model: models.ProjectGroup,
             include: [
               models.User,
+              { model: models.Company, include: [models.User] },
               models.ProjectGroupRights
             ]
           }
@@ -128,7 +130,17 @@ const queries = {
               ...(<UserInstance[]>cur.get('Users')).map((User) => ({
                 user: User,
                 assignable: <boolean>(<any>(<any>((<ProjectGroupRightsInstance>cur.get('ProjectGroupRight')).get('attributes'))).assigned).edit,
-              }))
+              })),
+              ...(<CompanyInstance[]>cur.get('Companies')).reduce((acc, Company) => {
+                const Users = <UserInstance[]>Company.get('Users');
+                return [
+                  ...acc,
+                  ...Users.map((User) => ({
+                    user: User,
+                    assignable: <boolean>(<any>(<any>((<ProjectGroupRightsInstance>cur.get('ProjectGroupRight')).get('attributes'))).assigned).edit,
+                  })),
+                ]
+              }, []),
             ]
           }, [])
         }
@@ -156,6 +168,7 @@ const queries = {
                 model: models.ProjectGroup,
                 include: [
                   models.User,
+                  { model: models.Company, include: [models.User] },
                   models.ProjectGroupRights
                 ]
               }
@@ -175,7 +188,17 @@ const queries = {
               ...(<UserInstance[]>cur.get('Users')).map((User) => ({
                 user: User,
                 assignable: <boolean>(<any>(<any>((<ProjectGroupRightsInstance>cur.get('ProjectGroupRight')).get('attributes'))).assigned).edit
-              }))
+              })),
+              ...(<CompanyInstance[]>cur.get('Companies')).reduce((acc, Company) => {
+                const Users = <UserInstance[]>Company.get('Users');
+                return [
+                  ...acc,
+                  ...Users.map((User) => ({
+                    user: User,
+                    assignable: <boolean>(<any>(<any>((<ProjectGroupRightsInstance>cur.get('ProjectGroupRight')).get('attributes'))).assigned).edit,
+                  })),
+                ]
+              }, []),
             ]
           }, [])
         }
@@ -809,13 +832,21 @@ const attributes = {
     },
     async right(project, _, { req }, __) {
       const User = await checkResolver(req);
-      const { groupRights } = await checkIfHasProjectRights(User, undefined, project.get('id'));
-      return groupRights.project;
+      try {
+        const { groupRights } = await checkIfHasProjectRights(User, undefined, project.get('id'));
+        return groupRights.project;
+      } catch (error) {
+        return null;
+      }
     },
     async attributeRights(project, _, { req }, __) {
       const User = await checkResolver(req);
-      const { groupRights } = await checkIfHasProjectRights(User, undefined, project.get('id'));
-      return groupRights.attributes;
+      try {
+        const { groupRights } = await checkIfHasProjectRights(User, undefined, project.get('id'));
+        return groupRights.attributes;
+      } catch (error) {
+        return null;
+      }
     },
     async groups(project) {
       return getModelAttribute(project, 'ProjectGroups');

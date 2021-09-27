@@ -77,4 +77,5 @@ export {
   extractDatesFromObject,
   timestampToString,
   getMinutes,
+  logWithDate,
 } from './timeManipulations';

@@ -1,6 +1,9 @@
 import moment from 'moment';
 import { models } from '@/models';
 import { Op } from 'sequelize';
+import {
+  logWithDate
+} from '@/helperFunctions';
 
 const minute = 60 * 1000;
 const restingTime = 10 * minute;
@@ -173,9 +176,9 @@ export default class TriggerableTimer {
     }
 
     if (this.alreadyTriggered) {
-      console.log(`waiting time ${this.timeLeft / minute} minutes.`);
+      logWithDate(`waiting time ${this.timeLeft / minute} minutes.`);
     } else {
-      console.log(`remaining time ${this.timeLeft / minute} minutes.`);
+      logWithDate(`remaining time ${this.timeLeft / minute} minutes.`);
     }
 
     let timer = this.getWaitTime();

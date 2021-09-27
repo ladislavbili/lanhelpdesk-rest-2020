@@ -274,7 +274,7 @@ const mutations = {
     const OldCompany = await models.Company.findByPk(id,
       {
         include: [
-          { model: models.Project, as: 'defCompany' },
+          //{ model: models.Project, as: 'defCompany' },
           { model: models.Imap },
           { model: models.User },
           { model: models.Task },

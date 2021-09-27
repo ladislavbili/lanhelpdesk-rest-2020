@@ -1,7 +1,7 @@
 import { startRest } from '@/expressREST';
 import { updateModels, models } from '@/models';
 import startServices from '@/services';
-import { createTaskMetadata, addDefaultDatabaseData, addAttributesToProjects, createFixedGroupsForProjects } from '@/helperfunctions';
+import { createTaskMetadata, addDefaultDatabaseData, addAttributesToProjects, createFixedGroupsForProjects, logWithDate } from '@/helperFunctions';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -9,9 +9,9 @@ const ignoreUpdating = true;
 
 updateModels(ignoreUpdating).then(async () => {
   if (!ignoreUpdating) {
-    console.log('Database up to date, running server');
+    logWithDate('Database up to date, running server');
   } else {
-    console.log('Models constructed, running server');
+    logWithDate('Models constructed, running server');
   }
   startRest();
   startServices();

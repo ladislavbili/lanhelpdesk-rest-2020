@@ -2,7 +2,7 @@ import TriggerableTimer from '@/services/components/triggerableTimer';
 import { models } from '@/models';
 import moment from 'moment';
 import events from 'events';
-import { timestampToString, getMinutes, sendTaskNotificationsToUsers } from '@/helperFunctions';
+import { timestampToString, getMinutes, sendTaskNotificationsToUsers, logWithDate } from '@/helperFunctions';
 import fs from 'fs';
 import {
   TaskInstance,
@@ -29,7 +29,7 @@ export const repeatTimeEvent = new events.EventEmitter();
 let timers = [];
 export default async function start() {
   if (!repeatTasks) {
-    console.log(`Repeats are disabled!`);
+    logWithDate(`Repeats are disabled!`);
     return;
   }
   repeatEvent.on('add', addRepeat);
@@ -39,13 +39,13 @@ export default async function start() {
   repeatTimeEvent.on('changed', changedRepeatTime);
 
   const Repeats = <RepeatInstance[]>await models.Repeat.findAll({ where: { active: true } })
-  console.log(`Repeats are active and currently starting ${Repeats.length} repeats.`);
+  logWithDate(`Repeats are active and currently starting ${Repeats.length} repeats.`);
   Repeats.forEach((Repeat) => addRepeat(Repeat));
 }
 
 async function addRepeat(Repeat) {
   const { repeatEvery, repeatInterval, startsAt, id } = Repeat.get();
-  console.log(`New repeat that triggers every ${getMinutes(repeatEvery, repeatInterval)} minutes`);
+  logWithDate(`New repeat that triggers every ${getMinutes(repeatEvery, repeatInterval)} minutes`);
 
   timers.push(
     new TriggerableTimer(
@@ -58,7 +58,7 @@ async function addRepeat(Repeat) {
 }
 
 async function updateRepeat(Repeat) {
-  console.log('updating repeat');
+  logWithDate('updating repeat');
   const { repeatEvery, repeatInterval, startsAt, active, id } = Repeat.get();
   if (active) {
     const timer = timers.find((existingTimer) => existingTimer.repeatId === id);
@@ -71,7 +71,7 @@ async function updateRepeat(Repeat) {
 }
 
 async function deleteRepeat(id) {
-  console.log('deleting repeat');
+  logWithDate('deleting repeat');
   const timer = timers.find((existingTimer) => existingTimer.repeatId === id);
   if (timer !== undefined) {
     timers = timers.filter((existingTimer) => existingTimer.repeatId !== id);
@@ -92,7 +92,7 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
   if (!repeatTasks && !manualTrigger) {
     return;
   }
-  console.log('Creating repeated task');
+  logWithDate('Creating repeated task');
 
   const Repeat = <RepeatInstance>await models.Repeat.findByPk(
     id,
@@ -119,7 +119,7 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
     }
   );
   if (!Repeat) {
-    console.log(`Broken repeat ${id}. Couldn't be loaded.`);
+    logWithDate(`Broken repeat ${id}. Couldn't be loaded.`);
   }
   const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
   const Project = <ProjectInstance>RepeatTemplate.get('Project');
@@ -305,7 +305,7 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
           }
         )
       } catch (err) {
-        console.log(err);
+        logWithDate(err);
       }
     })
 
