@@ -115,7 +115,7 @@ const queries = {
                   {
                     model: models.Company,
                     required: true,
-                    where: { id: User.get('Company') },
+                    where: { id: User.get('CompanyId') },
                   },
                   {
                     model: models.ProjectGroupRights,
@@ -355,7 +355,6 @@ const queries = {
 const mutations = {
   addRepeat: async (root, { taskId, repeatEvery, repeatInterval, active, repeatTemplate: args, ...argDates }, { req }) => {
     const User = await checkResolver(req);
-    //TODO: clean milestones EVERYWHERE
     const project = args.project;
     const { startsAt } = extractDatesFromObject(argDates, ['startsAt']);
     const Project = <ProjectInstance>await models.Project.findByPk(

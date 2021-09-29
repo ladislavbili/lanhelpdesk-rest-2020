@@ -91,6 +91,7 @@ const queries = {
   myProjects: async (root, args, { req, userID }) => {
     const User = await checkResolver(req);
     if ((<RoleInstance>User.get('Role')).get('level') === 0) {
+      //ADMIN
       const Projects = <ProjectInstance[]>await models.Project.findAll({
         include: [
           models.Milestone,
@@ -115,44 +116,52 @@ const queries = {
         order: [
           [{ model: models.Status, as: 'projectStatuses' }, 'order', 'ASC'],
         ],
-      })
+      });
 
       const ProjectsRights = <any[]>await Promise.all(Projects.map((Project) => getProjectAdminRights(Project.get('id'))));
 
-      return Projects.map((Project, index) => (
-        {
+      return Projects.map((Project, index) => {
+
+        const potentialUsersWithRights = <any[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
+          const assignable = <boolean>((<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).get('assignedEdit'));
+          return [
+            ...acc,
+            ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => ({
+              user: User,
+              assignable,
+            })),
+            ...(<CompanyInstance[]>ProjectGroup.get('Companies')).reduce((acc, Company) => {
+              const Users = <UserInstance[]>Company.get('Users');
+              return [
+                ...acc,
+                ...Users.map((User) => ({
+                  user: User,
+                  assignable,
+                })),
+              ]
+            }, []),
+          ]
+        }, []);
+        const potentialUsersWithRightsIds = potentialUsersWithRights.map((UserWithRights) => UserWithRights.user.get('id'));
+        const usersWithRights = potentialUsersWithRights.filter((UserWithRights, index) => potentialUsersWithRightsIds.indexOf(UserWithRights.user.get('id')) === index).map((UserWithRights) => {
+          const potentialUserWithRights = <boolean[]>potentialUsersWithRights.filter((UserWithRights2) => UserWithRights2.user.get('id') === UserWithRights.user.get('id')).map((UserWithRights2) => UserWithRights2.assignable);
+          return {
+            user: UserWithRights.user,
+            assignable: potentialUserWithRights.some((assignable) => assignable),
+          }
+        });
+        return {
           right: ProjectsRights[index],
           attributeRights: ProjectsRights[index].get('attributes'),
           project: Project,
-          usersWithRights: (<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, cur) => {
-            return [
-              ...acc,
-              ...(<UserInstance[]>cur.get('Users')).map((User) => ({
-                user: User,
-                assignable: <boolean>(<any>(<any>((<ProjectGroupRightsInstance>cur.get('ProjectGroupRight')).get('attributes'))).assigned).edit,
-              })),
-              ...(<CompanyInstance[]>cur.get('Companies')).reduce((acc, Company) => {
-                const Users = <UserInstance[]>Company.get('Users');
-                return [
-                  ...acc,
-                  ...Users.map((User) => ({
-                    user: User,
-                    assignable: <boolean>(<any>(<any>((<ProjectGroupRightsInstance>cur.get('ProjectGroupRight')).get('attributes'))).assigned).edit,
-                  })),
-                ]
-              }, []),
-            ]
-          }, [])
+          usersWithRights,
         }
-      ))
+      })
+      //NOT ADMIN
     } else {
-      const ProjectGroups = <ProjectGroupInstance[]>await User.getProjectGroups({
-        order: [
-          [models.Project, { model: models.Status, as: 'projectStatuses' }, 'order', 'ASC'],
-        ],
-        include: [
-          {
-            model: models.Project,
+      const userProjectsResponse = <any[]>(<any[]>
+        await Promise.all([
+          models.Project.findAll({
             include: [
               models.Milestone,
               models.ProjectAttributes,
@@ -166,43 +175,127 @@ const queries = {
               },
               {
                 model: models.ProjectGroup,
+                required: true,
                 include: [
-                  models.User,
-                  { model: models.Company, include: [models.User] },
-                  models.ProjectGroupRights
-                ]
+                  {
+                    model: models.User,
+                    required: true,
+                    where: { id: User.get('id') },
+                  },
+                  {
+                    model: models.ProjectGroupRights,
+                    required: true,
+                  }
+                ],
               }
             ]
-          },
-          models.ProjectGroupRights,
+          }),
+          models.Project.findAll({
+            include: [
+              models.Milestone,
+              models.ProjectAttributes,
+              {
+                model: models.Tag,
+                as: 'tags'
+              },
+              {
+                model: models.Status,
+                as: 'projectStatuses'
+              },
+              {
+                model: models.ProjectGroup,
+                required: true,
+                include: [
+                  {
+                    model: models.Company,
+                    required: true,
+                    where: { id: User.get('CompanyId') },
+                  },
+                  {
+                    model: models.ProjectGroupRights,
+                    required: true,
+                  }
+                ],
+              }
+            ]
+          })
+        ])).reduce((acc, Projects) => {
+          return [
+            ...acc,
+            ...(<ProjectInstance[]>Projects).map((Project) => {
+              return ({
+                Project,
+                groupRights: <ProjectGroupRightsInstance>(<ProjectGroupInstance[]>Project.get("ProjectGroups"))[0].get('ProjectGroupRight')
+              });
+            }),
+          ]
+        }, []);
+
+      const ProjectsUsers = <ProjectInstance[]>await models.Project.findAll({
+        attributes: ['id'],
+        where: { id: userProjectsResponse.map((ProjectData) => ProjectData.Project.get('id')) },
+        include: [
+          {
+            model: models.ProjectGroup,
+            attributes: ['id'],
+            include: [
+              models.User,
+              {
+                model: models.Company,
+                include: [models.User],
+              },
+              {
+                model: models.ProjectGroupRights,
+              }
+            ],
+          }
         ]
       });
-      return ProjectGroups.map((group) => (
-        {
-          right: group.get('ProjectGroupRight'),
-          project: group.get('Project'),
-          attributeRights: (<ProjectGroupRightsInstance>group.get('ProjectGroupRight')).get('attributes'),
-          usersWithRights: (<ProjectGroupInstance[]>(<ProjectInstance>group.get('Project')).get('ProjectGroups')).reduce((acc, cur) => {
-            return [
-              ...acc,
-              ...(<UserInstance[]>cur.get('Users')).map((User) => ({
-                user: User,
-                assignable: <boolean>(<any>(<any>((<ProjectGroupRightsInstance>cur.get('ProjectGroupRight')).get('attributes'))).assigned).edit
-              })),
-              ...(<CompanyInstance[]>cur.get('Companies')).reduce((acc, Company) => {
-                const Users = <UserInstance[]>Company.get('Users');
-                return [
-                  ...acc,
-                  ...Users.map((User) => ({
-                    user: User,
-                    assignable: <boolean>(<any>(<any>((<ProjectGroupRightsInstance>cur.get('ProjectGroupRight')).get('attributes'))).assigned).edit,
-                  })),
-                ]
-              }, []),
-            ]
-          }, [])
+
+      let projectIds = userProjectsResponse.map((ProjectData) => ProjectData.Project.get('id'));
+      return userProjectsResponse.filter((ProjectData, index) => projectIds.indexOf(ProjectData.Project.get('id')) === index).map(async (ProjectData) => {
+        const projectId = ProjectData.Project.get('id');
+        const potentialRights = userProjectsResponse.filter((ProjectData2) => ProjectData2.Project.get('id') === projectId).map((ProjectData) => ProjectData.groupRights);
+        const groupRights = await mergeGroupRights(potentialRights[0], potentialRights[1]);
+        const ProjectUsers = ProjectsUsers.find((Project) => Project.get('id') === projectId);
+        const potentialUsersWithRights = <any[]>(<ProjectGroupInstance[]>ProjectUsers.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
+          const assignable = <boolean>((<ProjectGroupRightsInstance>ProjectGroup.get('ProjectGroupRight')).get('assignedEdit'));
+          return [
+            ...acc,
+
+            ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => ({
+              user: User,
+              assignable
+            })),
+
+            ...(<CompanyInstance[]>ProjectGroup.get('Companies')).reduce((acc, Company) => {
+              return [
+                ...acc,
+
+                ...(<UserInstance[]>Company.get('Users')).map((User) => ({
+                  user: User,
+                  assignable
+                })),
+
+              ]
+            }, [])
+          ]
+        }, []);
+        const potentialUsersWithRightsIds = potentialUsersWithRights.map((UserWithRights) => UserWithRights.user.get('id'));
+        const usersWithRights = potentialUsersWithRights.filter((UserWithRights, index) => potentialUsersWithRightsIds.indexOf(UserWithRights.user.get('id')) === index).map((UserWithRights) => {
+          const potentialUserWithRights = <boolean[]>potentialUsersWithRights.filter((UserWithRights2) => UserWithRights2.user.get('id') === UserWithRights.user.get('id')).map((UserWithRights2) => UserWithRights2.assignable);
+          return {
+            user: UserWithRights.user,
+            assignable: potentialUserWithRights.some((assignable) => assignable),
+          }
+        });
+        return {
+          right: groupRights.project,
+          project: ProjectData.Project,
+          attributeRights: groupRights.attributes,
+          usersWithRights
         }
-      ))
+      });
     }
   },
 }
