@@ -40,5 +40,6 @@ export const removeLastComma = (string) => string.slice(0, string.lastIndexOf(',
 const assocTableMaps = {
   assignedTosTaskMapAttributes: ["UserId", "TaskId"],
   userBelongsToGroupAttributes: ["UserId", "ProjectGroupId"],
+  companyBelongsToGroupAttributes: ["CompanyId", "ProjectGroupId"],
   tagsTaskMapAttributes: ["TagId", "TaskId"],
 }

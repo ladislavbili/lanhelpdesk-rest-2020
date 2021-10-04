@@ -52,14 +52,14 @@ export const generateTaskSQL = (taskId, userId, companyId, isAdmin) => {
   let sql = `
   ${attributes.slice(0, attributes.lastIndexOf(","))}
   FROM ( SELECT * FROM "tasks" WHERE "tasks"."id" = ${taskId} ) AS "Task"
+  ${associations}
   ${isAdmin ?
       '' :
-      ` AND (
+      ` WHERE (
       "Project->ProjectGroups->Users"."id" IS NOT NULL OR
       "Project->ProjectGroups->Companies"."CompanyId" IS NOT NULL
     )`
     }
-  ${associations}
   `;
   return sql.replace(/"/g, '`');
 }

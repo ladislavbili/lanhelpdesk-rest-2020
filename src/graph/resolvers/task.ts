@@ -641,14 +641,14 @@ const mutations = {
       if (subtasks.some((subtask) => !assignedTos.includes(subtask.assignedTo))) {
         throw AssignedToUserNotSolvingTheTask;
       }
-      await idsDoExistsCheck(subtasks.map((subtask) => subtask.type), models.TaskType);
+      //await idsDoExistsCheck(subtasks.map((subtask) => subtask.type), models.TaskType);
       params = {
         ...params,
         Subtasks: subtasks.map((subtask) => {
           let baseSubtask = {
             ...subtask,
             UserId: subtask.assignedTo,
-            TaskTypeId: subtask.type,
+            //TaskTypeId: subtask.type,
           };
           if (subtask.approved) {
             baseSubtask = {

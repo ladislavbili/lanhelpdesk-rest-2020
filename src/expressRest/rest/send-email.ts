@@ -59,7 +59,7 @@ export function sendEmail(app) {
     let allowedInternal = false;
     try {
       User = await checkResolver({ headers: { authorization: token } }, ['mailViaComment']);
-      const checkData = await checkIfHasProjectRights(User.get('id'), taskId, undefined, ['emails']);
+      const checkData = await checkIfHasProjectRights(User, taskId, undefined, ['emails']);
       Task = checkData.Task;
       allowedInternal = checkData.groupRights.internal;
     } catch (err) {

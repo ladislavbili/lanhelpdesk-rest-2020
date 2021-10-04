@@ -103,7 +103,7 @@ const queries = {
                   {
                     model: models.Company,
                     required: true,
-                    where: { id: User.get('Company') },
+                    where: { id: User.get('CompanyId') },
                   },
                   {
                     model: models.ProjectGroupRights,
@@ -231,7 +231,7 @@ const mutations = {
     });
     const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
 
-    const { groupRights } = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), [], [{ right: 'repeat', action: 'write' }]);
+    const { groupRights } = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), [], [{ right: 'repeat', action: 'edit' }]);
     if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
       throw CantAddOrEditRepeatError;
     }
@@ -266,7 +266,7 @@ const mutations = {
     }
     const RepeatTemplate = <RepeatTemplateInstance>(<RepeatInstance>RepeatTime.get('Repeat')).get('RepeatTemplate');
 
-    const { groupRights } = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), [], [{ right: 'repeat', action: 'write' }]);
+    const { groupRights } = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), [], [{ right: 'repeat', action: 'edit' }]);
     if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
       throw CantAddOrEditRepeatError;
     }
@@ -298,7 +298,7 @@ const mutations = {
     }
     const RepeatTemplate = <RepeatTemplateInstance>(<RepeatInstance>RepeatTime.get('Repeat')).get('RepeatTemplate');
 
-    const { groupRights } = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), [], [{ right: 'repeat', action: 'write' }]);
+    const { groupRights } = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), [], [{ right: 'repeat', action: 'edit' }]);
     if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
       throw CantAddOrEditRepeatError;
     }

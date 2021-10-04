@@ -85,6 +85,7 @@ export const createScheduledWorksSQL = (where, userId, companyId, isAdmin, ofSub
   ${createModelAttributes("Project->ProjectGroups", "Project.ProjectGroups", models.ProjectGroups)}
   ${createModelAttributes("Project->ProjectGroups->ProjectGroupRight", "Project.ProjectGroups.ProjectGroupRight", models.ProjectGroupRights)}
   "Project->ProjectGroups->Users"."id" AS "Project.ProjectGroups.Users.id",
+  ${createModelAttributes("Project->ProjectGroups->Companies", "Project.ProjectGroups.Companies", null, 'companyBelongsToGroupAttributes')}
   ${removeLastComma(createModelAttributes("Project->ProjectGroups->Users->user_belongs_to_group", "Project.ProjectGroups.Users.user_belongs_to_group", null, 'userBelongsToGroupAttributes'))}
 
   FROM "scheduled_work" AS "ScheduledWork"

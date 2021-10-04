@@ -7,7 +7,7 @@ import {
 export function uploadAttachments(app) {
   app.post('/upload-attachments', async function(req, res) {
     const timestamp = moment().valueOf();
-    const { token, taskId } = req.body;
+    const { token, taskId, newTask } = req.body;
     let files = null;
     if (req.files) {
       if (Array.isArray(req.files.file)) {
@@ -24,7 +24,7 @@ export function uploadAttachments(app) {
     let Task = null;
     try {
       User = await checkResolver({ headers: { authorization: token } });
-      const checkData = await checkIfHasProjectRights(User.get('id'), taskId, undefined, ['taskAttachmentsWrite']);
+      const checkData = await checkIfHasProjectRights(User, taskId, undefined, [newTask ? 'addTask' : 'taskAttachmentsWrite']);
       Task = checkData.Task;
     } catch (err) {
       return res.send({ ok: false, error: err.message })

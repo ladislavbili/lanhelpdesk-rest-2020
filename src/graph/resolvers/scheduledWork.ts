@@ -96,8 +96,8 @@ const queries = {
         ("Project->ProjectGroups->ProjectGroupRight"."companyTasks" = true AND "Task"."CompanyId" = ${User.get('CompanyId')})
       )`);
       where.push(`(
-        "UserBelongsToGroup"."UserId" IS NOT NULL OR
-        "CompanyBelongsToGroup"."CompanyId" IS NOT NULL
+        "Project->ProjectGroups->Users->user_belongs_to_group"."UserId" IS NOT NULL OR
+        "Project->ProjectGroups->Companies"."CompanyId" IS NOT NULL
       )`);
     }
     if (!isAdmin && !(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar')) {
@@ -137,8 +137,10 @@ const mutations = {
   addScheduledWork: async (root, { taskId, userId, ...newDates }, { req }) => {
     const User = await checkResolver(req);
     const dates = extractDatesFromObject(newDates, scheduledDates);
-    const { Task, groupRights } = await checkIfHasProjectRights(User, taskId, undefined, ['taskWorksWrite'], [{ right: 'assigned', action: 'write' }]);
+    const { Task, groupRights } = await checkIfHasProjectRights(User, taskId, undefined, ['taskWorksWrite'], [{ right: 'assigned', action: 'edit' }]);
+
     if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
+      console.log('bb');
       throw InsufficientProjectAccessError;
     }
     const [
@@ -200,7 +202,8 @@ const mutations = {
     const Subtask = <SubtaskInstance>ScheduledWork.get('Subtask');
     const ofSubtask = Subtask !== null && Subtask !== undefined;
     const TaskId = ofSubtask ? Subtask.get('TaskId') : WorkTrip.get('TaskId');
-    const { Task, groupRights } = await checkIfHasProjectRights(User, TaskId, undefined, ['taskWorksWrite'], [{ right: 'assigned', action: 'write' }]);
+    let { Task, groupRights } = await checkIfHasProjectRights(User, TaskId, undefined, ['taskWorksWrite'], [{ right: 'assigned', action: 'edit' }]);
+    Task.rights = groupRights;
     if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
       throw InsufficientProjectAccessError;
     }
@@ -247,7 +250,7 @@ const mutations = {
     const ofSubtask = Subtask !== null && Subtask !== undefined;
     const TaskId = ofSubtask ? Subtask.get('TaskId') : WorkTrip.get('TaskId');
 
-    const { Task, groupRights } = await checkIfHasProjectRights(User, TaskId, undefined, ['taskWorksWrite'], [{ right: 'assigned', action: 'write' }]);
+    const { Task, groupRights } = await checkIfHasProjectRights(User, TaskId, undefined, ['taskWorksWrite'], [{ right: 'assigned', action: 'edit' }]);
     if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
       throw InsufficientProjectAccessError;
     }

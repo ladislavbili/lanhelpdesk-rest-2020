@@ -60,7 +60,6 @@ const mutations = {
     if (!(<UserInstance[]>AssignedTos).some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
       throw AssignedToUserNotSolvingTheTask;
     }
-    await idDoesExistsCheck(type, models.TaskType);
     await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -92,7 +91,7 @@ const mutations = {
     if (scheduled) {
       return models.Subtask.create({
         TaskId: task,
-        TaskTypeId: type,
+        TaskTypeId: null,
         UserId: assignedTo,
         ...params,
         order: newOrder,
@@ -103,7 +102,7 @@ const mutations = {
     } else {
       return models.Subtask.create({
         TaskId: task,
-        TaskTypeId: type,
+        TaskTypeId: null,
         UserId: assignedTo,
         ...params,
         order: newOrder,
@@ -115,7 +114,6 @@ const mutations = {
     const SourceUser = await checkResolver(req);
     const Subtask = <SubtaskInstance>await models.Subtask.findByPk(id, {
       include: [
-        models.TaskType,
         models.ScheduledWork,
         {
           model: models.Task,
@@ -140,7 +138,7 @@ const mutations = {
     const Project = <ProjectInstance>Task.get('Project');
     const AssignedTos = <UserInstance[]>Task.get('assignedTos');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
-    const originalValue = `${Subtask.get('title')}${Subtask.get('done').toString()},${Subtask.get('quantity')},${Subtask.get('discount')},${(<TaskTypeInstance>Subtask.get('TaskType')).get('id')},${Subtask.get('UserId')}`;
+    const originalValue = `${Subtask.get('title')}${Subtask.get('done').toString()},${Subtask.get('quantity')},${Subtask.get('discount')},${Subtask.get('UserId')}`;
     let TaskChangeMessages = [{
       type: 'subtask',
       originalValue,
@@ -153,23 +151,16 @@ const mutations = {
         throw AssignedToUserNotSolvingTheTask;
       }
     }
-    if (type === null || assignedTo === null) {
+    if (assignedTo === null) {
       throw SubtaskNotNullAttributesPresent;
     }
     let pairs = [];
-    if (type !== undefined) {
-      pairs.push({ id: type, model: models.TaskType })
-    }
     if (assignedTo !== undefined) {
       pairs.push({ id: assignedTo, model: models.User })
     }
     await multipleIdDoesExistsCheck(pairs);
     await sequelize.transaction(async (t) => {
       let promises = [];
-      if (type !== undefined) {
-        await idDoesExistsCheck(type, models.TaskType);
-        promises.push(Subtask.setTaskType(type, { transaction: t }));
-      }
       if (assignedTo !== undefined) {
         promises.push(Subtask.setUser(assignedTo, { transaction: t }));
       }
@@ -255,7 +246,6 @@ const mutations = {
     const SourceUser = await checkResolver(req);
     const Subtask = await models.Subtask.findByPk(id, {
       include: [
-        models.TaskType,
         {
           model: models.Task,
           include: [
@@ -276,7 +266,7 @@ const mutations = {
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
 
     await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskWorksWrite']);
-    const originalValue = `${Subtask.get('title')}${Subtask.get('done').toString()},${Subtask.get('quantity')},${Subtask.get('discount')},${(<TaskTypeInstance>Subtask.get('TaskType')).get('id')},${Subtask.get('UserId')}`;
+    const originalValue = `${Subtask.get('title')}${Subtask.get('done').toString()},${Subtask.get('quantity')},${Subtask.get('discount')},${Subtask.get('UserId')}`;
     await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -317,7 +307,6 @@ const mutations = {
     if (!AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
       throw AssignedToUserNotSolvingTheTask;
     }
-    await idDoesExistsCheck(type, models.TaskType);
     if (params.approved) {
       params = {
         ...params,
@@ -327,7 +316,7 @@ const mutations = {
     if (scheduled) {
       return models.Subtask.create({
         RepeatTemplateId: repeatTemplate,
-        TaskTypeId: type,
+        TaskTypeId: null,
         UserId: assignedTo,
         ...params,
         ScheduledWork: extractDatesFromObject(scheduled, scheduledDates),
@@ -337,7 +326,7 @@ const mutations = {
     } else {
       return models.Subtask.create({
         RepeatTemplateId: repeatTemplate,
-        TaskTypeId: type,
+        TaskTypeId: null,
         UserId: assignedTo,
         ...params,
       });
@@ -350,7 +339,6 @@ const mutations = {
       id,
       {
         include: [
-          models.TaskType,
           models.ScheduledWork,
           {
             model: models.RepeatTemplate,
@@ -371,23 +359,16 @@ const mutations = {
         throw AssignedToUserNotSolvingTheTask;
       }
     }
-    if (type === null || assignedTo === null) {
+    if (assignedTo === null) {
       throw SubtaskNotNullAttributesPresent;
     }
     let pairs = [];
-    if (type !== undefined) {
-      pairs.push({ id: type, model: models.TaskType })
-    }
     if (assignedTo !== undefined) {
       pairs.push({ id: assignedTo, model: models.User })
     }
     await multipleIdDoesExistsCheck(pairs);
     await sequelize.transaction(async (t) => {
       let promises = [];
-      if (type !== undefined) {
-        await idDoesExistsCheck(type, models.TaskType);
-        promises.push(Subtask.setTaskType(type, { transaction: t }));
-      }
       if (assignedTo !== undefined) {
         promises.push(Subtask.setUser(assignedTo, { transaction: t }));
       }
@@ -425,7 +406,6 @@ const mutations = {
       id,
       {
         include: [
-          models.TaskType,
           models.RepeatTemplate
         ]
       }
@@ -451,7 +431,7 @@ const attributes = {
       return getModelAttribute(subtask, 'RepeatTemplate');
     },
     async type(subtask) {
-      return getModelAttribute(subtask, 'TaskType');
+      return null;
     },
     async assignedTo(subtask) {
       return getModelAttribute(subtask, 'User');

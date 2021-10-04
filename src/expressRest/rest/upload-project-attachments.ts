@@ -14,7 +14,7 @@ import {
 export function uploadProjectAttachments(app) {
   app.post('/upload-project-attachments', async function(req, res) {
     const timestamp = moment().valueOf();
-    const { token, projectId } = req.body;
+    const { token, projectId, newProject } = req.body;
     let files = null;
     if (req.files) {
       if (Array.isArray(req.files.file)) {
@@ -33,7 +33,7 @@ export function uploadProjectAttachments(app) {
     }
     try {
       const User = await checkResolver({ headers: { authorization: token } });
-      await checkIfHasProjectRights(User.get('id'), undefined, projectId, ['projectPrimaryWrite']);
+      await checkIfHasProjectRights(User, undefined, projectId, newProject ? [] : ['projectWrite']);
     } catch (err) {
       return res.send({ ok: false, error: err.message })
     }

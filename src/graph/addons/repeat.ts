@@ -41,7 +41,7 @@ export const generateRepeatSQL = (active, from, to, projectId, userId, companyId
         "ProjectGroupRight"."tasklistKalendar" = true
       )`);
     }
-    where.push(`( "ProjectGroupRight"."repeatRead" = true )`);
+    where.push(`( "ProjectGroupRight"."repeatView" = true )`);
     where.push(`(
     "UserBelongsToGroup"."UserId" IS NOT NULL OR
     "CompanyBelongsToGroup"."CompanyId" IS NOT NULL
@@ -52,17 +52,17 @@ export const generateRepeatSQL = (active, from, to, projectId, userId, companyId
   let sql = `
   SELECT
   ${createModelAttributes("Repeat", null, models.Repeat)}
-  "RepeatTemplate"."title" as "RepeatTemplate.title",
   ${ isAdmin ?
       `
-      true as "canCreateTask",
-      true as "canEdit"
-      ` :
+    true as "canCreateTask",
+    true as "canEdit",
+    ` :
       `
-      "ProjectGroupRight"."repeatRead" IS NOT NULL AND "ProjectGroupRight"."repeatRead" AND "ProjectGroupRight"."addTasks" as "canCreateTask",
-      "ProjectGroupRight"."repeatWrite" IS NOT NULL AND "ProjectGroupRight"."repeatWrite" as "canEdit"
-      `
+    "ProjectGroupRight"."repeatView" IS NOT NULL AND "ProjectGroupRight"."repeatView" AND "ProjectGroupRight"."addTask" as "canCreateTask",
+    "ProjectGroupRight"."repeatEdit" IS NOT NULL AND "ProjectGroupRight"."repeatEdit" as "canEdit",
+    `
     }
+  "RepeatTemplate"."title" as "RepeatTemplate.title"
   FROM "repeat" AS "Repeat"
   INNER JOIN "repeat_templates" AS "RepeatTemplate" ON "RepeatTemplate"."RepeatId" = "Repeat"."id"
   ${ isAdmin ?

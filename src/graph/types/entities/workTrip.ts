@@ -21,7 +21,7 @@ workTrips(taskId: Int!): [WorkTrip]
 `
 
 export const WorkTripMutations = `
-addWorkTrip( order: Int!, done: Boolean!, quantity: Float!, discount: Float!, task: Int!, type: Int!, assignedTo: Int!, approved: Boolean, scheduled: ScheduledWorkInput ): WorkTrip
+addWorkTrip( order: Int!, done: Boolean!, quantity: Float!, discount: Float!, task: Int!, type: Int, assignedTo: Int!, approved: Boolean, scheduled: ScheduledWorkInput ): WorkTrip
 updateWorkTrip( id: Int!, order: Int, done: Boolean, quantity: Float, discount: Float, type: Int, assignedTo: Int, approved: Boolean, scheduled: ScheduledWorkInput ): WorkTrip
 deleteWorkTrip( id: Int! ): WorkTrip
 

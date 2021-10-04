@@ -135,12 +135,13 @@ const queries = {
       }, []);
 
       let userProjects = [];
-      userProjectsResponse.forEach(async (userProject) => {
+      await Promise.all(userProjectsResponse.map(async (userProject) => {
         const sameProjects = userProjectsResponse.filter((userProject2) => userProject2.id === userProject.id);
         if (!userProjects.some((userProject2) => userProject2.id === userProject.id)) {
-          userProjects.push({ id: userProject.id, groupRights: await mergeGroupRights(sameProjects[0].groupRights, sameProjects[1] ? sameProjects[1].groupRights : null) });
+          const groupRights = await mergeGroupRights(sameProjects[0].groupRights, sameProjects[1] ? sameProjects[1].groupRights : null);
+          userProjects.push({ id: userProject.id, groupRights });
         }
-      })
+      }));
 
       const RepeatsResponse = <RepeatInstance[]>await models.Repeat.findAll({
         where: repeatWhere,
@@ -398,7 +399,7 @@ const mutations = {
     } else {
       userGroupRights = await mergeGroupRights(UserProjectGroupRights[0], UserProjectGroupRights[1]);
     }
-    args = checkAndApplyFixedAndRequiredOnAttributes(await ProjectAttributes.get('attributes'), userGroupRights.attributes, args, User, ProjectStatuses);
+    args = checkAndApplyFixedAndRequiredOnAttributes(await ProjectAttributes.get('attributes'), userGroupRights.attributes, args, User, ProjectStatuses, false);
 
     const Task = await models.Task.findByPk(taskId, {
       include: [
@@ -542,14 +543,14 @@ const mutations = {
       if (subtasks.some((subtask) => !assignedTos.includes(subtask.assignedTo))) {
         throw AssignedToUserNotSolvingTheTask;
       }
-      await idsDoExistsCheck(subtasks.map((subtask) => subtask.type), models.TaskType);
+      //await idsDoExistsCheck(subtasks.map((subtask) => subtask.type), models.TaskType);
       params = {
         ...params,
         Subtasks: subtasks.map((subtask) => {
           let baseSubtask = {
             ...subtask,
             UserId: subtask.assignedTo,
-            TaskTypeId: subtask.type,
+            //TaskTypeId: subtask.type,
           };
           if (subtask.approved) {
             baseSubtask = {

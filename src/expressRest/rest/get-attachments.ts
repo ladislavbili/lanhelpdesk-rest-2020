@@ -56,7 +56,7 @@ async function checkTask(path, req) {
   }
   try {
     const User = await checkResolver(req);
-    await checkIfHasProjectRights(User.get('id'), TaskAttachment.get('TaskId'), undefined, ['taskAttachmentsRead']);
+    await checkIfHasProjectRights(User, TaskAttachment.get('TaskId'), undefined, ['taskAttachmentsRead']);
     return { ok: true, error: null, Attachment: TaskAttachment };
   } catch (err) {
     return { ok: false, error: err.message }
@@ -70,7 +70,7 @@ async function checkRepeatTemplate(path, req) {
   }
   try {
     const User = await checkResolver(req);
-    await checkIfHasProjectRights(User.get('id'), undefined, (<RepeatTemplateInstance>RepeatTemplateAttachment.get('RepeatTemplate')).get('ProjectId'), ['taskAttachmentsRead', 'repeatRead']);
+    await checkIfHasProjectRights(User, undefined, (<RepeatTemplateInstance>RepeatTemplateAttachment.get('RepeatTemplate')).get('ProjectId'), ['taskAttachmentsRead', 'repeatRead']);
     return { ok: true, error: null, Attachment: RepeatTemplateAttachment };
   } catch (err) {
     return { ok: false, error: err.message }
@@ -85,7 +85,7 @@ async function checkComment(path, req) {
   const Comment = <CommentInstance>CommentAttachment.get('Comment');
   try {
     const User = await checkResolver(req);
-    const { groupRights } = await checkIfHasProjectRights(User.get('id'), Comment.get('TaskId'), undefined, ['viewComments']);
+    const { groupRights } = await checkIfHasProjectRights(User, Comment.get('TaskId'), undefined, ['viewComments']);
     if (Comment.get('internal') && !groupRights.internal) {
       return { ok: false, error: `Can't show internal comment to user without rights.` }
     }
@@ -102,7 +102,7 @@ async function checkProject(path, req) {
   }
   try {
     const User = await checkResolver(req);
-    await checkIfHasProjectRights(User.get('id'), undefined, ProjectAttachment.get('ProjectId'), ['projectPrimaryRead']);
+    await checkIfHasProjectRights(User, undefined, ProjectAttachment.get('ProjectId'), ['projectRead']);
     return { ok: true, error: null, Attachment: ProjectAttachment };
   } catch (err) {
     return { ok: false, error: err.message }

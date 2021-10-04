@@ -52,7 +52,7 @@ export function sendComment(app) {
     let allowedInternal = false;
     try {
       User = await checkResolver({ headers: { authorization: token } });
-      const checkData = await checkIfHasProjectRights(User.get('id'), taskId, undefined, ['']);
+      const checkData = await checkIfHasProjectRights(User, taskId, undefined, []);
       Task = checkData.Task;
       allowedInternal = checkData.groupRights.internal;
     } catch (err) {

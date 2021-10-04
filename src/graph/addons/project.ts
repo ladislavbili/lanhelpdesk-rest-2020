@@ -82,7 +82,6 @@ export const checkIfHasProjectRights = async (User, taskId = undefined, projectI
     groupRights = await mergeGroupRights(UserProjectGroupRights[0], UserProjectGroupRights[1]);
   }
   //END get group rights
-
   if (
     (rights.length === 0 || rights.every((right) => groupRights.project[right])) &&
     (attributeRights.length === 0 || attributeRights.every((rightPair) => groupRights.attributes[rightPair.right][rightPair.action]))
@@ -96,6 +95,38 @@ export const checkIfHasProjectRights = async (User, taskId = undefined, projectI
     projectID
   );
   throw InsufficientProjectAccessError;
+}
+
+export const getUserProjectRights = async (projectID, User) => {
+  const Project = <ProjectInstance>await models.Project.findByPk(
+    projectID,
+    {
+      include: [
+        {
+          model: models.ProjectGroup,
+          include: [models.User, { model: models.Company, include: [models.User] }, models.ProjectGroupRights]
+        },
+      ],
+    }
+  );
+
+  const Role = <RoleInstance>User.get('Role');
+  let groupRights = <any>{};
+  const ProjectGroups = <ProjectGroupInstance[]>Project.get('ProjectGroups');
+  //START get group rights
+  const UserProjectGroupRights = <ProjectGroupRightsInstance[]>ProjectGroups.filter((ProjectGroup) => (
+    (<UserInstance[]>ProjectGroup.get('Users')).some((GroupUser) => GroupUser.get('id') === User.get('id')) ||
+    (<CompanyInstance[]>ProjectGroup.get('Companies')).some((Company) => Company.get('id') === User.get('CompanyId'))
+  )).map((ProjectGroup) => ProjectGroup.get('ProjectGroupRight'));
+
+  if ((<RoleInstance>User.get('Role')).get('level') === 0) {
+    groupRights = await mergeGroupRights(ProjectGroups.find((ProjectGroup) => ProjectGroup.get('admin') && ProjectGroup.get('def')).get('ProjectGroupRight'));
+  } else if (UserProjectGroupRights.length === 0) {
+    throw InsufficientProjectAccessError;
+  } else {
+    groupRights = await mergeGroupRights(UserProjectGroupRights[0], UserProjectGroupRights[1]);
+  }
+  return groupRights;
 }
 
 export const getProjectAdminRights = async (projectId) => {
@@ -771,13 +802,13 @@ export const checkAndApplyFixedAndRequiredOnAttributes = (projectAttributes, gro
 
     //if required and doesnt have values, throw error
     ['assignedTo', 'tags'].forEach((attr) => {
-      if (groupAttributeRights[attr].required && ([undefined, null].includes(args[attr].value) || args[attr].length === 0)) {
+      if (groupAttributeRights[attr].required && ([undefined, null].includes(args[attr]) || args[attr].length === 0)) {
         throw createProjectRequiredAttributeError(attr);
       }
     });
 
     ['company', 'requester', 'status', 'taskType', 'pausal', 'overtime', 'startsAt', 'deadline'].forEach((attr) => {
-      if (groupAttributeRights[attr].required && [undefined, null].includes(args[attr].value)) {
+      if (groupAttributeRights[attr].required && [undefined, null].includes(args[attr])) {
         throw createProjectRequiredAttributeError(attr);
       }
     });
@@ -787,17 +818,7 @@ export const checkAndApplyFixedAndRequiredOnAttributes = (projectAttributes, gro
 
 //skontrolovat ci ma pravo na polia
 export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, statuses, orgAttrs = null, ignoreAttributes = []) => {
-  let groupRights = null;
-  if (User.get('Role').get('level') === 0) {
-    groupRights = await mergeGroupRights(await getProjectAdminRights(projectId));
-  }
-  if (groupRights === null) {
-    const groupRights1 = User.get('ProjectGroups').find((ProjectGroup) => ProjectGroup.get('ProjectId') === projectId).get('ProjectGroupRight');
-    const groupRights2 = User.get('Company').get('ProjectGroups').find((ProjectGroup) => ProjectGroup.get('ProjectId') === projectId).get('ProjectGroupRight');
-    if (groupRights1 || groupRights2) {
-      groupRights = await mergeGroupRights(groupRights1, groupRights2);
-    }
-  }
+  let groupRights = await getUserProjectRights(projectId, User);
 
   if (!groupRights) {
     throw createCantEditTaskAttributeError('task itself');

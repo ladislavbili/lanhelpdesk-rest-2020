@@ -63,7 +63,7 @@ input SubtaskInput{
   approved: Boolean
   quantity: Float!
   discount: Float!
-  type: Int!
+  type: Int
   assignedTo: Int!
   scheduled: ScheduledWorkInput
 }

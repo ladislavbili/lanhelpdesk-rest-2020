@@ -359,8 +359,7 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
         }
       }
       return { value: stringFilter[filter.key], key: filter.key }
-    })
-      .filter((filterItem) => filterItem.value !== undefined && filterItem.value !== null && filterItem.value.length !== 0);
+    }).filter((filterItem) => filterItem.value !== undefined && filterItem.value !== null && filterItem.value.length !== 0);
     filterItems.forEach((filterItem) => {
       switch (filterItem.key) {
         case 'id': case 'title': {
@@ -476,9 +475,9 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
       ${ !isAdmin ?
       '' :
       `
-          ${createModelAttributes("Project->AdminProjectGroups", "Project.AdminProjectGroup", models.ProjectGroup)}
-          ${createModelAttributes("Project->AdminProjectGroups->ProjectGroupRight", "Project.AdminProjectGroup.ProjectGroupRight", models.ProjectGroupRights)}
-        `
+        ${createModelAttributes("Project->AdminProjectGroups", "Project.AdminProjectGroup", models.ProjectGroup)}
+        ${createModelAttributes("Project->AdminProjectGroups->ProjectGroupRight", "Project.AdminProjectGroup.ProjectGroupRight", models.ProjectGroupRights)}
+      `
     }
       ${createModelAttributes("Project->ProjectGroups", "Project.ProjectGroups", models.ProjectGroup)}
       ${createModelAttributes("Project->ProjectGroups->ProjectGroupRight", "Project.ProjectGroups.ProjectGroupRight", models.ProjectGroupRights)}
@@ -490,6 +489,7 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
         ${removeLastComma(createModelAttributes("Project", "Project", models.Project))}
         FROM "tasks" AS "Task"
         INNER JOIN "projects" AS "Project" ON "Task"."ProjectId" = "Project"."id"
+      ) AS "Task"
         `
   );
 
@@ -546,7 +546,6 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
   let sql = `
       ${outerSQLTop}
       ${baseSQL}
-      ) AS "Task"
   `;
   sql = (
     `
@@ -643,35 +642,40 @@ export const generateWorkCountsSQL = (projectId, userId, companyId, isAdmin, whe
 
   const sql = (
     `
-    SELECT
+    SELECT "TaskData".*,
     SUM( "SubtaskCounts"."approvedSubtasksQuantity" ) AS approvedSubtasks,
     SUM( "SubtaskCounts"."pendingSubtasksQuantity" ) AS pendingSubtasks,
     SUM( "MaterialCounts"."approvedMaterialsPrice" ) AS approvedMaterials,
     SUM( "MaterialCounts"."pendingMaterialsPrice" ) AS pendingMaterials
-
     FROM (
-      SELECT DISTINCT
-      ${removeLastComma(createModelAttributes("Task", null, models.Task))}
-      FROM "tasks" AS "Task"
-
-     LEFT OUTER JOIN ( "task_assignedTo" AS "assignedTosFilter->task_assignedTo" INNER JOIN "users" AS "assignedTosFilter" ON "assignedTosFilter"."id" = "assignedTosFilter->task_assignedTo"."UserId") ON "Task"."id" = "assignedTosFilter->task_assignedTo"."TaskId"
-     LEFT OUTER JOIN (
-       "task_has_tags" AS "tagsFilter->task_has_tags" INNER JOIN "tags" AS "tagsFilter" ON "tagsFilter"."id" = "tagsFilter->task_has_tags"."TagId"
-     ) ON "Task"."id" = "tagsFilter->task_has_tags"."TaskId"
-     INNER JOIN "projects" AS "Project" ON "Task"."ProjectId" = "Project"."id"
-     LEFT OUTER JOIN "project_group" AS "Project->ProjectGroups" ON "Project"."id" = "Project->ProjectGroups"."ProjectId"
-     LEFT OUTER JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
-     LEFT OUTER JOIN (
-       "user_belongs_to_group" AS "Project->ProjectGroups->Users->user_belongs_to_group" INNER JOIN "users" AS "Project->ProjectGroups->Users" ON "Project->ProjectGroups->Users"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."UserId"
-     ) ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."ProjectGroupId" AND "Project->ProjectGroups->Users"."id" = ${userId}
-     LEFT OUTER JOIN "company_belongs_to_group" AS "Project->ProjectGroups->Companies" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Companies"."ProjectGroupId" AND "Project->ProjectGroups->Companies"."CompanyId" = ${companyId}
+      SELECT "Task".*
+      FROM (
+        SELECT DISTINCT
+        ${createModelAttributes("Task", null, models.Task)}
+        ${removeLastComma(createModelAttributes("Project", "Project", models.Project))}
+        FROM "tasks" AS "Task"
+        INNER JOIN "projects" AS "Project" ON "Task"."ProjectId" = "Project"."id"
+      ) AS "Task"
+      LEFT OUTER JOIN "users" AS "requester" ON "Task"."requesterId" = "requester"."id"
+      LEFT OUTER JOIN "statuses" AS "Status" ON "Task"."StatusId" = "Status"."id"
+      LEFT OUTER JOIN "companies" AS "Company" ON "Task"."CompanyId" = "Company"."id"
+      LEFT OUTER JOIN ( "task_assignedTo" AS "assignedTosFilter->task_assignedTo" INNER JOIN "users" AS "assignedTosFilter" ON "assignedTosFilter"."id" = "assignedTosFilter->task_assignedTo"."UserId") ON "Task"."id" = "assignedTosFilter->task_assignedTo"."TaskId"
+      LEFT OUTER JOIN (
+        "task_has_tags" AS "tagsFilter->task_has_tags" INNER JOIN "tags" AS "tagsFilter" ON "tagsFilter"."id" = "tagsFilter->task_has_tags"."TagId"
+      ) ON "Task"."id" = "tagsFilter->task_has_tags"."TaskId"
+      LEFT OUTER JOIN "project_group" AS "Project->ProjectGroups" ON "Project.id" = "Project->ProjectGroups"."ProjectId"
+      LEFT OUTER JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
+      LEFT OUTER JOIN (
+        "user_belongs_to_group" AS "Project->ProjectGroups->Users->user_belongs_to_group" INNER JOIN "users" AS "Project->ProjectGroups->Users" ON "Project->ProjectGroups->Users"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."UserId"
+      ) ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."ProjectGroupId" AND "Project->ProjectGroups->Users"."id" = ${userId}
+      LEFT OUTER JOIN "company_belongs_to_group" AS "Project->ProjectGroups->Companies" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Companies"."ProjectGroupId" AND "Project->ProjectGroups->Companies"."CompanyId" = ${companyId}
      ${
     where.length > 0 || !isAdmin ?
       `WHERE ${where} ${isAdmin ? '' : `${notAdminWhere}`}` :
       ''
     }
     GROUP BY "Task"."id"
-   ) AS Task
+  ) AS TaskData
    LEFT OUTER JOIN (
      SELECT
      "Subtasks"."TaskId",
@@ -679,7 +683,7 @@ export const generateWorkCountsSQL = (projectId, userId, companyId, isAdmin, whe
      SUM( CASE WHEN "Subtasks"."approved" THEN "Subtasks"."quantity" ELSE 0 END ) as approvedSubtasksQuantity,
      SUM( CASE WHEN "Subtasks"."approved" THEN 0 ELSE "Subtasks"."quantity" END ) as pendingSubtasksQuantity
      FROM "subtasks" AS "Subtasks" GROUP BY "Subtasks"."TaskId"
-   ) AS "SubtaskCounts" ON "SubtaskCounts"."TaskId" = "Task"."id"
+   ) AS "SubtaskCounts" ON "SubtaskCounts"."TaskId" = "TaskData"."id"
 
    LEFT OUTER JOIN (
      SELECT
@@ -688,7 +692,7 @@ export const generateWorkCountsSQL = (projectId, userId, companyId, isAdmin, whe
      SUM( CASE WHEN "Materials"."approved" THEN "Materials"."quantity" * "Materials"."price" ELSE 0 END ) as approvedMaterialsPrice,
      SUM( CASE WHEN "Materials"."approved" THEN 0 ELSE "Materials"."quantity" * "Materials"."price" END ) as pendingMaterialsPrice
      FROM "materials" AS "Materials" GROUP BY "Materials"."TaskId"
-   ) AS "MaterialCounts" ON "MaterialCounts"."TaskId" = "Task"."id"
+   ) AS "MaterialCounts" ON "MaterialCounts"."TaskId" = "TaskData"."id"
     `
   );
 

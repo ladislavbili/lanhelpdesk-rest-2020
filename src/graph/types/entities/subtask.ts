@@ -22,7 +22,7 @@ subtasks(taskId: Int!): [Subtask]
 `
 
 export const SubtaskMutations = `
-addSubtask( title: String!, order: Int, done: Boolean!, quantity: Float!, discount: Float!, task: Int!, type: Int!, assignedTo: Int!, approved: Boolean, scheduled: ScheduledWorkInput ): Subtask
+addSubtask( title: String!, order: Int, done: Boolean!, quantity: Float!, discount: Float!, task: Int!, type: Int, assignedTo: Int!, approved: Boolean, scheduled: ScheduledWorkInput ): Subtask
 updateSubtask( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, discount: Float, type: Int, assignedTo: Int, approved: Boolean, scheduled: ScheduledWorkInput ): Subtask
 deleteSubtask( id: Int! ): Subtask
 

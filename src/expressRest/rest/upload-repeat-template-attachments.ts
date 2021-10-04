@@ -10,7 +10,7 @@ import { RepeatTemplateAttachmentInstance, RepeatTemplateInstance } from '@/mode
 export function uploadRepeatTemplateAttachments(app) {
   app.post('/upload-repeat-template-attachments', async function(req, res) {
     const timestamp = moment().valueOf();
-    const { token, repeatTemplateId } = req.body;
+    const { token, repeatTemplateId, newTask } = req.body;
     let files = null;
     if (req.files) {
       if (Array.isArray(req.files.file)) {
@@ -30,7 +30,7 @@ export function uploadRepeatTemplateAttachments(app) {
     }
     try {
       User = await checkResolver({ headers: { authorization: token } });
-      const checkData = await checkIfHasProjectRights(User.get('id'), undefined, RepeatTemplate.get('ProjectId'), ['taskAttachmentsWrite', 'repeatWrite']);
+      const checkData = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), [newTask ? 'addTask' : 'taskAttachmentsWrite', 'repeatWrite']);
     } catch (err) {
       return res.send({ ok: false, error: err.message })
     }
