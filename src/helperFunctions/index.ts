@@ -19,6 +19,7 @@ export {
   addDefaultStatusTemplates,
   addAttributesToProjects,
   createFixedGroupsForProjects,
+  createDefCompanyDataIfDoesntExists,
 } from './database';
 
 export {
@@ -29,6 +30,10 @@ export {
   checkType,
   getAttributes
 } from './expressProcessing';
+
+export {
+  isUserAdmin,
+} from './helpdesk';
 
 export {
   logFunctionsOfModel,

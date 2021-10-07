@@ -1,7 +1,7 @@
 import { startRest } from '@/expressREST';
 import { updateModels, models } from '@/models';
 import startServices from '@/services';
-import { createTaskMetadata, addDefaultDatabaseData, addAttributesToProjects, createFixedGroupsForProjects, logWithDate } from '@/helperFunctions';
+import { createTaskMetadata, addDefaultDatabaseData, addAttributesToProjects, createFixedGroupsForProjects, logWithDate, createDefCompanyDataIfDoesntExists } from '@/helperFunctions';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -15,4 +15,5 @@ updateModels(ignoreUpdating).then(async () => {
   }
   startRest();
   startServices();
+  //has to have DEF company
 });

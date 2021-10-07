@@ -7,6 +7,8 @@ import {
   TaskInstance,
   ProjectInstance,
   ProjectGroupInstance,
+  CompanyInstance,
+  CompanyDefaultsInstance,
 } from '@/models/instances';
 
 export const createTaskMetadata = async () => {
@@ -333,4 +335,26 @@ export const createFixedGroupsForProjects = async () => {
     }, [])
   );
   console.log('all projects were updated to have default groups.');
+}
+
+export const createDefCompanyDataIfDoesntExists = async () => {
+  const DefCompanies = <CompanyInstance[]>await models.Company.findAll();
+  if (!DefCompanies.some((Company) => Company.get('def'))) {
+    console.log('Missing def company');
+    if (DefCompanies.length === 0) {
+      console.log('no companies');
+    } else {
+      DefCompanies[0].update({ def: true })
+    }
+  } else {
+    console.log('Def company exists');
+  }
+  const CompanyDefaults = <CompanyDefaultsInstance[]>await models.CompanyDefaults.findAll();
+  if (CompanyDefaults.length === 0) {
+    console.log('No company def values, creating');
+    await models.CompanyDefaults.create({ dph: 20 })
+    console.log('Created def values');
+  } else {
+    console.log('Def company values exists');
+  }
 }

@@ -52,6 +52,7 @@ import {
   createTaskAttributesChangeMessages,
   toFloatOrZero,
   sendTaskNotificationsToUsers,
+  isUserAdmin,
 } from '@/helperFunctions';
 import {
   canViewTask,
@@ -126,7 +127,7 @@ const queries = {
     const mainWatch = new Stopwatch(true);
     const checkUserWatch = new Stopwatch(true);
     const User = await checkResolver(req);
-    const isAdmin = (<RoleInstance>User.get('Role')).get('level') === 0;
+    const isAdmin = isUserAdmin(User);
     const checkUserTime = checkUserWatch.stop();
     let taskWhere = [];
     if (projectId) {
@@ -256,7 +257,7 @@ const queries = {
 
   task: async (root, { id }, { req }) => {
     const User = await checkResolver(req);
-    const isAdmin = (<RoleInstance>User.get('Role')).get('level') === 0;
+    const isAdmin = isUserAdmin(User);
     const { groupRights } = await checkIfHasProjectRights(User, id, undefined, [], []);
 
     const SQL = generateTaskSQL(id, User.get('id'), User.get('CompanyId'), isAdmin);
@@ -483,7 +484,7 @@ const mutations = {
       (<CompanyInstance[]>ProjectGroup.get('Companies')).some((Company) => Company.get('id') === User.get('CompanyId'))
     )).map((ProjectGroup) => ProjectGroup.get('ProjectGroupRight'));
 
-    if ((<RoleInstance>User.get('Role')).get('level') === 0) {
+    if (isUserAdmin(User)) {
       userGroupRights = await mergeGroupRights(ProjectGroups.find((ProjectGroup) => ProjectGroup.get('admin') && ProjectGroup.get('def')).get('ProjectGroupRight'))
     } else if (UserProjectGroupRights.length === 0) {
       throw InsufficientProjectAccessError;
@@ -550,7 +551,12 @@ const mutations = {
     assignedTos = assignedTos.filter((id) => assignableUserIds.includes(id));
 
     //requester must be in project or project is open
-    if (requester && Project.get('lockedRequester') && !groupUsers.includes(requester)) {
+    if (
+      requester &&
+      Project.get('lockedRequester') &&
+      !groupUsers.includes(requester) &&
+      !(isUserAdmin(User) && requester === User.get('id'))
+    ) {
       throw createUserNotPartOfProjectError('requester');
     }
 
@@ -849,6 +855,10 @@ const mutations = {
             {
               model: models.Status,
               as: 'projectStatuses'
+            },
+            {
+              model: models.ProjectGroup,
+              include: [models.User, { model: models.Company, include: [models.User] }, models.ProjectGroupRights]
             },
           ],
         }
@@ -1177,7 +1187,11 @@ const attributes = {
       return task.rights.attributes;
     },
     async assignedTo(task) {
-      if (!task.rights || !task.rights.attributes.assigned.view) {
+      if (!task.rights || (
+        !task.rights.attributes.assigned.view &&
+        !task.rights.project.taskWorksRead &&
+        !task.rights.project.taskWorksAdvancedRead
+      )) {
         return [];
       }
       return getModelAttribute(task, 'assignedTos');
@@ -1216,7 +1230,11 @@ const attributes = {
       return getModelAttribute(task, 'Tags');
     },
     async taskType(task) {
-      if (!task.rights || !task.rights.attributes.taskType.view) {
+      if (!task.rights || (
+        !task.rights.attributes.taskType.view &&
+        !task.rights.project.taskWorksRead &&
+        !task.rights.project.taskWorksAdvancedRead
+      )) {
         return null;
       }
       return getModelAttribute(task, 'TaskType');

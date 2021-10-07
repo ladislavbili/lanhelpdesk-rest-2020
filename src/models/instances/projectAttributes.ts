@@ -164,12 +164,12 @@ export default function defineProjectAttributes(sequelize: Sequelize) {
       startsAt: {
         type: DataTypes.DATE,
         allowNull: true,
-        defaultValue: false,
+        defaultValue: null,
       },
       deadline: {
         type: DataTypes.DATE,
         allowNull: true,
-        defaultValue: false,
+        defaultValue: null,
       },
     },
     {
