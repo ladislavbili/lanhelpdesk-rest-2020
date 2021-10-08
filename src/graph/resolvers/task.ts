@@ -146,7 +146,7 @@ const queries = {
 
     if (filter) {
       const dates = extractDatesFromObject(filter, dateNames2);
-      taskWhere = taskWhere.concat(filterToTaskWhereSQL({ ...filter, ...dates }, userID, User.get('CompanyId'), projectId, statuses));
+      taskWhere = taskWhere.concat(filterToTaskWhereSQL({ ...filter, ...dates }, userID, User.get('CompanyId'), isAdmin));
     }
 
     if (search || stringFilter) {
@@ -160,8 +160,8 @@ const queries = {
       page = 1;
     }
 
-    const SQL = generateTasksSQL(projectId, userID, User.get('CompanyId'), isAdmin, taskWhere.join(' AND '), mainOrderBy, secondaryOrderBy, limit, (page - 1) * limit);
-    const totalsSQL = generateWorkCountsSQL(projectId, userID, User.get('CompanyId'), isAdmin, taskWhere.join(' AND '));
+    const SQL = generateTasksSQL(userID, User.get('CompanyId'), isAdmin, taskWhere.join(' AND '), mainOrderBy, secondaryOrderBy, limit, (page - 1) * limit);
+    const totalsSQL = generateWorkCountsSQL(userID, User.get('CompanyId'), isAdmin, taskWhere.join(' AND '));
 
     let [responseTasks, totals] = await Promise.all([
       sequelize.query(SQL, {

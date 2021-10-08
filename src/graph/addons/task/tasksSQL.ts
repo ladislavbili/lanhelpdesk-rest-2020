@@ -9,7 +9,16 @@ import {
   generateFullNameSQL,
   removeLastComma,
 } from '../sqlFunctions';
-const rightsExists = `"Project->ProjectGroups->Users"."id" IS NOT NULL`;
+
+const rightExists = (isAdmin, right) => {
+  if (isAdmin) {
+    return `(
+      "Project->AdminProjectGroups->ProjectGroupRight"."${right}" = true OR
+      "Project->ProjectGroups->ProjectGroupRight"."${right}" = true
+    )`;
+  }
+  return `"Project->ProjectGroups->ProjectGroupRight"."${right}" = true`;
+};
 
 export const transformSortToQueryString = (sort, main, gantt = false) => {
   const order = sort.asc ? "ASC" : "DESC";
@@ -47,58 +56,47 @@ export const transformSortToQueryString = (sort, main, gantt = false) => {
   return `${orderBy}, ${main ? "Task" : "TaskData"}."id" DESC`;
 }
 
-export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statuses = null) => {
-  const overrideStatuses = statuses !== null && statuses !== undefined && statuses.length > 0;
+export const filterToTaskWhereSQL = (filter, userId, companyId, isAdmin) => {
 
   let where = [];
-  //statuses
-  const includeStatuses = overrideStatuses ? statuses : filter.statuses;
-
-  if (includeStatuses.length > 0) {
-    where.push(`"Task"."StatusId" IN (${includeStatuses.join(',')})`);
-  }
-
   // bool attributes
   [
     {
       key: 'important',
       value: filter.important,
-      withRight: false,
-      path: '"Task".',
+      withRight: true,
+      right: 'taskImportant'
     },
     {
       key: 'invoiced',
       value: filter.invoiced,
       withRight: false,
-      path: '"Task".',
     },
     {
       key: 'pausal',
       value: filter.pausal,
       withRight: true,
-      path: '"Task".',
       right: 'pausalView'
     },
     {
       key: 'overtime',
       value: filter.overtime,
       withRight: true,
-      path: '"Task".',
       right: 'overtimeView'
     },
   ].forEach((attribute) => {
+
     if (attribute.value !== null && attribute.value !== undefined) {
-      if (attribute.withRight && projectId) {
-        let rightPath = `"Project->ProjectGroups->ProjectGroupRight"."${attribute.right}"`;
+      if (attribute.withRight) {
         where.push(
           `(
-            ${attribute.path ? `${attribute.path}` : ""}"${attribute.key}" = '${attribute.value}' OR
-            ( ${rightsExists} AND ${rightPath} = false )
+            "Task"."${attribute.key}" = ${attribute.value} AND
+            ${rightExists(isAdmin, attribute.right)}
           )`
         )
       } else {
         where.push(
-          `${attribute.path ? attribute.path : ""}"${attribute.key}" = '${attribute.value}'`
+          `"Task"."${attribute.key}" = ${attribute.value}`
         )
       }
     }
@@ -110,36 +108,32 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
       key: 'TaskTypeId',
       value: filter.taskTypes,
       withRight: true,
-      path: `"Task".`,
       right: 'taskTypeView',
     },
     {
       key: 'CompanyId',
       value: filter.companyCur ? [...filter.companies, companyId] : filter.companies,
       withRight: true,
-      path: `"Task".`,
       right: 'companyView',
     },
     {
       key: 'requesterId',
       value: filter.requesterCur ? [...filter.requesters, userId] : filter.requesters,
       withRight: true,
-      path: `"Task".`,
       right: 'requesterView',
     },
   ].forEach((attribute) => {
     if (attribute.value.length > 0) {
-      if (attribute.withRight && projectId) {
-        let rightPath = `"Project->ProjectGroups->ProjectGroupRight"."${attribute.right}"`;
+      if (attribute.withRight) {
         where.push(
           `(
-              ${attribute.path}"${attribute.key}" IN (${attribute.value.toString()}) OR
-              ( ${rightsExists} AND ${rightPath} = false )
+              "Task"."${attribute.key}" IN (${attribute.value.toString()}) AND
+              ${rightExists(isAdmin, attribute.right)}
             )`
         )
       } else {
         where.push(
-          `${attribute.path}"${attribute.key}" IN (${attribute.value.toString()})`
+          `"Task"."${attribute.key}" IN (${attribute.value.toString()})`
         )
       }
     }
@@ -153,7 +147,6 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
       toNow: filter.statusDateToNow,
       from: filter.statusDateFrom,
       to: filter.statusDateTo,
-      path: '"Task".',
       withRight: true,
       right: 'statusView',
     },
@@ -163,7 +156,6 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
       toNow: filter.pendingDateToNow,
       from: filter.pendingDateFrom,
       to: filter.pendingDateTo,
-      path: '"Task".',
       withRight: false,
     },
     {
@@ -172,7 +164,6 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
       toNow: filter.closeDateToNow,
       from: filter.closeDateFrom,
       to: filter.closeDateTo,
-      path: '"Task".',
       withRight: true,
       right: 'statusView',
     },
@@ -182,17 +173,15 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
       toNow: filter.deadlineToNow,
       from: filter.deadlineFrom,
       to: filter.deadlineTo,
-      path: '"Task".',
       withRight: true,
       right: 'deadlineView',
     },
     {
       target: 'createdAt',
-      fromNow: filter.createdAtFrom,
-      toNow: filter.createdAtFromNow,
-      from: filter.createdAtTo,
-      to: filter.createdAtToNow,
-      path: '"Task".',
+      fromNow: filter.createdAtFromNow,
+      toNow: filter.createdAtToNow,
+      from: filter.createdAtFrom,
+      to: filter.createdAtTo,
       withRight: false,
     },
   ].forEach((dateFilter) => {
@@ -204,7 +193,6 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
       to,
       withRight,
       right,
-      path,
     } = dateFilter;
 
     if (from) {
@@ -224,17 +212,16 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
 
     let condition = [];
     if (from) {
-      condition.push(`(${path ? path : ''}"${target}" >= '${from.toISOString().slice(0, 19).replace('T', ' ')}')`)
+      condition.push(`("Task"."${target}" >= '${from.toISOString().slice(0, 19).replace('T', ' ')}')`)
     }
     if (to) {
-      condition.push(`(${path ? path : ''}"${target}" <= '${to.toISOString().slice(0, 19).replace('T', ' ')}')`)
+      condition.push(`("Task"."${target}" <= '${to.toISOString().slice(0, 19).replace('T', ' ')}')`)
     }
     if (from || to) {
-      if (withRight && projectId) {
-        let rightPath = `"Project->ProjectGroups->ProjectGroupRight"."${right}"`;
+      if (withRight) {
         where.push(`(
-          ( ${condition.join(' AND ')} ) OR
-          ( ${rightsExists} AND ${rightPath} = false )
+          ( ${condition.join(' AND ')} ) AND
+          ${rightExists(isAdmin, right)}
         )`);
       } else {
         where.push(`( ${condition.join(' AND ')} )`);
@@ -242,16 +229,16 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
     }
   });
 
-  const assignedWhere = getAssignedTosWhereSQL(filter, userId, projectId);
+  const assignedWhere = getAssignedTosWhereSQL(filter, userId, isAdmin);
   if (assignedWhere !== null) {
     where.push(assignedWhere);
   }
-  const tagsWhere = getTagsWhereSQL(filter, userId, projectId);
+  const tagsWhere = getTagsWhereSQL(filter, userId, isAdmin);
   if (tagsWhere !== null) {
     where.push(tagsWhere);
   }
   /*
-  const scheduledWhere = getScheduledWhereSQL(filter, projectId);
+  const scheduledWhere = getScheduledWhereSQL(filter);
   if (scheduledWhere !== null) {
     where.push(scheduledWhere);
   }
@@ -259,31 +246,31 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, projectId, statu
   return where;
 }
 
-const getAssignedTosWhereSQL = (filter, userId, projectId) => {
+const getAssignedTosWhereSQL = (filter, userId, isAdmin) => {
   const ids = filter.assignedToCur ? [...filter.assignedTos, userId] : filter.assignedTos;
   if (ids.length > 0) {
     return `(
-      ${projectId ? `( ${rightsExists} AND "Project->ProjectGroups->ProjectGroupRight"."assignedView" = false ) OR ` : ''}
-      "assignedTosFilter"."id" IN (${ids.toString()})
+      "assignedTosFilter"."id" IN (${ids.toString()}) AND
+      ${rightExists(isAdmin, 'assignedView')}
     )
     `
   }
   return null;
 }
 
-const getTagsWhereSQL = (filter, userId, projectId) => {
+const getTagsWhereSQL = (filter, userId, isAdmin) => {
   const ids = filter.tags;
   if (ids.length > 0) {
     return `(
-      ${projectId ? `( ${rightsExists} AND "Project->ProjectGroups->ProjectGroupRight"."tagsView" = false ) OR ` : ''}
-      "tagsFilter"."id" IN (${ids.toString()})
+      "tagsFilter"."id" IN (${ids.toString()}) AND
+      ${rightExists(isAdmin, 'tagsView')}
     )
     `
   }
   return null;
 }
 
-const getScheduledWhereSQL = (filter, projectId) => {
+const getScheduledWhereSQL = (filter, isAdmin) => {
   let {
     scheduledFrom: from,
     scheduledFromNow: fromNow,
@@ -328,8 +315,8 @@ const getScheduledWhereSQL = (filter, projectId) => {
 
   //podmienky platia ak CONDITION je splneny alebo nema pravo scheduled citat
   return `(
-  ${projectId ? `( ${rightsExists} AND "Project->ProjectGroups->ProjectGroupRight"."assignedView" = false ) OR ` : ''}
-    (${conditions.join(' AND ')})
+    (${conditions.join(' AND ')}) AND
+    ${rightExists(isAdmin, 'assignedView')}
   )`;
 }
 
@@ -427,7 +414,7 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
   return where;
 }
 
-export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, mainOrderBy, secondaryOrderBy, limit, offset) => {
+export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy, secondaryOrderBy, limit, offset) => {
 
   const outerSQLTop = (
     `
@@ -472,12 +459,12 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
       ${createModelAttributes("TaskType", "TaskType", models.TaskType)}
       ${createModelAttributes("Repeat", "Repeat", models.Repeat)}
       ${createModelAttributes("TaskMetadata", "TaskMetadata", models.TaskMetadata)}
-      ${ !isAdmin ?
-      '' :
+      ${ isAdmin ?
       `
         ${createModelAttributes("Project->AdminProjectGroups", "Project.AdminProjectGroup", models.ProjectGroup)}
         ${createModelAttributes("Project->AdminProjectGroups->ProjectGroupRight", "Project.AdminProjectGroup.ProjectGroupRight", models.ProjectGroupRights)}
-      `
+      ` :
+      ''
     }
       ${createModelAttributes("Project->ProjectGroups", "Project.ProjectGroups", models.ProjectGroup)}
       ${createModelAttributes("Project->ProjectGroups->ProjectGroupRight", "Project.ProjectGroups.ProjectGroupRight", models.ProjectGroupRights)}
@@ -562,16 +549,15 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
     LEFT OUTER JOIN "task_types" AS "TaskType" ON "Task"."TaskTypeId" = "TaskType"."id"
     LEFT OUTER JOIN "repeat" AS "Repeat" ON "Task"."RepeatId" = "Repeat"."id"
     LEFT OUTER JOIN "task_metadata" AS "TaskMetadata" ON "Task"."id" = "TaskMetadata"."TaskId"
-    ${
-    !isAdmin ?
-      '' :
+    ${ isAdmin ?
       `
       INNER JOIN "project_group" AS "Project->AdminProjectGroups" ON
-        "Project.id" = "Project->AdminProjectGroups"."ProjectId" AND
-        "Project->AdminProjectGroups"."admin" = true AND
-        "Project->AdminProjectGroups"."def" = true
+      "Project.id" = "Project->AdminProjectGroups"."ProjectId" AND
+      "Project->AdminProjectGroups"."admin" = true AND
+      "Project->AdminProjectGroups"."def" = true
       INNER JOIN "project_group_rights" AS "Project->AdminProjectGroups->ProjectGroupRight" ON "Project->AdminProjectGroups"."id" = "Project->AdminProjectGroups->ProjectGroupRight"."ProjectGroupId"
-      `
+      ` :
+      ''
     }
     LEFT OUTER JOIN "project_group" AS "Project->ProjectGroups" ON "Project.id" = "Project->ProjectGroups"."ProjectId"
     LEFT OUTER JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
@@ -623,7 +609,7 @@ export const generateTasksSQL = (projectId, userId, companyId, isAdmin, where, m
   return sql.replace(/"/g, '`');
 }
 
-export const generateWorkCountsSQL = (projectId, userId, companyId, isAdmin, where) => {
+export const generateWorkCountsSQL = (userId, companyId, isAdmin, where) => {
   const notAdminWhere = (
     `
     ${where.length > 0 ? 'AND ' : ''}(
@@ -663,6 +649,16 @@ export const generateWorkCountsSQL = (projectId, userId, companyId, isAdmin, whe
       LEFT OUTER JOIN (
         "task_has_tags" AS "tagsFilter->task_has_tags" INNER JOIN "tags" AS "tagsFilter" ON "tagsFilter"."id" = "tagsFilter->task_has_tags"."TagId"
       ) ON "Task"."id" = "tagsFilter->task_has_tags"."TaskId"
+      ${ isAdmin ?
+      `
+        INNER JOIN "project_group" AS "Project->AdminProjectGroups" ON
+        "Project.id" = "Project->AdminProjectGroups"."ProjectId" AND
+        "Project->AdminProjectGroups"."admin" = true AND
+        "Project->AdminProjectGroups"."def" = true
+        INNER JOIN "project_group_rights" AS "Project->AdminProjectGroups->ProjectGroupRight" ON "Project->AdminProjectGroups"."id" = "Project->AdminProjectGroups->ProjectGroupRight"."ProjectGroupId"
+        ` :
+      ''
+    }
       LEFT OUTER JOIN "project_group" AS "Project->ProjectGroups" ON "Project.id" = "Project->ProjectGroups"."ProjectId"
       LEFT OUTER JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
       LEFT OUTER JOIN (

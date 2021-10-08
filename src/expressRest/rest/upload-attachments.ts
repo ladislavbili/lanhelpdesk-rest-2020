@@ -22,6 +22,7 @@ export function uploadAttachments(app) {
     }
     let User = null;
     let Task = null;
+
     try {
       User = await checkResolver({ headers: { authorization: token } });
       const checkData = await checkIfHasProjectRights(User, taskId, undefined, [newTask ? 'addTask' : 'taskAttachmentsWrite']);

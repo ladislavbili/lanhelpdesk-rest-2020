@@ -79,7 +79,7 @@ const queries = {
     }
     if (filter) {
       const dates = extractDatesFromObject(filter, filterDates);
-      where = where.concat(filterToTaskWhereSQL({ ...filter, ...dates }, currentUserId, User.get('CompanyId'), projectId));
+      where = where.concat(filterToTaskWhereSQL({ ...filter, ...dates }, currentUserId, User.get('CompanyId'), isAdmin));
     }
 
     if (!userId) {
