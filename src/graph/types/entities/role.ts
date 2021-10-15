@@ -2,6 +2,7 @@ import defaultAttributes from './defaultAttributes';
 const createAccessRights = (required) => {
   return [
     'login',
+    'vykazy',
     'publicFilters',
     'addProjects',
     'viewErrors',

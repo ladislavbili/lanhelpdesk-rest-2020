@@ -5,6 +5,7 @@ import customItem from './customItem';
 import errorMessage from './errorMessage';
 import filter from './filter';
 import imap from './imap';
+import invoiceCompany from './invoiceCompany';
 import material from './material';
 import milestone from './milestone';
 import pricelist from './pricelist';
@@ -47,6 +48,8 @@ export default {
     ...errorMessage.queries,
     ...filter.queries,
     ...imap.queries,
+    ...invoiceCompany.queries,
+
     ...material.queries,
     ...milestone.queries,
     ...pricelist.queries,
@@ -86,6 +89,8 @@ export default {
     ...errorMessage.mutations,
     ...filter.mutations,
     ...imap.mutations,
+    ...invoiceCompany.mutations,
+
     ...material.mutations,
     ...milestone.mutations,
     ...pricelist.mutations,
@@ -143,6 +148,7 @@ export default {
   ...errorMessage.attributes,
   ...filter.attributes,
   ...imap.attributes,
+  ...invoiceCompany.attributes,
   ...material.attributes,
   ...milestone.attributes,
   ...pricelist.attributes,

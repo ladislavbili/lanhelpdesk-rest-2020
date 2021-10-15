@@ -367,6 +367,9 @@ const attributes = {
     async users(company) {
       return getModelAttribute(company, 'Users');
     },
+    async companyRents(company) {
+      return getModelAttribute(company, 'CompanyRents');
+    },
     async usedSubtaskPausal(company) {
       const fullTasks = await company.getTasks(
         {
@@ -397,7 +400,7 @@ const attributes = {
       return fullTasks.reduce((acc1, task) => {
         return acc1 + task.get('WorkTrips').reduce((acc2, trip) => acc2 + trip.get('quantity'), 0)
       }, 0);
-    }
+    },
   },
   PausalCompany: {
     async pricelist(company) {

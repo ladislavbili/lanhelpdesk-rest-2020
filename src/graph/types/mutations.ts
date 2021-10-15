@@ -5,6 +5,7 @@ import { CustomItemMutations } from './entities/customItem';
 import { ErrorMessageMutations } from './entities/errorMessage';
 import { FilterMutations } from './entities/filter';
 import { ImapMutations } from './entities/imap';
+import { InvoiceCompanyMutations } from './entities/invoiceCompany';
 import { MaterialMutations } from './entities/material';
 import { MilestoneMutations } from './entities/milestone';
 import { PricelistMutations } from './entities/pricelist';
@@ -45,6 +46,7 @@ type Mutation {
   ${ErrorMessageMutations}
   ${FilterMutations}
   ${ImapMutations}
+  ${InvoiceCompanyMutations}
   ${MaterialMutations}
   ${MilestoneMutations}
   ${PricelistMutations}
