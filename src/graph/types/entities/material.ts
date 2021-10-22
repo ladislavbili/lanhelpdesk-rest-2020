@@ -6,10 +6,12 @@ type Material {
   order: Int!
   done: Boolean!
   approved: Boolean!
-  approvedBy: User
   quantity: Float!
   margin: Float!
   price: Float!
+  total: Float
+
+  approvedBy: User
   task: Task
   repeatTemplate: RepeatTemplate
 }

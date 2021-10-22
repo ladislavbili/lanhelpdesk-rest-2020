@@ -319,7 +319,12 @@ const attributes = {
     async users(company) {
       return getModelAttribute(company, 'Users');
     },
-    async companyRents(company) {
+    async companyRents(company, body, { req, userID }) {
+      const User = await checkResolver(req);
+      const rights = <AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight');
+      if (!rights.pausals && !rights.vykazy) {
+        return [];
+      }
       return getModelAttribute(company, 'CompanyRents');
     },
     async usedSubtaskPausal(company) {
@@ -367,7 +372,12 @@ const attributes = {
     async users(company) {
       return getModelAttribute(company, 'Users');
     },
-    async companyRents(company) {
+    async companyRents(company, body, { req, userID }) {
+      const User = await checkResolver(req);
+      const rights = <AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight');
+      if (!rights.pausals && !rights.vykazy) {
+        return [];
+      }
       return getModelAttribute(company, 'CompanyRents');
     },
     async usedSubtaskPausal(company) {

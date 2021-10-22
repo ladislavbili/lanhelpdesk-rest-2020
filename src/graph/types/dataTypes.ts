@@ -5,6 +5,7 @@ import { CustomItem } from './entities/customItem';
 import { ErrorMessage } from './entities/errorMessage';
 import { Filter } from './entities/filter';
 import { Imap } from './entities/imap';
+import { Invoice } from './entities/invoice';
 import { InvoiceCompany } from './entities/invoiceCompany';
 import { Material } from './entities/material';
 import { Milestone } from './entities/milestone';
@@ -34,7 +35,6 @@ import { TaskMetadata } from './entities/taskMetadata';
 import { TaskType } from './entities/taskType';
 import { TripType } from './entities/tripType';
 import { User } from './entities/user';
-import { UserInvoice } from './entities/userInvoice';
 import { UserNotification } from './entities/userNotification';
 import { WorkTrip } from './entities/workTrip';
 
@@ -46,6 +46,7 @@ ${CustomItem}
 ${ErrorMessage}
 ${Filter}
 ${Imap}
+${Invoice}
 ${InvoiceCompany}
 ${Material}
 ${Milestone}
@@ -75,7 +76,6 @@ ${TaskMetadata}
 ${TaskType}
 ${TripType}
 ${User}
-${UserInvoice}
 ${UserNotification}
 ${WorkTrip}
 

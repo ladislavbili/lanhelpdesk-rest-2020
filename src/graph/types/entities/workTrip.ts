@@ -5,9 +5,12 @@ type WorkTrip {
   order: Int!
   done: Boolean!
   approved: Boolean!
-  approvedBy: User
   quantity: Float!
   discount: Float!
+  price: Float
+  total: Float
+
+  approvedBy: User
   task: Task
   repeatTemplate: RepeatTemplate
   type: TripType!

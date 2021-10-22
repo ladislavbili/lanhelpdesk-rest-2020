@@ -5,6 +5,7 @@ import customItem from './customItem';
 import errorMessage from './errorMessage';
 import filter from './filter';
 import imap from './imap';
+import invoice from './invoice';
 import invoiceCompany from './invoiceCompany';
 import material from './material';
 import milestone from './milestone';
@@ -27,7 +28,6 @@ import tasklistGanttColumnPreference from './tasklistGanttColumnPreference';
 import taskType from './taskType';
 import tripType from './tripType';
 import user from './user';
-import userInvoice from './userInvoice';
 import workTrip from './workTrip';
 import repeat from './repeat';
 import repeatTemplate from './repeatTemplate';
@@ -48,6 +48,7 @@ export default {
     ...errorMessage.queries,
     ...filter.queries,
     ...imap.queries,
+    ...invoice.queries,
     ...invoiceCompany.queries,
 
     ...material.queries,
@@ -72,7 +73,6 @@ export default {
     ...taskType.queries,
     ...tripType.queries,
     ...user.queries,
-    ...userInvoice.queries,
     ...workTrip.queries,
     ...repeat.queries,
     ...repeatTemplate.queries,
@@ -89,6 +89,7 @@ export default {
     ...errorMessage.mutations,
     ...filter.mutations,
     ...imap.mutations,
+    ...invoice.mutations,
     ...invoiceCompany.mutations,
 
     ...material.mutations,
@@ -113,7 +114,6 @@ export default {
     ...taskType.mutations,
     ...tripType.mutations,
     ...user.mutations,
-    ...userInvoice.mutations,
     ...workTrip.mutations,
     ...repeat.mutations,
     ...repeatTemplate.mutations,
@@ -148,6 +148,7 @@ export default {
   ...errorMessage.attributes,
   ...filter.attributes,
   ...imap.attributes,
+  ...invoice.attributes,
   ...invoiceCompany.attributes,
   ...material.attributes,
   ...milestone.attributes,
@@ -171,7 +172,6 @@ export default {
   ...tasklistGanttColumnPreference.attributes,
   ...tripType.attributes,
   ...user.attributes,
-  ...userInvoice.attributes,
   ...workTrip.attributes,
   ...repeat.attributes,
   ...repeatTemplate.attributes,

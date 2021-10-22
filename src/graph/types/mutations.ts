@@ -5,6 +5,7 @@ import { CustomItemMutations } from './entities/customItem';
 import { ErrorMessageMutations } from './entities/errorMessage';
 import { FilterMutations } from './entities/filter';
 import { ImapMutations } from './entities/imap';
+import { InvoiceMutations } from './entities/invoice';
 import { InvoiceCompanyMutations } from './entities/invoiceCompany';
 import { MaterialMutations } from './entities/material';
 import { MilestoneMutations } from './entities/milestone';
@@ -33,7 +34,6 @@ import { TaskMetadataMutations } from './entities/taskMetadata';
 import { TaskTypeMutations } from './entities/taskType';
 import { TripTypeMutations } from './entities/tripType';
 import { UserMutations } from './entities/user';
-import { UserInvoiceMutations } from './entities/userInvoice';
 import { UserNotificationMutations } from './entities/userNotification';
 import { WorkTripMutations } from './entities/workTrip';
 
@@ -46,6 +46,7 @@ type Mutation {
   ${ErrorMessageMutations}
   ${FilterMutations}
   ${ImapMutations}
+  ${InvoiceMutations}
   ${InvoiceCompanyMutations}
   ${MaterialMutations}
   ${MilestoneMutations}
@@ -74,7 +75,6 @@ type Mutation {
   ${TaskTypeMutations}
   ${TripTypeMutations}
   ${UserMutations}
-  ${UserInvoiceMutations}
   ${UserNotificationMutations}
   ${WorkTripMutations}
 }

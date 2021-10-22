@@ -5,6 +5,7 @@ import { CustomItemQueries } from './entities/customItem';
 import { ErrorMessageQueries } from './entities/errorMessage';
 import { FilterQueries } from './entities/filter';
 import { ImapQueries } from './entities/imap';
+import { InvoiceQueries } from './entities/invoice';
 import { InvoiceCompanyQueries } from './entities/invoiceCompany';
 import { MaterialQueries } from './entities/material';
 import { MilestoneQueries } from './entities/milestone';
@@ -33,7 +34,6 @@ import { TaskMetadataQueries } from './entities/taskMetadata';
 import { TaskTypeQueries } from './entities/taskType';
 import { TripTypeQueries } from './entities/tripType';
 import { UserQueries } from './entities/user';
-import { UserInvoiceQueries } from './entities/userInvoice';
 import { UserNotificationQueries } from './entities/userNotification';
 import { WorkTripQueries } from './entities/workTrip';
 
@@ -46,6 +46,7 @@ type Query {
   ${ErrorMessageQueries}
   ${FilterQueries}
   ${ImapQueries}
+  ${InvoiceQueries}
   ${InvoiceCompanyQueries}
   ${MaterialQueries}
   ${MilestoneQueries}
@@ -74,7 +75,6 @@ type Query {
   ${TaskTypeQueries}
   ${TripTypeQueries}
   ${UserQueries}
-  ${UserInvoiceQueries}
   ${UserNotificationQueries}
   ${WorkTripQueries}
 }

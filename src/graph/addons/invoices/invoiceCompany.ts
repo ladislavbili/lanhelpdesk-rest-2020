@@ -1,7 +1,6 @@
 import {
   toDBDate,
   createModelAttributes,
-  generateFullNameSQL,
   removeLastComma,
 } from '../sqlFunctions';
 import { models } from '@/models';
@@ -32,6 +31,7 @@ export const generateInvoiceCompaniesSQL = (fromDate, toDate) => {
           "Task"."StatusId" = "Status"."id" AND
           "Status"."action" = 'CloseDate'
         WHERE
+          "Task"."invoiced" = false AND
           "Task"."closeDate" IS NOT NULL AND
           "Task"."closeDate" >= '${toDBDate(fromDate)}' AND
           "Task"."closeDate" <= '${toDBDate(toDate)}'
