@@ -42,3 +42,6 @@ export { TasklistGanttColumnPreferenceInstance } from './taskListGanttColumnPref
 export { ScheduledWorkInstance } from './scheduledWork';
 export { ProjectAttachmentInstance } from './projectAttachment';
 export { TasklistSortInstance } from './tasklistSort';
+export { InvoicedTaskInstance } from './invoicedTask';
+export { InvoicedTaskTagInstance } from './invoicedTaskTag';
+export { InvoicedTaskUserInstance } from './invoicedTaskUser';

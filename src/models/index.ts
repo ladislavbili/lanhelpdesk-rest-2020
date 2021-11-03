@@ -48,7 +48,11 @@ import defineTasklistGanttColumnPreferences, { createTasklistGanttColumnPreferen
 import defineScheduledWorks, { createScheduledWorksAssoc } from './instances/scheduledWork';
 import defineProjectAttachments, { createProjectAttachmentsAssoc } from './instances/projectAttachment';
 import defineTasklistSorts, { createTasklistSortsAssoc } from './instances/tasklistSort';
+import defineInvoicedTasks, { createInvoicedTasksAssoc } from './instances/invoicedTask';
+import defineInvoicedTaskTags, { createInvoicedTaskTagsAssoc } from './instances/invoicedTaskTag';
+import defineInvoicedTaskUsers, { createInvoicedTaskUsersAssoc } from './instances/invoicedTaskUser';
 
+const modelToLog = '';
 
 /*
 const operatorsAliases = {
@@ -112,7 +116,11 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineScheduledWorks(sequelize);
   defineProjectAttachments(sequelize);
   defineTasklistSorts(sequelize);
+  defineInvoicedTasks(sequelize);
+  defineInvoicedTaskTags(sequelize);
+  defineInvoicedTaskUsers(sequelize);
 
+  //ASSOCS
   createRolesAssoc(models);
   createUsersAssoc(models);
   createAccessRightsAssoc(models);
@@ -160,10 +168,13 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createScheduledWorksAssoc(models);
   createProjectAttachmentsAssoc(models);
   createTasklistSortsAssoc(models);
+  createInvoicedTasksAssoc(models);
+  createInvoicedTaskTagsAssoc(models);
+  createInvoicedTaskUsersAssoc(models);
 
   //LOG FUNCTIONS
 
-  //logFunctionsOfModel(models.Project);
+  modelToLog.length !== 0 && logFunctionsOfModel(models[modelToLog]);
 
 
   if (ignoreUpdating) {

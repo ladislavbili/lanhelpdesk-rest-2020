@@ -9,6 +9,7 @@ export interface MaterialInstance extends DefaultInstance {
   quantity: number;
   margin: number;
   price: number;
+  invoiced: boolean;
 }
 
 export default function defineMaterials(sequelize: Sequelize) {
@@ -48,6 +49,11 @@ export default function defineMaterials(sequelize: Sequelize) {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0
+      },
+      invoiced: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
       },
     },
     {

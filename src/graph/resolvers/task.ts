@@ -437,7 +437,7 @@ const queries = {
 
   getNumberOfTasks: async (root, { projectId }, { req }) => {
     const User = await checkResolver(req);
-    await checkIfHasProjectRights(User, undefined, projectId, ['projectWrite']);
+    await checkIfHasProjectRights(User, undefined, projectId, ['projectRead']);
     return models.Task.count({ where: { ProjectId: projectId } })
   },
 }

@@ -11,6 +11,15 @@ export interface WorkTripInstance extends DefaultInstance {
   //task
   //type
   //assignedTo
+
+  invoiced: boolean;
+  invoicedPrice: number;
+  invoicedPausalQuantity: number;
+  invoicedOverPausalQuantity: number;
+  invoicedProjectQuantity: number;
+  invoicedTypeId: number;
+  invoicedTypeTitle: string;
+
   setTripType?: any;
 
   setUser?: any;
@@ -47,6 +56,35 @@ export default function defineWorkTrips(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: 0
       },
+      invoiced: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      invoicedPrice: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+      },
+      invoicedPausalQuantity: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+      },
+      invoicedOverPausalQuantity: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+      },
+      invoicedProjectQuantity: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+      },
+      invoicedTypeId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      invoicedTypeTitle: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
     },
     {
       //OPTIONS
@@ -68,4 +106,6 @@ export function createWorkTripsAssoc(models) {
   models.WorkTrip.belongsTo(models.User, { as: 'TripApprovedBy' });
 
   models.WorkTrip.hasOne(models.ScheduledWork, { onDelete: 'CASCADE' });
+
+  models.WorkTrip.hasOne(models.InvoicedTaskUser, { onDelete: 'CASCADE' });
 }

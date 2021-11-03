@@ -9,10 +9,17 @@ export interface SubtaskInstance extends DefaultInstance {
   approved: boolean;
   quantity: number;
   discount: number;
-  invoiced: boolean;
   //task
   //type
   //assignedTo
+
+  invoiced: boolean;
+  invoicedPrice: number;
+  invoicedPausalQuantity: number;
+  invoicedOverPausalQuantity: number;
+  invoicedProjectQuantity: number;
+  invoicedTypeId: number;
+  invoicedTypeTitle: string;
 
   setTaskType?: any;
   setUser?: any;
@@ -58,7 +65,30 @@ export default function defineSubtasks(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: false,
       },
-
+      invoicedPrice: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+      },
+      invoicedPausalQuantity: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+      },
+      invoicedOverPausalQuantity: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+      },
+      invoicedProjectQuantity: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+      },
+      invoicedTypeId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      invoicedTypeTitle: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
     },
     {
       //OPTIONS
@@ -81,4 +111,5 @@ export function createSubtasksAssoc(models) {
 
   models.Subtask.hasOne(models.ScheduledWork, { onDelete: 'CASCADE' });
 
+  models.Subtask.hasOne(models.InvoicedTaskUser, { onDelete: 'CASCADE' });
 }

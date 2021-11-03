@@ -44,8 +44,10 @@ export const Invoice = `
 `
 
 export const InvoiceQueries = `
-  companyInvoice(fromDate: String!, toDate: String!, companyId: Int!): CompanyInvoice
+  companyInvoice( fromDate: String!, toDate: String!, companyId: Int! ): CompanyInvoice
+  invoice( fromDate: String!, toDate: String!, companyId: Int! ): CompanyInvoice
 `
 
 export const InvoiceMutations = `
+  invoiceTasks( fromDate: String!, toDate: String!, companyId: Int!, taskIds: [Int]! ): Boolean
 `

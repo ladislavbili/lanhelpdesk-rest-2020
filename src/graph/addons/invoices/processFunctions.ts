@@ -208,7 +208,7 @@ export const addPricesToTasks = (tasks, Prices, Pricelist, Company) => {
 }
 
 export const getMaterialTasks = (tasks) => {
-  return tasks.filter((task) => task.Materials.length > 0);
+  return tasks.filter((task) => !task.invoiced && task.Materials.length > 0);
 }
 
 export const calculateTotals = (projectTasks, pausalTasks, overPausalTasks, materialTasks, dph) => {

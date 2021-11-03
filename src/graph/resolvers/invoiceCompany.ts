@@ -1,8 +1,11 @@
 import { models, sequelize } from '@/models';
 import {
   generateInvoiceCompaniesSQL,
+  generateAllInvoiceCompaniesSQL,
+  generateCompaniesWithInvoiceSQL,
+  generateDatesOfCompanySQL,
 } from '@/graph/addons/invoices';
-import { QueryTypes } from 'sequelize';
+import { QueryTypes, Op } from 'sequelize';
 import checkResolver from './checkResolver';
 import { getModelAttribute } from '@/helperFunctions';
 
@@ -35,7 +38,40 @@ const queries = {
       }
     })
     return companies;
-  }
+  },
+  allInvoiceCompanies: async (root, args, { req }) => {
+    await checkResolver(req, ['vykazy']);
+    const SQL = generateAllInvoiceCompaniesSQL();
+    const resultCompanies = <any[]>await sequelize.query(SQL, {
+      type: QueryTypes.SELECT,
+      nest: true,
+      raw: true,
+      mapToModel: true
+    });
+    return resultCompanies;
+  },
+  companiesWithInvoice: async (root, { fromDate, toDate }, { req }) => {
+    await checkResolver(req, ['vykazy']);
+    const SQL = generateCompaniesWithInvoiceSQL(fromDate, toDate);
+    const resultCompanies = <any[]>await sequelize.query(SQL, {
+      type: QueryTypes.SELECT,
+      nest: true,
+      raw: true,
+      mapToModel: true
+    });
+    return resultCompanies;
+  },
+  invoiceDatesOfCompany: async (root, { companyId }, { req }) => {
+    await checkResolver(req, ['vykazy']);
+    const SQL = generateDatesOfCompanySQL(companyId);
+    const resultDates = <any[]>await sequelize.query(SQL, {
+      type: QueryTypes.SELECT,
+      nest: true,
+      raw: true,
+      mapToModel: true
+    });
+    return resultDates;
+  },
 };
 
 const mutations = {
