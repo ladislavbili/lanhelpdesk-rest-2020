@@ -24,7 +24,6 @@ export { RepeatInstance } from './repeat';
 export { SubtaskInstance } from './subtask';
 export { WorkTripInstance } from './workTrip';
 export { MaterialInstance } from './material';
-export { CustomItemInstance } from './customItem';
 export { CommentInstance } from './comment';
 export { EmailTargetInstance } from './emailTarget';
 export { TaskAttachmentInstance } from './taskAttachment';

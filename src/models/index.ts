@@ -32,7 +32,6 @@ import defineRepeatTemplateAttachments, { createRepeatTemplateAttachmentsAssoc }
 import defineSubtasks, { createSubtasksAssoc } from './instances/subtask';
 import defineWorkTrips, { createWorkTripsAssoc } from './instances/workTrip';
 import defineMaterials, { createMaterialsAssoc } from './instances/material';
-import defineCustomItems, { createCustomItemsAssoc } from './instances/customItem';
 import defineComments, { createCommentsAssoc } from './instances/comment';
 import defineEmailTargets, { createEmailTargetsAssoc } from './instances/emailTarget';
 import defineTaskChanges, { createTaskChangesAssoc } from './instances/taskChange';
@@ -99,7 +98,6 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineSubtasks(sequelize);
   defineWorkTrips(sequelize);
   defineMaterials(sequelize);
-  defineCustomItems(sequelize);
   defineComments(sequelize);
   defineEmailTargets(sequelize);
   defineTaskChanges(sequelize);
@@ -150,7 +148,6 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createSubtasksAssoc(models);
   createWorkTripsAssoc(models);
   createMaterialsAssoc(models);
-  createCustomItemsAssoc(models);
   createCommentsAssoc(models);
   createEmailTargetsAssoc(models);
   createTaskChangesAssoc(models);

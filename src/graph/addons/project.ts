@@ -1096,12 +1096,6 @@ export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, st
       right: 'taskMaterialsWrite',
       orgKey: 'Material',
     },
-    {
-      key: 'customItems',
-      type: 'array',
-      right: 'taskMaterialsWrite',
-      orgKey: 'CustomItem',
-    },
   ].filter((check) => !ignoreAttributes.includes(check.key)).forEach((check) => {
     switch (check.type) {
       case 'text': {

@@ -33,7 +33,6 @@ import {
   SubtaskInstance,
   WorkTripInstance,
   MaterialInstance,
-  CustomItemInstance,
   TagInstance,
   TaskTypeInstance,
   CompanyInstance,
@@ -80,7 +79,6 @@ import {
   generateSubtasksSQL,
   generateWorkTripsSQL,
   generateMaterialsSQL,
-  generateCustomItemsSQL,
   generateCompanyUsedTripPausalSQL,
   generateCompanyUsedSubtaskPausalSQL,
   generateWorkCountsSQL,
@@ -284,7 +282,6 @@ const queries = {
       responseSubtasks,
       responseWorkTrips,
       responseMaterials,
-      responseCustomItems,
     ] = await Promise.all([
       sequelize.query(generateTaskAttachmentsSQL(id), {
         model: models.TaskAttachment,
@@ -354,13 +351,6 @@ const queries = {
         raw: true,
         mapToModel: true
       }),
-      sequelize.query(generateCustomItemsSQL(id), {
-        model: models.CustomItem,
-        type: QueryTypes.SELECT,
-        nest: true,
-        raw: true,
-        mapToModel: true
-      })
     ])
 
     let Company = <any>{ ...responseCompany[0] };
@@ -425,13 +415,6 @@ const queries = {
         price: toFloatOrZero(material.price),
         MaterialApprovedBy: material.MaterialApprovedBy.id === null ? null : material.MaterialApprovedBy,
       })),
-      CustomItems: (<any[]>responseCustomItems).map((item) => ({
-        ...item,
-        quantity: toFloatOrZero(item.quantity),
-        margin: toFloatOrZero(item.margin),
-        price: toFloatOrZero(item.price),
-        ItemApprovedBy: item.ItemApprovedBy.id === null ? null : item.ItemApprovedBy,
-      })),
     }
   },
 
@@ -494,7 +477,7 @@ const mutations = {
 
     args = checkAndApplyFixedAndRequiredOnAttributes(await ProjectAttributes.get('attributes'), userGroupRights.attributes, args, User, ProjectStatuses);
 
-    let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, customItems, shortSubtasks, ...params } = args;
+    let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, repeat, comments, subtasks, workTrips, materials, shortSubtasks, ...params } = args;
 
     if (!userGroupRights.project.addTask) {
       addApolloError(
@@ -585,7 +568,7 @@ const mutations = {
           },
         ]
       }],
-      TaskMetadata: calculateMetadata(Project.get('autoApproved'), subtasks, workTrips, materials, customItems),
+      TaskMetadata: calculateMetadata(Project.get('autoApproved'), subtasks, workTrips, materials),
       createdById: User.get('id'),
       CompanyId: company,
       ProjectId: project,
@@ -705,13 +688,7 @@ const mutations = {
         Materials: materials.map((material) => material.approved ? { ...material, MaterialApprovedById: User.get('id') } : material)
       }
     }
-    //CustomItem
-    if (customItems) {
-      params = {
-        ...params,
-        CustomItems: customItems.map((customItem) => customItem.approved ? { ...customItem, ItemApprovedById: User.get('id') } : customItem)
-      }
-    }
+
     //Short Subtasks
     if (shortSubtasks) {
       params = {
@@ -737,7 +714,6 @@ const mutations = {
               { model: models.Subtask, include: [models.ScheduledWork] },
               { model: models.WorkTrip, include: [models.ScheduledWork] },
               models.Material,
-              models.CustomItem
             ]
           }]
         }
@@ -762,7 +738,6 @@ const mutations = {
         { model: models.Subtask, include: [models.ScheduledWork] },
         { model: models.WorkTrip, include: [models.ScheduledWork] },
         models.Material,
-        models.CustomItem,
         {
           model: models.TaskMetadata,
           as: 'TaskMetadata'
@@ -793,7 +768,6 @@ const mutations = {
           models.Subtask,
           models.WorkTrip,
           models.Material,
-          models.CustomItem,
           models.TaskType,
           models.Company,
           models.Milestone,
@@ -985,18 +959,6 @@ const mutations = {
                   return acc;
                 }, 0),
                 materialsPending: (<MaterialInstance[]>Task.get('Materials')).reduce((acc, cur) => {
-                  if (cur.approved) {
-                    return acc;
-                  }
-                  return acc + cur.quantity;
-                }, 0),
-                itemsApproved: (<CustomItemInstance[]>Task.get('CustomItems')).reduce((acc, cur) => {
-                  if (cur.approved) {
-                    return acc + cur.quantity;
-                  }
-                  return acc;
-                }, 0),
-                itemsPending: (<CustomItemInstance[]>Task.get('CustomItems')).reduce((acc, cur) => {
                   if (cur.approved) {
                     return acc;
                   }
@@ -1293,12 +1255,6 @@ const attributes = {
         return [];
       }
       return getModelAttribute(task, 'Materials');
-    },
-    async customItems(task) {
-      if (!task.rights || !task.rights.project.taskMaterialsRead) {
-        return [];
-      }
-      return getModelAttribute(task, 'CustomItems');
     },
     async taskChanges(task) {
       if (!task.rights || !task.rights.project.history) {

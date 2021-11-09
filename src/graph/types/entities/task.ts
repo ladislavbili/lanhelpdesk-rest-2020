@@ -37,7 +37,6 @@ type Task {
   subtasks: [Subtask]!
   workTrips: [WorkTrip]!
   materials: [Material]!
-  customItems: [CustomItem]!
   taskChanges: [TaskChange]!
   taskAttachments: [TaskAttachment]!
   repeatTime: RepeatTime
@@ -86,15 +85,6 @@ input MaterialInput{
   approved: Boolean
   quantity: Float!
   margin: Float!
-  price: Float!
-}
-
-input CustomItemInput{
-  title: String!
-  order: Int!
-  done: Boolean!
-  approved: Boolean
-  quantity: Float!
   price: Float!
 }
 
@@ -205,7 +195,6 @@ addTask(
   subtasks: [SubtaskInput]
   workTrips: [WorkTripInput]
   materials: [MaterialInput]
-  customItems: [CustomItemInput]
 ): Task
 
 updateTask(

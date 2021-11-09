@@ -41,11 +41,50 @@ export const Invoice = `
     price: Float!
     priceWithDPH: Float!
   }
+
+  type InvoiceAgent {
+    user: BasicUser
+    works: Float!
+    trips: Float!
+  }
+
+  type AgentInvoice {
+    workTasks: [Task]!
+    tripTasks: [Task]!
+    taskTypeTotals: [AgentTypeTotals]!
+    tripTypeTotals: [AgentTypeTotals]!
+    totals: AgentInvoiceTotals!
+  }
+
+  type AgentTypeTotals {
+    id: Int!
+    title: String!
+    quantity: Float!
+  }
+
+  type AgentInvoiceTotals {
+    workHours: Float!
+    workOvertime: Float!
+    workOvertimeTasks: [Int]!
+    tripHours: Float!
+    tripOvertime: Float!
+    tripOvertimeTasks: [Int]!
+
+    pausalWorkHours: Float!
+    overPausalWorkHours: Float!
+    projectWorkHours: Float!
+    pausalTripHours: Float!
+    overPausalTripHours: Float!
+    projectTripHours: Float!
+  }
+
 `
 
 export const InvoiceQueries = `
   companyInvoice( fromDate: String!, toDate: String!, companyId: Int! ): CompanyInvoice
   invoice( fromDate: String!, toDate: String!, companyId: Int! ): CompanyInvoice
+  invoiceAgents( fromDate: String!, toDate: String!, statusActions: [StatusAllowedType]!, invoiced: Boolean! ): [InvoiceAgent]
+  agentInvoice( fromDate: String!, toDate: String!, statusActions: [StatusAllowedType]!, invoiced: Boolean!, userId: Int  ): AgentInvoice
 `
 
 export const InvoiceMutations = `

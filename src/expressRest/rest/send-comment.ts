@@ -1,6 +1,10 @@
 import moment from 'moment';
 import checkResolver from '@/graph/resolvers/checkResolver';
-import { createDoesNoExistsError, InternalMessagesNotAllowed } from '@/configs/errors';
+import {
+  createDoesNoExistsError,
+  InternalMessagesNotAllowed,
+  CantEditInvoicedTaskError,
+} from '@/configs/errors';
 import {
   checkType,
   getAttributes,
@@ -54,6 +58,10 @@ export function sendComment(app) {
       User = await checkResolver({ headers: { authorization: token } });
       const checkData = await checkIfHasProjectRights(User, taskId, undefined, []);
       Task = checkData.Task;
+      if (Task.get('invoiced')) {
+        throw CantEditInvoicedTaskError;
+      }
+
       allowedInternal = checkData.groupRights.internal;
     } catch (err) {
       return res.send({ ok: false, error: err.message })

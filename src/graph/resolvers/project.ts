@@ -34,7 +34,6 @@ import {
   SubtaskInstance,
   WorkTripInstance,
   MaterialInstance,
-  CustomItemInstance,
   ImapInstance,
   TagInstance,
   StatusInstance,
@@ -811,7 +810,7 @@ const mutations = {
       })
     } else if (attributes.autoApproved === false && Project.get('autoApproved')) {
       const Tasks = <TaskInstance[]>await Project.getTasks({
-        include: [{ model: models.TaskMetadata, as: 'TaskMetadata' }, models.Subtask, models.WorkTrip, models.Material, models.CustomItem]
+        include: [{ model: models.TaskMetadata, as: 'TaskMetadata' }, models.Subtask, models.WorkTrip, models.Material]
       });
       Tasks.forEach((Task) => {
         const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
@@ -844,13 +843,6 @@ const mutations = {
             body.materialsApproved += parseFloat(<any>Material.get('quantity'))
           } else {
             body.materialsPending += parseFloat(<any>Material.get('quantity'))
-          }
-        });
-        (<CustomItemInstance[]>Task.get('CustomItems')).forEach((CustomItem) => {
-          if (CustomItem.approved) {
-            body.itemsApproved += parseFloat(<any>CustomItem.get('quantity'))
-          } else {
-            body.itemsPending += parseFloat(<any>CustomItem.get('quantity'))
           }
         });
         TaskMetadata.update(body)

@@ -362,3 +362,99 @@ export const calculateTotals = (projectTasks, pausalTasks, overPausalTasks, mate
     materialTotals,
   };
 }
+
+export const calculateAgentInvoiceTotals = (tasks) => {
+  let totals = <any>{
+    workHours: 0,
+    workOvertime: 0,
+    workOvertimeTasks: [],
+    pausalWorkHours: 0,
+    overPausalWorkHours: 0,
+    projectWorkHours: 0,
+
+    tripHours: 0,
+    tripOvertime: 0,
+    tripOvertimeTasks: [],
+    pausalTripHours: 0,
+    overPausalTripHours: 0,
+    projectTripHours: 0,
+  };
+
+  tasks.forEach((task) => {
+    task.Subtasks.forEach((Subtask) => {
+      totals.workHours += parseFloat(Subtask.quantity);
+      if (task.overtime) {
+        totals.workOvertime += parseFloat(Subtask.quantity);
+        if (!totals.workOvertimeTasks.includes(task.id)) {
+          totals.workOvertimeTasks.push(task.id);
+        }
+      }
+      totals.pausalWorkHours += Subtask.invoicedPausalQuantity === null ? 0 : parseFloat(Subtask.invoicedPausalQuantity);
+      totals.overPausalWorkHours += Subtask.invoicedOverPausalQuantity === null ? 0 : parseFloat(Subtask.invoicedOverPausalQuantity);
+      totals.projectWorkHours += Subtask.invoicedProjectQuantity === null ? 0 : parseFloat(Subtask.invoicedProjectQuantity);
+    });
+    task.WorkTrips.forEach((WorkTrip) => {
+      totals.tripHours += parseFloat(WorkTrip.quantity);
+      if (task.overtime) {
+        totals.workOvertime += parseFloat(WorkTrip.quantity);
+        if (!totals.workOvertimeTasks.includes(task.id)) {
+          totals.workOvertimeTasks.push(task.id);
+        }
+      }
+      totals.pausalTripHours += WorkTrip.invoicedPausalQuantity === null ? 0 : parseFloat(WorkTrip.invoicedPausalQuantity);
+      totals.overPausalTripHours += WorkTrip.invoicedOverPausalQuantity === null ? 0 : parseFloat(WorkTrip.invoicedOverPausalQuantity);
+      totals.projectTripHours += WorkTrip.invoicedProjectQuantity === null ? 0 : parseFloat(WorkTrip.invoicedProjectQuantity);
+    });
+  });
+
+  return totals;
+}
+
+export const calculateAgentNonInvoiceTotals = (tasks) => {
+  let totals = <any>{
+    workHours: 0,
+    workOvertime: 0,
+    workOvertimeTasks: [],
+    pausalWorkHours: 0,
+    overPausalWorkHours: 0,
+    projectWorkHours: 0,
+
+    tripHours: 0,
+    tripOvertime: 0,
+    tripOvertimeTasks: [],
+    pausalTripHours: 0,
+    overPausalTripHours: 0,
+    projectTripHours: 0,
+  };
+  tasks.forEach((task) => {
+    task.Subtasks.forEach((Subtask) => {
+      totals.workHours += parseFloat(Subtask.quantity);
+      if (task.overtime) {
+        totals.workOvertime += parseFloat(Subtask.quantity);
+        if (!totals.workOvertimeTasks.includes(task.id)) {
+          totals.workOvertimeTasks.push(task.id);
+        }
+      }
+      if (task.pasual) {
+        totals.pausalWorkHours += parseFloat(Subtask.quantity);
+      } else {
+        totals.projectWorkHours += parseFloat(Subtask.quantity);
+      }
+    });
+    task.WorkTrips.forEach((WorkTrip) => {
+      totals.tripHours += parseFloat(WorkTrip.quantity);
+      if (task.overtime) {
+        totals.workOvertime += parseFloat(WorkTrip.quantity);
+        if (!totals.workOvertimeTasks.includes(task.id)) {
+          totals.workOvertimeTasks.push(task.id);
+        }
+      }
+      if (task.pasual) {
+        totals.pausalTripHours += parseFloat(WorkTrip.quantity);
+      } else {
+        totals.projectTripHours += parseFloat(WorkTrip.quantity);
+      }
+    });
+  });
+  return totals;
+}

@@ -1,7 +1,6 @@
 import comment from './comment';
 import commentAttachment from './commentAttachment';
 import company from './company';
-import customItem from './customItem';
 import errorMessage from './errorMessage';
 import filter from './filter';
 import imap from './imap';
@@ -44,7 +43,6 @@ export default {
     ...comment.queries,
     ...commentAttachment.queries,
     ...company.queries,
-    ...customItem.queries,
     ...errorMessage.queries,
     ...filter.queries,
     ...imap.queries,
@@ -85,7 +83,6 @@ export default {
     ...comment.mutations,
     ...commentAttachment.mutations,
     ...company.mutations,
-    ...customItem.mutations,
     ...errorMessage.mutations,
     ...filter.mutations,
     ...imap.mutations,
@@ -144,7 +141,6 @@ export default {
   ...comment.attributes,
   ...commentAttachment.attributes,
   ...company.attributes,
-  ...customItem.attributes,
   ...errorMessage.attributes,
   ...filter.attributes,
   ...imap.attributes,

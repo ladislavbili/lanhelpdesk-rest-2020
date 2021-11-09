@@ -29,7 +29,6 @@ type RepeatTemplate {
   subtasks: [Subtask]!
   workTrips: [WorkTrip]!
   materials: [Material]!
-  customItems: [CustomItem]!
 }
 
 input RepeatTemplateAddInput {
@@ -55,7 +54,6 @@ input RepeatTemplateAddInput {
   subtasks: [SubtaskInput]
   workTrips: [WorkTripInput]
   materials: [MaterialInput]
-  customItems: [CustomItemInput]
 }
 input RepeatTemplateUpdateInput {
   title: String

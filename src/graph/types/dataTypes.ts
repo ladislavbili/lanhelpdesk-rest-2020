@@ -1,7 +1,6 @@
 import { Comment } from './entities/comment';
 import { CommentAttachment } from './entities/commentAttachment';
 import { Company } from './entities/company';
-import { CustomItem } from './entities/customItem';
 import { ErrorMessage } from './entities/errorMessage';
 import { Filter } from './entities/filter';
 import { Imap } from './entities/imap';
@@ -42,7 +41,6 @@ export default `
 ${Comment}
 ${CommentAttachment}
 ${Company}
-${CustomItem}
 ${ErrorMessage}
 ${Filter}
 ${Imap}

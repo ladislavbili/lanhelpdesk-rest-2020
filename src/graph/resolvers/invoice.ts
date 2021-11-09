@@ -10,6 +10,10 @@ import {
   calculateTotals,
   addAllRightsToTasks,
   generateInvoiceSQL,
+  generateInvoiceAgentsSQL,
+  generateAgentInvoiceSQL,
+  calculateAgentInvoiceTotals,
+  calculateAgentNonInvoiceTotals,
 } from '@/graph/addons/invoices';
 import {
   splitArrayByFilter,
@@ -25,7 +29,7 @@ import {
 } from '@/models/instances';
 import { getModelAttribute } from '@/helperFunctions';
 
-
+//TODO: fix queries copy task type of task to subtasks
 const queries = {
   companyInvoice: async (root, { fromDate, toDate, companyId }, { req }) => {
     const User = await checkResolver(req, ['vykazy']);
@@ -328,6 +332,7 @@ const queries = {
       priceWithDPH: 0,
     }
     pausalTasks.forEach((task) => {
+      const dphMultiplier = 1 + parseFloat(task.Company.dph) / 100;
       task.Subtasks.forEach((subtask) => {
         pausalTotals.workHours += parseFloat(subtask.quantity);
         if (task.overtime) {
@@ -350,6 +355,7 @@ const queries = {
       });
     });
     overPausalTasks.forEach((task) => {
+      const dphMultiplier = 1 + parseFloat(task.Company.dph) / 100;
       task.Subtasks.forEach((subtask) => {
         overPausalTotals.workHours += parseFloat(subtask.quantity);
         if (task.overtime) {
@@ -360,7 +366,7 @@ const queries = {
           overPausalTotals.workExtraPrice += parseFloat(subtask.price) * (parseFloat(task.InvoicedTask.overtimePercentage) / 100) * parseFloat(subtask.quantity);
         }
         overPausalTotals.workTotalPrice += parseFloat(subtask.total);
-        overPausalTotals.workTotalPriceWithDPH += parseFloat(subtask.total) * parseFloat(task.Company.dph);
+        overPausalTotals.workTotalPriceWithDPH += parseFloat(subtask.total) * dphMultiplier;
       });
       task.WorkTrips.forEach((trip) => {
         overPausalTotals.tripHours += parseFloat(trip.quantity);
@@ -372,10 +378,11 @@ const queries = {
           overPausalTotals.tripExtraPrice += parseFloat(trip.price) * (parseFloat(task.InvoicedTask.overtimePercentage) / 100) * parseFloat(trip.quantity);
         }
         overPausalTotals.tripTotalPrice += parseFloat(trip.total);
-        overPausalTotals.tripTotalPriceWithDPH += parseFloat(trip.total) * parseFloat(task.Company.dph);
+        overPausalTotals.tripTotalPriceWithDPH += parseFloat(trip.total) * dphMultiplier;
       });
     });
     projectTasks.forEach((task) => {
+      const dphMultiplier = 1 + parseFloat(task.Company.dph) / 100;
       task.Subtasks.forEach((subtask) => {
         projectTotals.workHours += parseFloat(subtask.quantity);
         if (task.overtime) {
@@ -386,7 +393,7 @@ const queries = {
           projectTotals.workExtraPrice += parseFloat(subtask.price) * (parseFloat(task.InvoicedTask.overtimePercentage) / 100) * parseFloat(subtask.quantity);
         }
         projectTotals.workTotalPrice += parseFloat(subtask.total);
-        overPausalTotals.workTotalPriceWithDPH += parseFloat(subtask.total) * parseFloat(task.Company.dph);
+        projectTotals.workTotalPriceWithDPH += parseFloat(subtask.total) * dphMultiplier;
       });
       task.WorkTrips.forEach((trip) => {
         projectTotals.tripHours += parseFloat(trip.quantity);
@@ -398,13 +405,14 @@ const queries = {
           projectTotals.tripExtraPrice += parseFloat(trip.price) * (parseFloat(task.InvoicedTask.overtimePercentage) / 100) * parseFloat(trip.quantity);
         }
         projectTotals.tripTotalPrice += parseFloat(trip.total);
-        overPausalTotals.tripTotalPriceWithDPH += parseFloat(trip.total) * parseFloat(task.Company.dph);
+        projectTotals.tripTotalPriceWithDPH += parseFloat(trip.total) * dphMultiplier;
       });
     });
     materialTasks.forEach((task) => {
+      const dphMultiplier = 1 + parseFloat(task.Company.dph) / 100;
       task.Materials.forEach((Material) => {
         materialTotals.price += parseFloat(Material.total);
-        materialTotals.priceWithDPH += parseFloat(Material.total) * parseFloat(task.Company.dph);
+        materialTotals.priceWithDPH += parseFloat(Material.total) * dphMultiplier;
       });
     });
 
@@ -417,6 +425,180 @@ const queries = {
       overPausalTotals,
       projectTotals,
       materialTotals,
+    };
+  },
+  invoiceAgents: async (root, { fromDate, toDate, statusActions, invoiced }, { req }) => {
+    const User = await checkResolver(req, ['vykazy']);
+
+    const SQL = generateInvoiceAgentsSQL(fromDate, toDate, statusActions, invoiced);
+    const resultAgents = <any[]>await sequelize.query(SQL, {
+      type: QueryTypes.SELECT,
+      nest: true,
+      raw: true,
+      mapToModel: true
+    });
+
+    return resultAgents;
+  },
+  agentInvoice: async (root, { fromDate, toDate, statusActions, invoiced, userId }, { req }) => {
+    const User = await checkResolver(req, ['vykazy']);
+
+    const SQL = generateAgentInvoiceSQL(fromDate, toDate, statusActions, invoiced, userId);
+    const resultTasks = <any[]>await sequelize.query(SQL, {
+      type: QueryTypes.SELECT,
+      nest: true,
+      raw: true,
+      mapToModel: true
+    });
+    console.log(resultTasks);
+
+    let tasks = [];
+    if (invoiced) {
+      resultTasks.forEach((resultTask) => {
+        const invoicedTask = resultTask.InvoicedTask;
+
+        const task = tasks.find((task) => task.id === resultTask.id);
+        if (task) {
+          if (resultTask.Subtask.id !== null && task.Subtasks.every((subtask) => subtask.id !== resultTask.Subtask.id)) {
+            task.Subtasks.push({
+              ...resultTask.Subtask,
+              TaskType: {
+                id: invoicedTask.taskTypeId,
+                title: invoicedTask.taskTypeTitle,
+              },
+            });
+          }
+          if (resultTask.WorkTrip.id !== null && task.WorkTrips.every((workTrip) => workTrip.id !== resultTask.WorkTrip.id)) {
+            task.WorkTrips.push({
+              ...resultTask.WorkTrip,
+              TripType: {
+                id: resultTask.WorkTrip.invoicedTypeId,
+                title: resultTask.WorkTrip.invoicedTypeTitle,
+              },
+            });
+          }
+          if (invoicedTask.assignedTos.id !== null && task.assignedTos.every((assignedTo) => assignedTo.id !== invoicedTask.assignedTos.userId)) {
+            task.assignedTos.push({ ...invoicedTask.assignedTos, id: invoicedTask.assignedTos.userId });
+          }
+        } else {
+          tasks.push({
+            ...resultTask,
+            Subtasks: (
+              resultTask.Subtask.id !== null ?
+                [
+                  {
+                    ...resultTask.Subtask,
+                    TaskType: {
+                      id: invoicedTask.taskTypeId,
+                      title: invoicedTask.taskTypeTitle,
+                    },
+                  }
+                ] :
+                []
+            ),
+            WorkTrips: (
+              resultTask.WorkTrip.id !== null ?
+                [
+                  {
+                    ...resultTask.WorkTrip,
+                    TripType: {
+                      id: resultTask.WorkTrip.invoicedTypeId,
+                      title: resultTask.WorkTrip.invoicedTypeTitle,
+                    },
+                  }
+                ] :
+                []
+            ),
+            Company: { id: invoicedTask.CompanyId, title: invoicedTask.companyTitle, dph: invoicedTask.dph },
+            Status: {
+              id: invoicedTask.statusId,
+              title: invoicedTask.statusTitle,
+              color: invoicedTask.statusColor,
+            },
+            TaskType: invoicedTask.taskTypeId !== null ?
+              {
+                id: invoicedTask.taskTypeId,
+                title: invoicedTask.taskTypeTitle,
+              } :
+              null,
+            createdBy: invoicedTask.createdBy.userId !== null ?
+              {
+                ...invoicedTask.createdBy,
+                id: invoicedTask.createdBy.userId,
+              } :
+              null,
+            requester: invoicedTask.requester.userId !== null ?
+              {
+                ...invoicedTask.requester,
+                id: invoicedTask.requester.userId,
+              } :
+              null,
+            assignedTos: invoicedTask.assignedTos.id !== null ? [{ ...invoicedTask.assignedTos, id: invoicedTask.assignedTos.userId }] : [],
+          })
+        }
+      });
+    } else {
+      resultTasks.forEach((resultTask) => {
+        const task = tasks.find((task) => task.id === resultTask.id);
+        if (task) {
+          if (resultTask.Subtask.id !== null && task.Subtasks.every((subtask) => subtask.id !== resultTask.Subtask.id)) {
+            task.Subtasks.push({ ...resultTask.Subtask, TaskType: task.TaskType });
+          }
+          if (resultTask.WorkTrip.id !== null && task.WorkTrips.every((workTrip) => workTrip.id !== resultTask.WorkTrip.id)) {
+            task.WorkTrips.push({ ...resultTask.WorkTrip, TripType: resultTask.WorkTrip.TripType.id === null ? null : resultTask.WorkTrip.TripType });
+          }
+          if (resultTask.assignedTos.id !== null && task.assignedTos.every((assignedTo) => assignedTo.id !== resultTask.assignedTos.id)) {
+            task.assignedTos.push(resultTask.assignedTos);
+          }
+        } else {
+          tasks.push({
+            ...resultTask,
+            Subtasks: resultTask.Subtask.id !== null ? [{ ...resultTask.Subtask, TaskType: resultTask.TaskType, assignedTo: resultTask.Subtask.assignedTo.id === null ? null : resultTask.Subtask.assignedTo }] : [],
+            WorkTrips: resultTask.WorkTrip.id !== null ? [{ ...resultTask.WorkTrip, TripType: resultTask.WorkTrip.TripType.id === null ? null : resultTask.WorkTrip.TripType, assignedTo: resultTask.WorkTrip.assignedTo.id === null ? null : resultTask.WorkTrip.assignedTo }] : [],
+            assignedTos: resultTask.assignedTos.id !== null ? [resultTask.assignedTos] : [],
+          })
+        }
+      });
+    }
+    tasks = addAllRightsToTasks(tasks);
+    let totals = invoiced ? calculateAgentInvoiceTotals(tasks) : calculateAgentNonInvoiceTotals(tasks);
+
+    let taskTypeTotals = [];
+    let tripTypeTotals = [];
+
+    tasks.forEach((task) => {
+      task.Subtasks.forEach((Subtask) => {
+        const typeIndex = taskTypeTotals.findIndex((typeTotal) => typeTotal.id === Subtask.TaskType.id);
+        if (typeIndex > -1) {
+          taskTypeTotals[typeIndex].quantity += parseFloat(Subtask.quantity);
+        } else {
+          taskTypeTotals.push({
+            id: Subtask.TaskType.id,
+            title: Subtask.TaskType.title,
+            quantity: parseFloat(Subtask.quantity),
+          });
+        }
+      });
+      task.WorkTrips.forEach((WorkTrip) => {
+        const typeIndex = tripTypeTotals.findIndex((typeTotal) => typeTotal.id === WorkTrip.TripType.id);
+        if (typeIndex > -1) {
+          tripTypeTotals[typeIndex].quantity += parseFloat(WorkTrip.quantity);
+        } else {
+          tripTypeTotals.push({
+            id: WorkTrip.TripType.id,
+            title: WorkTrip.TripType.title,
+            quantity: parseFloat(WorkTrip.quantity),
+          });
+        }
+      });
+    })
+
+    return {
+      workTasks: tasks.filter((task) => task.Subtasks.length > 0),
+      tripTasks: tasks.filter((task) => task.WorkTrips.length > 0),
+      taskTypeTotals,
+      tripTypeTotals,
+      totals,
     };
   },
 };

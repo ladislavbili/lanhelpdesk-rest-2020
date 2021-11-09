@@ -127,8 +127,6 @@ export function createRepeatTemplatesAssoc(models) {
 
   models.RepeatTemplate.hasMany(models.Material, { onDelete: 'CASCADE' });
 
-  models.RepeatTemplate.hasMany(models.CustomItem, { onDelete: 'CASCADE' });
-
   //models.RepeatTemplate.hasMany(models.CalendarEvent, { onDelete: 'CASCADE' });
 
   models.RepeatTemplate.hasMany(models.RepeatTemplateAttachment, { onDelete: 'CASCADE' });

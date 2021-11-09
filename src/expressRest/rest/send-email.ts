@@ -1,5 +1,11 @@
 import moment from 'moment';
-import { createDoesNoExistsError, InternalMessagesNotAllowed, createWrongEmailsError, EmailNoRecipientError } from '@/configs/errors';
+import {
+  createDoesNoExistsError,
+  InternalMessagesNotAllowed,
+  createWrongEmailsError,
+  EmailNoRecipientError,
+  CantEditInvoicedTaskError,
+} from '@/configs/errors';
 import checkResolver from '@/graph/resolvers/checkResolver';
 import {
   checkType,
@@ -61,6 +67,9 @@ export function sendEmail(app) {
       User = await checkResolver({ headers: { authorization: token } }, ['mailViaComment']);
       const checkData = await checkIfHasProjectRights(User, taskId, undefined, ['emails']);
       Task = checkData.Task;
+      if (Task.get('invoiced')) {
+        throw CantEditInvoicedTaskError;
+      }
       allowedInternal = checkData.groupRights.internal;
     } catch (err) {
       return res.send({ ok: false, error: err.message })

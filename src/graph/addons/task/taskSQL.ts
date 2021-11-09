@@ -206,20 +206,3 @@ export const generateMaterialsSQL = (taskId) => {
   LEFT OUTER JOIN "users" AS "MaterialApprovedBy" ON "Materials"."MaterialApprovedById" = "MaterialApprovedBy"."id"
   `.replace(/"/g, '`');
 }
-
-export const generateCustomItemsSQL = (taskId) => {
-  const attributes = (
-    `
-    ${createModelAttributes("CustomItems", null, models.CustomItem)}
-    ${createModelAttributes("ItemApprovedBy", "ItemApprovedBy", models.User)}
-    ${generateFullNameSQL("ItemApprovedBy")}
-    `
-  )
-
-  return `
-  SELECT
-  ${removeLastComma(attributes)}
-  FROM (SELECT * FROM "custom_items" WHERE "custom_items"."TaskId" = ${taskId} ) AS "CustomItems"
-  LEFT OUTER JOIN "users" AS "ItemApprovedBy" ON "CustomItems"."ItemApprovedById" = "ItemApprovedBy"."id"
-  `.replace(/"/g, '`');
-}

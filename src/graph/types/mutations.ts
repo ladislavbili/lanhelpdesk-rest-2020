@@ -1,7 +1,6 @@
 import { CommentMutations } from './entities/comment';
 import { CommentAttachmentMutations } from './entities/commentAttachment';
 import { CompanyMutations } from './entities/company';
-import { CustomItemMutations } from './entities/customItem';
 import { ErrorMessageMutations } from './entities/errorMessage';
 import { FilterMutations } from './entities/filter';
 import { ImapMutations } from './entities/imap';
@@ -42,7 +41,6 @@ type Mutation {
   ${CompanyMutations}
   ${CommentMutations}
   ${CommentAttachmentMutations}
-  ${CustomItemMutations}
   ${ErrorMessageMutations}
   ${FilterMutations}
   ${ImapMutations}

@@ -32,6 +32,7 @@ export const generateInvoiceCompaniesSQL = (fromDate, toDate) => {
           "Status"."action" = 'CloseDate'
         WHERE
           "Task"."invoiced" = false AND
+          "Task"."TaskTypeId" IS NOT NULL AND
           "Task"."closeDate" IS NOT NULL AND
           "Task"."closeDate" >= '${toDBDate(fromDate)}' AND
           "Task"."closeDate" <= '${toDBDate(toDate)}'

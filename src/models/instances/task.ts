@@ -179,8 +179,6 @@ export function createTasksAssoc(models) {
 
   models.Task.hasMany(models.Material, { onDelete: 'CASCADE' });
 
-  models.Task.hasMany(models.CustomItem, { onDelete: 'CASCADE' });
-
   models.Task.hasMany(models.Comment, { onDelete: 'CASCADE' });
 
   models.Task.hasMany(models.TaskChange, { onDelete: 'CASCADE' });

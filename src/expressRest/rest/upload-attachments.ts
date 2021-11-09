@@ -1,6 +1,9 @@
 import moment from 'moment';
 import checkResolver from '@/graph/resolvers/checkResolver';
 import {
+  CantEditInvoicedTaskError,
+} from '@/configs/errors';
+import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
 
@@ -27,6 +30,9 @@ export function uploadAttachments(app) {
       User = await checkResolver({ headers: { authorization: token } });
       const checkData = await checkIfHasProjectRights(User, taskId, undefined, [newTask ? 'addTask' : 'taskAttachmentsWrite']);
       Task = checkData.Task;
+      if (Task.get('invoiced')) {
+        throw CantEditInvoicedTaskError;
+      }
     } catch (err) {
       return res.send({ ok: false, error: err.message })
     }

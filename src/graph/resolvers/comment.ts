@@ -5,7 +5,8 @@ import {
   EmailNoRecipientError,
   createWrongEmailsError,
   CommentNotEmailError,
-  EmailAlreadySendError
+  EmailAlreadySendError,
+  CantEditInvoicedTaskError,
 } from '@/configs/errors';
 import { models } from '@/models';
 import {
@@ -117,6 +118,10 @@ const mutations = {
       throw createDoesNoExistsError('Comment', messageId);
     }
     await checkIfHasProjectRights(SourceUser, Comment.get('TaskId'), undefined, ['emails']);
+    const Task = await models.Task.findByPk(<any>Comment.get('TaskId'));
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     if (!Comment.get('isEmail')) {
       throw CommentNotEmailError;
     }

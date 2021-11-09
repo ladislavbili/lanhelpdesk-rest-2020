@@ -1,4 +1,4 @@
-export const calculateMetadata = (autoApproved, subtasks, workTrips, materials, customItems) => {
+export const calculateMetadata = (autoApproved, subtasks, workTrips, materials) => {
   let subtasksApproved = 0;
   let subtasksPending = 0;
   let tripsApproved = 0;
@@ -38,15 +38,6 @@ export const calculateMetadata = (autoApproved, subtasks, workTrips, materials, 
     })
   }
 
-  if (customItems) {
-    customItems.map((customItem) => {
-      if (customItem.approved || autoApproved) {
-        itemsApproved += parseFloat(<any>customItem.quantity);
-      } else {
-        itemsPending += parseFloat(<any>customItem.quantity);
-      }
-    })
-  }
   return {
     subtasksApproved,
     subtasksPending,

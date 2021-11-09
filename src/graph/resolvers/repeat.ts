@@ -325,12 +325,7 @@ const queries = {
                   model: models.WorkTrip,
                   include: [models.TripType, models.ScheduledWork, { model: models.User, include: [models.Company] }]
                 },
-                {
-                  model: models.Material,
-                },
-                {
-                  model: models.CustomItem,
-                },
+                models.Material,
               ]
             }
           ],
@@ -407,7 +402,7 @@ const mutations = {
         models.Tag
       ]
     });
-    let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, subtasks, workTrips, materials, customItems, shortSubtasks, ...params } = args;
+    let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, subtasks, workTrips, materials, shortSubtasks, ...params } = args;
     let changedAttributes = [];
     if (Task && Task.get('ProjectId') === project) {
       if (!company) {
@@ -601,13 +596,7 @@ const mutations = {
         Materials: materials.map((material) => material.approved ? { ...material, MaterialApprovedById: User.get('id') } : material)
       }
     }
-    //CustomItem
-    if (customItems) {
-      params = {
-        ...params,
-        CustomItems: customItems.map((customItem) => customItem.approved ? { ...customItem, ItemApprovedById: User.get('id') } : customItem)
-      }
-    }
+
     //Short Subtasks
     if (shortSubtasks) {
       params = {
@@ -632,7 +621,6 @@ const mutations = {
             { model: models.Subtask, include: [models.ScheduledWork] },
             { model: models.WorkTrip, include: [models.ScheduledWork] },
             models.Material,
-            models.CustomItem
           ]
         }]
       }

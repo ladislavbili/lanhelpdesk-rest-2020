@@ -177,9 +177,6 @@ export function createUsersAssoc(models) {
 
   models.User.hasMany(models.Material, { as: 'MaterialApprovedBy' });
 
-  models.User.hasMany(models.CustomItem, { as: 'ItemApprovedBy' });
-
-
   models.User.hasMany(models.Comment, { onDelete: 'CASCADE' });
 
   models.User.hasMany(models.TaskChange);

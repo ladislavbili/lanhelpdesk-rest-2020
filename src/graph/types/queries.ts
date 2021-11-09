@@ -1,7 +1,6 @@
 import { CommentQueries } from './entities/comment';
 import { CommentAttachmentQueries } from './entities/commentAttachment';
 import { CompanyQueries } from './entities/company';
-import { CustomItemQueries } from './entities/customItem';
 import { ErrorMessageQueries } from './entities/errorMessage';
 import { FilterQueries } from './entities/filter';
 import { ImapQueries } from './entities/imap';
@@ -42,7 +41,6 @@ type Query {
   ${CommentQueries}
   ${CommentAttachmentQueries}
   ${CompanyQueries}
-  ${CustomItemQueries}
   ${ErrorMessageQueries}
   ${FilterQueries}
   ${ImapQueries}

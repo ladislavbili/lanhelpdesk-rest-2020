@@ -16,7 +16,6 @@ import {
   SubtaskInstance,
   WorkTripInstance,
   MaterialInstance,
-  CustomItemInstance,
   ProjectInstance,
 } from '@/models/instances';
 import { pubsub } from '@/graph/resolvers';
@@ -106,7 +105,6 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
             models.Subtask,
             models.WorkTrip,
             models.Material,
-            models.CustomItem,
             models.Tag,
             models.Project,
             {
@@ -206,15 +204,6 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
       margin: Material.get('margin'),
       price: Material.get('price'),
     })),
-    CustomItems: (<CustomItemInstance[]>RepeatTemplate.get('CustomItems')).map((CustomItem) => ({
-      approved: CustomItem.get('approved'),
-      ItemApprovedById: CustomItem.get('ItemApprovedById'),
-      title: CustomItem.get('title'),
-      order: CustomItem.get('order'),
-      done: CustomItem.get('done'),
-      quantity: CustomItem.get('quantity'),
-      price: CustomItem.get('price'),
-    })),
     TaskMetadata: {
       subtasksApproved: (<SubtaskInstance[]>RepeatTemplate.get('Subtasks')).reduce((acc, cur) => {
         if (cur.approved || Project.get('autoApproved')) {
@@ -252,24 +241,12 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
         }
         return acc + cur.quantity;
       }, 0),
-      itemsApproved: (<CustomItemInstance[]>RepeatTemplate.get('CustomItems')).reduce((acc, cur) => {
-        if (cur.approved || Project.get('autoApproved')) {
-          return acc + cur.quantity;
-        }
-        return acc;
-      }, 0),
-      itemsPending: (<CustomItemInstance[]>RepeatTemplate.get('CustomItems')).reduce((acc, cur) => {
-        if (cur.approved || Project.get('autoApproved')) {
-          return acc;
-        }
-        return acc + cur.quantity;
-      }, 0),
     }
   }
 
   //adding data
   const NewTask = <TaskInstance>await models.Task.create(params, {
-    include: [models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.CustomItem, models.TaskAttachment, { model: models.TaskMetadata, as: 'TaskMetadata' }, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
+    include: [models.ShortSubtask, models.Subtask, models.WorkTrip, models.Material, models.TaskAttachment, { model: models.TaskMetadata, as: 'TaskMetadata' }, { model: models.TaskChange, include: [{ model: models.TaskChangeMessage }] }]
   });
 
   await Promise.all([

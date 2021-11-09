@@ -49,9 +49,6 @@ const attributes = {
     async materials(repeatTemplate) {
       return getModelAttribute(repeatTemplate, 'Materials');
     },
-    async customItems(repeatTemplate) {
-      return getModelAttribute(repeatTemplate, 'CustomItems');
-    },
     async repeatTemplateAttachments(repeatTemplate) {
       return getModelAttribute(repeatTemplate, 'RepeatTemplateAttachments');
     },
