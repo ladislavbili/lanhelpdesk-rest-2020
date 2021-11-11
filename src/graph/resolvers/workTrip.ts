@@ -1,4 +1,9 @@
-import { createDoesNoExistsError, WorkTripNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
+import {
+  createDoesNoExistsError,
+  WorkTripNotNullAttributesPresent,
+  AssignedToUserNotSolvingTheTask,
+  CantEditInvoicedTaskError,
+} from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import {
   TaskInstance,
@@ -45,6 +50,9 @@ const mutations = {
   addWorkTrip: async (root, { task, type, assignedTo, scheduled, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskWorksWrite']);
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     const [
       AssignedTos,
       TaskMetadata,
@@ -133,6 +141,9 @@ const mutations = {
       throw createDoesNoExistsError('WorkTrip', id);
     }
     const Task = <TaskInstance>WorkTrip.get('Task');
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     const Project = <ProjectInstance>Task.get('Project');
     const AssignedTos = <UserInstance[]>Task.get('assignedTos');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
@@ -263,6 +274,9 @@ const mutations = {
       throw createDoesNoExistsError('WorkTrip', id);
     }
     const Task = <TaskInstance>WorkTrip.get('Task');
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     const Project = <ProjectInstance>Task.get('Project');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
 

@@ -1,4 +1,7 @@
-import { createDoesNoExistsError } from '@/configs/errors';
+import {
+  createDoesNoExistsError,
+  CantEditInvoicedTaskError,
+} from '@/configs/errors';
 import { models } from '@/models';
 import { multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
 import {
@@ -41,6 +44,9 @@ const mutations = {
       Task.getTaskMetadata(),
       Task.getProject(),
     ]);
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -96,6 +102,9 @@ const mutations = {
       throw createDoesNoExistsError('Material', id);
     }
     const Task = <TaskInstance>Material.get('Task');
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     const Project = <ProjectInstance>Task.get('Project');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
     let TaskChangeMessages = [
@@ -193,6 +202,9 @@ const mutations = {
       throw createDoesNoExistsError('Material', id);
     }
     const Task = <TaskInstance>Material.get('Task');
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     const Project = <ProjectInstance>Task.get('Project');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
     await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskMaterialsWrite'], []);

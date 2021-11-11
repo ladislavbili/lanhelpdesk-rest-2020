@@ -1,4 +1,9 @@
-import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
+import {
+  createDoesNoExistsError,
+  SubtaskNotNullAttributesPresent,
+  AssignedToUserNotSolvingTheTask,
+  CantEditInvoicedTaskError,
+} from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import {
   multipleIdDoesExistsCheck,
@@ -45,6 +50,9 @@ const mutations = {
   addSubtask: async (root, { task, type, assignedTo, scheduled, order, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskWorksWrite']);
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     const allSubtasks = await Task.getSubtasks();
     const newOrder = order ? order : allSubtasks.length;
 
@@ -135,6 +143,9 @@ const mutations = {
       throw createDoesNoExistsError('Subtask', id);
     }
     const Task = <TaskInstance>Subtask.get('Task');
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     const Project = <ProjectInstance>Task.get('Project');
     const AssignedTos = <UserInstance[]>Task.get('assignedTos');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
@@ -262,6 +273,9 @@ const mutations = {
       throw createDoesNoExistsError('Subtask', id);
     }
     const Task = <TaskInstance>Subtask.get('Task');
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     const Project = <ProjectInstance>Task.get('Project');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
 

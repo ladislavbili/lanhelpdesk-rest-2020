@@ -1,4 +1,9 @@
-import { createDoesNoExistsError, SubtaskNotNullAttributesPresent, AssignedToUserNotSolvingTheTask } from '@/configs/errors';
+import {
+  createDoesNoExistsError,
+  SubtaskNotNullAttributesPresent,
+  AssignedToUserNotSolvingTheTask,
+  CantEditInvoicedTaskError,
+} from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import {
   multipleIdDoesExistsCheck,
@@ -20,6 +25,9 @@ const mutations = {
   addShortSubtask: async (root, { task, ...attributes }, { req }) => {
     const SourceUser = await checkResolver(req);
     const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskSubtasksWrite']);
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -46,6 +54,10 @@ const mutations = {
       throw createDoesNoExistsError('Short subtask', id);
     }
     const { Task } = await checkIfHasProjectRights(SourceUser, ShortSubtask.get('TaskId'), undefined, ['taskSubtasksWrite']);
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
+
     await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),
@@ -69,6 +81,9 @@ const mutations = {
       throw createDoesNoExistsError('Short subtask', id);
     }
     const { Task } = await checkIfHasProjectRights(SourceUser, ShortSubtask.get('TaskId'), undefined, ['taskSubtasksWrite']);
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),

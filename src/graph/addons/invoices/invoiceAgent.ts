@@ -21,6 +21,7 @@ export const generateInvoiceAgentsSQL = (fromDate, toDate, statusActions, invoic
   );
 
   //TODO: add filter by invoiced status action, add action to invoiced task data
+  //TODO: first load invoiced, invoiced spend pausal first
   const sql = (
     `
     SELECT

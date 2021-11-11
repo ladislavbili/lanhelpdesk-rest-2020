@@ -433,7 +433,14 @@ export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy,
     ${createModelAttributes("Subtasks", "Subtasks", models.Subtask)}
     ${createModelAttributes("Subtasks->User", "Subtasks.User", models.User)}
     ${generateFullNameSQL('Subtasks->User', 'Subtasks.User')}
+    ${createModelAttributes("Subtasks->InvoicedTaskUser", "Subtasks.InvoicedTaskUser", models.InvoicedTaskUser)}
+    ${createModelAttributes("InvoicedTask", "InvoicedTask", models.InvoicedTask)}
+    ${createModelAttributes("InvoicedTask->Tags", "InvoicedTask.Tags", models.InvoicedTaskTag)}
+    ${createModelAttributes("InvoicedTask->requester", "InvoicedTask.requester", models.InvoicedTaskUser)}
+    ${createModelAttributes("InvoicedTask->assignedTos", "InvoicedTask.assignedTos", models.InvoicedTaskUser)}
+    ${createModelAttributes("InvoicedTask->createdBy", "InvoicedTask.createdBy", models.InvoicedTaskUser)}
     ${removeLastComma(createModelAttributes("Tags->task_has_tags", "Tags.task_has_tags", null, 'tagsTaskMapAttributes'))}
+
 
     FROM (
       `
@@ -491,6 +498,7 @@ export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy,
       ) ON "TaskData"."id" = "Tags->task_has_tags"."TaskId"
       LEFT OUTER JOIN "subtasks" AS "Subtasks" ON "TaskData"."id" = "Subtasks"."TaskId"
       LEFT OUTER JOIN "users" AS "Subtasks->User" ON "Subtasks"."UserId" = "Subtasks->User"."id"
+      LEFT OUTER JOIN "invoiced_task_users" AS "Subtasks->InvoicedTaskUser" ON "Subtasks->InvoicedTaskUser"."SubtaskId" = "Subtasks"."id"
       LEFT OUTER JOIN (
         SELECT
         "Subtasks"."TaskId",
@@ -500,7 +508,8 @@ export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy,
         FROM "subtasks" AS Subtasks GROUP BY "Subtasks"."TaskId"
       ) AS "SubtaskCounts" ON "SubtaskCounts"."TaskId" = "TaskData"."id"
       LEFT OUTER JOIN (
-        SELECT "WorkTrips"."TaskId", COUNT( "WorkTrips"."id" ) as workTripsQuantity FROM "work_trips" AS WorkTrips GROUP BY "WorkTrips"."TaskId"
+        SELECT "WorkTrips"."TaskId", COUNT( "WorkTrips"."id" ) as workTripsQuantity FROM "work_trips" AS WorkTrips
+        GROUP BY "WorkTrips"."TaskId"
       ) AS "WorkTrips" ON "WorkTrips"."TaskId" = "TaskData"."id"
       LEFT OUTER JOIN (
         SELECT
@@ -508,8 +517,15 @@ export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy,
         SUM( "Materials"."quantity" * "Materials"."price" ) as materialsPrice,
         SUM( CASE WHEN "Materials"."approved" THEN "Materials"."quantity" * "Materials"."price" ELSE 0 END ) as approvedMaterialsPrice,
         SUM( CASE WHEN "Materials"."approved" THEN 0 ELSE "Materials"."quantity" * "Materials"."price" END ) as pendingMaterialsPrice
-        FROM "materials" AS Materials GROUP BY "Materials"."TaskId"
+        FROM "materials" AS Materials
+        GROUP BY "Materials"."TaskId"
       ) AS "Materials" ON "Materials"."TaskId" = "TaskData"."id"
+
+      LEFT OUTER JOIN "invoiced_tasks" AS "InvoicedTask" ON "InvoicedTask"."TaskId" = "TaskData"."id"
+      LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->createdBy" ON "InvoicedTask->createdBy"."createdById" = "InvoicedTask"."id"
+      LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->requester" ON "InvoicedTask->requester"."requesterId" = "InvoicedTask"."id"
+      LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->assignedTos" ON "InvoicedTask->assignedTos"."assignedToId" = "InvoicedTask"."id"
+      LEFT OUTER JOIN "invoiced_task_tags" AS "InvoicedTask->Tags" ON "InvoicedTask->Tags"."InvoicedTaskId" = "InvoicedTask"."id"
       `
   );
 

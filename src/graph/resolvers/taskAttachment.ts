@@ -1,4 +1,7 @@
-import { createDoesNoExistsError } from '@/configs/errors';
+import {
+  createDoesNoExistsError,
+  CantEditInvoicedTaskError,
+} from '@/configs/errors';
 import { models } from '@/models';
 import { ProjectInstance, TaskInstance } from '@/models/instances';
 import { pubsub } from './index';
@@ -22,6 +25,9 @@ const mutations = {
       throw createDoesNoExistsError('Task attachment', id);
     }
     const { Task } = await checkIfHasProjectRights(User, TaskAttachment.get('TaskId'), undefined, ['taskAttachmentsWrite']);
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     try {
       fs.unlinkSync(<string>TaskAttachment.get('path'));
     } catch (err) {

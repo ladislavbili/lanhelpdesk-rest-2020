@@ -9,6 +9,7 @@ export interface InvoicedTaskInstance extends DefaultInstance {
   statusId: number;
   statusTitle: string;
   statusColor: string;
+  statusAction: string;
   taskTypeId: number;
   taskTypeTitle: string;
   overtimePercentage: number;
@@ -39,18 +40,20 @@ export default function defineInvoicedTasks(sequelize: Sequelize) {
       },
       statusId: {
         type: DataTypes.INTEGER,
-        allowNull: true,
-        defaultValue: null,
+        allowNull: false,
       },
       statusTitle: {
         type: DataTypes.TEXT,
-        allowNull: true,
-        defaultValue: null,
+        allowNull: false,
       },
       statusColor: {
         type: DataTypes.TEXT,
-        allowNull: true,
-        defaultValue: null,
+        allowNull: false,
+      },
+      statusAction: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        defaultValue: "CloseDate",
       },
       taskTypeId: {
         type: DataTypes.INTEGER,

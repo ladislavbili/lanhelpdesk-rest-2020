@@ -450,7 +450,6 @@ const queries = {
       raw: true,
       mapToModel: true
     });
-    console.log(resultTasks);
 
     let tasks = [];
     if (invoiced) {
@@ -644,6 +643,7 @@ const mutations = {
             statusId: task.Status.id,
             statusTitle: task.Status.title,
             statusColor: task.Status.color,
+            statusAction: task.Status.action,
             taskTypeId: task.TaskType.id,
             taskTypeTitle: task.TaskType.title,
             overtimePercentage: Pricelist.get('afterHours'),

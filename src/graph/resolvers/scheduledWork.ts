@@ -2,6 +2,7 @@ import {
   createDoesNoExistsError,
   AssignedToUserNotSolvingTheTask,
   InsufficientProjectAccessError,
+  CantEditInvoicedTaskError,
 } from '@/configs/errors';
 import {
   getModelAttribute,
@@ -138,9 +139,11 @@ const mutations = {
     const User = await checkResolver(req);
     const dates = extractDatesFromObject(newDates, scheduledDates);
     const { Task, groupRights } = await checkIfHasProjectRights(User, taskId, undefined, ['taskWorksWrite'], [{ right: 'assigned', action: 'edit' }]);
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
 
     if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
-      console.log('bb');
       throw InsufficientProjectAccessError;
     }
     const [
@@ -203,6 +206,9 @@ const mutations = {
     const ofSubtask = Subtask !== null && Subtask !== undefined;
     const TaskId = ofSubtask ? Subtask.get('TaskId') : WorkTrip.get('TaskId');
     let { Task, groupRights } = await checkIfHasProjectRights(User, TaskId, undefined, ['taskWorksWrite'], [{ right: 'assigned', action: 'edit' }]);
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     Task.rights = groupRights;
     if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
       throw InsufficientProjectAccessError;
@@ -251,6 +257,9 @@ const mutations = {
     const TaskId = ofSubtask ? Subtask.get('TaskId') : WorkTrip.get('TaskId');
 
     const { Task, groupRights } = await checkIfHasProjectRights(User, TaskId, undefined, ['taskWorksWrite'], [{ right: 'assigned', action: 'edit' }]);
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {
       throw InsufficientProjectAccessError;
     }

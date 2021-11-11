@@ -12,7 +12,8 @@ import {
   InvalidTokenError,
   CantUpdateTaskAssignedToOldUsedInSubtasksOrWorkTripsError,
   CantCreateTasksError,
-  CantViewTaskError
+  CantViewTaskError,
+  CantEditInvoicedTaskError,
 } from '@/configs/errors';
 import { models, sequelize } from '@/models';
 import { Op, QueryTypes } from 'sequelize';
@@ -82,6 +83,7 @@ import {
   generateCompanyUsedTripPausalSQL,
   generateCompanyUsedSubtaskPausalSQL,
   generateWorkCountsSQL,
+  generateInvoicedTaskSQL,
 } from '@/graph/addons/task';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
@@ -181,39 +183,76 @@ const queries = {
     let databaseTime = 0;
     const databaseWatch = new Stopwatch(true);
     let tasks = [];
-    responseTasks.forEach((Task: TaskInstance) => {
-      const hasAsssignedTo = Task.assignedTos !== null && Task.assignedTos.id !== null;
-      const hasTag = Task.Tags !== null && Task.Tags.id !== null;
-      const hasSubtask = Task.Subtasks !== null && Task.Subtasks.id !== null;
-
+    responseTasks.forEach((Task: any) => {
+      const invoiced = Task.invoiced;
       const taskIndex = tasks.findIndex((task) => Task.id === task.id);
       if (taskIndex !== -1) {
+        if (invoiced) {
+          const InvoicedTask = Task.InvoicedTask;
+          if (Task.assignedTos.id !== null && tasks[taskIndex].assignedTos.every((assignedTo) => assignedTo.id !== InvoicedTask.assignedTos.id)) {
+            tasks[taskIndex].assignedTos.push(InvoicedTask.assignedTos);
+          }
+          if (Task.Tags.id !== null && tasks[taskIndex].Tags.every((Tag) => Tag.id !== InvoicedTask.Tags.id)) {
+            tasks[taskIndex].Tags.push(InvoicedTask.Tags);
+          }
+          if (Task.Subtasks.id !== null && tasks[taskIndex].Subtasks.every((Subtask) => Subtask.id !== Task.Subtasks.id)) {
+            tasks[taskIndex].Subtasks.push({ ...Task.Subtasks, User: { ...Task.Subtasks.InvoicedTaskUser, id: Task.Subtasks.InvoicedTaskUser.userId } });
+          }
 
-        if (hasAsssignedTo && !tasks[taskIndex].assignedTos.some((assignedTo) => assignedTo.id === Task.assignedTos.id)) {
-          tasks[taskIndex].assignedTos.push(Task.assignedTos);
-        }
-        if (hasTag && !tasks[taskIndex].Tags.some((tag) => tag.id === Task.Tags.id)) {
-          tasks[taskIndex].Tags.push(Task.Tags);
-        }
-        if (hasSubtask && !tasks[taskIndex].Subtasks.some((subtask) => subtask.id === Task.Subtasks.id)) {
-          tasks[taskIndex].Subtasks.push(Task.Subtasks);
+        } else {
+          if (Task.assignedTos.id !== null && tasks[taskIndex].assignedTos.every((assignedTo) => assignedTo.id !== Task.assignedTos.id)) {
+            tasks[taskIndex].assignedTos.push(Task.assignedTos);
+          }
+          if (Task.Tags.id !== null && tasks[taskIndex].Tags.every((Tag) => Tag.id !== Task.Tags.id)) {
+            tasks[taskIndex].Tags.push(Task.Tags);
+          }
+          if (Task.Subtasks.id !== null && tasks[taskIndex].Subtasks.every((Subtask) => Subtask.id !== Task.Subtasks.id)) {
+            tasks[taskIndex].Subtasks.push(Task.Subtasks);
+          }
         }
       } else {
-        tasks.push({
-          ...Task,
-          assignedTos: !hasAsssignedTo ? [] : [Task.assignedTos],
-          Tags: !hasTag ? [] : [Task.Tags],
-          Subtasks: !hasSubtask ? [] : [Task.Subtasks],
-          subtasksQuantity: toFloatOrZero(Task.subtasksQuantity),
-          approvedSubtasksQuantity: toFloatOrZero(Task.approvedSubtasksQuantity),
-          pendingSubtasksQuantity: toFloatOrZero(Task.pendingSubtasksQuantity),
-          workTripsQuantity: toFloatOrZero(Task.workTripsQuantity),
-          materialsPrice: toFloatOrZero(Task.materialsPrice),
-          approvedMaterialsPrice: toFloatOrZero(Task.approvedMaterialsPrice),
-          pendingMaterialsPrice: toFloatOrZero(Task.pendingMaterialsPrice),
-        })
+        if (invoiced) {
+          const InvoicedTask = Task.InvoicedTask;
+          tasks.push({
+            ...Task,
+            assignedTos: InvoicedTask.assignedTos.id === null ? [] : [InvoicedTask.assignedTos],
+            Tags: InvoicedTask.Tags.id === null ? [] : [InvoicedTask.Tags],
+            requester: InvoicedTask.requester.id === null ? null : InvoicedTask.requester,
+            createdBy: InvoicedTask.createdBy.id === null ? null : InvoicedTask.createdBy,
+            Subtasks: Task.Subtasks.id === null ? [] : [{ ...Task.Subtasks, User: { ...Task.Subtasks.InvoicedTaskUser, id: Task.Subtasks.InvoicedTaskUser.userId } }],
+            TaskType: { ...Task.TaskType, id: Task.InvoicedTask.taskTypeId, title: Task.InvoicedTask.taskTypeTitle },
+            Status: {
+              ...Task.Status,
+              id: InvoicedTask.statusId,
+              title: InvoicedTask.statusTitle,
+              color: InvoicedTask.statusColor,
+              action: InvoicedTask.statusAction,
+            },
+            subtasksQuantity: toFloatOrZero(Task.subtasksQuantity),
+            approvedSubtasksQuantity: toFloatOrZero(Task.approvedSubtasksQuantity),
+            pendingSubtasksQuantity: toFloatOrZero(Task.pendingSubtasksQuantity),
+            workTripsQuantity: toFloatOrZero(Task.workTripsQuantity),
+            materialsPrice: toFloatOrZero(Task.materialsPrice),
+            approvedMaterialsPrice: toFloatOrZero(Task.approvedMaterialsPrice),
+            pendingMaterialsPrice: toFloatOrZero(Task.pendingMaterialsPrice),
+          })
+        } else {
+          tasks.push({
+            ...Task,
+            assignedTos: Task.assignedTos.id === null ? [] : [Task.assignedTos],
+            Tags: Task.Tags.id === null ? [] : [Task.Tags],
+            Subtasks: Task.Subtasks.id === null ? [] : [Task.Subtasks],
+            subtasksQuantity: toFloatOrZero(Task.subtasksQuantity),
+            approvedSubtasksQuantity: toFloatOrZero(Task.approvedSubtasksQuantity),
+            pendingSubtasksQuantity: toFloatOrZero(Task.pendingSubtasksQuantity),
+            workTripsQuantity: toFloatOrZero(Task.workTripsQuantity),
+            materialsPrice: toFloatOrZero(Task.materialsPrice),
+            approvedMaterialsPrice: toFloatOrZero(Task.approvedMaterialsPrice),
+            pendingMaterialsPrice: toFloatOrZero(Task.pendingMaterialsPrice),
+          })
+        }
       }
-    })
+    });
     if (!isAdmin) {
       tasks = tasks.map((Task) => {
         const Project = Task.Project;
@@ -282,6 +321,7 @@ const queries = {
       responseSubtasks,
       responseWorkTrips,
       responseMaterials,
+      responseInvoicedTask,
     ] = await Promise.all([
       sequelize.query(generateTaskAttachmentsSQL(id), {
         model: models.TaskAttachment,
@@ -351,30 +391,100 @@ const queries = {
         raw: true,
         mapToModel: true
       }),
+      sequelize.query(generateInvoicedTaskSQL(id), {
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
     ])
 
-    let Company = <any>{ ...responseCompany[0] };
+    let task = { ...responseTask[0] };
+    const invoiced = task.invoiced;
 
-    Company.monthlyPausal = toFloatOrZero(Company.monthlyPausal);
-    Company.taskWorkPausal = toFloatOrZero(Company.taskWorkPausal);
-    Company.taskTripPausal = toFloatOrZero(Company.taskTripPausal);
-    Company.usedSubtaskPausal = toFloatOrZero((<any[]>reponseUsedTripPausal)[0].total);
-    Company.usedTripPausal = toFloatOrZero((<any[]>reponseUsedSubtaskPausal)[0].total);
-    Company.Pricelist.Prices = responseCompany.map((Company) => {
-      const Price = (<any>Company).Pricelist.Prices;
-      return {
-        ...Price,
-        price: toFloatOrZero(Price.price),
-        TaskType: Price.TaskType.id !== null ? Price.TaskType : null,
-        TripType: Price.TripType.id !== null ? Price.TripType : null,
+    //if company of invoice
+    let Company = <any>{};
+    if (invoiced) {
+      const invoicedTask = <any>responseInvoicedTask[0];
+
+      Company = {
+        id: invoicedTask.companyId,
+        title: invoicedTask.companyTitle,
+        dph: invoicedTask.dph,
+        monthly: false,
+        monthlyPausal: 0,
+        taskWorkPausal: 0,
+        taskTripPausal: 0,
+        usedSubtaskPausal: 0,
+        usedTripPausal: 0,
+        Pricelist: {
+          id: -1,
+          title: 'Invoiced pricelist',
+          materialMargin: 0,
+          afterHours: invoicedTask.overtimePercentage,
+          Prices: []
+        }
+      };
+    } else {
+      Company = <any>{ ...responseCompany[0] };
+      Company.monthlyPausal = toFloatOrZero(Company.monthlyPausal);
+      Company.taskWorkPausal = toFloatOrZero(Company.taskWorkPausal);
+      Company.taskTripPausal = toFloatOrZero(Company.taskTripPausal);
+      Company.usedSubtaskPausal = toFloatOrZero((<any[]>reponseUsedTripPausal)[0].total);
+      Company.usedTripPausal = toFloatOrZero((<any[]>reponseUsedSubtaskPausal)[0].total);
+      Company.Pricelist.Prices = responseCompany.map((Company) => {
+        const Price = (<any>Company).Pricelist.Prices;
+        return {
+          ...Price,
+          price: toFloatOrZero(Price.price),
+          TaskType: Price.TaskType.id !== null ? Price.TaskType : null,
+          TripType: Price.TripType.id !== null ? Price.TripType : null,
+        }
+      });
+    }
+
+    let invoicedAssignedTos = [];
+    let invoicedTags = [];
+    //rewrite by fixed data
+    if (invoiced) {
+      task.Status = {
+        id: (<any[]>responseInvoicedTask)[0].statusId,
+        title: (<any[]>responseInvoicedTask)[0].statusTitle,
+        color: (<any[]>responseInvoicedTask)[0].statusColor,
+        action: (<any[]>responseInvoicedTask)[0].statusAction,
       }
-    });
+      task.TaskType = {
+        id: (<any[]>responseInvoicedTask)[0].taskTypeId,
+        title: (<any[]>responseInvoicedTask)[0].taskTypeTitle,
+      }
+      responseInvoicedTask.forEach((InvoicedTaskFragment, index) => {
+        const {
+          assignedTos,
+          Tags,
+        } = <any>InvoicedTaskFragment;
+        if (assignedTos.id !== null && !invoicedAssignedTos.some((assignedTo) => assignedTo.id === assignedTos.userId)) {
+          invoicedAssignedTos.push({
+            ...assignedTos,
+            id: assignedTos.userId,
+          });
+        }
+        if (Tags.id !== null && !invoicedTags.some((tag) => tag.id === Tags.tagId)) {
+          console.log(Tags);
 
+          invoicedTags.push({
+            ...Tags,
+            id: Tags.tagId,
+          });
+        }
+      })
+    }
+
+    //rewrite works and trips by their fixed data
     return {
-      ...responseTask[0],
+      ...task,
       TaskAttachments: responseTaskAttachments,
-      assignedTos: responseAssignedTos,
-      Tags: responseTags,
+      assignedTos: invoiced ? invoicedAssignedTos : responseAssignedTos,
+      Tags: task.invoiced ? invoicedTags : responseTags,
       rights: groupRights,
       Company,
       ShortSubtasks: responseShortSubtasks,
@@ -384,14 +494,16 @@ const queries = {
         discount: toFloatOrZero(subtask.discount),
         SubtaskApprovedBy: subtask.SubtaskApprovedBy.id === null ? null : subtask.SubtaskApprovedBy,
         User: {
-          ...subtask.User,
+          ...(invoiced ? { ...subtask.InvoicedTaskUser, id: subtask.InvoicedTaskUser.userId } : subtask.User),
           Company: {
-            ...subtask.User.Company,
-            monthlyPausal: toFloatOrZero(subtask.User.Company.monthlyPausal),
-            taskWorkPausal: toFloatOrZero(subtask.User.Company.taskWorkPausal),
-            taskTripPausal: toFloatOrZero(subtask.User.Company.taskTripPausal),
+            ...(invoiced ? Company : subtask.User.Company),
+            monthlyPausal: invoiced ? 0 : toFloatOrZero(subtask.User.Company.monthlyPausal),
+            taskWorkPausal: invoiced ? 0 : toFloatOrZero(subtask.User.Company.taskWorkPausal),
+            taskTripPausal: invoiced ? 0 : toFloatOrZero(subtask.User.Company.taskTripPausal),
           }
-        }
+        },
+        TaskType: task.TaskType,
+        price: subtask.invoicedPrice,
       })),
       WorkTrips: (<any[]>responseWorkTrips).map((workTrip) => ({
         ...workTrip,
@@ -399,14 +511,16 @@ const queries = {
         discount: toFloatOrZero(workTrip.discount),
         TripApprovedBy: workTrip.TripApprovedBy.id === null ? null : workTrip.TripApprovedBy,
         User: {
-          ...workTrip.User,
+          ...(invoiced ? { ...workTrip.InvoicedTaskUser, id: workTrip.InvoicedTaskUser.userId } : workTrip.User),
           Company: {
-            ...workTrip.User.Company,
-            monthlyPausal: toFloatOrZero(workTrip.User.Company.monthlyPausal),
-            taskWorkPausal: toFloatOrZero(workTrip.User.Company.taskWorkPausal),
-            taskTripPausal: toFloatOrZero(workTrip.User.Company.taskTripPausal),
-          }
-        }
+            ...(invoiced ? Company : workTrip.User.Company),
+            monthlyPausal: invoiced ? 0 : toFloatOrZero(workTrip.User.Company.monthlyPausal),
+            taskWorkPausal: invoiced ? 0 : toFloatOrZero(workTrip.User.Company.taskWorkPausal),
+            taskTripPausal: invoiced ? 0 : toFloatOrZero(workTrip.User.Company.taskTripPausal),
+          },
+          TripType: invoiced ? { id: workTrip.invoicedTypeId, title: workTrip.invoicedTypeTitle } : workTrip.TaskType,
+        },
+        price: workTrip.invoicedPrice,
       })),
       Materials: (<any[]>responseMaterials).map((material) => ({
         ...material,
@@ -801,6 +915,9 @@ const mutations = {
     if (Task === undefined) {
       throw createDoesNoExistsError('Task', args.id);
     }
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
 
     let taskChangeMessages = [];
     //Figure out project and if can change project
@@ -1119,6 +1236,9 @@ const mutations = {
         ]
       }
     );
+    if (Task.get('invoiced')) {
+      throw CantEditInvoicedTaskError;
+    }
     const Project = <ProjectInstance>Task.get('Project');
     //must right to delete project
     const { groupRights } = await checkIfHasProjectRights(User, undefined, Task.get('ProjectId'), ['deleteTask']);

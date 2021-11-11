@@ -64,6 +64,31 @@ export const generateTaskSQL = (taskId, userId, companyId, isAdmin) => {
   return sql.replace(/"/g, '`');
 }
 
+export const generateInvoicedTaskSQL = (taskId) => {
+  const attributes = (
+    `
+    ${createModelAttributes("InvoicedTask", null, models.InvoicedTask)}
+    ${createModelAttributes("Tags", "Tags", models.InvoicedTaskTag)}
+    ${createModelAttributes("requester", "requester", models.InvoicedTaskUser)}
+    ${createModelAttributes("assignedTos", "assignedTos", models.InvoicedTaskUser)}
+    ${createModelAttributes("createdBy", "createdBy", models.InvoicedTaskUser)}
+    `
+  );
+
+  let sql = `
+  SELECT
+  ${removeLastComma(attributes)}
+  FROM
+    "invoiced_tasks" AS "InvoicedTask"
+    LEFT OUTER JOIN "invoiced_task_users" AS "createdBy" ON "createdBy"."createdById" = "InvoicedTask"."id"
+    LEFT OUTER JOIN "invoiced_task_users" AS "requester" ON "requester"."requesterId" = "InvoicedTask"."id"
+    LEFT OUTER JOIN "invoiced_task_users" AS "assignedTos" ON "assignedTos"."assignedToId" = "InvoicedTask"."id"
+    LEFT OUTER JOIN "invoiced_task_tags" AS "Tags" ON "Tags"."InvoicedTaskId" = "InvoicedTask"."id"
+  WHERE "InvoicedTask"."TaskId" = ${taskId}
+  `;
+  return sql.replace(/"/g, '`');
+}
+
 export const generateTaskAttachmentsSQL = (taskId) => {
   return `
   SELECT *
@@ -147,6 +172,7 @@ export const generateSubtasksSQL = (taskId) => {
     ${generateFullNameSQL("SubtaskApprovedBy")}
     ${createModelAttributes("User", "User", models.User)}
     ${generateFullNameSQL("User")}
+    ${createModelAttributes("InvoicedTaskUser", "InvoicedTaskUser", models.InvoicedTaskUser)}
     ${createModelAttributes("User->Company", "User.Company", models.Company)}
     ${createModelAttributes("ScheduledWork", "ScheduledWork", models.ScheduledWork)}
     `
@@ -161,6 +187,8 @@ export const generateSubtasksSQL = (taskId) => {
   LEFT OUTER JOIN "users" AS "User" ON "Subtasks"."UserId" = "User"."id"
   LEFT OUTER JOIN "companies" AS "User->Company" ON "User"."CompanyId" = "User->Company"."id"
   LEFT OUTER JOIN "scheduled_work" AS "ScheduledWork" ON "Subtasks"."id" = "ScheduledWork"."SubtaskId"
+
+  LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTaskUser" ON "InvoicedTaskUser"."SubtaskId" = "Subtasks"."id"
   `.replace(/"/g, '`');
 }
 
@@ -173,6 +201,7 @@ export const generateWorkTripsSQL = (taskId) => {
     ${generateFullNameSQL("TripApprovedBy")}
     ${createModelAttributes("User", "User", models.User)}
     ${generateFullNameSQL("User")}
+    ${createModelAttributes("InvoicedTaskUser", "InvoicedTaskUser", models.InvoicedTaskUser)}
     ${createModelAttributes("User->Company", "User.Company", models.Company)}
     ${createModelAttributes("ScheduledWork", "ScheduledWork", models.ScheduledWork)}
     `
@@ -187,6 +216,8 @@ export const generateWorkTripsSQL = (taskId) => {
   LEFT OUTER JOIN "users" AS "User" ON "WorkTrips"."UserId" = "User"."id"
   LEFT OUTER JOIN "companies" AS "User->Company" ON "User"."CompanyId" = "User->Company"."id"
   LEFT OUTER JOIN "scheduled_work" AS "ScheduledWork" ON "WorkTrips"."id" = "ScheduledWork"."WorkTripId"
+
+  LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTaskUser" ON "InvoicedTaskUser"."WorkTripId" = "WorkTrips"."id"
   `.replace(/"/g, '`');
 }
 

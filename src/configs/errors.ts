@@ -156,4 +156,4 @@ export const ScheduledUserDoesntHaveAssignedEditRight = new ApolloError("This us
 export const CantAddOrEditRepeatError = new ApolloError("You have insufficient rights in this project!", "CANT_ADD_OR_EDIT_REPEAT");
 
 //Invoiced
-export const CantEditInvoicedTaskError = new ApolloError("You have insufficient rights in this project!", "CANT_EDIT_INVOICED_TASK");
+export const CantEditInvoicedTaskError = new ApolloError("This task is invoiced and can't be edited!", "CANT_EDIT_INVOICED_TASK");

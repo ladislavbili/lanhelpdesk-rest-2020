@@ -277,7 +277,7 @@ const mutations = {
           //{ model: models.Project, as: 'defCompany' },
           { model: models.Imap },
           { model: models.User },
-          { model: models.Task },
+          { model: models.Task, where: { invoiced: false } },
           { model: models.RepeatTemplate },
 
         ]
