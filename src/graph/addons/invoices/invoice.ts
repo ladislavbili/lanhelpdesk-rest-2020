@@ -46,7 +46,7 @@ export const generateInvoiceSQL = (fromDate, toDate, companyId) => {
     LEFT OUTER JOIN "subtasks" AS "Subtask" ON "Subtask"."TaskId" = "Task"."id"
     LEFT OUTER JOIN "work_trips" AS "WorkTrip" ON "WorkTrip"."TaskId" = "Task"."id"
     LEFT OUTER JOIN "materials" AS "Material" ON "Material"."TaskId" = "Task"."id"
-    ORDER BY "Task"."closeDate" ASC
+    ORDER BY "Task"."invoiced" DESC, "Task"."closeDate" ASC
     `
   );
 

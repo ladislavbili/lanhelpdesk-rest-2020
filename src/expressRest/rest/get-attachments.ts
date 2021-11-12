@@ -20,17 +20,17 @@ export function getAttachments(app) {
       return res.status(412).send({ ok: false, error: 'no parameters' })
     }
 
-    const { path, type } = req.query;
+    const { path, type, fromInvoice } = req.query;
     if (!path || !type) {
       return res.status(412).send({ ok: false, error: 'Some parameters path or type missing' })
     }
     let checkResult = null;
     if (type === 'task') {
-      checkResult = await checkTask(path, req);
+      checkResult = await checkTask(path, req, fromInvoice);
     } else if (type === 'repeatTemplate') {
       checkResult = await checkRepeatTemplate(path, req);
     } else if (type === 'comment') {
-      checkResult = await checkComment(path, req);
+      checkResult = await checkComment(path, req, fromInvoice);
     } else if (type === 'project') {
       checkResult = await checkProject(path, req);
     } else {
@@ -49,14 +49,19 @@ export function getAttachments(app) {
   });
 }
 
-async function checkTask(path, req) {
+async function checkTask(path, req, fromInvoice) {
   const TaskAttachment = await models.TaskAttachment.findOne({ where: { path } });
   if (!TaskAttachment) {
     return { ok: false, error: `Attachment with path ${path} doesn't exists.` }
   }
   try {
-    const User = await checkResolver(req);
-    await checkIfHasProjectRights(User, TaskAttachment.get('TaskId'), undefined, ['taskAttachmentsRead']);
+    let User = null;
+    if (fromInvoice) {
+      User = await checkResolver(req, ['vykazy']);
+    } else {
+      User = await checkResolver(req);
+    }
+    await checkIfHasProjectRights(User, TaskAttachment.get('TaskId'), undefined, ['taskAttachmentsRead'], [], fromInvoice === true);
     return { ok: true, error: null, Attachment: TaskAttachment };
   } catch (err) {
     return { ok: false, error: err.message }
@@ -77,15 +82,20 @@ async function checkRepeatTemplate(path, req) {
   }
 }
 
-async function checkComment(path, req) {
+async function checkComment(path, req, fromInvoice) {
   const CommentAttachment = await models.CommentAttachment.findOne({ where: { path }, include: [{ model: models.Comment }] });
   if (!CommentAttachment) {
     return { ok: false, error: `Attachment with path ${path} doesn't exists.` }
   }
   const Comment = <CommentInstance>CommentAttachment.get('Comment');
   try {
-    const User = await checkResolver(req);
-    const { groupRights } = await checkIfHasProjectRights(User, Comment.get('TaskId'), undefined, ['viewComments']);
+    let User = null;
+    if (fromInvoice) {
+      User = await checkResolver(req, ['vykazy']);
+    } else {
+      User = await checkResolver(req);
+    }
+    const { groupRights } = await checkIfHasProjectRights(User, Comment.get('TaskId'), undefined, ['viewComments'], [], fromInvoice === true);
     if (Comment.get('internal') && !groupRights.internal) {
       return { ok: false, error: `Can't show internal comment to user without rights.` }
     }

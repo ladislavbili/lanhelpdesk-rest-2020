@@ -23,12 +23,10 @@ type Comment {
 `
 
 export const CommentQueries = `
-comments( task: Int!, limit: Int, page: Int ): [Comment]
+comments( task: Int!, limit: Int, page: Int, fromInvoice: Boolean ): [Comment]
 `
 
 export const CommentMutations = `
-addComment( message: String!, internal: Boolean!, task: Int!, parentCommentId: Int ): Comment
-sendEmail( message: String!, task: Int!, parentCommentId: Int, tos: [String]!, subject: String! ): Comment
 resendEmail( messageId: Int! ): Comment
 `
 

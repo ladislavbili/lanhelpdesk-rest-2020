@@ -22,9 +22,9 @@ const queries = {
 }
 
 const mutations = {
-  addShortSubtask: async (root, { task, ...attributes }, { req }) => {
-    const SourceUser = await checkResolver(req);
-    const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskSubtasksWrite']);
+  addShortSubtask: async (root, { task, fromInvoice, ...attributes }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
+    const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskSubtasksWrite'], [], fromInvoice === true);
     if (Task.get('invoiced')) {
       throw CantEditInvoicedTaskError;
     }
@@ -47,13 +47,13 @@ const mutations = {
     });
   },
 
-  updateShortSubtask: async (root, { id, ...args }, { req }) => {
-    const SourceUser = await checkResolver(req);
+  updateShortSubtask: async (root, { id, fromInvoice, ...args }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
     const ShortSubtask = <ShortSubtaskInstance>await models.ShortSubtask.findByPk(id);
     if (ShortSubtask === null) {
       throw createDoesNoExistsError('Short subtask', id);
     }
-    const { Task } = await checkIfHasProjectRights(SourceUser, ShortSubtask.get('TaskId'), undefined, ['taskSubtasksWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser, ShortSubtask.get('TaskId'), undefined, ['taskSubtasksWrite'], [], fromInvoice === true);
     if (Task.get('invoiced')) {
       throw CantEditInvoicedTaskError;
     }
@@ -74,13 +74,13 @@ const mutations = {
     return ShortSubtask.update(args);
   },
 
-  deleteShortSubtask: async (root, { id }, { req }) => {
-    const SourceUser = await checkResolver(req);
+  deleteShortSubtask: async (root, { id, fromInvoice }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
     const ShortSubtask = await models.ShortSubtask.findByPk(id);
     if (ShortSubtask === null) {
       throw createDoesNoExistsError('Short subtask', id);
     }
-    const { Task } = await checkIfHasProjectRights(SourceUser, ShortSubtask.get('TaskId'), undefined, ['taskSubtasksWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser, ShortSubtask.get('TaskId'), undefined, ['taskSubtasksWrite'], [], fromInvoice === true);
     if (Task.get('invoiced')) {
       throw CantEditInvoicedTaskError;
     }

@@ -1,10 +1,10 @@
 import defaultAttributes from './defaultAttributes';
 export const Invoice = `
   type CompanyInvoice {
-    pausalTasks: [Task]!
-    overPausalTasks: [Task]!
-    projectTasks: [Task]!
-    materialTasks: [Task]!
+    pausalTasks: [InvoiceTask]!
+    overPausalTasks: [InvoiceTask]!
+    projectTasks: [InvoiceTask]!
+    materialTasks: [InvoiceTask]!
     pausalTotals: InvoicePausalTotals!
     overPausalTotals: InvoiceProjectTotals!
     projectTotals: InvoiceProjectTotals!
@@ -49,8 +49,8 @@ export const Invoice = `
   }
 
   type AgentInvoice {
-    workTasks: [Task]!
-    tripTasks: [Task]!
+    workTasks: [InvoiceTask]!
+    tripTasks: [InvoiceTask]!
     taskTypeTotals: [AgentTypeTotals]!
     tripTypeTotals: [AgentTypeTotals]!
     totals: AgentInvoiceTotals!

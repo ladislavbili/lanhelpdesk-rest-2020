@@ -35,9 +35,9 @@ export interface EmailResultInstance {
 }
 
 const queries = {
-  comments: async (root, { task, limit, page }, { req }) => {
-    const SourceUser = await checkResolver(req);
-    const { groupRights } = await checkIfHasProjectRights(SourceUser, task, undefined, ['viewComments']);
+  comments: async (root, { task, limit, page, fromInvoice }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
+    const { groupRights } = await checkIfHasProjectRights(SourceUser, task, undefined, ['viewComments'], [], fromInvoice === true);
     if (limit && page) {
       const { count, rows } = await models.Comment.findAndCountAll({
         limit,

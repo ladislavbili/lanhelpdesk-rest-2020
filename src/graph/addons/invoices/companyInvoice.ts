@@ -61,7 +61,7 @@ export const generateCompanyInvoiceSQL = (fromDate, toDate, companyId) => {
     LEFT OUTER JOIN "trip_types" AS "WorkTrip->type" ON "WorkTrip->type"."id" = "WorkTrip"."TripTypeId"
     LEFT OUTER JOIN "users" AS "WorkTrip->assignedTo" ON "WorkTrip->assignedTo"."id" = "WorkTrip"."UserId"
     LEFT OUTER JOIN "materials" AS "Material" ON "Material"."TaskId" = "Task"."id"
-    ORDER BY "Task"."closeDate" ASC
+    ORDER BY "Task"."invoiced" DESC, "Task"."closeDate" ASC
     `
   );
 

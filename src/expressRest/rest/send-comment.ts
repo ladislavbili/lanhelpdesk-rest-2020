@@ -30,13 +30,15 @@ export function sendComment(app) {
       taskId,
       message,
       parentCommentId,
-      internal
+      internal,
+      fromInvoice,
     } = getAttributes([
       { key: 'token', nullAccepted: false, type: 'str' },
       { key: 'taskId', nullAccepted: false, type: 'int' },
       { key: 'message', nullAccepted: false, type: 'str' },
       { key: 'parentCommentId', nullAccepted: true, type: 'int' },
       { key: 'internal', nullAccepted: false, type: 'bool' },
+      { key: 'fromInvoice', nullAccepted: true, type: 'bool' },
     ], req.body);
 
     if (failedGettingAttributes) {
@@ -55,8 +57,12 @@ export function sendComment(app) {
     let Task = null;
     let allowedInternal = false;
     try {
-      User = await checkResolver({ headers: { authorization: token } });
-      const checkData = await checkIfHasProjectRights(User, taskId, undefined, []);
+      if (fromInvoice) {
+        User = await checkResolver({ headers: { authorization: token } }, ['vykazy']);
+      } else {
+        User = await checkResolver({ headers: { authorization: token } });
+      }
+      const checkData = await checkIfHasProjectRights(User, taskId, undefined, ['addComments'], [], fromInvoice === true);
       Task = checkData.Task;
       if (Task.get('invoiced')) {
         throw CantEditInvoicedTaskError;

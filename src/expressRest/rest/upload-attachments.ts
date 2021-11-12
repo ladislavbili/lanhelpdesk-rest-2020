@@ -10,7 +10,7 @@ import {
 export function uploadAttachments(app) {
   app.post('/upload-attachments', async function(req, res) {
     const timestamp = moment().valueOf();
-    const { token, taskId, newTask } = req.body;
+    const { token, taskId, newTask, fromInvoice } = req.body;
     let files = null;
     if (req.files) {
       if (Array.isArray(req.files.file)) {
@@ -27,8 +27,12 @@ export function uploadAttachments(app) {
     let Task = null;
 
     try {
-      User = await checkResolver({ headers: { authorization: token } });
-      const checkData = await checkIfHasProjectRights(User, taskId, undefined, [newTask ? 'addTask' : 'taskAttachmentsWrite']);
+      if (fromInvoice) {
+        User = await checkResolver({ headers: { authorization: token } }, ['vykazy']);
+      } else {
+        User = await checkResolver({ headers: { authorization: token } });
+      }
+      const checkData = await checkIfHasProjectRights(User, taskId, undefined, [newTask ? 'addTask' : 'taskAttachmentsWrite'], [], fromInvoice === true);
       Task = checkData.Task;
       if (Task.get('invoiced')) {
         throw CantEditInvoicedTaskError;

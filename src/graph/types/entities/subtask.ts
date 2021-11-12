@@ -21,13 +21,13 @@ type Subtask {
 `
 
 export const SubtaskQueries = `
-subtasks(taskId: Int!): [Subtask]
+subtasks(taskId: Int!, fromInvoice: Boolean): [Subtask]
 `
 
 export const SubtaskMutations = `
-addSubtask( title: String!, order: Int, done: Boolean!, quantity: Float!, discount: Float!, task: Int!, type: Int, assignedTo: Int!, approved: Boolean, scheduled: ScheduledWorkInput ): Subtask
-updateSubtask( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, discount: Float, type: Int, assignedTo: Int, approved: Boolean, scheduled: ScheduledWorkInput ): Subtask
-deleteSubtask( id: Int! ): Subtask
+addSubtask( title: String!, order: Int, done: Boolean!, quantity: Float!, discount: Float!, task: Int!, type: Int, assignedTo: Int!, approved: Boolean, scheduled: ScheduledWorkInput, fromInvoice: Boolean ): Subtask
+updateSubtask( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, discount: Float, type: Int, assignedTo: Int, approved: Boolean, scheduled: ScheduledWorkInput, fromInvoice: Boolean ): Subtask
+deleteSubtask( id: Int!, fromInvoice: Boolean ): Subtask
 
 addRepeatTemplateSubtask( title: String!, order: Int!, done: Boolean!, quantity: Float!, discount: Float!, repeatTemplate: Int!, type: Int!, assignedTo: Int!, approved: Boolean, scheduled: ScheduledWorkInput ): Subtask
 updateRepeatTemplateSubtask( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, discount: Float, type: Int, assignedTo: Int, approved: Boolean, scheduled: ScheduledWorkInput ): Subtask

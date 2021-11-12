@@ -39,6 +39,7 @@ export function sendEmail(app) {
       tos,
       subject,
       parentCommentId,
+      fromInvoice,
     } = getAttributes([
       { key: 'token', nullAccepted: false, type: 'str' },
       { key: 'taskId', nullAccepted: false, type: 'int' },
@@ -46,6 +47,7 @@ export function sendEmail(app) {
       { key: 'tos', nullAccepted: false, type: 'arr' },
       { key: 'subject', nullAccepted: false, type: 'str' },
       { key: 'parentCommentId', nullAccepted: true, type: 'int' },
+      { key: 'fromInvoice', nullAccepted: true, type: 'bool' },
     ], req.body);
 
     if (failedGettingAttributes) {
@@ -64,8 +66,12 @@ export function sendEmail(app) {
     let Task = null;
     let allowedInternal = false;
     try {
-      User = await checkResolver({ headers: { authorization: token } }, ['mailViaComment']);
-      const checkData = await checkIfHasProjectRights(User, taskId, undefined, ['emails']);
+      if (fromInvoice) {
+        User = await checkResolver({ headers: { authorization: token } }, ['vykazy']);
+      } else {
+        User = await checkResolver({ headers: { authorization: token } });
+      }
+      const checkData = await checkIfHasProjectRights(User, taskId, undefined, ['emails'], [], fromInvoice === true);
       Task = checkData.Task;
       if (Task.get('invoiced')) {
         throw CantEditInvoicedTaskError;

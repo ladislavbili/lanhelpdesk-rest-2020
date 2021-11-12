@@ -292,12 +292,12 @@ const queries = {
     };
   },
 
-  task: async (root, { id }, { req }) => {
-    const User = await checkResolver(req);
+  task: async (root, { id, fromInvoice }, { req }) => {
+    const User = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
     const isAdmin = isUserAdmin(User);
-    const { groupRights } = await checkIfHasProjectRights(User, id, undefined, [], []);
+    const { groupRights } = await checkIfHasProjectRights(User, id, undefined, [], [], fromInvoice === true);
 
-    const SQL = generateTaskSQL(id, User.get('id'), User.get('CompanyId'), isAdmin);
+    const SQL = generateTaskSQL(id, User.get('id'), User.get('CompanyId'), isAdmin || fromInvoice);
     let responseTask = <any>await sequelize.query(SQL, {
       model: models.Task,
       type: QueryTypes.SELECT,
@@ -469,8 +469,6 @@ const queries = {
           });
         }
         if (Tags.id !== null && !invoicedTags.some((tag) => tag.id === Tags.tagId)) {
-          console.log(Tags);
-
           invoicedTags.push({
             ...Tags,
             id: Tags.tagId,
@@ -871,7 +869,8 @@ const mutations = {
   },
 
   updateTask: async (root, args, { req }) => {
-    const User = await checkResolver(req);
+    const { fromInvoice } = args;
+    const User = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
     const Task = <TaskInstance>await models.Task.findByPk(
       args.id,
       {
@@ -923,12 +922,13 @@ const mutations = {
     //Figure out project and if can change project
     let groupRights = null;
     const requiredGroupRights = args.project !== undefined && args.project !== Task.get('ProjectId') ? ['taskProjectWrite'] : [];
-    const TestData1 = await checkIfHasProjectRights(User, undefined, Task.get('ProjectId'), requiredGroupRights, []);
+    const TestData1 = await checkIfHasProjectRights(User, undefined, Task.get('ProjectId'), requiredGroupRights, [], fromInvoice === true);
     groupRights = <any>TestData1.groupRights;
     if (args.project !== undefined && args.project !== Task.get('ProjectId')) {
-      const TestData2 = await checkIfHasProjectRights(User, undefined, args.project, ['taskProjectWrite'], []);
+      const TestData2 = await checkIfHasProjectRights(User, undefined, args.project, ['taskProjectWrite'], [], fromInvoice === true);
       groupRights = <any>TestData2.groupRights;
     }
+
 
     const project = args.project ? args.project : Task.get('ProjectId');
     let Project = <ProjectInstance>Task.get('Project');
@@ -991,7 +991,7 @@ const mutations = {
     await multipleIdDoesExistsCheck(pairsToCheck);
 
     //Rights and project def
-    await checkIfCanEditTaskAttributes(User, Project.get('id'), args, ProjectStatuses, args.project ? null : Task);
+    await checkIfCanEditTaskAttributes(User, Project.get('id'), args, ProjectStatuses, args.project ? null : Task, [], fromInvoice);
 
     if (tags) {
       tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));

@@ -17,7 +17,7 @@ type TaskChangeMessage {
 `
 
 export const TaskChangeQueries = `
-taskChanges(taskId: Int!): [TaskChange]
+  taskChanges(taskId: Int!, fromInvoice: Boolean): [TaskChange]
 `
 
 export const TaskChangeMutations = `

@@ -20,13 +20,13 @@ type WorkTrip {
 `
 
 export const WorkTripQueries = `
-workTrips(taskId: Int!): [WorkTrip]
+workTrips(taskId: Int!, fromInvoice: Boolean ): [WorkTrip]
 `
 
 export const WorkTripMutations = `
-addWorkTrip( order: Int!, done: Boolean!, quantity: Float!, discount: Float!, task: Int!, type: Int, assignedTo: Int!, approved: Boolean, scheduled: ScheduledWorkInput ): WorkTrip
-updateWorkTrip( id: Int!, order: Int, done: Boolean, quantity: Float, discount: Float, type: Int, assignedTo: Int, approved: Boolean, scheduled: ScheduledWorkInput ): WorkTrip
-deleteWorkTrip( id: Int! ): WorkTrip
+addWorkTrip( order: Int!, done: Boolean!, quantity: Float!, discount: Float!, task: Int!, type: Int, assignedTo: Int!, approved: Boolean, scheduled: ScheduledWorkInput, fromInvoice: Boolean ): WorkTrip
+updateWorkTrip( id: Int!, order: Int, done: Boolean, quantity: Float, discount: Float, type: Int, assignedTo: Int, approved: Boolean, scheduled: ScheduledWorkInput, fromInvoice: Boolean ): WorkTrip
+deleteWorkTrip( id: Int!, fromInvoice: Boolean ): WorkTrip
 
 addRepeatTemplateWorkTrip( order: Int!, done: Boolean!, quantity: Float!, discount: Float!, repeatTemplate: Int!, type: Int!, assignedTo: Int!, approved: Boolean, scheduled: ScheduledWorkInput ): WorkTrip
 updateRepeatTemplateWorkTrip( id: Int!, order: Int, done: Boolean, quantity: Float, discount: Float, type: Int, assignedTo: Int, approved: Boolean, scheduled: ScheduledWorkInput ): WorkTrip

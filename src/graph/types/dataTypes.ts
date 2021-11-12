@@ -6,6 +6,7 @@ import { Filter } from './entities/filter';
 import { Imap } from './entities/imap';
 import { Invoice } from './entities/invoice';
 import { InvoiceCompany } from './entities/invoiceCompany';
+import { InvoiceTask } from './entities/invoiceTask';
 import { Material } from './entities/material';
 import { Milestone } from './entities/milestone';
 import { Pricelist } from './entities/pricelist';
@@ -46,6 +47,7 @@ ${Filter}
 ${Imap}
 ${Invoice}
 ${InvoiceCompany}
+${InvoiceTask}
 ${Material}
 ${Milestone}
 ${Pricelist}

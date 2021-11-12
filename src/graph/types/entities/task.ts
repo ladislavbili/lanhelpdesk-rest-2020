@@ -163,7 +163,7 @@ tasks(
   page: Int
   statuses: [Int]
 ): ExecTasks
-task(id: Int!): Task
+task(id: Int!, fromInvoice: Boolean): Task
 oldTask(id: Int!): Task
 getNumberOfTasks( projectId: Int! ): Int!
 `
@@ -217,10 +217,10 @@ updateTask(
   status: Int
   tags: [Int]
   taskType: Int
-  invoiced: Boolean
   ganttOrder: Int
+  fromInvoice: Boolean
 ): Task
-deleteTask( id: Int! ): Task
+deleteTask( id: Int!, fromInvoice: Boolean ): Task
 `
 
 export const TaskSubscriptions = `

@@ -18,13 +18,13 @@ type Material {
 `
 
 export const MaterialQueries = `
-materials(taskId: Int!): [Material]
+materials( taskId: Int!, fromInvoice: Boolean ): [Material]
 `
 
 export const MaterialMutations = `
-addMaterial( title: String!, order: Int!, done: Boolean!, quantity: Float!, margin: Float!, price: Float!, task: Int!, approved: Boolean ): Material
-updateMaterial( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, margin: Float, price: Float, approved: Boolean ): Material
-deleteMaterial( id: Int! ): Material
+addMaterial( title: String!, order: Int!, done: Boolean!, quantity: Float!, margin: Float!, price: Float!, task: Int!, approved: Boolean, fromInvoice: Boolean ): Material
+updateMaterial( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, margin: Float, price: Float, approved: Boolean, fromInvoice: Boolean ): Material
+deleteMaterial( id: Int!, fromInvoice: Boolean ): Material
 
 addRepeatTemplateMaterial( title: String!, order: Int!, done: Boolean!, quantity: Float!, margin: Float!, price: Float!, repeatTemplate: Int!, approved: Boolean ): Material
 updateRepeatTemplateMaterial( id: Int!, title: String, order: Int, done: Boolean, quantity: Float, margin: Float, price: Float, approved: Boolean ): Material

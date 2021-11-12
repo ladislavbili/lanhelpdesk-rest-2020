@@ -6,6 +6,7 @@ import filter from './filter';
 import imap from './imap';
 import invoice from './invoice';
 import invoiceCompany from './invoiceCompany';
+import invoiceTask from './invoiceTask';
 import material from './material';
 import milestone from './milestone';
 import pricelist from './pricelist';
@@ -48,6 +49,7 @@ export default {
     ...imap.queries,
     ...invoice.queries,
     ...invoiceCompany.queries,
+    ...invoiceTask.queries,
 
     ...material.queries,
     ...milestone.queries,
@@ -88,6 +90,7 @@ export default {
     ...imap.mutations,
     ...invoice.mutations,
     ...invoiceCompany.mutations,
+    ...invoiceTask.mutations,
 
     ...material.mutations,
     ...milestone.mutations,
@@ -146,6 +149,7 @@ export default {
   ...imap.attributes,
   ...invoice.attributes,
   ...invoiceCompany.attributes,
+  ...invoiceTask.attributes,
   ...material.attributes,
   ...milestone.attributes,
   ...pricelist.attributes,

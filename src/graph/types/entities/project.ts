@@ -56,8 +56,8 @@ type UserWithRights {
 
 export const ProjectQueries = `
 projects: [Project]
-project(id: Int!): Project
-myProjects: [MyProject]!
+project( id: Int! ): Project
+myProjects( fromInvoice: Boolean ): [MyProject]!
 `
 
 export const ProjectMutations = `

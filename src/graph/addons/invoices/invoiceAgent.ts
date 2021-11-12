@@ -20,8 +20,6 @@ export const generateInvoiceAgentsSQL = (fromDate, toDate, statusActions, invoic
     `
   );
 
-  //TODO: add filter by invoiced status action, add action to invoiced task data
-  //TODO: first load invoiced, invoiced spend pausal first
   const sql = (
     `
     SELECT
@@ -45,15 +43,25 @@ export const generateInvoiceAgentsSQL = (fromDate, toDate, statusActions, invoic
       "Task"."statusChange" <= '${toDBDate(toDate)}'
       `
     }
-    INNER JOIN "statuses" AS "Status" ON
-    "Task"."StatusId" = "Status"."id" AND
-    "Status"."action" IN ( ${sqlStatusActions} )
+    ${ invoiced ?
+      `
+        INNER JOIN "invoiced_tasks" AS "InvoicedTask" ON
+        "Task"."id" = "InvoicedTask"."TaskId" AND
+        "InvoicedTask"."statusAction" IN ( ${sqlStatusActions} )
+      ` :
+      `
+        INNER JOIN "statuses" AS "Status" ON
+        "Task"."StatusId" = "Status"."id" AND
+        "Status"."action" IN ( ${sqlStatusActions} )
+      `
+    }
     WHERE (
       "Subtask"."quantity" > 0 OR
       "WorkTrip"."quantity" > 0
     )
     GROUP BY "User"."${ invoiced ? 'UserId' : 'id'}"
-    `
+    ORDER BY ${ invoiced ? '"Task"."closeDate"' : '"Task"."statusChange"'}
+  `
   );
 
   return sql.replace(/"/g, '`');
@@ -92,7 +100,6 @@ export const generateAgentInvoiceSQL = (fromDate, toDate, statusActions, invoice
     `
   );
 
-  //TODO: add filter by invoiced status action, add action to invoiced task data, edit status in case of invoiced can be deleted
   const sql = (
     `
     SELECT
@@ -135,13 +142,20 @@ export const generateAgentInvoiceSQL = (fromDate, toDate, statusActions, invoice
         "Task"."statusChange" <= '${toDBDate(toDate)}'
         `
     }
-      INNER JOIN "statuses" AS "Status" ON
-      "Task"."StatusId" = "Status"."id" AND
-      "Status"."action" IN(${ sqlStatusActions})
+    ${ invoiced ?
+      `` :
+      `
+        INNER JOIN "statuses" AS "Status" ON
+        "Task"."StatusId" = "Status"."id" AND
+        "Status"."action" IN ( ${sqlStatusActions} )
+      `
+    }
       ${
     invoiced ?
       `
-        INNER JOIN "invoiced_tasks" AS "InvoicedTask" ON "InvoicedTask"."TaskId" = "Task"."id"
+        INNER JOIN "invoiced_tasks" AS "InvoicedTask" ON
+          "InvoicedTask"."TaskId" = "Task"."id" AND
+          "InvoicedTask"."statusAction" IN ( ${sqlStatusActions} )
         INNER JOIN "invoiced_task_users" AS "InvoicedTask->requester" ON "InvoicedTask->requester"."requesterId" = "InvoicedTask"."id"
         INNER JOIN "invoiced_task_users" AS "InvoicedTask->assignedTos" ON "InvoicedTask->assignedTos"."assignedToId" = "InvoicedTask"."id"
         INNER JOIN "invoiced_task_users" AS "InvoicedTask->createdBy" ON "InvoicedTask->createdBy"."createdById" = "InvoicedTask"."id"

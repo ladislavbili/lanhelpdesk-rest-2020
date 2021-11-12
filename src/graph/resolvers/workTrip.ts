@@ -30,9 +30,9 @@ import checkResolver from './checkResolver';
 const scheduledDates = ['from', 'to'];
 
 const queries = {
-  workTrips: async (root, { taskId }, { req }) => {
-    const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser, taskId, undefined, ['taskWorksRead']);
+  workTrips: async (root, { taskId, fromInvoice }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
+    await checkIfHasProjectRights(SourceUser, taskId, undefined, ['taskWorksRead'], [], fromInvoice === true);
     return models.WorkTrip.findAll({
       order: [
         ['order', 'ASC'],
@@ -47,9 +47,9 @@ const queries = {
 }
 
 const mutations = {
-  addWorkTrip: async (root, { task, type, assignedTo, scheduled, ...params }, { req }) => {
-    const SourceUser = await checkResolver(req);
-    const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskWorksWrite']);
+  addWorkTrip: async (root, { task, type, assignedTo, scheduled, fromInvoice, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
+    const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskWorksWrite'], [], fromInvoice === true);
     if (Task.get('invoiced')) {
       throw CantEditInvoicedTaskError;
     }
@@ -115,8 +115,8 @@ const mutations = {
     }
   },
 
-  updateWorkTrip: async (root, { id, type, assignedTo, scheduled, ...params }, { req }) => {
-    const SourceUser = await checkResolver(req);
+  updateWorkTrip: async (root, { id, type, assignedTo, scheduled, fromInvoice, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
     const WorkTrip = <WorkTripInstance>await models.WorkTrip.findByPk(id, {
       include: [
         models.TripType,
@@ -156,7 +156,7 @@ const mutations = {
         message: `Work trip ${(<TripTypeInstance>WorkTrip.get('TripType')).get('title')} was updated.`,
       }
     ];
-    await checkIfHasProjectRights(SourceUser, undefined, Task.get('ProjectId'), ['taskWorksWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, Task.get('ProjectId'), ['taskWorksWrite'], [], fromInvoice === true);
     if (assignedTo !== undefined) {
       if (WorkTrip.get('UserId') !== assignedTo && !AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
         throw AssignedToUserNotSolvingTheTask;
@@ -253,8 +253,8 @@ const mutations = {
     return WorkTrip.reload();
   },
 
-  deleteWorkTrip: async (root, { id }, { req }) => {
-    const SourceUser = await checkResolver(req);
+  deleteWorkTrip: async (root, { id, fromInvoice }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
     const WorkTrip = await models.WorkTrip.findByPk(id, {
       include: [
         models.TripType,
@@ -280,7 +280,7 @@ const mutations = {
     const Project = <ProjectInstance>Task.get('Project');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
 
-    await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskWorksWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskWorksWrite'], [], fromInvoice === true);
     const originalValue = `${WorkTrip.get('done').toString()},${WorkTrip.get('quantity')},${WorkTrip.get('discount')},${(<TripTypeInstance>WorkTrip.get('TripType')).get('id')},${WorkTrip.get('UserId')}`;
     await (<TaskInstance>Task).createTaskChange(
       {

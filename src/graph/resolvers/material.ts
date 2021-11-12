@@ -18,9 +18,9 @@ import {
 } from '@/models/instances';
 
 const queries = {
-  materials: async (root, { taskId }, { req }) => {
-    const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser, taskId, undefined, ['taskMaterialsRead'], []);
+  materials: async (root, { taskId, fromInvoice }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
+    await checkIfHasProjectRights(SourceUser, taskId, undefined, ['taskMaterialsRead'], [], fromInvoice === true);
     return models.Material.findAll({
       order: [
         ['order', 'ASC'],
@@ -34,9 +34,9 @@ const queries = {
 }
 
 const mutations = {
-  addMaterial: async (root, { task, ...params }, { req }) => {
-    const SourceUser = await checkResolver(req);
-    const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskMaterialsWrite'], []);
+  addMaterial: async (root, { task, fromInvoice, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
+    const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskMaterialsWrite'], [], fromInvoice === true);
     const [
       TaskMetadata,
       Project,
@@ -82,8 +82,8 @@ const mutations = {
     });
   },
 
-  updateMaterial: async (root, { id, ...params }, { req }) => {
-    const SourceUser = await checkResolver(req);
+  updateMaterial: async (root, { id, fromInvoice, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
     const Material = await models.Material.findByPk(id, {
       include: [
         {
@@ -115,7 +115,7 @@ const mutations = {
         message: `Material ${Material.get('title')}${params.title && params.title !== Material.get('title') ? `/${params.title}` : ''} was updated.`,
       }
     ]
-    await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskMaterialsWrite'], []);
+    await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskMaterialsWrite'], [], fromInvoice === true);
     if (params.approved === false && Material.get('approved') === true) {
       params = {
         ...params,
@@ -182,8 +182,8 @@ const mutations = {
     return Material.update(params);
   },
 
-  deleteMaterial: async (root, { id }, { req }) => {
-    const SourceUser = await checkResolver(req);
+  deleteMaterial: async (root, { id, fromInvoice }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
     const Material = await models.Material.findByPk(id, {
       include: [
         {
@@ -207,7 +207,7 @@ const mutations = {
     }
     const Project = <ProjectInstance>Task.get('Project');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
-    await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskMaterialsWrite'], []);
+    await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskMaterialsWrite'], [], fromInvoice === true);
     await (<TaskInstance>Task).createTaskChange(
       {
         UserId: SourceUser.get('id'),

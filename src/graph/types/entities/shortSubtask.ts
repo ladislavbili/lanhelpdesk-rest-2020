@@ -16,9 +16,9 @@ export const ShortSubtaskQueries = `
 `
 
 export const ShortSubtaskMutations = `
-addShortSubtask( title: String!, done: Boolean, task: Int! ): Subtask
-updateShortSubtask( id: Int!, title: String, done: Boolean ): Subtask
-deleteShortSubtask( id: Int! ): Subtask
+addShortSubtask( title: String!, done: Boolean, task: Int!, fromInvoice: Boolean ): Subtask
+updateShortSubtask( id: Int!, title: String, done: Boolean, fromInvoice: Boolean ): Subtask
+deleteShortSubtask( id: Int!, fromInvoice: Boolean ): Subtask
 
 addRepeatTemplateShortSubtask( title: String!, done: Boolean, repeatTemplate: Int! ): Subtask
 updateRepeatTemplateShortSubtask( id: Int!, title: String, done: Boolean ): Subtask

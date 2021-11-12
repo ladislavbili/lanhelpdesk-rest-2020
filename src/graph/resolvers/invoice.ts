@@ -29,7 +29,6 @@ import {
 } from '@/models/instances';
 import { getModelAttribute } from '@/helperFunctions';
 
-//TODO: fix queries copy task type of task to subtasks
 const queries = {
   companyInvoice: async (root, { fromDate, toDate, companyId }, { req }) => {
     const User = await checkResolver(req, ['vykazy']);
@@ -64,7 +63,7 @@ const queries = {
       const task = tasks.find((task) => task.id === resultTask.id);
       if (task) {
         if (resultTask.Subtask.id !== null && task.Subtasks.every((subtask) => subtask.id !== resultTask.Subtask.id)) {
-          task.Subtasks.push({ ...resultTask.Subtask, TaskType: resultTask.Subtask.TaskType.id === null ? null : resultTask.Subtask.TaskType });
+          task.Subtasks.push({ ...resultTask.Subtask, TaskType: resultTask.TaskType });
         }
         if (resultTask.WorkTrip.id !== null && task.WorkTrips.every((workTrip) => workTrip.id !== resultTask.WorkTrip.id)) {
           task.WorkTrips.push({ ...resultTask.WorkTrip, TripType: resultTask.WorkTrip.TripType.id === null ? null : resultTask.WorkTrip.TripType });
@@ -78,7 +77,7 @@ const queries = {
       } else {
         tasks.push({
           ...resultTask,
-          Subtasks: resultTask.Subtask.id !== null ? [{ ...resultTask.Subtask, TaskType: resultTask.Subtask.TaskType.id === null ? null : resultTask.Subtask.TaskType, assignedTo: resultTask.Subtask.assignedTo.id === null ? null : resultTask.Subtask.assignedTo }] : [],
+          Subtasks: resultTask.Subtask.id !== null ? [{ ...resultTask.Subtask, TaskType: resultTask.TaskType, assignedTo: resultTask.Subtask.assignedTo.id === null ? null : resultTask.Subtask.assignedTo }] : [],
           WorkTrips: resultTask.WorkTrip.id !== null ? [{ ...resultTask.WorkTrip, TripType: resultTask.WorkTrip.TripType.id === null ? null : resultTask.WorkTrip.TripType, assignedTo: resultTask.WorkTrip.assignedTo.id === null ? null : resultTask.WorkTrip.assignedTo }] : [],
           Materials: resultTask.Material.id !== null ? [resultTask.Material] : [],
           assignedTos: resultTask.assignedTos.id !== null ? [resultTask.assignedTos] : [],
@@ -140,8 +139,8 @@ const queries = {
           task.Subtasks.push({
             ...resultTask.Subtask,
             TaskType: {
-              id: resultTask.Subtask.invoicedTypeId,
-              title: resultTask.Subtask.invoicedTypeTitle,
+              id: resultTask.taskTypeId,
+              title: resultTask.taskTypeTitle,
             },
           });
         }
@@ -169,8 +168,8 @@ const queries = {
                 {
                   ...resultTask.Subtask,
                   TaskType: {
-                    id: resultTask.Subtask.invoicedTypeId,
-                    title: resultTask.Subtask.invoicedTypeTitle,
+                    id: resultTask.taskTypeId,
+                    title: resultTask.taskTypeTitle,
                   },
                 }
               ] :

@@ -11,9 +11,9 @@ import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
 
 const queries = {
-  taskChanges: async (root, { taskId }, { req }) => {
-    const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser, taskId, undefined, ['history']);
+  taskChanges: async (root, { taskId, fromInvoice }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
+    await checkIfHasProjectRights(SourceUser, taskId, undefined, ['history'], [], fromInvoice === true);
     return models.TaskChange.findAll({
       include: [
         models.TaskChangeMessage,

@@ -87,9 +87,9 @@ const queries = {
       ],
     });
   },
-  myProjects: async (root, args, { req, userID }) => {
-    const User = await checkResolver(req);
-    if ((<RoleInstance>User.get('Role')).get('level') === 0) {
+  myProjects: async (root, { fromInvoice }, { req, userID }) => {
+    const User = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
+    if ((<RoleInstance>User.get('Role')).get('level') === 0 || fromInvoice) {
       //ADMIN
       const Projects = <ProjectInstance[]>await models.Project.findAll({
         include: [

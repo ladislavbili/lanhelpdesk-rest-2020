@@ -30,9 +30,9 @@ import checkResolver from './checkResolver';
 const scheduledDates = ['from', 'to'];
 
 const queries = {
-  subtasks: async (root, { taskId }, { req }) => {
-    const SourceUser = await checkResolver(req);
-    await checkIfHasProjectRights(SourceUser, taskId, undefined, ['taskWorksRead']);
+  subtasks: async (root, { taskId, fromInvoice }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
+    await checkIfHasProjectRights(SourceUser, taskId, undefined, ['taskWorksRead'], [], fromInvoice === true);
     return models.Subtask.findAll({
       order: [
         ['order', 'ASC'],
@@ -47,9 +47,9 @@ const queries = {
 }
 
 const mutations = {
-  addSubtask: async (root, { task, type, assignedTo, scheduled, order, ...params }, { req }) => {
+  addSubtask: async (root, { task, type, assignedTo, scheduled, order, fromInvoice, ...params }, { req }) => {
     const SourceUser = await checkResolver(req);
-    const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskWorksWrite']);
+    const { Task } = await checkIfHasProjectRights(SourceUser, task, undefined, ['taskWorksWrite'], [], fromInvoice === true);
     if (Task.get('invoiced')) {
       throw CantEditInvoicedTaskError;
     }
@@ -118,8 +118,8 @@ const mutations = {
     }
   },
 
-  updateSubtask: async (root, { id, type, assignedTo, scheduled, ...params }, { req }) => {
-    const SourceUser = await checkResolver(req);
+  updateSubtask: async (root, { id, type, assignedTo, scheduled, fromInvoice, ...params }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
     const Subtask = <SubtaskInstance>await models.Subtask.findByPk(id, {
       include: [
         models.ScheduledWork,
@@ -156,7 +156,7 @@ const mutations = {
       newValue: `${params.title},${params.done},${params.quantity},${params.discount},${type},${assignedTo}`,
       message: `Subtask ${Subtask.get('title')}${params.title !== Subtask.get('title') ? `/${params.title}` : ''} was updated.`,
     }]
-    await checkIfHasProjectRights(SourceUser, undefined, Task.get('ProjectId'), ['taskWorksWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, Task.get('ProjectId'), ['taskWorksWrite'], [], fromInvoice === true);
     if (assignedTo !== undefined) {
       if (Subtask.get('UserId') !== assignedTo && !AssignedTos.some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
         throw AssignedToUserNotSolvingTheTask;
@@ -253,8 +253,8 @@ const mutations = {
     return Subtask.reload();
   },
 
-  deleteSubtask: async (root, { id }, { req }) => {
-    const SourceUser = await checkResolver(req);
+  deleteSubtask: async (root, { id, fromInvoice }, { req }) => {
+    const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
     const Subtask = await models.Subtask.findByPk(id, {
       include: [
         {
@@ -279,7 +279,7 @@ const mutations = {
     const Project = <ProjectInstance>Task.get('Project');
     const TaskMetadata = <TaskMetadataInstance>Task.get('TaskMetadata');
 
-    await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskWorksWrite']);
+    await checkIfHasProjectRights(SourceUser, undefined, Project.get('id'), ['taskWorksWrite'], [], fromInvoice === true);
     const originalValue = `${Subtask.get('title')}${Subtask.get('done').toString()},${Subtask.get('quantity')},${Subtask.get('discount')},${Subtask.get('UserId')}`;
     await (<TaskInstance>Task).createTaskChange(
       {
