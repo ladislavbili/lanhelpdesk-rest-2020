@@ -207,7 +207,8 @@ const mutations = {
           })
         })
         //must be rent of the company
-        const [existingRents, newRents] = splitArrayByFilter(rents, (rent) => rent.id !== undefined);
+        const [existingRents, newRents] = splitArrayByFilter(rents, (rent) => rent.id > -1);
+        newRents.forEach((rent) => delete rent.id);
         if (existingRents.some((rent) => !(<CompanyRentInstance[]>TargetCompany.get('CompanyRents')).some((compRent) => compRent.get('id') === rent.id))) {
           addApolloError(
             'Company rent',
