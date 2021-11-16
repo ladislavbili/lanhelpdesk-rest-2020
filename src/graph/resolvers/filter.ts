@@ -135,7 +135,6 @@ const queries = {
 }
 
 const mutations = {
-  //( title: String!, pub: Boolean!, global: Boolean!, dashboard: Boolean!, filter: FilterInput!, order: Int, roles: [Int], projectId: Int )
   addFilter: async (root, { roles, filter, order, pub, projectId, ...args }, { req }) => {
     const User = await checkResolver(req, ['publicFilters', 'customFilters'], true);
     const rights = <AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight');
@@ -242,6 +241,9 @@ const mutations = {
     const User = await checkResolver(req, ["publicFilters"]);
     const dates = extractDatesFromObject(filter, dateNames);
 
+    if (!order) {
+      order = 0;
+    }
     //if project, must be at least read and exists
     if (projectId) {
       const Project = await models.Project.findByPk(projectId);
@@ -267,6 +269,7 @@ const mutations = {
     const newFilter = <FilterInstance>await models.Filter.create(
       {
         ...args,
+        order,
         ProjectId: projectId,
         filterOfProjectId: projectId,
         filterCreatedById: User.get('id'),
@@ -280,6 +283,7 @@ const mutations = {
       }
     );
     await Promise.all([
+      newFilter.setRoles(roles),
       newFilter.setFilterAssignedTos(assignedTos ? assignedTos : []),
       //newFilter.setFilterTags(tags ? tags : []),
       newFilter.setFilterRequesters(requesters ? requesters : []),
@@ -376,9 +380,6 @@ const mutations = {
     const Filter = <FilterInstance>await models.Filter.findByPk(id, { include: [{ model: models.FilterOneOf }] });
     if (Filter === null || !Filter.get('pub')) {
       throw createDoesNoExistsError('Filter', id);
-    }
-    if (roles) {
-      await idsDoExistsCheck(roles, models.Role);
     }
 
     //if project, must be at least read and exists

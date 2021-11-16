@@ -276,25 +276,25 @@ const mutations = {
       {
         include: [
           //{ model: models.Project, as: 'defCompany' },
-          { model: models.Imap },
-          { model: models.User },
-          { model: models.Task, where: { invoiced: false } },
-          { model: models.RepeatTemplate },
-
+          { model: models.Imap, required: false },
+          { model: models.User, required: false },
+          { model: models.Task, where: { invoiced: false }, required: false },
+          { model: models.RepeatTemplate, required: false },
         ]
       }
     );
-    if (OldCompany.get('def')) {
-      throw CantDeleteDefCompanyError;
-    }
     const NewCompany = await models.Company.findByPk(newId);
-
     if (OldCompany === null) {
       throw createDoesNoExistsError('Company', id);
     }
     if (NewCompany === null) {
       throw createDoesNoExistsError('New company', newId);
     }
+
+    if (OldCompany.get('def')) {
+      throw CantDeleteDefCompanyError;
+    }
+
     let promises = [
       ...(<UserInstance[]>OldCompany.get('Users')).map((user) => user.setCompany(newId)),
       ...(<TaskInstance[]>OldCompany.get('Tasks')).map((task) => task.setCompany(newId)),
