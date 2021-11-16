@@ -84,6 +84,7 @@ import {
   generateCompanyUsedSubtaskPausalSQL,
   generateWorkCountsSQL,
   generateInvoicedTaskSQL,
+  addStatusFilter,
 } from '@/graph/addons/task';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
@@ -130,6 +131,10 @@ const queries = {
     const isAdmin = isUserAdmin(User);
     const checkUserTime = checkUserWatch.stop();
     let taskWhere = [];
+
+    //direct status filter beats Filter, currently Filter statuses are disabled
+    taskWhere = addStatusFilter(taskWhere, statuses, filter, isAdmin);
+
     if (projectId) {
       const Project = await models.Project.findByPk(projectId, { include: [models.Milestone] });
       if (Project === null) {

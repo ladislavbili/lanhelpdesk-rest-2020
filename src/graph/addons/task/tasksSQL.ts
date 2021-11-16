@@ -10,6 +10,11 @@ import {
   removeLastComma,
 } from '../sqlFunctions';
 
+//TODO: add filter for invoiced things, - only string filter is necessary
+//Explanation: if Task doesnt have correct ID (invoiced task with deleted item), item was deleted, therefore cant be in filter
+
+//TODO: seperate filter for invoiced, DnD sepearates invoiced and not invoiced
+
 const rightExists = (isAdmin, right) => {
   if (isAdmin) {
     return `(
@@ -56,6 +61,7 @@ export const transformSortToQueryString = (sort, main, gantt = false) => {
   return `${orderBy}, ${main ? "Task" : "TaskData"}."id" DESC`;
 }
 
+//convert filter to where
 export const filterToTaskWhereSQL = (filter, userId, companyId, isAdmin) => {
 
   let where = [];
@@ -246,6 +252,22 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, isAdmin) => {
   return where;
 }
 
+//add filter by status
+export const addStatusFilter = (where, statuses, filter, isAdmin) => {
+  if (statuses && statuses.length !== 0) {
+    console.log('added where');
+
+    return [
+      ...where,
+      `(
+            "Task"."StatusId" IN (${statuses.toString()}) AND
+            ${rightExists(isAdmin, 'statusView')}
+          )`
+    ];
+  }
+  return where;
+}
+
 const getAssignedTosWhereSQL = (filter, userId, isAdmin) => {
   const ids = filter.assignedToCur ? [...filter.assignedTos, userId] : filter.assignedTos;
   if (ids.length > 0) {
@@ -320,6 +342,7 @@ const getScheduledWhereSQL = (filter, isAdmin) => {
   )`;
 }
 
+//convert string filter to where
 export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
   let where = [];
   if (search !== undefined && search !== null && search.length !== 0) {
@@ -414,11 +437,100 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
   return where;
 }
 
+//SQL generation
 export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy, secondaryOrderBy, limit, offset) => {
 
-  const outerSQLTop = (
+  const notAdminWhere = (
     `
-    SELECT "TaskData".*,
+    ${where.length > 0 ? 'AND ' : ''}(
+      "Task"."createdById" = ${userId} OR
+      "Task"."requesterId" = ${userId} OR
+      "assignedTosFilter"."id" = ${userId} OR
+      "Project->ProjectGroups->ProjectGroupRight"."allTasks" = true OR
+      ("Project->ProjectGroups->ProjectGroupRight"."companyTasks" = true AND "Task"."CompanyId" = ${companyId})
+    ) AND
+    (
+      "Project->ProjectGroups->Users"."id" IS NOT NULL OR
+      "Project->ProjectGroups->Companies"."CompanyId" IS NOT NULL
+    )
+    `
+  );
+
+  const filterAttributes = (
+    `
+    COUNT(*) OVER () as count,
+    ${createModelAttributes("Company", "Company", models.Company)}
+    ${createModelAttributes("createdBy", "createdBy", models.User)}
+    ${generateFullNameSQL('createdBy')}
+    ${createModelAttributes("Milestone", "Milestone", models.Milestone)}
+    ${createModelAttributes("requester", "requester", models.User)}
+    ${generateFullNameSQL('requester')}
+    ${createModelAttributes("Status", "Status", models.Status)}
+
+    ${createModelAttributes("TaskType", "TaskType", models.TaskType)}
+    ${createModelAttributes("Repeat", "Repeat", models.Repeat)}
+    ${createModelAttributes("TaskMetadata", "TaskMetadata", models.TaskMetadata)}
+    ${createModelAttributes("InvoicedTask", "InvoicedTask", models.InvoicedTask)}
+    ${createModelAttributes("InvoicedTask->Tags", "InvoicedTask.Tags", models.InvoicedTaskTag)}
+    ${createModelAttributes("InvoicedTask->requester", "InvoicedTask.requester", models.InvoicedTaskUser)}
+    ${createModelAttributes("InvoicedTask->assignedTos", "InvoicedTask.assignedTos", models.InvoicedTaskUser)}
+    ${createModelAttributes("InvoicedTask->createdBy", "InvoicedTask.createdBy", models.InvoicedTaskUser)}
+    ${ isAdmin ?
+      `
+      ${createModelAttributes("Project->AdminProjectGroups", "Project.AdminProjectGroup", models.ProjectGroup)}
+      ${createModelAttributes("Project->AdminProjectGroups->ProjectGroupRight", "Project.AdminProjectGroup.ProjectGroupRight", models.ProjectGroupRights)}
+      ` :
+      ''
+    }
+    ${createModelAttributes("Project->ProjectGroups", "Project.ProjectGroups", models.ProjectGroup)}
+    ${createModelAttributes("Project->ProjectGroups->ProjectGroupRight", "Project.ProjectGroups.ProjectGroupRight", models.ProjectGroupRights)}
+    ${createModelAttributes("Project->ProjectGroups->Users", "Project.ProjectGroups.Users", models.User)}
+    ${createModelAttributes("Project->ProjectGroups->Users->user_belongs_to_group", "Project.ProjectGroups.Users.user_belongs_to_group", null, 'userBelongsToGroupAttributes')}
+    `
+  );
+
+  const filterAssociations = (
+    `
+    LEFT OUTER JOIN ( "task_assignedTo" AS "assignedTosFilter->task_assignedTo" INNER JOIN "users" AS "assignedTosFilter" ON "assignedTosFilter"."id" = "assignedTosFilter->task_assignedTo"."UserId") ON "Task"."id" = "assignedTosFilter->task_assignedTo"."TaskId"
+    LEFT OUTER JOIN "companies" AS "Company" ON "Task"."CompanyId" = "Company"."id"
+    LEFT OUTER JOIN "users" AS "createdBy" ON "Task"."createdById" = "createdBy"."id"
+    LEFT OUTER JOIN "milestone" AS "Milestone" ON "Task"."MilestoneId" = "Milestone"."id"
+    LEFT OUTER JOIN "users" AS "requester" ON "Task"."requesterId" = "requester"."id"
+    LEFT OUTER JOIN "statuses" AS "Status" ON "Task"."StatusId" = "Status"."id"
+    LEFT OUTER JOIN (
+      "task_has_tags" AS "tagsFilter->task_has_tags" INNER JOIN "tags" AS "tagsFilter" ON "tagsFilter"."id" = "tagsFilter->task_has_tags"."TagId"
+    ) ON "Task"."id" = "tagsFilter->task_has_tags"."TaskId"
+    LEFT OUTER JOIN "task_types" AS "TaskType" ON "Task"."TaskTypeId" = "TaskType"."id"
+    LEFT OUTER JOIN "repeat" AS "Repeat" ON "Task"."RepeatId" = "Repeat"."id"
+    LEFT OUTER JOIN "task_metadata" AS "TaskMetadata" ON "Task"."id" = "TaskMetadata"."TaskId"
+    LEFT OUTER JOIN "invoiced_tasks" AS "InvoicedTask" ON "InvoicedTask"."TaskId" = "Task"."id"
+    LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->createdBy" ON "InvoicedTask->createdBy"."createdById" = "InvoicedTask"."id"
+    LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->requester" ON "InvoicedTask->requester"."requesterId" = "InvoicedTask"."id"
+    LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->assignedTos" ON "InvoicedTask->assignedTos"."assignedToId" = "InvoicedTask"."id"
+    LEFT OUTER JOIN "invoiced_task_tags" AS "InvoicedTask->Tags" ON "InvoicedTask->Tags"."InvoicedTaskId" = "InvoicedTask"."id"
+
+    ${ isAdmin ?
+      `
+      INNER JOIN "project_group" AS "Project->AdminProjectGroups" ON
+      "Project.id" = "Project->AdminProjectGroups"."ProjectId" AND
+      "Project->AdminProjectGroups"."admin" = true AND
+      "Project->AdminProjectGroups"."def" = true
+      INNER JOIN "project_group_rights" AS "Project->AdminProjectGroups->ProjectGroupRight" ON "Project->AdminProjectGroups"."id" = "Project->AdminProjectGroups->ProjectGroupRight"."ProjectGroupId"
+      ` :
+      ''
+    }
+    LEFT OUTER JOIN "project_group" AS "Project->ProjectGroups" ON "Project.id" = "Project->ProjectGroups"."ProjectId"
+    LEFT OUTER JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
+    LEFT OUTER JOIN (
+      "user_belongs_to_group" AS "Project->ProjectGroups->Users->user_belongs_to_group" INNER JOIN "users" AS "Project->ProjectGroups->Users" ON "Project->ProjectGroups->Users"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."UserId"
+    ) ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."ProjectGroupId" AND "Project->ProjectGroups->Users"."id" = ${userId}
+    LEFT OUTER JOIN "company_belongs_to_group" AS "Project->ProjectGroups->Companies" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Companies"."ProjectGroupId" AND "Project->ProjectGroups->Companies"."CompanyId" = ${companyId}
+
+    `
+  );
+
+  const wantedAttributes = (
+    `
     "SubtaskCounts"."subtasksQuantity" as subtasksQuantity,
     "SubtaskCounts"."approvedSubtasksQuantity" as approvedSubtasksQuantity,
     "SubtaskCounts"."pendingSubtasksQuantity" as pendingSubtasksQuantity,
@@ -439,188 +551,81 @@ export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy,
     ${createModelAttributes("InvoicedTask->requester", "InvoicedTask.requester", models.InvoicedTaskUser)}
     ${createModelAttributes("InvoicedTask->assignedTos", "InvoicedTask.assignedTos", models.InvoicedTaskUser)}
     ${createModelAttributes("InvoicedTask->createdBy", "InvoicedTask.createdBy", models.InvoicedTaskUser)}
-    ${removeLastComma(createModelAttributes("Tags->task_has_tags", "Tags.task_has_tags", null, 'tagsTaskMapAttributes'))}
-
-
-    FROM (
-      `
+    ${createModelAttributes("Tags->task_has_tags", "Tags.task_has_tags", null, 'tagsTaskMapAttributes')}
+    `
   );
 
-  const baseSQL = (
+  const wantedAssociations = (
     `
-      SELECT "Task".*,
-      COUNT(*) OVER () as count,
-      ${createModelAttributes("assignedTosFilter", "assignedTosFilter", models.User)}
-      ${createModelAttributes("assignedTosFilter->task_assignedTo", "assignedTosFilter.task_assignedTo", null, 'assignedTosTaskMapAttributes')}
-      ${createModelAttributes("Company", "Company", models.Company)}
-      ${createModelAttributes("createdBy", "createdBy", models.User)}
-      ${generateFullNameSQL('createdBy')}
-      ${createModelAttributes("Milestone", "Milestone", models.Milestone)}
-      ${createModelAttributes("requester", "requester", models.User)}
-      ${generateFullNameSQL('requester')}
-      ${createModelAttributes("Status", "Status", models.Status)}
+    LEFT OUTER JOIN (
+      "task_assignedTo" AS "assignedTos->task_assignedTo" INNER JOIN "users" AS "assignedTos" ON "assignedTos"."id" = "assignedTos->task_assignedTo"."UserId"
+    ) ON "TaskData"."id" = "assignedTos->task_assignedTo"."TaskId"
+    LEFT OUTER JOIN (
+      "task_has_tags" AS "Tags->task_has_tags" INNER JOIN "tags" AS "Tags" ON "Tags"."id" = "Tags->task_has_tags"."TagId"
+    ) ON "TaskData"."id" = "Tags->task_has_tags"."TaskId"
+    LEFT OUTER JOIN "subtasks" AS "Subtasks" ON "TaskData"."id" = "Subtasks"."TaskId"
+    LEFT OUTER JOIN "users" AS "Subtasks->User" ON "Subtasks"."UserId" = "Subtasks->User"."id"
+    LEFT OUTER JOIN "invoiced_task_users" AS "Subtasks->InvoicedTaskUser" ON "Subtasks->InvoicedTaskUser"."SubtaskId" = "Subtasks"."id"
+    LEFT OUTER JOIN (
+      SELECT
+      "Subtasks"."TaskId",
+      SUM( "Subtasks"."quantity" ) as subtasksQuantity,
+      SUM( CASE WHEN "Subtasks"."approved" THEN "Subtasks"."quantity" ELSE 0 END ) as approvedSubtasksQuantity,
+      SUM( CASE WHEN "Subtasks"."approved" THEN 0 ELSE "Subtasks"."quantity" END ) as pendingSubtasksQuantity
+      FROM "subtasks" AS Subtasks GROUP BY "Subtasks"."TaskId"
+    ) AS "SubtaskCounts" ON "SubtaskCounts"."TaskId" = "TaskData"."id"
+    LEFT OUTER JOIN (
+      SELECT "WorkTrips"."TaskId", COUNT( "WorkTrips"."id" ) as workTripsQuantity FROM "work_trips" AS WorkTrips
+      GROUP BY "WorkTrips"."TaskId"
+    ) AS "WorkTrips" ON "WorkTrips"."TaskId" = "TaskData"."id"
+    LEFT OUTER JOIN (
+      SELECT
+      "Materials"."TaskId",
+      SUM( "Materials"."quantity" * "Materials"."price" ) as materialsPrice,
+      SUM( CASE WHEN "Materials"."approved" THEN "Materials"."quantity" * "Materials"."price" ELSE 0 END ) as approvedMaterialsPrice,
+      SUM( CASE WHEN "Materials"."approved" THEN 0 ELSE "Materials"."quantity" * "Materials"."price" END ) as pendingMaterialsPrice
+      FROM "materials" AS Materials
+      GROUP BY "Materials"."TaskId"
+    ) AS "Materials" ON "Materials"."TaskId" = "TaskData"."id"
 
-      "tagsFilter"."id" AS "tagsFilter.id",
-      "tagsFilter"."title" AS "tagsFilter.title",
-      ${createModelAttributes("tagsFilter->task_has_tags", "tagsFilter.task_has_tags", null, 'tagsTaskMapAttributes')}
-      ${createModelAttributes("TaskType", "TaskType", models.TaskType)}
-      ${createModelAttributes("Repeat", "Repeat", models.Repeat)}
-      ${createModelAttributes("TaskMetadata", "TaskMetadata", models.TaskMetadata)}
-      ${ isAdmin ?
-      `
-        ${createModelAttributes("Project->AdminProjectGroups", "Project.AdminProjectGroup", models.ProjectGroup)}
-        ${createModelAttributes("Project->AdminProjectGroups->ProjectGroupRight", "Project.AdminProjectGroup.ProjectGroupRight", models.ProjectGroupRights)}
-      ` :
-      ''
-    }
-      ${createModelAttributes("Project->ProjectGroups", "Project.ProjectGroups", models.ProjectGroup)}
-      ${createModelAttributes("Project->ProjectGroups->ProjectGroupRight", "Project.ProjectGroups.ProjectGroupRight", models.ProjectGroupRights)}
-      ${createModelAttributes("Project->ProjectGroups->Users", "Project.ProjectGroups.Users", models.User)}
-      ${removeLastComma(createModelAttributes("Project->ProjectGroups->Users->user_belongs_to_group", "Project.ProjectGroups.Users.user_belongs_to_group", null, 'userBelongsToGroupAttributes'))}
+    LEFT OUTER JOIN "invoiced_tasks" AS "InvoicedTask" ON "InvoicedTask"."TaskId" = "TaskData"."id"
+    LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->createdBy" ON "InvoicedTask->createdBy"."createdById" = "InvoicedTask"."id"
+    LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->requester" ON "InvoicedTask->requester"."requesterId" = "InvoicedTask"."id"
+    LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->assignedTos" ON "InvoicedTask->assignedTos"."assignedToId" = "InvoicedTask"."id"
+    LEFT OUTER JOIN "invoiced_task_tags" AS "InvoicedTask->Tags" ON "InvoicedTask->Tags"."InvoicedTaskId" = "InvoicedTask"."id"
+    `
+  );
+
+  let sql = (
+    `
+    SELECT "TaskData".*,
+    ${removeLastComma(wantedAttributes)}
+
+    FROM (
+      SELECT "Task".*,
+      ${removeLastComma(filterAttributes)}
+
       FROM (
         SELECT DISTINCT
+
         ${createModelAttributes("Task", null, models.Task)}
         ${removeLastComma(createModelAttributes("Project", "Project", models.Project))}
+
         FROM "tasks" AS "Task"
         INNER JOIN "projects" AS "Project" ON "Task"."ProjectId" = "Project"."id"
       ) AS "Task"
-        `
-  );
 
-  const outerSQLBottom = (
-    `
-      ) as TaskData
-      LEFT OUTER JOIN (
-        "task_assignedTo" AS "assignedTos->task_assignedTo" INNER JOIN "users" AS "assignedTos" ON "assignedTos"."id" = "assignedTos->task_assignedTo"."UserId"
-      ) ON "TaskData"."id" = "assignedTos->task_assignedTo"."TaskId"
-      LEFT OUTER JOIN (
-        "task_has_tags" AS "Tags->task_has_tags" INNER JOIN "tags" AS "Tags" ON "Tags"."id" = "Tags->task_has_tags"."TagId"
-      ) ON "TaskData"."id" = "Tags->task_has_tags"."TaskId"
-      LEFT OUTER JOIN "subtasks" AS "Subtasks" ON "TaskData"."id" = "Subtasks"."TaskId"
-      LEFT OUTER JOIN "users" AS "Subtasks->User" ON "Subtasks"."UserId" = "Subtasks->User"."id"
-      LEFT OUTER JOIN "invoiced_task_users" AS "Subtasks->InvoicedTaskUser" ON "Subtasks->InvoicedTaskUser"."SubtaskId" = "Subtasks"."id"
-      LEFT OUTER JOIN (
-        SELECT
-        "Subtasks"."TaskId",
-        SUM( "Subtasks"."quantity" ) as subtasksQuantity,
-        SUM( CASE WHEN "Subtasks"."approved" THEN "Subtasks"."quantity" ELSE 0 END ) as approvedSubtasksQuantity,
-        SUM( CASE WHEN "Subtasks"."approved" THEN 0 ELSE "Subtasks"."quantity" END ) as pendingSubtasksQuantity
-        FROM "subtasks" AS Subtasks GROUP BY "Subtasks"."TaskId"
-      ) AS "SubtaskCounts" ON "SubtaskCounts"."TaskId" = "TaskData"."id"
-      LEFT OUTER JOIN (
-        SELECT "WorkTrips"."TaskId", COUNT( "WorkTrips"."id" ) as workTripsQuantity FROM "work_trips" AS WorkTrips
-        GROUP BY "WorkTrips"."TaskId"
-      ) AS "WorkTrips" ON "WorkTrips"."TaskId" = "TaskData"."id"
-      LEFT OUTER JOIN (
-        SELECT
-        "Materials"."TaskId",
-        SUM( "Materials"."quantity" * "Materials"."price" ) as materialsPrice,
-        SUM( CASE WHEN "Materials"."approved" THEN "Materials"."quantity" * "Materials"."price" ELSE 0 END ) as approvedMaterialsPrice,
-        SUM( CASE WHEN "Materials"."approved" THEN 0 ELSE "Materials"."quantity" * "Materials"."price" END ) as pendingMaterialsPrice
-        FROM "materials" AS Materials
-        GROUP BY "Materials"."TaskId"
-      ) AS "Materials" ON "Materials"."TaskId" = "TaskData"."id"
+      ${filterAssociations}
 
-      LEFT OUTER JOIN "invoiced_tasks" AS "InvoicedTask" ON "InvoicedTask"."TaskId" = "TaskData"."id"
-      LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->createdBy" ON "InvoicedTask->createdBy"."createdById" = "InvoicedTask"."id"
-      LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->requester" ON "InvoicedTask->requester"."requesterId" = "InvoicedTask"."id"
-      LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->assignedTos" ON "InvoicedTask->assignedTos"."assignedToId" = "InvoicedTask"."id"
-      LEFT OUTER JOIN "invoiced_task_tags" AS "InvoicedTask->Tags" ON "InvoicedTask->Tags"."InvoicedTaskId" = "InvoicedTask"."id"
-      `
-  );
-
-  const notAdminWhere = (
-    `
-    ${where.length > 0 ? 'AND ' : ''}(
-      "Task"."createdById" = ${userId} OR
-      "Task"."requesterId" = ${userId} OR
-      "assignedTosFilter"."id" = ${userId} OR
-      "Project->ProjectGroups->ProjectGroupRight"."allTasks" = true OR
-      ("Project->ProjectGroups->ProjectGroupRight"."companyTasks" = true AND "Task"."CompanyId" = ${companyId})
-    ) AND
-    (
-      "Project->ProjectGroups->Users"."id" IS NOT NULL OR
-      "Project->ProjectGroups->Companies"."CompanyId" IS NOT NULL
-    )
+      ${ (where.length > 0 || !isAdmin) ? `WHERE ${where} ${isAdmin ? '' : `${notAdminWhere}`}` : ''}
+      GROUP BY "Task"."id"
+      ${ mainOrderBy ? `ORDER BY ${mainOrderBy}` : ''}
+      ${ limit ? `LIMIT ${offset},${limit}` : ''}
+    ) as TaskData
+    ${wantedAssociations}
+    ${ secondaryOrderBy ? `ORDER BY ${secondaryOrderBy}` : ''}
     `
   );
-
-  //ORDER BY "Task"."important" DESC
-  let sql = `
-      ${outerSQLTop}
-      ${baseSQL}
-  `;
-  sql = (
-    `
-    ${sql}
-    LEFT OUTER JOIN ( "task_assignedTo" AS "assignedTosFilter->task_assignedTo" INNER JOIN "users" AS "assignedTosFilter" ON "assignedTosFilter"."id" = "assignedTosFilter->task_assignedTo"."UserId") ON "Task"."id" = "assignedTosFilter->task_assignedTo"."TaskId"
-    LEFT OUTER JOIN "companies" AS "Company" ON "Task"."CompanyId" = "Company"."id"
-    LEFT OUTER JOIN "users" AS "createdBy" ON "Task"."createdById" = "createdBy"."id"
-    LEFT OUTER JOIN "milestone" AS "Milestone" ON "Task"."MilestoneId" = "Milestone"."id"
-    LEFT OUTER JOIN "users" AS "requester" ON "Task"."requesterId" = "requester"."id"
-    LEFT OUTER JOIN "statuses" AS "Status" ON "Task"."StatusId" = "Status"."id"
-    LEFT OUTER JOIN (
-      "task_has_tags" AS "tagsFilter->task_has_tags" INNER JOIN "tags" AS "tagsFilter" ON "tagsFilter"."id" = "tagsFilter->task_has_tags"."TagId"
-    ) ON "Task"."id" = "tagsFilter->task_has_tags"."TaskId"
-    LEFT OUTER JOIN "task_types" AS "TaskType" ON "Task"."TaskTypeId" = "TaskType"."id"
-    LEFT OUTER JOIN "repeat" AS "Repeat" ON "Task"."RepeatId" = "Repeat"."id"
-    LEFT OUTER JOIN "task_metadata" AS "TaskMetadata" ON "Task"."id" = "TaskMetadata"."TaskId"
-    ${ isAdmin ?
-      `
-      INNER JOIN "project_group" AS "Project->AdminProjectGroups" ON
-      "Project.id" = "Project->AdminProjectGroups"."ProjectId" AND
-      "Project->AdminProjectGroups"."admin" = true AND
-      "Project->AdminProjectGroups"."def" = true
-      INNER JOIN "project_group_rights" AS "Project->AdminProjectGroups->ProjectGroupRight" ON "Project->AdminProjectGroups"."id" = "Project->AdminProjectGroups->ProjectGroupRight"."ProjectGroupId"
-      ` :
-      ''
-    }
-    LEFT OUTER JOIN "project_group" AS "Project->ProjectGroups" ON "Project.id" = "Project->ProjectGroups"."ProjectId"
-    LEFT OUTER JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
-    LEFT OUTER JOIN (
-      "user_belongs_to_group" AS "Project->ProjectGroups->Users->user_belongs_to_group" INNER JOIN "users" AS "Project->ProjectGroups->Users" ON "Project->ProjectGroups->Users"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."UserId"
-    ) ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Users->user_belongs_to_group"."ProjectGroupId" AND "Project->ProjectGroups->Users"."id" = ${userId}
-    LEFT OUTER JOIN "company_belongs_to_group" AS "Project->ProjectGroups->Companies" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->Companies"."ProjectGroupId" AND "Project->ProjectGroups->Companies"."CompanyId" = ${companyId}
-    `
-  );
-
-  if (where.length > 0 || !isAdmin) {
-    sql = `
-    ${sql}
-    WHERE ${where} ${isAdmin ? '' : `${notAdminWhere}`}
-    `
-  }
-
-  sql = `
-  ${sql}
-  GROUP BY "Task"."id"
-  `
-
-  if (mainOrderBy) {
-    sql = `
-    ${sql}
-    ORDER BY ${mainOrderBy}
-    `
-  }
-
-  if (limit) {
-    sql = `
-    ${sql}
-    LIMIT ${offset},${limit}
-    `
-  }
-
-  sql = `
-  ${sql}
-  ${outerSQLBottom}
-  `
-
-  if (secondaryOrderBy) {
-    sql = `
-    ${sql}
-    ORDER BY ${secondaryOrderBy}
-    `
-  }
 
   return sql.replace(/"/g, '`');
 }
