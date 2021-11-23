@@ -107,7 +107,7 @@ type TasksTotals{
   pendingMaterials: Float!
 }
 
-${createExecClass("Task", false, 'count: Int! totals: TasksTotals! ')}
+${createExecClass("Task", false, 'count: Int! totals: TasksTotals ')}
 ${createExecClass("Task", true)}
 
 enum EnumSortTaskKey {
@@ -162,6 +162,7 @@ tasks(
   limit: Int
   page: Int
   statuses: [Int]
+  invoiced: Boolean
 ): ExecTasks
 task(id: Int!, fromInvoice: Boolean): Task
 oldTask(id: Int!): Task

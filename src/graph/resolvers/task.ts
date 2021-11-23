@@ -85,6 +85,7 @@ import {
   generateWorkCountsSQL,
   generateInvoicedTaskSQL,
   addStatusFilter,
+  addInvoicedFilter,
 } from '@/graph/addons/task';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
@@ -121,7 +122,7 @@ const createBasicSort = (taskName, milestoneSort) => {
 }
 
 const queries = {
-  tasks: async (root, { projectId, milestoneId, filter, sort, milestoneSort, search, stringFilter, limit, page, statuses }, { req, userID }) => {
+  tasks: async (root, { projectId, milestoneId, filter, sort, milestoneSort, search, stringFilter, limit, page, statuses, invoiced }, { req, userID }) => {
     const mainOrderBy = sort ? transformSortToQueryString(sort, true, milestoneSort) : createBasicSort('Task', milestoneSort);
     const secondaryOrderBy = sort ? transformSortToQueryString(sort, false, milestoneSort) : createBasicSort('TaskData', milestoneSort);
 
@@ -134,6 +135,7 @@ const queries = {
 
     //direct status filter beats Filter, currently Filter statuses are disabled
     taskWhere = addStatusFilter(taskWhere, statuses, filter, isAdmin);
+    taskWhere = addInvoicedFilter(taskWhere, invoiced);
 
     if (projectId) {
       const Project = await models.Project.findByPk(projectId, { include: [models.Milestone] });
@@ -166,8 +168,9 @@ const queries = {
     }
 
     const SQL = generateTasksSQL(userID, User.get('CompanyId'), isAdmin, taskWhere.join(' AND '), mainOrderBy, secondaryOrderBy, limit, (page - 1) * limit);
-    const totalsSQL = generateWorkCountsSQL(userID, User.get('CompanyId'), isAdmin, taskWhere.join(' AND '));
 
+    /*
+    const totalsSQL = generateWorkCountsSQL(userID, User.get('CompanyId'), isAdmin, taskWhere.join(' AND '));
     let [responseTasks, totals] = await Promise.all([
       sequelize.query(SQL, {
         model: models.Task,
@@ -184,6 +187,15 @@ const queries = {
       })
     ]);
     totals = <any>totals[0];
+    */
+
+    const responseTasks = await sequelize.query(SQL, {
+      model: models.Task,
+      type: QueryTypes.SELECT,
+      nest: true,
+      raw: true,
+      mapToModel: true
+    });
 
     let databaseTime = 0;
     const databaseWatch = new Stopwatch(true);
@@ -200,19 +212,12 @@ const queries = {
           if (Task.Tags.id !== null && tasks[taskIndex].Tags.every((Tag) => Tag.id !== InvoicedTask.Tags.id)) {
             tasks[taskIndex].Tags.push(InvoicedTask.Tags);
           }
-          if (Task.Subtasks.id !== null && tasks[taskIndex].Subtasks.every((Subtask) => Subtask.id !== Task.Subtasks.id)) {
-            tasks[taskIndex].Subtasks.push({ ...Task.Subtasks, User: { ...Task.Subtasks.InvoicedTaskUser, id: Task.Subtasks.InvoicedTaskUser.userId } });
-          }
-
         } else {
           if (Task.assignedTos.id !== null && tasks[taskIndex].assignedTos.every((assignedTo) => assignedTo.id !== Task.assignedTos.id)) {
             tasks[taskIndex].assignedTos.push(Task.assignedTos);
           }
           if (Task.Tags.id !== null && tasks[taskIndex].Tags.every((Tag) => Tag.id !== Task.Tags.id)) {
             tasks[taskIndex].Tags.push(Task.Tags);
-          }
-          if (Task.Subtasks.id !== null && tasks[taskIndex].Subtasks.every((Subtask) => Subtask.id !== Task.Subtasks.id)) {
-            tasks[taskIndex].Subtasks.push(Task.Subtasks);
           }
         }
       } else {
@@ -224,7 +229,6 @@ const queries = {
             Tags: InvoicedTask.Tags.id === null ? [] : [InvoicedTask.Tags],
             requester: InvoicedTask.requester.id === null ? null : InvoicedTask.requester,
             createdBy: InvoicedTask.createdBy.id === null ? null : InvoicedTask.createdBy,
-            Subtasks: Task.Subtasks.id === null ? [] : [{ ...Task.Subtasks, User: { ...Task.Subtasks.InvoicedTaskUser, id: Task.Subtasks.InvoicedTaskUser.userId } }],
             TaskType: { ...Task.TaskType, id: Task.InvoicedTask.taskTypeId, title: Task.InvoicedTask.taskTypeTitle },
             Status: {
               ...Task.Status,
@@ -246,7 +250,6 @@ const queries = {
             ...Task,
             assignedTos: Task.assignedTos.id === null ? [] : [Task.assignedTos],
             Tags: Task.Tags.id === null ? [] : [Task.Tags],
-            Subtasks: Task.Subtasks.id === null ? [] : [Task.Subtasks],
             subtasksQuantity: toFloatOrZero(Task.subtasksQuantity),
             approvedSubtasksQuantity: toFloatOrZero(Task.approvedSubtasksQuantity),
             pendingSubtasksQuantity: toFloatOrZero(Task.pendingSubtasksQuantity),
@@ -283,12 +286,14 @@ const queries = {
     return {
       tasks,
       count,
+      /*
       totals: {
         approvedSubtasks: isNaN(parseFloat((<any>totals).approvedSubtasks)) ? 0 : parseFloat((<any>totals).approvedSubtasks),
         pendingSubtasks: isNaN(parseFloat((<any>totals).pendingSubtasks)) ? 0 : parseFloat((<any>totals).pendingSubtasks),
         approvedMaterials: isNaN(parseFloat((<any>totals).approvedMaterials)) ? 0 : parseFloat((<any>totals).approvedMaterials),
         pendingMaterials: isNaN(parseFloat((<any>totals).pendingMaterials)) ? 0 : parseFloat((<any>totals).pendingMaterials),
       },
+      */
       execTime: mainWatch.stop(),
       secondaryTimes: [
         { source: 'User check', time: checkUserTime },
