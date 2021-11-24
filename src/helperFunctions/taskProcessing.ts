@@ -10,7 +10,6 @@ export const createTaskAttributesChangeMessages = async (args, Task) => {
       { key: 'description', name: 'Description' },
       { key: 'overtime', name: 'Overtime' },
       { key: 'pausal', name: 'Pausal' },
-      { key: 'invoiced', name: 'Invoiced' },
     ].map((attr) => {
       return (
         args[attr.key] !== undefined ?

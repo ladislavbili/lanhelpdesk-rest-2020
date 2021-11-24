@@ -350,6 +350,12 @@ const getScheduledWhereSQL = (filter, isAdmin) => {
 }
 
 //convert string filter to where
+const invoicedStringFilterMap = {
+  status: '"InvoicedTask"."statusTitle"',
+  company: '"InvoicedTask"."companyTitle"',
+  taskType: '"InvoicedTask"."taskTypeTitle"',
+  milestone: '"Milestone"."title"',
+}
 export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
   let where = [];
   if (search !== undefined && search !== null && search.length !== 0) {
@@ -399,20 +405,27 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
         }
         case 'status': case 'company': case 'taskType': case 'milestone': {
           where.push(`
-            "${capitalizeFirstLetter(filterItem.key)}"."title" LIKE '%${filterItem.value}%'
+            "${capitalizeFirstLetter(filterItem.key)}"."title" LIKE '%${filterItem.value}%' OR
+            ${invoicedStringFilterMap[filterItem.key]} LIKE '%${filterItem.value}%'
             `);
           break;
         }
         case 'project': {
           where.push(`
-            "${capitalizeFirstLetter(filterItem.key)}"."title" LIKE '%${filterItem.value}%'
+            "Project"."title" LIKE '%${filterItem.value}%'
             `);
           break;
         }
         case 'requester': {
           let forms = [filterItem.value, ...filterItem.value.split(' ')].filter((str) => str.length > 0);
           let orConditions = forms.reduce((acc, form) => {
-            return [...acc, `"requester"."name" LIKE '%${form}%'`, `"requester"."surname" LIKE '%${form}%'`];
+            return [
+              ...acc,
+              `"requester"."name" LIKE '%${form}%'`,
+              `"requester"."surname" LIKE '%${form}%'`,
+              `"InvoicedTask->requester"."name" LIKE '%${form}%'`,
+              `"InvoicedTask->requester"."surname" LIKE '%${form}%'`,
+            ];
           }, []);
           where.push(`(
             ${orConditions.join(' OR ')}
@@ -422,7 +435,13 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
         case 'assignedTo': {
           let forms = [filterItem.value, ...filterItem.value.split(' ')].filter((str) => str.length > 0);
           let orConditions = forms.reduce((acc, form) => {
-            return [...acc, `"assignedTosFilter"."name" LIKE '%${form}%'`, `"assignedTosFilter"."surname" LIKE '%${form}%'`];
+            return [
+              ...acc,
+              `"assignedTosFilter"."name" LIKE '%${form}%'`,
+              `"assignedTosFilter"."surname" LIKE '%${form}%'`,
+              `"InvoicedTask->assignedTos"."name" LIKE '%${form}%'`,
+              `"InvoicedTask->assignedTos"."surname" LIKE '%${form}%'`,
+            ];
           }, []);
           where.push(`(
             ${orConditions.join(' OR ')}
@@ -431,7 +450,8 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
         }
         case 'tags': {
           where.push(`
-            "tagsFilter"."title" LIKE '%${filterItem.value}%'
+            "tagsFilter"."title" LIKE '%${filterItem.value}%' OR
+            "InvoicedTask->Tags"."title" LIKE '%${filterItem.value}%'
             `);
           break;
         }
@@ -446,7 +466,6 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
 
 //SQL generation
 export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy, secondaryOrderBy, limit, offset) => {
-  //TODO: string filter spravit
   //zrychlit prepisanim filtra nech je len podla ID, ak je stringFilter, ziskavame aj asociovane data, ak nie je string filter, nacitavaju sa neskor
   const notAdminWhere = (
     `
@@ -470,8 +489,6 @@ export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy,
     ${createModelAttributes("Task", null, models.Task)}
     ${createModelAttributes("Project", "Project", models.Project)}
     ${createModelAttributes("Company", "Company", models.Company)}
-    ${createModelAttributes("createdBy", "createdBy", models.User)}
-    ${generateFullNameSQL('createdBy')}
     ${createModelAttributes("Milestone", "Milestone", models.Milestone)}
     ${createModelAttributes("requester", "requester", models.User)}
     ${generateFullNameSQL('requester')}
@@ -480,7 +497,6 @@ export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy,
     ${createModelAttributes("TaskType", "TaskType", models.TaskType)}
     ${createModelAttributes("InvoicedTask", "InvoicedTask", models.InvoicedTask)}
     ${createModelAttributes("InvoicedTask->requester", "InvoicedTask.requester", models.InvoicedTaskUser)}
-    ${createModelAttributes("InvoicedTask->createdBy", "InvoicedTask.createdBy", models.InvoicedTaskUser)}
     ${ isAdmin ?
       `
       ${createModelAttributes("Project->AdminProjectGroups->ProjectGroupRight", "Project.AdminProjectGroup.ProjectGroupRight", models.ProjectGroupRights)}
@@ -496,7 +512,6 @@ export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy,
     INNER JOIN "projects" AS "Project" ON "Task"."ProjectId" = "Project"."id"
     LEFT OUTER JOIN ( "task_assignedTo" AS "assignedTosFilter->task_assignedTo" INNER JOIN "users" AS "assignedTosFilter" ON "assignedTosFilter"."id" = "assignedTosFilter->task_assignedTo"."UserId") ON "Task"."id" = "assignedTosFilter->task_assignedTo"."TaskId"
     LEFT OUTER JOIN "companies" AS "Company" ON "Task"."CompanyId" = "Company"."id"
-    LEFT OUTER JOIN "users" AS "createdBy" ON "Task"."createdById" = "createdBy"."id"
     LEFT OUTER JOIN "milestone" AS "Milestone" ON "Task"."MilestoneId" = "Milestone"."id"
     LEFT OUTER JOIN "users" AS "requester" ON "Task"."requesterId" = "requester"."id"
     LEFT OUTER JOIN "statuses" AS "Status" ON "Task"."StatusId" = "Status"."id"
@@ -505,7 +520,6 @@ export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy,
     ) ON "Task"."id" = "tagsFilter->task_has_tags"."TaskId"
     LEFT OUTER JOIN "task_types" AS "TaskType" ON "Task"."TaskTypeId" = "TaskType"."id"
     LEFT OUTER JOIN "invoiced_tasks" AS "InvoicedTask" ON "InvoicedTask"."TaskId" = "Task"."id"
-    LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->createdBy" ON "InvoicedTask->createdBy"."createdById" = "InvoicedTask"."id"
     LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->requester" ON "InvoicedTask->requester"."requesterId" = "InvoicedTask"."id"
     LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->assignedTos" ON "InvoicedTask->assignedTos"."assignedToId" = "InvoicedTask"."id"
     LEFT OUTER JOIN "invoiced_task_tags" AS "InvoicedTask->Tags" ON "InvoicedTask->Tags"."InvoicedTaskId" = "InvoicedTask"."id"
@@ -630,13 +644,20 @@ export const generateWorkCountsSQL = (userId, companyId, isAdmin, where) => {
   const filterAssociations = (
     `
     INNER JOIN "projects" AS "Project" ON "Task"."ProjectId" = "Project"."id"
+    LEFT OUTER JOIN ( "task_assignedTo" AS "assignedTosFilter->task_assignedTo" INNER JOIN "users" AS "assignedTosFilter" ON "assignedTosFilter"."id" = "assignedTosFilter->task_assignedTo"."UserId") ON "Task"."id" = "assignedTosFilter->task_assignedTo"."TaskId"
+    LEFT OUTER JOIN "companies" AS "Company" ON "Task"."CompanyId" = "Company"."id"
+    LEFT OUTER JOIN "milestone" AS "Milestone" ON "Task"."MilestoneId" = "Milestone"."id"
     LEFT OUTER JOIN "users" AS "requester" ON "Task"."requesterId" = "requester"."id"
     LEFT OUTER JOIN "statuses" AS "Status" ON "Task"."StatusId" = "Status"."id"
-    LEFT OUTER JOIN "companies" AS "Company" ON "Task"."CompanyId" = "Company"."id"
-    LEFT OUTER JOIN ( "task_assignedTo" AS "assignedTosFilter->task_assignedTo" INNER JOIN "users" AS "assignedTosFilter" ON "assignedTosFilter"."id" = "assignedTosFilter->task_assignedTo"."UserId") ON "Task"."id" = "assignedTosFilter->task_assignedTo"."TaskId"
     LEFT OUTER JOIN (
       "task_has_tags" AS "tagsFilter->task_has_tags" INNER JOIN "tags" AS "tagsFilter" ON "tagsFilter"."id" = "tagsFilter->task_has_tags"."TagId"
     ) ON "Task"."id" = "tagsFilter->task_has_tags"."TaskId"
+    LEFT OUTER JOIN "task_types" AS "TaskType" ON "Task"."TaskTypeId" = "TaskType"."id"
+    LEFT OUTER JOIN "invoiced_tasks" AS "InvoicedTask" ON "InvoicedTask"."TaskId" = "Task"."id"
+    LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->requester" ON "InvoicedTask->requester"."requesterId" = "InvoicedTask"."id"
+    LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->assignedTos" ON "InvoicedTask->assignedTos"."assignedToId" = "InvoicedTask"."id"
+    LEFT OUTER JOIN "invoiced_task_tags" AS "InvoicedTask->Tags" ON "InvoicedTask->Tags"."InvoicedTaskId" = "InvoicedTask"."id"
+
     ${ isAdmin ?
       `
       INNER JOIN "project_group" AS "Project->AdminProjectGroups" ON

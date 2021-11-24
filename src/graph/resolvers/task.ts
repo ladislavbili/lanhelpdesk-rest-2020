@@ -86,6 +86,7 @@ import {
   generateInvoicedTaskSQL,
   addStatusFilter,
   addInvoicedFilter,
+  getTasksWantedData,
 } from '@/graph/addons/task';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
@@ -99,7 +100,6 @@ import {
 import checkResolver from './checkResolver';
 import moment from 'moment';
 import Stopwatch from 'statman-stopwatch';
-import { sendEmail } from '@/services/smtp';
 const dateNames = ['startsAt', 'deadline', 'pendingDate', 'closeDate'];
 const dateNames2 = [
   'closeDateFrom',
@@ -122,7 +122,12 @@ const createBasicSort = (taskName, milestoneSort) => {
 }
 
 const queries = {
-  tasks: async (root, { projectId, milestoneId, filter, sort, milestoneSort, search, stringFilter, limit, page, statuses, invoiced }, { req, userID }) => {
+  tasks: async (root, { projectId, milestoneId, filter, sort, milestoneSort, search, stringFilter, limit, page, statuses, invoiced }, { req, userID }, info) => {
+    const wantedData = getTasksWantedData(filter, sort, milestoneSort, stringFilter, info);
+    console.log(wantedData);
+    //INFO: to continue optimalisation, first rewrite WHERE to use IDs instead of objectID
+    //INFO: then rewrite get data according to wantedData
+
     const mainOrderBy = sort ? transformSortToQueryString(sort, true, milestoneSort) : createBasicSort('Task', milestoneSort);
     const secondaryOrderBy = sort ? transformSortToQueryString(sort, false, milestoneSort) : createBasicSort('TaskData', milestoneSort);
 
@@ -228,7 +233,6 @@ const queries = {
             assignedTos: InvoicedTask.assignedTos.id === null ? [] : [InvoicedTask.assignedTos],
             Tags: InvoicedTask.Tags.id === null ? [] : [InvoicedTask.Tags],
             requester: InvoicedTask.requester.id === null ? null : InvoicedTask.requester,
-            createdBy: InvoicedTask.createdBy.id === null ? null : InvoicedTask.createdBy,
             TaskType: { ...Task.TaskType, id: Task.InvoicedTask.taskTypeId, title: Task.InvoicedTask.taskTypeTitle },
             Status: {
               ...Task.Status,
