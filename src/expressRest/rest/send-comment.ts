@@ -6,7 +6,6 @@ import {
   CantEditInvoicedTaskError,
 } from '@/configs/errors';
 import {
-  checkType,
   getAttributes,
   sendTaskNotificationsToUsers,
 } from '@/helperFunctions';

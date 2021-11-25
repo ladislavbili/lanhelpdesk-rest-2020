@@ -7,8 +7,6 @@ const wasRequested = (object, attribute) => {
 const parameterExists = (item) => item !== undefined && item !== null;
 
 export const getTasksWantedData = (filter, sort, milestoneSort, stringFilter, info) => {
-  console.log(filter);
-
   const infoData = gqlFields(info);
   const taskData = infoData.tasks;
   //je rozdiel ak filtrujeme ID, alebo STRING

@@ -1,5 +1,5 @@
 export function checkType(input: any, type: string, nullAccepted: boolean = false) {
-  if (nullAccepted && input === null) {
+  if (nullAccepted && input === null || input === undefined) {
     return true;
   }
   switch (type) {
@@ -33,7 +33,7 @@ export function getAttributes(requiredData, source) {
     let { key, nullAccepted, type } = item;
     let value = source[key];
 
-    if ((value === undefined || value === 'null')) {
+    if ((value === 'undefined' || value === 'null' || value === undefined)) {
       if (nullAccepted) {
         result[key] = null;
       } else {
@@ -41,7 +41,6 @@ export function getAttributes(requiredData, source) {
         result.failedGettingAttributes = true
       }
     } else {
-
       switch (type) {
         case 'str': {
           result[key] = value.toString();

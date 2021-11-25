@@ -124,7 +124,6 @@ const createBasicSort = (taskName, milestoneSort) => {
 const queries = {
   tasks: async (root, { projectId, milestoneId, filter, sort, milestoneSort, search, stringFilter, limit, page, statuses, invoiced }, { req, userID }, info) => {
     const wantedData = getTasksWantedData(filter, sort, milestoneSort, stringFilter, info);
-    console.log(wantedData);
     //INFO: to continue optimalisation, first rewrite WHERE to use IDs instead of objectID
     //INFO: then rewrite get data according to wantedData
 

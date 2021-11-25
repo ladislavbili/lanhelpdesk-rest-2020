@@ -252,8 +252,6 @@ export const filterToTaskWhereSQL = (filter, userId, companyId, isAdmin) => {
 //add filter by status
 export const addStatusFilter = (where, statuses, filter, isAdmin) => {
   if (statuses && statuses.length !== 0) {
-    console.log('added where');
-
     return [
       ...where,
       `(

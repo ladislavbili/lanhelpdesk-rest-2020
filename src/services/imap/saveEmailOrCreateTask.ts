@@ -8,6 +8,7 @@ import {
   ProjectInstance,
   StatusInstance,
   TagInstance,
+  ProjectAttributesInstance,
 } from '@/models/instances';
 import { models } from '@/models';
 import { randomString, addUser, logWithDate } from '@/helperFunctions';
@@ -140,9 +141,9 @@ async function createTask(email, Imap, User, secret) {
         model: models.Status,
         as: 'projectStatuses'
       },
+      models.ProjectAttributes,
     ],
   });
-  const defaults = <any>await Project.get('def');
   const Statuses = <StatusInstance[]>Project.get('projectStatuses');
   const Tags = <TagInstance[]>Project.get('tags');
   let taskData = <any>{
@@ -184,38 +185,39 @@ async function createTask(email, Imap, User, secret) {
     }]
   };
   //def attributes
+  const defaults = <any>await (<ProjectAttributesInstance>Project.get('ProjectAttribute')).get('attributes');
+
   (['overtime', 'pausal']).forEach((attribute) => {
-    if (defaults[attribute].def) {
+    taskData[attribute] = defaults[attribute].value === true;
+  });
+
+  (['startsAt', 'deadline']).forEach((attribute) => {
+    if (defaults[attribute].value !== null) {
       taskData[attribute] = defaults[attribute].value;
     }
   });
-  if (defaults.status.def) {
-    if (defaults.status.value !== null) {
-      taskData.StatusId = defaults.status.value.id
-    } else {
-      taskData.StatusId = Statuses.find((Status) => Status.get('action') === 'IsNew').get('id')
-    }
-  }
-  if (defaults.requester.def) {
-    if (defaults.requester.value !== null) {
-      taskData.requesterId = defaults.requester.value.id
-    } else {
-      taskData.requesterId = User.get('id')
-    }
+
+  if (defaults.status.value) {
+    taskData.StatusId = defaults.status.value.get('id')
+  } else {
+    taskData.StatusId = Statuses.find((Status) => Status.get('action') === 'IsNew').get('id')
   }
 
-  if (defaults.company.def) {
-    if (defaults.company.value !== null) {
-      taskData.CompanyId = defaults.company.value.id
-    } else {
-      taskData.CompanyId = User.get('CompanyId')
-    }
+  if (defaults.requester.value) {
+    taskData.requesterId = defaults.requester.value.get('id')
+  } else {
+    taskData.requesterId = User.get('id')
   }
 
-  if (defaults.type.def) {
-    taskData.TaskTypeId = defaults.type.value.id
+  if (defaults.company.value) {
+    taskData.CompanyId = defaults.company.value.get('id')
+  } else {
+    taskData.CompanyId = User.get('CompanyId')
   }
 
+  if (defaults.taskType.value) {
+    taskData.TaskTypeId = defaults.taskType.value.get('id')
+  }
 
   const NewTask = <TaskInstance>await models.Task.create(
     taskData,
@@ -234,12 +236,15 @@ async function createTask(email, Imap, User, secret) {
       ]
     }
   );
+
   logWithDate(`task created ${NewTask.get('id')} with company ID ${NewTask.get('CompanyId')}`);
-  if (defaults.assignedTo.def) {
-    NewTask.setAssignedTos(defaults.assignedTo.value.map((value) => value.get('id')));
+  //
+  //
+  if (defaults.assigned.value.length > 0) {
+    NewTask.setAssignedTos(defaults.assigned.value.map((user) => user.get('id')));
   }
-  if (defaults.tag.def) {
-    NewTask.setTags(defaults.tag.value.map((value) => value.get('id')));
+  if (defaults.tags.value.length > 0) {
+    NewTask.setTags(defaults.tags.value.map((tag) => tag.get('id')));
   }
 
   let completed = 0;

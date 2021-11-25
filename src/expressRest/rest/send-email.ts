@@ -97,7 +97,7 @@ export function sendEmail(app) {
     if (tos.some((address) => !isEmail(address))) {
       return res.send({ ok: false, error: createWrongEmailsError(tos.filter((address) => !isEmail(address))).message })
     }
-    let emailResult = <EmailResultInstance>await sendEmailService(message, message, subject, tos, User.get('email'), files);
+    let emailResult = <EmailResultInstance>await sendEmailService(message, message, subject.includes(`[${taskId}]`) ? subject : `[${taskId}]${subject}`, tos, User.get('email'), files);
 
     let savedResult = { emailSend: true, emailError: null };
     if (emailResult.error) {

@@ -4,11 +4,6 @@ import moment from 'moment';
 import { models } from '@/models';
 
 export function sendEmail(textMessage, htmlMessage, subject, to, from, files = []) {
-  /*
-  console.log(textMessage);
-  console.log(subject);
-  console.log(to);
-  */
   return new Promise(async (resolve, reject) => {
     const Smtp = await models.Smtp.findOne({ where: { def: true } });
     if (Smtp === null) {

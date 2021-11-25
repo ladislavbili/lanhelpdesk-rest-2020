@@ -146,7 +146,6 @@ export const addDefaultStatusTemplates = async () => {
       },
     ].map((statusData) => models.Status.create(statusData))
   )
-  console.log('statuses created!')
 }
 
 export const addAttributesToProjects = async () => {
