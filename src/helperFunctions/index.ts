@@ -49,6 +49,8 @@ export {
 
 export {
   sendTaskNotificationsToUsers,
+  allNotificationMessages,
+  sendNotification,
 } from './notifications';
 
 export {
@@ -74,6 +76,7 @@ export {
 export {
   createChangeMessage,
   createTaskAttributesChangeMessages,
+  createTaskAttributesNotifications,
 } from './taskProcessing';
 
 export {

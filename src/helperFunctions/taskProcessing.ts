@@ -20,10 +20,59 @@ export const createTaskAttributesChangeMessages = async (args, Task) => {
   )).filter((response) => response !== null)
 }
 
-export const createChangeMessage = async (type, model, name, newValue, OriginalItem, attribute = 'title') => {
+export const createTaskAttributesNotifications = async (args, Task) => {
+  return (<any[]>await Promise.all(
+    [
+      { key: 'title', name: 'Title' },
+      { key: 'description', name: 'Description' },
+      { key: 'important', name: 'Important' },
+      { key: 'deadline', name: 'Deadline' },
+      { key: 'overtime', name: 'Overtime' },
+      { key: 'pausal', name: 'Pausal' },
+    ].map((attr) => {
+      switch (attr.key) {
+        case 'title': {
+          return (
+            args[attr.key] !== undefined ?
+              { type: 'title', data: { label: 'Title', oldTitle: Task.get('title'), newTitle: args.title } } :
+              null
+          )
+          break;
+        }
+        case 'description': {
+          return (
+            args[attr.key] !== undefined ?
+              { type: 'description', data: { label: 'Description', oldDescription: Task.get('description'), newDescription: args.description } } :
+              null
+          )
+          break;
+        }
+
+        case 'deadline': {
+          return (
+            args[attr.key] !== undefined ?
+              { type: 'otherAttributes', data: { label: 'Deadline', oldDescription: timestampToString(Task.get('deadline').valueOf()), newDescription: timestampToString(args.deadline) } } :
+              null
+          )
+          break;
+        }
+
+        default: {
+          return (
+            args[attr.key] !== undefined ?
+              { type: 'otherAttributes', data: { label: attr.name, old: Task.get(attr.key), new: args[attr.key] } } :
+              null
+          )
+        }
+          break;
+      }
+    })
+  )).filter((response) => response !== null)
+}
+
+export const createChangeMessage = async (type, model, name, newValue, OriginalItem, attribute = 'title', data = null) => {
   if (['TaskType', 'Company', 'Milestone', 'Requester', 'Project', 'Status'].includes(type)) {
-    let NewItem = await model.findByPk(newValue);
-    if (!NewItem && newValue !== null) {
+    if (!data && newValue !== null) {
       throw createDoesNoExistsError(model.name, newValue);
     }
 
@@ -31,15 +80,14 @@ export const createChangeMessage = async (type, model, name, newValue, OriginalI
       type,
       originalValue: OriginalItem ? OriginalItem.get('id') : null,
       newValue: newValue,
-      message: `${name} was changed from ${OriginalItem ? OriginalItem.get(attribute) : 'Nothing'} to ${NewItem ? NewItem.get(attribute) : 'Nothing'}.`,
+      message: `${name} was changed from ${OriginalItem ? OriginalItem.get(attribute) : 'Nothing'} to ${data ? data.get(attribute) : 'Nothing'}.`,
     }
   } else if (['Tags', 'AssignedTo'].includes(type)) {
-    const NewItem = await model.findAll({ where: { id: newValue } });
     return {
       type,
       originalValue: OriginalItem.map((Item) => Item.get('id')).join(','),
       newValue: newValue.join(','),
-      message: `${name} were changed from ${OriginalItem.map((Item) => Item.get(attribute)).join(', ')} to ${NewItem.map((Item) => Item.get(attribute)).join(', ')}.`,
+      message: `${name} were changed from ${OriginalItem.map((Item) => Item.get(attribute)).join(', ')} to ${data.map((Item) => Item.get(attribute)).join(', ')}.`,
     }
   } else if (['CloseDate', 'PendingDate', 'deadline'].includes(type)) {
     return {

@@ -45,7 +45,7 @@ export function sendEmail(textMessage, htmlMessage, subject, to, from, files = [
       const mailOptions = {
         to: to.toString(),
         subject: subject,
-        text: 'Message from: ' + from + '\n' + textMessage,
+        text: textMessage,
         from: smtp.username,
         html: htmlMessage,
         attachments: (files ? files : []).map((file) => {

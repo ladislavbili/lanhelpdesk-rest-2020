@@ -11,7 +11,7 @@ import {
   ProjectAttributesInstance,
 } from '@/models/instances';
 import { models } from '@/models';
-import { randomString, addUser, logWithDate } from '@/helperFunctions';
+import { randomString, addUser, logWithDate, allNotificationMessages, timestampToString, sendNotification } from '@/helperFunctions';
 import moment from 'moment';
 import fs from 'fs';
 
@@ -36,7 +36,7 @@ export default async function processEmail(email, Imap) {
   saveEmail(email, Imap);
 }
 
-async function addComment(email, Imap, Task, attachmentsData, UserId = null) {
+async function addComment(email, Imap, Task, attachmentsData, User, UserId = null) {
   Task.createComment(
     {
       message: email.text,
@@ -55,7 +55,23 @@ async function addComment(email, Imap, Task, attachmentsData, UserId = null) {
     {
       include: [models.CommentAttachment]
     }
-  )
+  );
+  const [assignedTos, requester] = await Promise.all([Task.getAssignedTos(), Task.getRequester()]);
+  const notification = allNotificationMessages.comment(
+    {
+      User,
+      taskId: Task.get('id'),
+      title: Task.get('title'),
+      comment: email.html,
+    },
+    timestampToString(moment().valueOf())
+  );
+  if (assignedTos.every((User2) => User2.get('id') !== requester.get('id')) && requester.get('id') !== User.get('id')) {
+    sendNotification(User, requester, Task, notification.message, notification.subject, false);
+  }
+  assignedTos.forEach((assignedTo) => {
+    sendNotification(User, assignedTo, Task, notification.message, notification.subject, false);
+  });
 }
 
 async function saveEmail(email, Imap) {
@@ -106,21 +122,21 @@ async function saveEmail(email, Imap) {
     let completed = 0;
     let attachmentsData = [];
     if (email.attachments.length === 0) {
-      addComment(email, Imap, Task, attachmentsData, User.get('id'));
+      addComment(email, Imap, Task, attachmentsData, User, User.get('id'));
     } else {
       email.attachments.forEach((attachment) => {
-        fs.promises.mkdir(`files/comment-attachments/${11}`, { recursive: true }).then((eeh) => {
-          fs.writeFile(`files/comment-attachments/${11}/${timestamp}-${attachment.filename}`, attachment.content, (eh) => {
+        fs.promises.mkdir(`files/comment-attachments/${Task.get('id')}`, { recursive: true }).then((eeh) => {
+          fs.writeFile(`files/comment-attachments/${Task.get('id')}/${timestamp}-${attachment.filename}`, attachment.content, (eh) => {
             completed++;
             attachmentsData.push({
               filename: attachment.filename,
               mimetype: attachment.contentType,
               size: attachment.size,
               contentDisposition: attachment.contentDisposition === 'inline' ? 'email-content-files' : 'attachments',
-              path: `files/comment-attachments/${11}/${timestamp}-${attachment.filename}`,
+              path: `files/comment-attachments/${Task.get('id')}/${timestamp}-${attachment.filename}`,
             });
             if (completed === email.attachments.length) {
-              addComment(email, Imap, Task, attachmentsData, User.get('id'));
+              addComment(email, Imap, Task, attachmentsData, User, User.get('id'));
             }
           })
         })
@@ -151,7 +167,7 @@ async function createTask(email, Imap, User, secret) {
     important: true,
     closeDate: null,
     deadline: null,
-    description: email.text,
+    description: email.html,
     milestone: null,
     //overtime: false,
     //pausal: false,
@@ -241,43 +257,58 @@ async function createTask(email, Imap, User, secret) {
   //
   //
   if (defaults.assigned.value.length > 0) {
-    NewTask.setAssignedTos(defaults.assigned.value.map((user) => user.get('id')));
+    await NewTask.setAssignedTos(defaults.assigned.value.map((user) => user.get('id')));
   }
   if (defaults.tags.value.length > 0) {
-    NewTask.setTags(defaults.tags.value.map((tag) => tag.get('id')));
+    await NewTask.setTags(defaults.tags.value.map((tag) => tag.get('id')));
   }
 
   let completed = 0;
   let attachmentsData = [];
   if (email.attachments.length === 0) {
-    addComment(email, Imap, NewTask, attachmentsData, User.get('id'));
+    addComment(email, Imap, NewTask, attachmentsData, User, User.get('id'));
   } else {
     email.attachments.forEach((attachment) => {
-      fs.promises.mkdir(`files/comment-attachments/${11}`, { recursive: true }).then((eeh) => {
-        fs.writeFile(`files/comment-attachments/${11}/${now}-${attachment.filename}`, attachment.content, (eh) => {
+      fs.promises.mkdir(`files/comment-attachments/${NewTask.get('id')}`, { recursive: true }).then((eeh) => {
+        fs.writeFile(`files/comment-attachments/${NewTask.get('id')}/${now}-${attachment.filename}`, attachment.content, (eh) => {
           completed++;
           attachmentsData.push({
             filename: attachment.filename,
             mimetype: attachment.contentType,
             size: attachment.size,
             contentDisposition: attachment.contentDisposition === 'inline' ? 'email-content-files' : 'attachments',
-            path: `files/comment-attachments/${11}/${now}-${attachment.filename}`,
+            path: `files/comment-attachments/${NewTask.get('id')}/${now}-${attachment.filename}`,
           });
           if (completed === email.attachments.length) {
-            addComment(email, Imap, NewTask, attachmentsData, User.get('id'));
+            addComment(email, Imap, NewTask, attachmentsData, User, User.get('id'));
           }
         })
       })
     });
   }
-
+  const creationNotification = allNotificationMessages.taskRegistrationMessage(
+    { title: NewTask.get('title'), taskId: NewTask.get('id'), description: NewTask.get('description') },
+    timestampToString(NewTask.get('createdAt').valueOf())
+  );
   sendEmail(
-    `Dobrý deň, \n
-      Radi by sme Vám oznámili, že Vaša žiadosť bola zaevidovaná pod číslom tiketu: ${NewTask.get('id')} ${email.subject}.
-      Odpoveďou na tento e-mail nás viete priamo kontaktovať. Prosím ponechajte číslo tiketu v hlavičke správy.`,
     '',
-    `[${NewTask.get('id')}] Vaša požiadavka s ID ${NewTask.get('id')} bola prijatá.`,
+    creationNotification.message,
+    `[${NewTask.get('id')}] ${creationNotification.subject}`,
     email.from.map((item) => item.address),
     Imap.get('username')
   );
+  const [assignedTos, requester] = await Promise.all([NewTask.getAssignedTos(), NewTask.getRequester()]);
+  const taskCreationNotification = allNotificationMessages.creation({
+    User,
+    taskId: NewTask.get('id'),
+    title: NewTask.get('title'),
+    createdAt: timestampToString(NewTask.get('createdAt').valueOf()),
+    description: NewTask.get('description'),
+  });
+  if (assignedTos.every((User2) => User2.get('id') !== requester.get('id')) && requester.get('id') !== User.get('id')) {
+    sendNotification(User, requester, NewTask, taskCreationNotification.message, taskCreationNotification.subject, false);
+  }
+  assignedTos.forEach((assignedTo) => {
+    sendNotification(User, assignedTo, NewTask, taskCreationNotification.message, taskCreationNotification.subject, false);
+  });
 }

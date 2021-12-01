@@ -50,9 +50,11 @@ import {
   addApolloError,
   createChangeMessage,
   createTaskAttributesChangeMessages,
+  createTaskAttributesNotifications,
   toFloatOrZero,
   sendTaskNotificationsToUsers,
   isUserAdmin,
+  timestampToString,
 } from '@/helperFunctions';
 import {
   canViewTask,
@@ -683,7 +685,7 @@ const mutations = {
             type: 'task',
             originalValue: null,
             newValue: null,
-            message: `Task was created by ${User.get('fullName')}`,
+            message: `Task was created by ${User.get('fullName')}(${User.get('email')})`,
           },
           {
             type: 'task',
@@ -874,7 +876,10 @@ const mutations = {
       NewTask.setAssignedTos(assignedTos),
       NewTask.setTags(tags),
     ])
-    sendTaskNotificationsToUsers(User, NewTask, [`Task was created by ${User.get('fullName')}`]);
+    sendTaskNotificationsToUsers(User, NewTask, [{
+      data: { createdAt: timestampToString(NewTask.get('createdAt').valueOf()), description: params.description },
+      type: 'creation',
+    }]);
     pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
     pubsub.publish(TASK_ADD, { taskAddSubscription: User.get('id') });
     NewTask.rights = userGroupRights;
@@ -932,6 +937,10 @@ const mutations = {
     }
 
     let taskChangeMessages = [];
+    let notificationMessages = [];
+    let assignedUsers = [];
+    let unassignedUsers = [];
+
     //Figure out project and if can change project
     let groupRights = null;
     const requiredGroupRights = args.project !== undefined && args.project !== Task.get('ProjectId') ? ['taskProjectWrite'] : [];
@@ -1034,10 +1043,21 @@ const mutations = {
     }, []);
 
     let promises = [];
+    let NewAsssignedTo = null;
+    if (assignedTos) {
+      await idsDoExistsCheck(assignedTos, models.User);
 
+      //assignedTo must be in project group
+      assignedTos = assignedTos.filter((id) => assignableUserIds.includes(id));
+
+      unassignedUsers = Task.get('assignedTos').filter((User) => !assignedTos.includes(User.get('id')));
+      NewAsssignedTo = <UserInstance[]>await models.User.findAll({ where: { id: assignedTos } });
+      assignedUsers = NewAsssignedTo.filter((User1) => !Task.get('assignedTos').some((User2) => User1.get('id') === User2.get('id')));
+    }
     await sequelize.transaction(async (transaction) => {
       if (project && project !== Task.get('ProjectId')) {
-        taskChangeMessages.push(await createChangeMessage('Project', models.Project, 'Project', project, Task.get('Project')));
+        taskChangeMessages.push(createChangeMessage('Project', models.Project, 'Project', project, Task.get('Project'), 'title', OriginalProject));
+        notificationMessages.push({ type: 'otherAttributes', data: { label: 'Project', old: (<ProjectInstance>Task.get('Project')).get('title'), new: project.get('title') } });
         promises.push(Task.setProject(project, { transaction }));
         //here was milestone with condition if exists
 
@@ -1101,35 +1121,45 @@ const mutations = {
         }
       }
       if (assignedTos) {
-        await idsDoExistsCheck(assignedTos, models.User);
-
-        //assignedTo must be in project group
-        assignedTos = assignedTos.filter((id) => assignableUserIds.includes(id));
-        taskChangeMessages.push(await createChangeMessage('AssignedTo', models.User, 'Assigned to users', assignedTos, Task.get('assignedTos'), 'fullName'));
-
+        taskChangeMessages.push(await createChangeMessage('AssignedTo', models.User, 'Assigned to users', assignedTos, Task.get('assignedTos'), 'fullName', NewAsssignedTo));
+        notificationMessages.push({
+          type: 'otherAttributes', data: {
+            label: "Assigned to", old: (<UserInstance[]>Task.get('assignedTos')).map((User) => `${User.get('fullName')}(${User.get('email')})`).join(`
+          `), new: NewAsssignedTo.map((User) => `${User.get('fullName')}(${User.get('email')})`).join(`
+            `)
+          }
+        });
         promises.push(Task.setAssignedTos(assignedTos, { transaction }))
       }
 
       if (tags) {
         await idsDoExistsCheck(tags, models.Tag);
-        taskChangeMessages.push(await createChangeMessage('Tags', models.Tag, 'Tags', tags, Task.get('Tags')));
+        const NewTags = <TagInstance[]>await models.Tag.findAll({ where: { id: tags } });
+        taskChangeMessages.push(await createChangeMessage('Tags', models.Tag, 'Tags', tags, Task.get('Tags'), 'title', NewTags));
+        notificationMessages.push({ type: 'otherAttributes', data: { label: "Tags", old: (<TagInstance[]>Task.get('Tags')).map((Tag) => `${Tag.get('title')}`).join(`,`), new: NewTags.map((Tag) => `${Tag.get('title')}`).join(`, `) } });
         promises.push(Task.setTags(tags, { transaction }))
       }
       if (requester) {
         if (requester !== Task.get('requesterId') && Project.get('lockedRequester') && !groupUsers.includes(requester)) {
           throw createUserNotPartOfProjectError('requester');
         }
-        taskChangeMessages.push(await createChangeMessage('Requester', models.User, 'Requester', requester, Task.get('requester'), 'fullName'));
+        const NewRequester = <UserInstance>await models.User.findByPk(requester);
+        taskChangeMessages.push(await createChangeMessage('Requester', models.User, 'Requester', requester, Task.get('requester'), 'fullName', NewRequester));
+        notificationMessages.push({ type: 'otherAttributes', data: { label: "Requester", old: `${(<UserInstance>Task.get('requester')).get('fullName')}(${(<UserInstance>Task.get('requester')).get('email')})`, new: `${NewRequester.get('fullName')}(${NewRequester.get('email')})` } });
         promises.push(Task.setRequester(requester, { transaction }))
       }
 
       //here was milestone with condition if and of project
       if (taskType !== undefined) {
-        taskChangeMessages.push(await createChangeMessage('TaskType', models.TaskType, 'Task type', taskType, Task.get('TaskType')));
+        const NewTaskType = <TaskTypeInstance>await models.TaskType.findByPk(taskType);
+        taskChangeMessages.push(await createChangeMessage('TaskType', models.TaskType, 'Task type', taskType, Task.get('TaskType'), 'title', NewTaskType));
+        notificationMessages.push({ type: 'otherAttributes', data: { label: "Task type", old: (<TaskTypeInstance>Task.get('TaskType')).get('title'), new: NewTaskType.get('title') } });
         promises.push(Task.setTaskType(taskType, { transaction }))
       }
       if (company) {
-        taskChangeMessages.push(await createChangeMessage('Company', models.Company, 'Company', company, Task.get('Company')));
+        const NewCompany = <CompanyInstance>await models.Company.findByPk(company);
+        taskChangeMessages.push(await createChangeMessage('Company', models.Company, 'Company', company, Task.get('Company'), 'title', NewCompany));
+        notificationMessages.push({ type: 'otherAttributes', data: { label: "Company", old: (<CompanyInstance>Task.get('Company')).get('title'), new: NewCompany.get('title') } });
         promises.push(Task.setCompany(company, { transaction }))
       }
 
@@ -1148,8 +1178,9 @@ const mutations = {
         const TaskStatus = <StatusInstance>Task.get('Status');
         const Status = await models.Status.findByPk(status);
         if (status !== TaskStatus.get('id')) {
-          taskChangeMessages.push(await createChangeMessage('Status', models.Status, 'Status', status, Task.get('Status')));
-          promises.push(Task.setStatus(status, { transaction }))
+          taskChangeMessages.push(await createChangeMessage('Status', models.Status, 'Status', status, TaskStatus, 'title', Status));
+          notificationMessages.push({ type: 'otherAttributes', data: { label: "Status", old: Status.get('title'), new: TaskStatus.get('title') } });
+          promises.push(Task.setStatus(status, { transaction }));
         }
         switch (Status.get('action')) {
           case 'CloseDate': {
@@ -1163,6 +1194,7 @@ const mutations = {
               params.closeDate = parseInt(args.closeDate);
             }
             taskChangeMessages.push(await createChangeMessage('CloseDate', null, 'Close date', params.closeDate, Task.get('closeDate')));
+            notificationMessages.push({ type: 'otherAttributes', data: { label: "Close date", old: timestampToString(params.closeDate), new: timestampToString(Task.get('closeDate').valueOf()) } });
             params.statusChange = moment().valueOf();
             break;
           }
@@ -1177,6 +1209,9 @@ const mutations = {
               params.closeDate = parseInt(args.closeDate);
             }
             taskChangeMessages.push(await createChangeMessage('CloseDate', null, 'Close date', params.closeDate, Task.get('closeDate')));
+            notificationMessages.push({
+              type: 'otherAttributes', data: { label: "Close date", old: timestampToString(params.closeDate), new: timestampToString(Task.get('closeDate').valueOf()) }
+            });
             params.statusChange = moment().valueOf();
             break;
           }
@@ -1193,21 +1228,25 @@ const mutations = {
               params.pendingChangable = args.pendingChangable;
             }
             taskChangeMessages.push(await createChangeMessage('PendingDate', null, 'Pending date', params.pendingDate, Task.get('pendingDate')));
+            notificationMessages.push({ type: 'otherAttributes', data: { label: "Pending date", old: timestampToString(params.pendingDate), new: timestampToString(Task.get('pendingDate').valueOf()) } });
             taskChangeMessages.push(await createChangeMessage('PendingChangable', null, 'Pending changable', params.pendingChangable, Task.get('pendingChangable')));
+            notificationMessages.push({ type: 'otherAttributes', data: { label: "Pending changable", old: params.pendingChangable, new: Task.get('pendingChangable') } });
             params.statusChange = moment().valueOf()
             break;
           }
           default:
             break;
         }
-
-        sendTaskNotificationsToUsers(User, Task, [`Status was changed from ${TaskStatus.get('title')} to ${Status.get('title')} at ${moment().format('HH:mm DD.MM.YYYY')}`]);
       }
 
       taskChangeMessages = [
         ...taskChangeMessages,
         ...(await createTaskAttributesChangeMessages(params, Task))
       ]
+      notificationMessages = [
+        ...notificationMessages,
+        ...(await createTaskAttributesNotifications(params, Task))
+      ];
       promises.push(
         Task.createTaskChange({
           UserId: User.get('id'),
@@ -1232,7 +1271,7 @@ const mutations = {
       ]
     })
     NewTask.rights = groupRights;
-    sendTaskNotificationsToUsers(User, NewTask, taskChangeMessages.map((taskChange) => taskChange.message));
+    sendTaskNotificationsToUsers(User, NewTask, notificationMessages, false, assignedUsers, unassignedUsers);
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: NewTask.get('id') });
     pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
     return NewTask;
@@ -1259,7 +1298,7 @@ const mutations = {
     if (!canViewTask(Task, User, groupRights.project, true)) {
       throw CantViewTaskError;
     }
-    await sendTaskNotificationsToUsers(User, Task, [`Task named "${Task.get('title')}" with id ${Task.get('id')} was deleted.`], true);
+    await sendTaskNotificationsToUsers(User, Task, [{ type: 'deletion', data: { description: Task.get('description') } }], true);
     await Task.destroy();
     pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
     pubsub.publish(TASK_DELETE, { taskDeleteSubscription: id });

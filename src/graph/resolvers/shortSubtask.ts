@@ -8,7 +8,8 @@ import { models, sequelize } from '@/models';
 import {
   multipleIdDoesExistsCheck,
   idDoesExistsCheck,
-  getModelAttribute
+  getModelAttribute,
+  sendTaskNotificationsToUsers,
 } from '@/helperFunctions';
 import {
   checkIfHasProjectRights,
@@ -41,6 +42,7 @@ const mutations = {
       { include: [models.TaskChangeMessage] }
     );
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
+    sendTaskNotificationsToUsers(SourceUser, Task, [{ type: 'otherAttributesAdd', data: { label: 'Kratku podúlohu', title: attributes.title, done: attributes.done } }]);
     return models.ShortSubtask.create({
       TaskId: task,
       ...attributes,
@@ -70,6 +72,20 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     );
+    sendTaskNotificationsToUsers(
+      SourceUser,
+      Task,
+      [
+        {
+          type: 'otherAttributes',
+          data: {
+            label: 'Krátka podúloha',
+            old: `${args.title ? `title: ${ShortSubtask.get('title')},` : ''}${args.done ? ` done: ${ShortSubtask.get('done')},` : ''}`,
+            new: `${args.title ? `title: ${args.title},` : ''} done: ${args.done ? `${args.done},` : ''}`
+          }
+        }
+      ]
+    );
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: ShortSubtask.get('TaskId') });
     return ShortSubtask.update(args);
   },
@@ -95,6 +111,19 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
+    );
+    sendTaskNotificationsToUsers(
+      SourceUser,
+      Task,
+      [
+        {
+          type: 'otherAttributesDelete',
+          data: {
+            label: 'Krátku podúlohu',
+            oldData: { title: ShortSubtask.get('title'), done: ShortSubtask.get('done') },
+          }
+        }
+      ]
     );
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: ShortSubtask.get('TaskId') });
     return ShortSubtask.destroy();

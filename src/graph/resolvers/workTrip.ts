@@ -20,6 +20,7 @@ import {
   idDoesExistsCheck,
   getModelAttribute,
   extractDatesFromObject,
+  sendTaskNotificationsToUsers,
 } from '@/helperFunctions';
 import {
   checkIfHasProjectRights,
@@ -57,11 +58,13 @@ const mutations = {
       AssignedTos,
       TaskMetadata,
       Project,
+      TripType,
     ] = await Promise.all([
       Task.getAssignedTos(),
       Task.getTaskMetadata(),
-      Task.getProject()
-    ])
+      Task.getProject(),
+      models.TripType.findByPk(type),
+    ]);
     if (!(<UserInstance[]>AssignedTos).some((AssignedTo) => AssignedTo.get('id') === assignedTo)) {
       throw AssignedToUserNotSolvingTheTask;
     }
@@ -95,6 +98,7 @@ const mutations = {
         tripsPending: parseFloat(<any>(<TaskMetadataInstance>TaskMetadata).get('tripsPending')) + parseFloat(<any>params.quantity),
       })
     }
+    sendTaskNotificationsToUsers(SourceUser, Task, [{ type: 'otherAttributesAdd', data: { label: 'Výjazd', done: params.done, type: TripType.get('title'), quantity: params.quantity } }]);
     if (scheduled) {
       return models.WorkTrip.create({
         TaskId: task,
@@ -249,6 +253,24 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     );
+    let NewTripType = null;
+    if (type) {
+      NewTripType = await models.TripType.findByPk(type);
+    }
+    sendTaskNotificationsToUsers(
+      SourceUser,
+      Task,
+      [
+        {
+          type: 'otherAttributes',
+          data: {
+            label: 'Výjazd',
+            old: `${params.type ? `type: ${(<TripTypeInstance>WorkTrip.get('TripType')).get('title')},` : ''}${params.done ? `done: ${WorkTrip.get('done')},` : ''} ${params.quantity ? `quantity: ${WorkTrip.get('quantity')}` : ''}`,
+            new: `${params.type ? `type: ${NewTripType.get('title')},` : ''} ${params.done ? `done: ${params.done},` : ''} ${params.quantity ? `quantity: ${params.quantity}` : ''}`
+          }
+        }
+      ]
+    );
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: WorkTrip.get('TaskId') });
     return WorkTrip.reload();
   },
@@ -304,6 +326,19 @@ const mutations = {
         tripsPending: TaskMetadata.get('tripsPending') - (<number>WorkTrip.get('quantity'))
       })
     }
+    sendTaskNotificationsToUsers(
+      SourceUser,
+      Task,
+      [
+        {
+          type: 'otherAttributesDelete',
+          data: {
+            label: 'Výjazd',
+            oldData: { done: WorkTrip.get('done'), type: (<TripTypeInstance>WorkTrip.get('TripType')).get('title'), quantity: WorkTrip.get('quantity') },
+          }
+        }
+      ]
+    );
     return WorkTrip.destroy();
   },
 

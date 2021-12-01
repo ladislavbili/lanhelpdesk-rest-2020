@@ -180,14 +180,17 @@ export default class ImapData {
       let messagesData = <any[]>await Promise.all(otherMessages.map((message) => simpleParser(message.source, {})));
       messagesData.forEach((messageData) => {
         console.log('create task');
-
-        saveEmailOrCreateTask({
-          from: messageData.from.value,
-          subject: messageData.subject,
-          text: messageData.text,
-          html: messageData.html ? messageData.html : messageData.textAsHtml,
-          attachments: messageData.attachments
-        }, this.Imap);
+        try {
+          saveEmailOrCreateTask({
+            from: messageData.from.value,
+            subject: messageData.subject,
+            text: messageData.text,
+            html: messageData.html ? messageData.html : messageData.textAsHtml,
+            attachments: messageData.attachments
+          }, this.Imap);
+        } catch (e) {
+          console.log(e);
+        }
         this.imapFlow.messageMove(otherMessages.map((message) => message.uid), this.destination, { uid: true })
       });
     }

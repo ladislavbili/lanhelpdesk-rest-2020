@@ -67,7 +67,7 @@ export function sendComment(app) {
         throw CantEditInvoicedTaskError;
       }
 
-      allowedInternal = checkData.groupRights.internal;
+      allowedInternal = checkData.groupRights.project.internal;
     } catch (err) {
       return res.send({ ok: false, error: err.message })
     }
@@ -135,7 +135,14 @@ export function sendComment(app) {
     sendTaskNotificationsToUsers(
       User,
       Task,
-      [notificationMessage],
+      [
+        {
+          type: 'comment',
+          data: {
+            comment: notificationMessage,
+          }
+        }
+      ]
     );
     return res.send({ ok: true, error: null, comment: NewComment.get() });
   });

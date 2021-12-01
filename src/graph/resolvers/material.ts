@@ -3,7 +3,11 @@ import {
   CantEditInvoicedTaskError,
 } from '@/configs/errors';
 import { models } from '@/models';
-import { multipleIdDoesExistsCheck, getModelAttribute } from '@/helperFunctions';
+import {
+  multipleIdDoesExistsCheck,
+  getModelAttribute,
+  sendTaskNotificationsToUsers,
+} from '@/helperFunctions';
 import {
   checkIfHasProjectRights,
 } from '@/graph/addons/project';
@@ -59,6 +63,7 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     );
+    sendTaskNotificationsToUsers(SourceUser, Task, [{ type: 'otherAttributesAdd', data: { label: 'Materiál', title: params.title, done: params.done, quantity: params.quantity } }]);
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
 
     if (params.approved || (<ProjectInstance>Project).get('autoApproved')) {
@@ -146,6 +151,20 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     );
+    sendTaskNotificationsToUsers(
+      SourceUser,
+      Task,
+      [
+        {
+          type: 'otherAttributes',
+          data: {
+            label: 'Materiál',
+            old: `${params.title ? `title: ${Material.get('title')},` : ''}${params.done ? `done: ${Material.get('done')},` : ''} ${params.quantity ? `quantity: ${Material.get('quantity')}` : ''}`,
+            new: `${params.title ? `title: ${params.title},` : ''} ${params.done ? `done: ${params.done},` : ''} ${params.quantity ? `quantity: ${params.quantity}` : ''}`
+          }
+        }
+      ]
+    );
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: Material.get('TaskId') });
 
     //Metadata update
@@ -219,6 +238,19 @@ const mutations = {
         }],
       },
       { include: [models.TaskChangeMessage] }
+    );
+    sendTaskNotificationsToUsers(
+      SourceUser,
+      Task,
+      [
+        {
+          type: 'otherAttributesDelete',
+          data: {
+            label: 'Materiál',
+            oldData: { title: Material.get('title'), done: Material.get('done'), quantity: Material.get('quantity') },
+          }
+        }
+      ]
     );
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: Material.get('TaskId') });
     if (Project.get('autoApproved') || Material.get('approved')) {

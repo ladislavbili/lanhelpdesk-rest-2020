@@ -10,6 +10,7 @@ import {
   idDoesExistsCheck,
   getModelAttribute,
   extractDatesFromObject,
+  sendTaskNotificationsToUsers,
 } from '@/helperFunctions';
 import {
   checkIfHasProjectRights,
@@ -96,6 +97,7 @@ const mutations = {
         subtasksPending: parseFloat(<any>(<TaskMetadataInstance>TaskMetadata).get('subtasksPending')) + parseFloat(<any>params.quantity),
       })
     }
+    sendTaskNotificationsToUsers(SourceUser, Task, [{ type: 'otherAttributesAdd', data: { label: 'Prácu', done: params.done, title: params.title, quantity: params.quantity } }]);
     if (scheduled) {
       return models.Subtask.create({
         TaskId: task,
@@ -249,6 +251,20 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     );
+    sendTaskNotificationsToUsers(
+      SourceUser,
+      Task,
+      [
+        {
+          type: 'otherAttributes',
+          data: {
+            label: 'Prácu',
+            old: `${params.title ? `title: ${Subtask.get('title')},` : ''}${params.done ? `done: ${Subtask.get('done')},` : ''} ${params.quantity ? `quantity: ${Subtask.get('quantity')}` : ''}`,
+            new: `${params.title ? `title: ${params.title},` : ''} ${params.done ? `done: ${params.done},` : ''} ${params.quantity ? `quantity: ${params.quantity}` : ''}`
+          }
+        }
+      ]
+    );
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: Subtask.get('TaskId') });
     return Subtask.reload();
   },
@@ -257,6 +273,7 @@ const mutations = {
     const SourceUser = await checkResolver(req, fromInvoice ? ['vykazy'] : []);
     const Subtask = await models.Subtask.findByPk(id, {
       include: [
+        models.User,
         {
           model: models.Task,
           include: [
@@ -303,6 +320,19 @@ const mutations = {
         subtasksPending: parseFloat(<any>TaskMetadata.get('subtasksPending')) - parseFloat(<any>Subtask.get('quantity'))
       })
     }
+    sendTaskNotificationsToUsers(
+      SourceUser,
+      Task,
+      [
+        {
+          type: 'otherAttributesDelete',
+          data: {
+            label: 'Prácu',
+            oldData: { done: Subtask.get('done'), title: Subtask.get('title'), quantity: Subtask.get('quantity') },
+          }
+        }
+      ]
+    );
     return Subtask.destroy();
   },
 
