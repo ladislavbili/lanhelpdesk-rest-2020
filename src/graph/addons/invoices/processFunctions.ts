@@ -132,7 +132,7 @@ export const addAllRightsToTasks = (tasks) => {
 }
 
 export const addPricesToTasks = (tasks, Prices, Pricelist, Company) => {
-  const onlyAfterHoursMultiplier = Pricelist.get('afterHours') / 100;
+  const onlyAfterHoursMultiplier = parseFloat(Pricelist.get('afterHours')) / 100;
   const afterHoursMultiplier = onlyAfterHoursMultiplier + 1;
   const materialMarginsLow = Pricelist.get('materialMargin');
   const materialMarginsHigh = Pricelist.get('materialMarginExtra');

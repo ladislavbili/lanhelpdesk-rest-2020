@@ -77,6 +77,7 @@ const queries = {
       } else {
         tasks.push({
           ...resultTask,
+          taskId: resultTask.id,
           Subtasks: resultTask.Subtask.id !== null ? [{ ...resultTask.Subtask, TaskType: resultTask.TaskType, assignedTo: resultTask.Subtask.assignedTo.id === null ? null : resultTask.Subtask.assignedTo }] : [],
           WorkTrips: resultTask.WorkTrip.id !== null ? [{ ...resultTask.WorkTrip, TripType: resultTask.WorkTrip.TripType.id === null ? null : resultTask.WorkTrip.TripType, assignedTo: resultTask.WorkTrip.assignedTo.id === null ? null : resultTask.WorkTrip.assignedTo }] : [],
           Materials: resultTask.Material.id !== null ? [resultTask.Material] : [],
@@ -162,6 +163,7 @@ const queries = {
       } else {
         tasks.push({
           ...resultTask,
+          taskId: resultTask.id,
           Subtasks: (
             resultTask.Subtask.id !== null ?
               [
@@ -189,7 +191,7 @@ const queries = {
               []
           ),
           Materials: resultTask.Material.id !== null ? [resultTask.Material] : [],
-          Company: { id: invoicedTask.CompanyId, title: invoicedTask.companyTitle, dph: invoicedTask.dph },
+          Company: { id: invoicedTask.companyId, title: invoicedTask.companyTitle, dph: invoicedTask.dph },
           Status: {
             id: invoicedTask.statusId,
             title: invoicedTask.statusTitle,
@@ -339,6 +341,7 @@ const queries = {
           if (!pausalTotals.workOvertimeTasks.includes(task.id)) {
             pausalTotals.workOvertimeTasks.push(task.id);
           }
+
           pausalTotals.workExtraPrice += parseFloat(subtask.price) * (parseFloat(task.InvoicedTask.overtimePercentage) / 100) * parseFloat(subtask.quantity);
         }
       });
@@ -481,6 +484,7 @@ const queries = {
         } else {
           tasks.push({
             ...resultTask,
+            taskId: resultTask.id,
             Subtasks: (
               resultTask.Subtask.id !== null ?
                 [
@@ -507,7 +511,7 @@ const queries = {
                 ] :
                 []
             ),
-            Company: { id: invoicedTask.CompanyId, title: invoicedTask.companyTitle, dph: invoicedTask.dph },
+            Company: { id: invoicedTask.companyId, title: invoicedTask.companyTitle, dph: invoicedTask.dph },
             Status: {
               id: invoicedTask.statusId,
               title: invoicedTask.statusTitle,
@@ -551,6 +555,7 @@ const queries = {
         } else {
           tasks.push({
             ...resultTask,
+            taskId: resultTask.id,
             Subtasks: resultTask.Subtask.id !== null ? [{ ...resultTask.Subtask, TaskType: resultTask.TaskType, assignedTo: resultTask.Subtask.assignedTo.id === null ? null : resultTask.Subtask.assignedTo }] : [],
             WorkTrips: resultTask.WorkTrip.id !== null ? [{ ...resultTask.WorkTrip, TripType: resultTask.WorkTrip.TripType.id === null ? null : resultTask.WorkTrip.TripType, assignedTo: resultTask.WorkTrip.assignedTo.id === null ? null : resultTask.WorkTrip.assignedTo }] : [],
             assignedTos: resultTask.assignedTos.id !== null ? [resultTask.assignedTos] : [],
@@ -743,6 +748,7 @@ const mutations = {
               {
                 invoiced: true,
                 invoicedPausalQuantity: subtask.quantity,
+                invoicedPrice: subtask.price,
               },
               { where: { id: subtask.id }, transaction }
             )),
@@ -750,6 +756,7 @@ const mutations = {
               {
                 invoiced: true,
                 invoicedPausalQuantity: trip.quantity,
+                invoicedPrice: trip.price,
                 invoicedTypeId: trip.TripType.id,
                 invoicedTypeTitle: trip.TripType.title,
               },

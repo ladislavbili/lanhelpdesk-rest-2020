@@ -51,12 +51,18 @@ export const Invoice = `
   type AgentInvoice {
     workTasks: [InvoiceTask]!
     tripTasks: [InvoiceTask]!
-    taskTypeTotals: [AgentTypeTotals]!
-    tripTypeTotals: [AgentTypeTotals]!
+    taskTypeTotals: [AgentTaskTypeTotals]!
+    tripTypeTotals: [AgentTripTypeTotals]!
     totals: AgentInvoiceTotals!
   }
 
-  type AgentTypeTotals {
+  type AgentTaskTypeTotals {
+    id: Int!
+    title: String!
+    quantity: Float!
+  }
+
+  type AgentTripTypeTotals {
     id: Int!
     title: String!
     quantity: Float!

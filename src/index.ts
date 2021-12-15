@@ -15,5 +15,4 @@ updateModels(ignoreUpdating).then(async () => {
   }
   startRest();
   startServices();
-  //has to have DEF company
 });

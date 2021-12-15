@@ -1124,9 +1124,7 @@ const mutations = {
         taskChangeMessages.push(await createChangeMessage('AssignedTo', models.User, 'Assigned to users', assignedTos, Task.get('assignedTos'), 'fullName', NewAsssignedTo));
         notificationMessages.push({
           type: 'otherAttributes', data: {
-            label: "Assigned to", old: (<UserInstance[]>Task.get('assignedTos')).map((User) => `${User.get('fullName')}(${User.get('email')})`).join(`
-          `), new: NewAsssignedTo.map((User) => `${User.get('fullName')}(${User.get('email')})`).join(`
-            `)
+            label: "Assigned to", old: (<UserInstance[]>Task.get('assignedTos')).map((User) => `${User.get('fullName')}(${User.get('email')})`).join(`<br>`), new: NewAsssignedTo.map((User) => `${User.get('fullName')}(${User.get('email')})`).join(`<br>`)
           }
         });
         promises.push(Task.setAssignedTos(assignedTos, { transaction }))
@@ -1145,7 +1143,14 @@ const mutations = {
         }
         const NewRequester = <UserInstance>await models.User.findByPk(requester);
         taskChangeMessages.push(await createChangeMessage('Requester', models.User, 'Requester', requester, Task.get('requester'), 'fullName', NewRequester));
-        notificationMessages.push({ type: 'otherAttributes', data: { label: "Requester", old: `${(<UserInstance>Task.get('requester')).get('fullName')}(${(<UserInstance>Task.get('requester')).get('email')})`, new: `${NewRequester.get('fullName')}(${NewRequester.get('email')})` } });
+        notificationMessages.push({
+          type: 'otherAttributes',
+          data: {
+            label: "Requester",
+            old: Task.get('requester') ? `${(<UserInstance>Task.get('requester')).get('fullName')}(${(<UserInstance>Task.get('requester')).get('email')})` : null,
+            new: `${NewRequester.get('fullName')}(${NewRequester.get('email')})`,
+          }
+        });
         promises.push(Task.setRequester(requester, { transaction }))
       }
 
@@ -1153,13 +1158,27 @@ const mutations = {
       if (taskType !== undefined) {
         const NewTaskType = <TaskTypeInstance>await models.TaskType.findByPk(taskType);
         taskChangeMessages.push(await createChangeMessage('TaskType', models.TaskType, 'Task type', taskType, Task.get('TaskType'), 'title', NewTaskType));
-        notificationMessages.push({ type: 'otherAttributes', data: { label: "Task type", old: (<TaskTypeInstance>Task.get('TaskType')).get('title'), new: NewTaskType.get('title') } });
+        notificationMessages.push({
+          type: 'otherAttributes',
+          data: {
+            label: "Task type",
+            old: Task.get('TaskType') ? (<TaskTypeInstance>Task.get('TaskType')).get('title') : null,
+            new: NewTaskType.get('title')
+          }
+        });
         promises.push(Task.setTaskType(taskType, { transaction }))
       }
       if (company) {
         const NewCompany = <CompanyInstance>await models.Company.findByPk(company);
         taskChangeMessages.push(await createChangeMessage('Company', models.Company, 'Company', company, Task.get('Company'), 'title', NewCompany));
-        notificationMessages.push({ type: 'otherAttributes', data: { label: "Company", old: (<CompanyInstance>Task.get('Company')).get('title'), new: NewCompany.get('title') } });
+        notificationMessages.push({
+          type: 'otherAttributes',
+          data: {
+            label: "Company",
+            old: Task.get('Company') ? (<CompanyInstance>Task.get('Company')).get('title') : null,
+            new: NewCompany.get('title')
+          }
+        });
         promises.push(Task.setCompany(company, { transaction }))
       }
 
@@ -1179,7 +1198,14 @@ const mutations = {
         const Status = await models.Status.findByPk(status);
         if (status !== TaskStatus.get('id')) {
           taskChangeMessages.push(await createChangeMessage('Status', models.Status, 'Status', status, TaskStatus, 'title', Status));
-          notificationMessages.push({ type: 'otherAttributes', data: { label: "Status", old: Status.get('title'), new: TaskStatus.get('title') } });
+          notificationMessages.push({
+            type: 'otherAttributes',
+            data: {
+              label: "Status",
+              old: TaskStatus ? TaskStatus.get('title') : null,
+              new: Status.get('title'),
+            }
+          });
           promises.push(Task.setStatus(status, { transaction }));
         }
         switch (Status.get('action')) {
@@ -1194,7 +1220,14 @@ const mutations = {
               params.closeDate = parseInt(args.closeDate);
             }
             taskChangeMessages.push(await createChangeMessage('CloseDate', null, 'Close date', params.closeDate, Task.get('closeDate')));
-            notificationMessages.push({ type: 'otherAttributes', data: { label: "Close date", old: timestampToString(params.closeDate), new: timestampToString(Task.get('closeDate').valueOf()) } });
+            notificationMessages.push({
+              type: 'otherAttributes',
+              data: {
+                label: "Close date",
+                old: Task.get('closeDate') ? timestampToString(Task.get('closeDate').valueOf()) : null
+              },
+              new: timestampToString(params.closeDate),
+            });
             params.statusChange = moment().valueOf();
             break;
           }
@@ -1210,7 +1243,12 @@ const mutations = {
             }
             taskChangeMessages.push(await createChangeMessage('CloseDate', null, 'Close date', params.closeDate, Task.get('closeDate')));
             notificationMessages.push({
-              type: 'otherAttributes', data: { label: "Close date", old: timestampToString(params.closeDate), new: timestampToString(Task.get('closeDate').valueOf()) }
+              type: 'otherAttributes',
+              data: {
+                label: "Close date",
+                old: Task.get('closeDate') ? timestampToString(Task.get('closeDate').valueOf()) : null,
+                new: timestampToString(params.closeDate),
+              },
             });
             params.statusChange = moment().valueOf();
             break;
@@ -1228,7 +1266,14 @@ const mutations = {
               params.pendingChangable = args.pendingChangable;
             }
             taskChangeMessages.push(await createChangeMessage('PendingDate', null, 'Pending date', params.pendingDate, Task.get('pendingDate')));
-            notificationMessages.push({ type: 'otherAttributes', data: { label: "Pending date", old: timestampToString(params.pendingDate), new: timestampToString(Task.get('pendingDate').valueOf()) } });
+            notificationMessages.push({
+              type: 'otherAttributes',
+              data: {
+                label: "Pending date",
+                old: Task.get('pendingDate') ? timestampToString(Task.get('pendingDate').valueOf()) : null,
+                new: timestampToString(params.pendingDate),
+              }
+            });
             taskChangeMessages.push(await createChangeMessage('PendingChangable', null, 'Pending changable', params.pendingChangable, Task.get('pendingChangable')));
             notificationMessages.push({ type: 'otherAttributes', data: { label: "Pending changable", old: params.pendingChangable, new: Task.get('pendingChangable') } });
             params.statusChange = moment().valueOf()

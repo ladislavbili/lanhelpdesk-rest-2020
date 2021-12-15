@@ -2,6 +2,7 @@ import defaultAttributes from './defaultAttributes';
 export const InvoiceTask = `
   type InvoiceTask {
       ${defaultAttributes}
+      taskId: Int
       title: String!
       important: Boolean!
       closeDate: String

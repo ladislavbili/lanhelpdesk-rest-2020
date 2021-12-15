@@ -357,3 +357,35 @@ export const createDefCompanyDataIfDoesntExists = async () => {
     console.log('Def company values exists');
   }
 }
+
+/* QUICK OLD FIXES
+GIVE INVOICED THINGS THEIR PRICE
+//has to have DEF company
+const subtasksToFix = <any[]>await models.Subtask.findAll({
+  where: { invoiced: true, invoicedPrice: null }, include: [{
+    model: models.Task,
+    attributes: ['id', 'TaskTypeId', 'overtime'],
+    include: [{
+      model: models.Company,
+      attributes: ['id'],
+      include: [{
+        model: models.Pricelist,
+        attributes: ['id', 'afterHours'],
+        include: [models.Price]
+      }]
+    }]
+  }]
+});
+subtasksToFix.forEach((Subtask) => {
+  const type = Subtask.get('Task').get('TaskTypeId');
+  const prices = Subtask.get('Task').get('Company').get('Pricelist').get('Prices');
+  const price = prices.find((price) => price.type = "TaskType" && price.get('TaskTypeId') === type).get('price');
+  Subtask.update({
+    invoicedPrice: Math.round(((
+      parseFloat(price) *
+      (Subtask.get('Task').get('overtime') ? (parseFloat(Subtask.get('Task').get('Company').get('Pricelist').get('afterHours')) / 100 + 1) : 1) *
+      ((100 - parseFloat(Subtask.get('discount'))) / 100)
+    ) + Number.EPSILON) * 100) / 100
+  })
+});
+*/

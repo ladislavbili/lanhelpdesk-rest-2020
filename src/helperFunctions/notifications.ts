@@ -62,7 +62,7 @@ export const sendTaskNotificationsToUsers = async (FromUser, Task, notifications
         break;
       }
       case 'otherAttributesAdd': {
-        return (allNotificationMessages[notification.type]({ ...notification.data, ...taskData, User: FromUser }, changeDate, hasMultiple))
+        return (allNotificationMessages[notification.type]({ newData: notification.data, ...taskData, User: FromUser }, changeDate, hasMultiple))
         break;
       }
       case 'otherAttributesDelete': {
@@ -192,7 +192,7 @@ export const allNotificationMessages = {
     order: 2,
     message: `
       <strong>${data.label} bol zmenený z</strong><br>
-      ${data.old}<br>
+      ${data.old ? data.old : 'Bez hodnoty'}<br>
       <strong>na</strong><br>
       ${data.new}<br>
     `,
