@@ -63,7 +63,7 @@ const mutations = {
       },
       { include: [models.TaskChangeMessage] }
     );
-    sendTaskNotificationsToUsers(SourceUser, Task, [{ type: 'otherAttributesAdd', data: { label: 'Materiál', title: params.title, done: params.done, quantity: params.quantity } }]);
+    sendTaskNotificationsToUsers(SourceUser, Task, [{ type: 'otherAttributesAdd', data: { label: 'Materiálu', newData: [params.done ? '[Dokončené]' : '[-]', params.title, params.quantity] } }]);
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
 
     if (params.approved || (<ProjectInstance>Project).get('autoApproved')) {
@@ -158,9 +158,9 @@ const mutations = {
         {
           type: 'otherAttributes',
           data: {
-            label: 'Materiál',
-            old: `${params.title ? `title: ${Material.get('title')},` : ''}${params.done ? `done: ${Material.get('done')},` : ''} ${params.quantity ? `quantity: ${Material.get('quantity')}` : ''}`,
-            new: `${params.title ? `title: ${params.title},` : ''} ${params.done ? `done: ${params.done},` : ''} ${params.quantity ? `quantity: ${params.quantity}` : ''}`
+            label: 'Materiálu',
+            old: `${Material.get('done') ? '[Dokončené]' : '[-]'} - ${Material.get('title')} - ${Material.get('quantity')}`,
+            new: `${params.done ? (params.done ? '[Dokončené]' : '[-]') : (Material.get('done') ? '[Dokončené]' : '[-]')} - ${params.title ? params.title : Material.get('title')} - ${params.quantity ? params.quantity : Material.get('quantity')}`
           }
         }
       ]
@@ -246,8 +246,8 @@ const mutations = {
         {
           type: 'otherAttributesDelete',
           data: {
-            label: 'Materiál',
-            oldData: { title: Material.get('title'), done: Material.get('done'), quantity: Material.get('quantity') },
+            label: 'Materiálu',
+            oldData: [Material.get('done') ? '[Dokončené]' : '[-]', Material.get('title'), Material.get('quantity')],
           }
         }
       ]

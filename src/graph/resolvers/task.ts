@@ -1056,8 +1056,8 @@ const mutations = {
     }
     await sequelize.transaction(async (transaction) => {
       if (project && project !== Task.get('ProjectId')) {
-        taskChangeMessages.push(createChangeMessage('Project', models.Project, 'Project', project, Task.get('Project'), 'title', OriginalProject));
-        notificationMessages.push({ type: 'otherAttributes', data: { label: 'Project', old: (<ProjectInstance>Task.get('Project')).get('title'), new: project.get('title') } });
+        taskChangeMessages.push(await createChangeMessage('Project', models.Project, 'Project', project, OriginalProject, 'title', Project));
+        notificationMessages.push({ type: 'otherAttributes', data: { label: 'Project', old: OriginalProject.get('title'), new: Project.get('title') } });
         promises.push(Task.setProject(project, { transaction }));
         //here was milestone with condition if exists
 
@@ -1149,6 +1149,12 @@ const mutations = {
             label: "Requester",
             old: Task.get('requester') ? `${(<UserInstance>Task.get('requester')).get('fullName')}(${(<UserInstance>Task.get('requester')).get('email')})` : null,
             new: `${NewRequester.get('fullName')}(${NewRequester.get('email')})`,
+          }
+        });
+        notificationMessages.push({
+          type: 'assignedAsRequester',
+          data: {
+            description: args.description ? args.description : Task.get('description'),
           }
         });
         promises.push(Task.setRequester(requester, { transaction }))
@@ -1283,11 +1289,11 @@ const mutations = {
             break;
         }
       }
-
       taskChangeMessages = [
         ...taskChangeMessages,
         ...(await createTaskAttributesChangeMessages(params, Task))
-      ]
+      ];
+
       notificationMessages = [
         ...notificationMessages,
         ...(await createTaskAttributesNotifications(params, Task))

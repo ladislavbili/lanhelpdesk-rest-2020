@@ -98,7 +98,7 @@ const mutations = {
         tripsPending: parseFloat(<any>(<TaskMetadataInstance>TaskMetadata).get('tripsPending')) + parseFloat(<any>params.quantity),
       })
     }
-    sendTaskNotificationsToUsers(SourceUser, Task, [{ type: 'otherAttributesAdd', data: { label: 'Výjazd', done: params.done, type: TripType.get('title'), quantity: params.quantity } }]);
+    sendTaskNotificationsToUsers(SourceUser, Task, [{ type: 'otherAttributesAdd', data: { label: 'Výjazdu', newData: [params.done ? '[Dokončené]' : '[-]', TripType.get('title'), params.quantity] } }]);
     if (scheduled) {
       return models.WorkTrip.create({
         TaskId: task,
@@ -264,9 +264,9 @@ const mutations = {
         {
           type: 'otherAttributes',
           data: {
-            label: 'Výjazd',
-            old: `${params.type ? `type: ${(<TripTypeInstance>WorkTrip.get('TripType')).get('title')},` : ''}${params.done ? `done: ${WorkTrip.get('done')},` : ''} ${params.quantity ? `quantity: ${WorkTrip.get('quantity')}` : ''}`,
-            new: `${params.type ? `type: ${NewTripType.get('title')},` : ''} ${params.done ? `done: ${params.done},` : ''} ${params.quantity ? `quantity: ${params.quantity}` : ''}`
+            label: 'Výjazdu',
+            old: `${WorkTrip.get('done') ? '[Dokončené]' : '[-]'} - ${(<TripTypeInstance>WorkTrip.get('TripType')).get('title')} - ${WorkTrip.get('done')} - ${WorkTrip.get('quantity')}`,
+            new: `${params.done ? (params.done ? '[Dokončené]' : '[-]') : (WorkTrip.get('done') ? '[Dokončené]' : '[-]')} - ${params.type ? NewTripType.get('title') : (<TripTypeInstance>WorkTrip.get('TripType')).get('title')} - ${params.quantity ? params.quantity : WorkTrip.get('quantity')}`
           }
         }
       ]
@@ -333,8 +333,8 @@ const mutations = {
         {
           type: 'otherAttributesDelete',
           data: {
-            label: 'Výjazd',
-            oldData: { done: WorkTrip.get('done'), type: (<TripTypeInstance>WorkTrip.get('TripType')).get('title'), quantity: WorkTrip.get('quantity') },
+            label: 'Výjazdu',
+            oldData: [WorkTrip.get('done') ? '[Dokončené]' : '[-]', (<TripTypeInstance>WorkTrip.get('TripType')).get('title'), WorkTrip.get('quantity')],
           }
         }
       ]

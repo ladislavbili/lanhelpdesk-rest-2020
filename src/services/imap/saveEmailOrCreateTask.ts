@@ -11,7 +11,16 @@ import {
   ProjectAttributesInstance,
 } from '@/models/instances';
 import { models } from '@/models';
-import { randomString, addUser, logWithDate, allNotificationMessages, timestampToString, sendNotification } from '@/helperFunctions';
+import {
+  randomString,
+  addUser,
+  logWithDate,
+  allNotificationMessages,
+  timestampToString,
+  sendNotification,
+  createNotificationUserName,
+  createNotificationTaskTitle,
+} from '@/helperFunctions';
 import moment from 'moment';
 import fs from 'fs';
 
@@ -64,7 +73,6 @@ async function addComment(email, Imap, Task, attachmentsData, User, UserId = nul
       title: Task.get('title'),
       comment: email.html,
     },
-    timestampToString(moment().valueOf())
   );
   if (assignedTos.every((User2) => User2.get('id') !== requester.get('id')) && requester.get('id') !== User.get('id')) {
     sendNotification(User, requester, Task, notification.message, notification.subject, false);
@@ -290,6 +298,7 @@ async function createTask(email, Imap, User, secret) {
     { title: NewTask.get('title'), taskId: NewTask.get('id'), description: NewTask.get('description') },
     timestampToString(NewTask.get('createdAt').valueOf())
   );
+
   sendEmail(
     '',
     creationNotification.message,
@@ -302,13 +311,38 @@ async function createTask(email, Imap, User, secret) {
     User,
     taskId: NewTask.get('id'),
     title: NewTask.get('title'),
-    createdAt: timestampToString(NewTask.get('createdAt').valueOf()),
     description: NewTask.get('description'),
   });
   if (assignedTos.every((User2) => User2.get('id') !== requester.get('id')) && requester.get('id') !== User.get('id')) {
-    sendNotification(User, requester, NewTask, taskCreationNotification.message, taskCreationNotification.subject, false);
+    sendNotification(
+      User,
+      requester,
+      NewTask,
+      `
+      ${taskCreationNotification.messageHeader}<br>
+      ${createNotificationTaskTitle(taskData, true)}<br>
+      Vykonal: ${createNotificationUserName({ User }, true)}<br>
+      Čas: ${timestampToString(NewTask.get('createdAt').valueOf())}<br><br>
+      ${taskCreationNotification.message}
+      `,
+      taskCreationNotification.subject,
+      false
+    );
   }
   assignedTos.forEach((assignedTo) => {
-    sendNotification(User, assignedTo, NewTask, taskCreationNotification.message, taskCreationNotification.subject, false);
+    sendNotification(
+      User,
+      assignedTo,
+      NewTask,
+      `
+      ${taskCreationNotification.messageHeader}<br>
+      ${createNotificationTaskTitle(taskData, true)}<br>
+      Vykonal: ${createNotificationUserName({ User }, true)}<br>
+      Čas: ${timestampToString(NewTask.get('createdAt').valueOf())}<br><br>
+      ${taskCreationNotification.message}
+      `,
+      taskCreationNotification.subject,
+      false
+    );
   });
 }

@@ -42,7 +42,7 @@ const mutations = {
       { include: [models.TaskChangeMessage] }
     );
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: task });
-    sendTaskNotificationsToUsers(SourceUser, Task, [{ type: 'otherAttributesAdd', data: { label: 'Kratku podúlohu', title: attributes.title, done: attributes.done } }]);
+    sendTaskNotificationsToUsers(SourceUser, Task, [{ type: 'otherAttributesAdd', data: { label: 'Kratku podúlohu', newData: [attributes.done ? '[Dokončené]' : '[-]', attributes.title] } }]);
     return models.ShortSubtask.create({
       TaskId: task,
       ...attributes,
@@ -79,9 +79,9 @@ const mutations = {
         {
           type: 'otherAttributes',
           data: {
-            label: 'Krátka podúloha',
-            old: `${args.title ? `title: ${ShortSubtask.get('title')},` : ''}${args.done ? ` done: ${ShortSubtask.get('done')},` : ''}`,
-            new: `${args.title ? `title: ${args.title},` : ''} done: ${args.done ? `${args.done},` : ''}`
+            label: 'Krátku podúlohu',
+            old: `${ShortSubtask.get('done') ? '[Dokončené]' : '[-]'} - ${ShortSubtask.get('title')}`,
+            new: `${args.done ? (args.done ? '[Dokončené]' : '[-]') : (ShortSubtask.get('done') ? '[Dokončené]' : '[-]')} - ${args.title ? args.title : ShortSubtask.get('title')}`
           }
         }
       ]
@@ -120,7 +120,7 @@ const mutations = {
           type: 'otherAttributesDelete',
           data: {
             label: 'Krátku podúlohu',
-            oldData: { title: ShortSubtask.get('title'), done: ShortSubtask.get('done') },
+            oldData: [ShortSubtask.get('done') ? '[Dokončené]' : '[-]', ShortSubtask.get('title')],
           }
         }
       ]

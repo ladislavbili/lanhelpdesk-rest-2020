@@ -51,7 +51,7 @@ export const createTaskAttributesNotifications = async (args, Task) => {
         case 'deadline': {
           return (
             args[attr.key] !== undefined ?
-              { type: 'otherAttributes', data: { label: 'Deadline', oldDescription: timestampToString(Task.get('deadline').valueOf()), newDescription: timestampToString(args.deadline) } } :
+              { type: 'otherAttributes', data: { label: 'Deadline', oldDescription: Task.get('deadline') ? timestampToString(Task.get('deadline').valueOf()) : 'Bez deadlinu', newDescription: timestampToString(args.deadline) } } :
               null
           )
           break;

@@ -140,6 +140,7 @@ export function sendComment(app) {
           type: 'comment',
           data: {
             comment: notificationMessage,
+            internal,
           }
         }
       ]

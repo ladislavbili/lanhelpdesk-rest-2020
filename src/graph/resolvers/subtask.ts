@@ -97,7 +97,7 @@ const mutations = {
         subtasksPending: parseFloat(<any>(<TaskMetadataInstance>TaskMetadata).get('subtasksPending')) + parseFloat(<any>params.quantity),
       })
     }
-    sendTaskNotificationsToUsers(SourceUser, Task, [{ type: 'otherAttributesAdd', data: { label: 'Prácu', done: params.done, title: params.title, quantity: params.quantity } }]);
+    sendTaskNotificationsToUsers(SourceUser, Task, [{ type: 'otherAttributesAdd', data: { label: 'Práce', newData: [params.done ? '[Dokončené]' : '[-]', params.title, params.quantity] } }]);
     if (scheduled) {
       return models.Subtask.create({
         TaskId: task,
@@ -241,6 +241,20 @@ const mutations = {
           promises.push(Subtask.createScheduledWork(extractDatesFromObject(scheduled, scheduledDates), { transaction: t }));
         }
       }
+      sendTaskNotificationsToUsers(
+        SourceUser,
+        Task,
+        [
+          {
+            type: 'otherAttributes',
+            data: {
+              label: 'Práce',
+              old: `${Subtask.get('done') ? '[Dokončené]' : '[-]'} - ${Subtask.get('title')} - ${Subtask.get('quantity')}`,
+              new: `${params.done ? (params.done ? '[Dokončené]' : '[-]') : (Subtask.get('done') ? '[Dokončené]' : '[-]')} - ${params.title ? params.title : Subtask.get('title')} - ${params.quantity ? params.quantity : Subtask.get('quantity')}`
+            }
+          }
+        ]
+      );
       promises.push(Subtask.update(params, { transaction: t }));
       await Promise.all(promises);
     });
@@ -250,20 +264,6 @@ const mutations = {
         TaskChangeMessages,
       },
       { include: [models.TaskChangeMessage] }
-    );
-    sendTaskNotificationsToUsers(
-      SourceUser,
-      Task,
-      [
-        {
-          type: 'otherAttributes',
-          data: {
-            label: 'Prácu',
-            old: `${params.title ? `title: ${Subtask.get('title')},` : ''}${params.done ? `done: ${Subtask.get('done')},` : ''} ${params.quantity ? `quantity: ${Subtask.get('quantity')}` : ''}`,
-            new: `${params.title ? `title: ${params.title},` : ''} ${params.done ? `done: ${params.done},` : ''} ${params.quantity ? `quantity: ${params.quantity}` : ''}`
-          }
-        }
-      ]
     );
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: Subtask.get('TaskId') });
     return Subtask.reload();
@@ -327,8 +327,8 @@ const mutations = {
         {
           type: 'otherAttributesDelete',
           data: {
-            label: 'Prácu',
-            oldData: { done: Subtask.get('done'), title: Subtask.get('title'), quantity: Subtask.get('quantity') },
+            label: 'Práce',
+            oldData: [Subtask.get('done') ? '[Dokončené]' : '[-]', Subtask.get('title'), Subtask.get('quantity')],
           }
         }
       ]

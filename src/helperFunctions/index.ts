@@ -51,6 +51,8 @@ export {
   sendTaskNotificationsToUsers,
   allNotificationMessages,
   sendNotification,
+  createNotificationUserName,
+  createNotificationTaskTitle,
 } from './notifications';
 
 export {
