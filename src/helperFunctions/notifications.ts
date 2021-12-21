@@ -112,7 +112,7 @@ export const sendTaskNotificationsToUsers = async (FromUser, Task, notifications
       taskDeleted
     );
   });
-  assignedUsers.forEach((User) => {
+  assignedUsers.filter((User) => User.get('id') !== FromUser.get('id')).forEach((User) => {
     const notification = allNotificationMessages.assignedMe({ ...taskData, User: FromUser, description: Task.get('description') });
     const assignedMessage = `
       ${notification.messageHeader}<br>
@@ -130,7 +130,7 @@ export const sendTaskNotificationsToUsers = async (FromUser, Task, notifications
       taskDeleted
     );
   });
-  unassignedUsers.forEach((User) => {
+  unassignedUsers.filter((User) => User.get('id') !== FromUser.get('id')).forEach((User) => {
     const notification = allNotificationMessages.unassignedMe({ ...taskData, User: FromUser, description: Task.get('description') });
     const assignedMessage = `
       ${notification.messageHeader}<br>
