@@ -6,6 +6,9 @@ import { FilterQueries } from './entities/filter';
 import { ImapQueries } from './entities/imap';
 import { InvoiceQueries } from './entities/invoice';
 import { InvoiceCompanyQueries } from './entities/invoiceCompany';
+import { LanwikiFolderQueries } from './entities/lanwikiFolder';
+import { LanwikiPageQueries } from './entities/lanwikiPage';
+import { LanwikiTagQueries } from './entities/lanwikiTag';
 import { MaterialQueries } from './entities/material';
 import { MilestoneQueries } from './entities/milestone';
 import { PricelistQueries } from './entities/pricelist';
@@ -46,6 +49,9 @@ type Query {
   ${ImapQueries}
   ${InvoiceQueries}
   ${InvoiceCompanyQueries}
+  ${LanwikiFolderQueries}
+  ${LanwikiPageQueries}
+  ${LanwikiTagQueries}
   ${MaterialQueries}
   ${MilestoneQueries}
   ${PricelistQueries}

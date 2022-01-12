@@ -18,6 +18,8 @@ import {
   sendComment,
   sendEmail,
   uploadRepeatTemplateAttachments,
+  lwUploadTextImages,
+  getLWFile,
 } from './rest';
 import {
   useHttps,
@@ -51,6 +53,8 @@ export const startRest = () => {
   sendComment(app);
   sendEmail(app);
   uploadRepeatTemplateAttachments(app);
+  lwUploadTextImages(app);
+  getLWFile(app);
   let httpServer = null;
   if (useHttps) {
     const credentials = {

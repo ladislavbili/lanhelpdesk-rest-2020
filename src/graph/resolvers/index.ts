@@ -34,6 +34,9 @@ import repeatTemplate from './repeatTemplate';
 import repeatTemplateAttachment from './repeatTemplateAttachment'
 import userNotification from './userNotification';
 import repeatTime from './repeatTime';
+import lanwikiFolder from './lanwikiFolder';
+import lanwikiTag from './lanwikiTag';
+import lanwikiPage from './lanwikiPage';
 
 const { PubSub } = require('apollo-server-express');
 export const pubsub = new PubSub();
@@ -79,6 +82,9 @@ export default {
     ...repeatTemplateAttachment.queries,
     ...userNotification.queries,
     ...repeatTime.queries,
+    ...lanwikiFolder.queries,
+    ...lanwikiTag.queries,
+    ...lanwikiPage.queries,
   },
 
   Mutation: {
@@ -120,6 +126,9 @@ export default {
     ...repeatTemplateAttachment.mutations,
     ...userNotification.mutations,
     ...repeatTime.mutations,
+    ...lanwikiFolder.mutations,
+    ...lanwikiTag.mutations,
+    ...lanwikiPage.mutations,
   },
   Subscription: {
     ...comment.subscriptions,
@@ -139,6 +148,8 @@ export default {
     ...user.subscriptions,
     ...repeat.subscriptions,
     ...userNotification.subscriptions,
+    ...lanwikiFolder.subscriptions,
+    ...lanwikiTag.subscriptions,
   },
 
   ...comment.attributes,
@@ -178,4 +189,7 @@ export default {
   ...repeatTemplateAttachment.attributes,
   ...userNotification.attributes,
   ...repeatTime.attributes,
+  ...lanwikiFolder.attributes,
+  ...lanwikiTag.attributes,
+  ...lanwikiPage.attributes,
 };

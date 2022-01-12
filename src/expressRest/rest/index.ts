@@ -11,3 +11,5 @@ export * from './send-email';
 export * from './upload-attachments';
 export * from './upload-project-attachments';
 export * from './upload-repeat-template-attachments';
+export * from './lw-upload-text-images';
+export * from './get-lw-file';

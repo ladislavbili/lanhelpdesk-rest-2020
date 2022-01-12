@@ -7,6 +7,9 @@ import { Imap } from './entities/imap';
 import { Invoice } from './entities/invoice';
 import { InvoiceCompany } from './entities/invoiceCompany';
 import { InvoiceTask } from './entities/invoiceTask';
+import { LanwikiFolder } from './entities/lanwikiFolder';
+import { LanwikiPage } from './entities/lanwikiPage';
+import { LanwikiTag } from './entities/lanwikiTag';
 import { Material } from './entities/material';
 import { Milestone } from './entities/milestone';
 import { Pricelist } from './entities/pricelist';
@@ -48,6 +51,9 @@ ${Imap}
 ${Invoice}
 ${InvoiceCompany}
 ${InvoiceTask}
+${LanwikiFolder}
+${LanwikiPage}
+${LanwikiTag}
 ${Material}
 ${Milestone}
 ${Pricelist}

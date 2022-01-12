@@ -50,6 +50,11 @@ import defineTasklistSorts, { createTasklistSortsAssoc } from './instances/taskl
 import defineInvoicedTasks, { createInvoicedTasksAssoc } from './instances/invoicedTask';
 import defineInvoicedTaskTags, { createInvoicedTaskTagsAssoc } from './instances/invoicedTaskTag';
 import defineInvoicedTaskUsers, { createInvoicedTaskUsersAssoc } from './instances/invoicedTaskUser';
+import defineLanwikiFolders, { createLanwikiFoldersAssoc } from './instances/lanwikiFolder';
+import defineLanwikiFolderRights, { createLanwikiFolderRightsAssoc } from './instances/lanwikiFolderRight';
+import defineLanwikiPages, { createLanwikiPagesAssoc } from './instances/lanwikiPage';
+import defineLanwikiTags, { createLanwikiTagsAssoc } from './instances/lanwikiTag';
+import defineLanwikiFiles, { createLanwikiFilesAssoc } from './instances/lanwikiFile';
 
 const modelToLog = '';
 
@@ -117,6 +122,11 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineInvoicedTasks(sequelize);
   defineInvoicedTaskTags(sequelize);
   defineInvoicedTaskUsers(sequelize);
+  defineLanwikiFolders(sequelize);
+  defineLanwikiFolderRights(sequelize);
+  defineLanwikiPages(sequelize);
+  defineLanwikiTags(sequelize);
+  defineLanwikiFiles(sequelize);
 
   //ASSOCS
   createRolesAssoc(models);
@@ -168,6 +178,11 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createInvoicedTasksAssoc(models);
   createInvoicedTaskTagsAssoc(models);
   createInvoicedTaskUsersAssoc(models);
+  createLanwikiFoldersAssoc(models);
+  createLanwikiFolderRightsAssoc(models);
+  createLanwikiPagesAssoc(models);
+  createLanwikiTagsAssoc(models);
+  createLanwikiFilesAssoc(models);
 
   //LOG FUNCTIONS
 

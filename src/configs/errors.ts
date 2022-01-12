@@ -157,3 +157,7 @@ export const CantAddOrEditRepeatError = new ApolloError("You have insufficient r
 
 //Invoiced
 export const CantEditInvoicedTaskError = new ApolloError("This task is invoiced and can't be edited!", "CANT_EDIT_INVOICED_TASK");
+
+export const CantManageFolderError = new ApolloError("You are not allowed to manage this folder!", "CANT_MANAGE_FOLDER");
+
+export const CantAddOrEditPagesToFolderError = new ApolloError("You are not allowed to add or edit pages in this folder!", "CANT_ADD_OR_EDIT_PAGES_TO_FOLDER");

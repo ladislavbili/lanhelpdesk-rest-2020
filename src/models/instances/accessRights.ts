@@ -5,6 +5,7 @@ export interface AccessRightsInstance extends DefaultInstance {
   //general rules
   login: boolean;
   testSections: boolean;
+  lanwiki: boolean;
   mailViaComment: boolean;
   vykazy: boolean;
   publicFilters: boolean;
@@ -49,6 +50,11 @@ export default function defineAccessRights(sequelize: Sequelize) {
         defaultValue: false,
       },
       testSections: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      lanwiki: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,

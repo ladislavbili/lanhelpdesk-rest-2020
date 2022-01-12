@@ -6,6 +6,9 @@ import { FilterMutations } from './entities/filter';
 import { ImapMutations } from './entities/imap';
 import { InvoiceMutations } from './entities/invoice';
 import { InvoiceCompanyMutations } from './entities/invoiceCompany';
+import { LanwikiFolderMutations } from './entities/lanwikiFolder';
+import { LanwikiPageMutations } from './entities/lanwikiPage';
+import { LanwikiTagMutations } from './entities/lanwikiTag';
 import { MaterialMutations } from './entities/material';
 import { MilestoneMutations } from './entities/milestone';
 import { PricelistMutations } from './entities/pricelist';
@@ -46,6 +49,9 @@ type Mutation {
   ${ImapMutations}
   ${InvoiceMutations}
   ${InvoiceCompanyMutations}
+  ${LanwikiFolderMutations}
+  ${LanwikiPageMutations}
+  ${LanwikiTagMutations}
   ${MaterialMutations}
   ${MilestoneMutations}
   ${PricelistMutations}

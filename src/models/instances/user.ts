@@ -184,4 +184,7 @@ export function createUsersAssoc(models) {
   models.User.hasMany(models.TaskAttachment, { onDelete: 'CASCADE' });
 
   models.User.belongsToMany(models.ProjectGroup, { through: 'user_belongs_to_group' });
+
+  //LanWiki
+  models.User.hasMany(models.LanwikiFolderRight, { as: { singular: "hasLanwikiFolderRight", plural: "hasLanwikiFolderRights" }, onDelete: 'CASCADE' });
 }

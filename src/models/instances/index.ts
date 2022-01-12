@@ -44,3 +44,8 @@ export { TasklistSortInstance } from './tasklistSort';
 export { InvoicedTaskInstance } from './invoicedTask';
 export { InvoicedTaskTagInstance } from './invoicedTaskTag';
 export { InvoicedTaskUserInstance } from './invoicedTaskUser';
+export { LanwikiFolderInstance } from './lanwikiFolder';
+export { LanwikiFolderRightInstance } from './lanwikiFolderRight';
+export { LanwikiPageInstance } from './lanwikiPage';
+export { LanwikiTagInstance } from './lanwikiTag';
+export { LanwikiFileInstance } from './lanwikiFile';
