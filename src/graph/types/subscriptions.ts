@@ -4,6 +4,7 @@ import { ErrorMessageSubscriptions } from './entities/errorMessage';
 import { FilterSubscriptions } from './entities/filter';
 import { LanwikiFolderSubscriptions } from './entities/lanwikiFolder';
 import { LanwikiTagSubscriptions } from './entities/lanwikiTag';
+import { LanwikiPageSubscriptions } from './entities/lanwikiPage';
 import { MilestoneSubscriptions } from './entities/milestone';
 import { PricelistSubscriptions } from './entities/pricelist';
 import { ProjectSubscriptions } from './entities/project';
@@ -39,5 +40,6 @@ type Subscription {
   ${TripTypeSubscriptions}
   ${UserSubscriptions}
   ${UserNotificationSubscriptions}
+  ${LanwikiPageSubscriptions}
 }
 `

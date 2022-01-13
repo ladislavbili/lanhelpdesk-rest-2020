@@ -1,6 +1,7 @@
 import {
   createDoesNoExistsError,
   CantAddOrEditPagesToFolderError,
+  FolderArchivedError,
 } from '@/configs/errors';
 import { models } from '@/models';
 import { Op } from 'sequelize';
@@ -18,6 +19,11 @@ import {
   idsDoExistsCheck,
   getModelAttribute,
 } from '@/helperFunctions';
+import { pubsub } from './index';
+const { withFilter } = require('apollo-server-express');
+import {
+  LANWIKI_PAGES_CHANGE,
+} from '@/configs/subscriptions';
 
 const fullFolderRights = {
   active: true,
@@ -34,7 +40,7 @@ const noFolderRights = {
 };
 
 const queries = {
-  lanwikiPages: async (root, { folderId, tagId, limit, page, stringFilter }, { req }) => {
+  lanwikiPages: async (root, { folderId, tagId, limit, page, stringFilter, archived }, { req }) => {
     const User = await checkResolver(req, ['lanwiki']);
     const isAdmin = isUserAdmin(User);
 
@@ -47,6 +53,9 @@ const queries = {
         ...pageWhere,
         LanwikiFolderId: folderId,
       }
+    }
+    if (typeof archived == "boolean") {
+      folderWhere.archived = archived;
     }
     if (tagId) {
       tagsFilterNeeded = true;
@@ -96,7 +105,7 @@ const queries = {
         {
           required: true,
           model: models.LanwikiFolder,
-          attributes: ['id', 'title'],
+          attributes: ['id', 'title', 'archived'],
           where: folderWhere,
           include: [{
             required: !isAdmin,
@@ -165,23 +174,29 @@ const mutations = {
   addLanwikiPage: async (root, { folderId, tags, ...args }, { req }) => {
     const User = await checkResolver(req, ["lanwiki"]);
     const isAdmin = isUserAdmin(User);
-    const Folder = await models.LanwikiFolder.findByPk(folderId, {
+    const Folder = <LanwikiFolderInstance>await models.LanwikiFolder.findByPk(folderId, {
       include: [{
-        required: true,
+        required: !isAdmin,
         model: models.LanwikiFolderRight,
         where: {
           UserId: User.get('id'),
           active: true,
+          write: true,
         }
       }]
     });
     if (!Folder) {
       throw createDoesNoExistsError('Lanwiki folder', folderId);
     };
-    const FolderRights = <LanwikiFolderRightInstance[]>Folder.get('LanwikiFolderRights');
-    if ((!Folder || FolderRights.length === 0 || !FolderRights[0].get('active') || !FolderRights[0].get('write')) && !isAdmin) {
-      throw CantAddOrEditPagesToFolderError;
-    };
+    if (Folder.get('archived')) {
+      throw FolderArchivedError;
+    }
+    if (!isAdmin) {
+      const FolderRights = <LanwikiFolderRightInstance[]>Folder.get('LanwikiFolderRights');
+      if (!Folder || FolderRights.length === 0 || !FolderRights[0].get('active') || !FolderRights[0].get('write')) {
+        throw CantAddOrEditPagesToFolderError;
+      };
+    }
     await idsDoExistsCheck(tags, models.LanwikiTag);
     const LanwikiPage = <LanwikiPageInstance>await models.LanwikiPage.create({
       ...args,
@@ -189,6 +204,8 @@ const mutations = {
     });
     await LanwikiPage.setLanwikiTags(tags);
     LanwikiPage.isAdmin = isAdmin;
+    const AllRights = <LanwikiFolderRightInstance[]>await Folder.getLanwikiFolderRights({ where: { active: true, read: true } });
+    pubsub.publish(LANWIKI_PAGES_CHANGE, { lanwikiPagesSubscription: AllRights.map((FolderRight) => FolderRight.get('UserId')) });
     return LanwikiPage;
   },
   updateLanwikiPage: async (root, { id, folderId, tags, deletedImages, ...args }, { req }) => {
@@ -200,6 +217,7 @@ const mutations = {
           model: models.LanwikiFolder,
           include: [{
             model: models.LanwikiFolderRight,
+            required: !isAdmin,
             where: {
               UserId: User.get('id'),
               active: true,
@@ -209,7 +227,15 @@ const mutations = {
         },
       ]
     });
-    const FolderRights = <LanwikiFolderRightInstance[]>(<LanwikiFolderInstance>OriginalPage.get('LanwikiFolder')).get('LanwikiFolderRights');
+    if (!OriginalPage) {
+      throw createDoesNoExistsError('Page', id);
+    };
+    const Folder = <LanwikiFolderInstance>OriginalPage.get('LanwikiFolder');
+
+    if (!Folder || Folder.get('archived')) {
+      throw FolderArchivedError;
+    }
+    const FolderRights = <LanwikiFolderRightInstance[]>Folder.get('LanwikiFolderRights');
     if (!isAdmin && (FolderRights.length === 0 || !FolderRights[0].get('active') || !FolderRights[0].get('write'))) {
       throw CantAddOrEditPagesToFolderError;
     }
@@ -233,6 +259,8 @@ const mutations = {
     if (tags) {
       await OriginalPage.setLanwikiTags(tags);
     }
+    const AllRights = <LanwikiFolderRightInstance[]>await Folder.getLanwikiFolderRights({ where: { active: true, read: true } });
+    pubsub.publish(LANWIKI_PAGES_CHANGE, { lanwikiPagesSubscription: AllRights.map((FolderRight) => FolderRight.get('UserId')) });
     return OriginalPage.reload();
   },
   deleteLanwikiPage: async (root, { id }, { req }) => {
@@ -245,15 +273,26 @@ const mutations = {
           model: models.LanwikiFolder,
           include: [{
             model: models.LanwikiFolderRight,
+            required: !isAdmin,
             where: {
               UserId: User.get('id'),
               active: true,
+              write: true,
             }
           }]
         },
       ]
     });
-    const FolderRights = <LanwikiFolderRightInstance[]>(<LanwikiFolderInstance>OriginalPage.get('LanwikiFolder')).get('LanwikiFolderRights');
+
+    if (!OriginalPage) {
+      throw createDoesNoExistsError('Page', id);
+    };
+    const Folder = <LanwikiFolderInstance>OriginalPage.get('LanwikiFolder');
+
+    if (!Folder || Folder.get('archived')) {
+      throw FolderArchivedError;
+    }
+    const FolderRights = <LanwikiFolderRightInstance[]>Folder.get('LanwikiFolderRights');
     if (!isAdmin && (FolderRights.length === 0 || !FolderRights[0].get('active') || !FolderRights[0].get('write'))) {
       throw CantAddOrEditPagesToFolderError;
     }
@@ -267,7 +306,10 @@ const mutations = {
       })
       await Promise.all(LanwikiFiles.map((LanwikiFile) => LanwikiFile.destroy()));
     }
-    return OriginalPage.destroy();
+    await OriginalPage.destroy();
+    const AllRights = <LanwikiFolderRightInstance[]>await Folder.getLanwikiFolderRights({ where: { active: true, read: true } });
+    pubsub.publish(LANWIKI_PAGES_CHANGE, { lanwikiPagesSubscription: AllRights.map((FolderRight) => FolderRight.get('UserId')) });
+    return OriginalPage;
   },
 }
 
@@ -316,6 +358,14 @@ const attributes = {
 };
 
 const subscriptions = {
+  lanwikiPagesSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(LANWIKI_PAGES_CHANGE),
+      async ({ lanwikiPagesSubscription }, args, { userID }) => {
+        return lanwikiPagesSubscription.includes(userID);
+      }
+    ),
+  },
 };
 
 export default {

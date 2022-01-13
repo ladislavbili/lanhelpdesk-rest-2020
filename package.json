@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/index.ts",
   "scripts": {
-    "build": "webpack-cli -p",
+    "build": "webpack-cli --mode development",
     "start": "nodemon -r tsconfig-paths/register src/index.ts",
     "tsc": "tsc"
   },
@@ -25,8 +25,8 @@
     "email-validator": "^2.0.4",
     "express": "^4.17.1",
     "express-fileupload": "^1.2.0",
-    "express-graphql": "^0.9.0",
-    "graphql": "^15.3.0",
+    "express-graphql": "^0.12.0",
+    "graphql": "^15.8.0",
     "graphql-fields": "^2.0.3",
     "html2plaintext": "^2.1.4",
     "imap-simple": "^5.0.0",
@@ -40,8 +40,9 @@
     "mysql2": "^2.2.5",
     "nodemailer": "^6.7.1",
     "pino": "^6.7.0",
-    "sanitize-html": "^1.27.5",
+    "sanitize-html": "^2.6.1",
     "sequelize": "^6.11.0",
+    "statman-stopwatch": "^2.13.0",
     "ts-node": "^8.10.2",
     "tsconfig-paths": "^3.9.0",
     "typescript": "^3.9.7"
@@ -50,9 +51,8 @@
     "@babel/preset-env": "^7.11.5",
     "babel-cli": "^6.26.0",
     "nodemon": "^2.0.4",
-    "statman-stopwatch": "^2.11.1",
     "ts-loader": "^8.0.4",
-    "webpack": "^4.44.2",
-    "webpack-cli": "^3.3.12"
+    "webpack": "^5.66.0",
+    "webpack-cli": "^4.9.1"
   }
 }

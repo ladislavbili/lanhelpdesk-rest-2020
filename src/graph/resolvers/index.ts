@@ -150,6 +150,7 @@ export default {
     ...userNotification.subscriptions,
     ...lanwikiFolder.subscriptions,
     ...lanwikiTag.subscriptions,
+    ...lanwikiPage.subscriptions,
   },
 
   ...comment.attributes,

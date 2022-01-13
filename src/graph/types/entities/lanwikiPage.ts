@@ -32,7 +32,7 @@ type LanwikiPages {
 `
 
 export const LanwikiPageQueries = `
-lanwikiPages(folderId: Int, tagId: Int, limit: Int, page: Int, stringFilter: LanwikiPageStringFilterInput): LanwikiPages
+lanwikiPages(folderId: Int, tagId: Int, limit: Int, page: Int, stringFilter: LanwikiPageStringFilterInput, archived: Boolean): LanwikiPages
 lanwikiPage(id: Int!): LanwikiPage
 `
 
@@ -43,4 +43,5 @@ deleteLanwikiPage( id: Int! ): LanwikiPage
 `
 
 export const LanwikiPageSubscriptions = `
+  lanwikiPagesSubscription: [Int]
 `

@@ -31,6 +31,10 @@ const queries = {
   lanwikiFolders: async (root, { archived }, { req }) => {
     const User = await checkResolver(req, ['lanwiki']);
     const isAdmin = isUserAdmin(User);
+    const where = <any>{};
+    if (typeof archived == "boolean") {
+      where.archived = archived;
+    }
     if (isAdmin) {
       const Folders = <LanwikiFolderInstance[]>await models.LanwikiFolder.findAll({
         order: [
@@ -43,9 +47,7 @@ const queries = {
             include: [models.User],
           },
         ],
-        where: {
-          archived: archived === true,
-        }
+        where
       });
       return Folders.map((Folder) => {
         Folder.isAdmin = true;
@@ -143,6 +145,9 @@ const mutations = {
     const OriginalFolder = <LanwikiFolderInstance>await models.LanwikiFolder.findByPk(id, {
       include: [models.LanwikiFolderRight],
     });
+    if (!OriginalFolder) {
+      throw createDoesNoExistsError('Folder', id);
+    };
     const OriginalFolderRights = <LanwikiFolderRightInstance[]>OriginalFolder.get('LanwikiFolderRights');
     const MyOriginalRight = OriginalFolderRights.find((FolderRight) => FolderRight.get('UserId') === User.get('id'));
 
