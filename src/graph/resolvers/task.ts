@@ -101,7 +101,6 @@ import {
 } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
-import Stopwatch from 'statman-stopwatch';
 const dateNames = ['startsAt', 'deadline', 'pendingDate', 'closeDate'];
 const dateNames2 = [
   'closeDateFrom',
@@ -132,8 +131,8 @@ const queries = {
     const mainOrderBy = sort ? transformSortToQueryString(sort, true, milestoneSort) : createBasicSort('Task', milestoneSort);
     const secondaryOrderBy = sort ? transformSortToQueryString(sort, false, milestoneSort) : createBasicSort('TaskData', milestoneSort);
 
-    const mainWatch = new Stopwatch(true);
-    const checkUserWatch = new Stopwatch(true);
+    //const mainWatch = new Stopwatch(true);
+    //const checkUserWatch = new Stopwatch(true);
     const User = await checkResolver(req);
     const isAdmin = isUserAdmin(User);
     const checkUserTime = checkUserWatch.stop();
@@ -204,7 +203,7 @@ const queries = {
     });
 
     let databaseTime = 0;
-    const databaseWatch = new Stopwatch(true);
+    //const databaseWatch = new Stopwatch(true);
     let tasks = [];
     responseTasks.forEach((Task: any) => {
       const invoiced = Task.invoiced;

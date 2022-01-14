@@ -42,7 +42,6 @@
     "pino": "^6.7.0",
     "sanitize-html": "^2.6.1",
     "sequelize": "^6.11.0",
-    "statman-stopwatch": "^2.13.0",
     "ts-node": "^8.10.2",
     "tsconfig-paths": "^3.9.0",
     "typescript": "^3.9.7"

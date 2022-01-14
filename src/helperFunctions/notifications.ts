@@ -38,6 +38,10 @@ export const sendTaskNotificationsToUsers = async (FromUser, Task, notifications
     ));
     if (requesterNotification) {
       const processedRequesterNotification = allNotificationMessages[requesterNotification.type !== 'creation' ? requesterNotification.type : 'createdForMe']({ ...requesterNotification.data, ...taskData, User: FromUser }, false);
+      if (processedRequesterNotification === undefined) {
+        console.log(`Error found, created by ${requesterNotification.type}, ${requesterNotification.data ? requesterNotification.data.label : 'empty'}`);
+        return;
+      }
       sendNotification(
         FromUser,
         requester,
@@ -90,19 +94,30 @@ export const sendTaskNotificationsToUsers = async (FromUser, Task, notifications
       }
     }
   }).sort((notification1, notification2) => notification1.order < notification2.order ? -1 : 1);
+  if (assignedTosNotifications.some((notification) => notification === undefined)) {
+    console.log(`Found notification error.
+      ${assignedTosNotifications
+        .map((notification, index) => notification === undefined ? index : null)
+        .filter((notification) => notification !== null)
+        .map((index) => notifications.filter((notification) => !['assignedAsRequester'].includes(notification.type))[index].type).join(', ')}
+  `);
+
+    return;
+  }
   assignedTos.forEach((User) => {
     const mainNotification = assignedTosNotifications[0];
     const assignedMessage = `
-      ${ mainNotification.messageHeader}<br>
-      ${ assignedTosNotifications.length > 1 ?
+  ${ mainNotification.messageHeader} <br>
+    ${
+      assignedTosNotifications.length > 1 ?
         `${assignedTosNotifications.map((notification) => notification.topMessage).join(', ')} v úlohe:<br>` :
         ``
       }
-      ${createNotificationTaskTitle(taskData, true)}<br>
-      Vykonal: ${createNotificationUserName({ User: FromUser }, true)}<br>
-      Čas: ${changeDate}<br><br>
-      ${ assignedTosNotifications.map((notification) => notification.message).join(`<br><br>`)}
-        `;
+  ${ createNotificationTaskTitle(taskData, true)} <br>
+    Vykonal: ${ createNotificationUserName({ User: FromUser }, true)} <br>
+      Čas: ${ changeDate} <br><br>
+        ${ assignedTosNotifications.map((notification) => notification.message).join(`<br><br>`)}
+  `;
     sendNotification(
       FromUser,
       User,
@@ -115,12 +130,12 @@ export const sendTaskNotificationsToUsers = async (FromUser, Task, notifications
   assignedUsers.filter((User) => User.get('id') !== FromUser.get('id')).forEach((User) => {
     const notification = allNotificationMessages.assignedMe({ ...taskData, User: FromUser, description: Task.get('description') });
     const assignedMessage = `
-      ${notification.messageHeader}<br>
-      ${createNotificationTaskTitle(taskData, true)}<br>
-      Vykonal: ${createNotificationUserName({ User: FromUser }, true)}<br>
-      Čas: ${changeDate}<br><br>
-      ${notification.message}
-        `;
+  ${ notification.messageHeader} <br>
+    ${ createNotificationTaskTitle(taskData, true)} <br>
+      Vykonal: ${ createNotificationUserName({ User: FromUser }, true)} <br>
+        Čas: ${ changeDate} <br><br>
+          ${ notification.message}
+  `;
     sendNotification(
       FromUser,
       User,
@@ -133,12 +148,12 @@ export const sendTaskNotificationsToUsers = async (FromUser, Task, notifications
   unassignedUsers.filter((User) => User.get('id') !== FromUser.get('id')).forEach((User) => {
     const notification = allNotificationMessages.unassignedMe({ ...taskData, User: FromUser, description: Task.get('description') });
     const assignedMessage = `
-      ${notification.messageHeader}<br>
-      ${createNotificationTaskTitle(taskData, true)}<br>
-      Vykonal: ${createNotificationUserName({ User: FromUser }, true)}<br>
-      Čas: ${changeDate}<br><br>
-      ${notification.message}
-        `;
+  ${ notification.messageHeader} <br>
+    ${ createNotificationTaskTitle(taskData, true)} <br>
+      Vykonal: ${ createNotificationUserName({ User: FromUser }, true)} <br>
+        Čas: ${ changeDate} <br><br>
+          ${ notification.message}
+  `;
     sendNotification(
       FromUser,
       User,
@@ -151,7 +166,7 @@ export const sendTaskNotificationsToUsers = async (FromUser, Task, notifications
 }
 /*<br>
 ${createNotificationTaskTitle(taskData, true)}<br>
-Vykonal: ${createNotificationUserName({User: FromUser}, true)}<br>
+Vykonal: ${createNotificationUserName({ User: FromUser }, true)}<br>
 Čas: ${changeDate}<br><br>
 */
 
@@ -170,19 +185,19 @@ export const sendNotification = async (FromUser, User, Task, message, subject, t
   if (User.get('receiveNotifications')) {
     sendEmail(
       ``,
-      `${message}<br><br>
-      <strong><i>Správa z lanhelpdesk2021.lansystems.sk</strong></i><br>
-      <i>This is an automated message. If you don't wish to receive this kind of notification, please log in and change your profile setting.</i>
-      `,
-      `[${Task.get('id')}]${subject}`,
+      `${message} <br><br>
+    <strong><i>Správa z lanhelpdesk2021.lansystems.sk < /strong></i > <br>
+      <i>This is an automated message.If you don't wish to receive this kind of notification, please log in and change your profile setting.</i>
+        `,
+      `[${Task.get('id')}]${subject} `,
       User.get('email'),
       'LanHelpdesk notification'
     );
   }
 }
 
-export const createNotificationUserName = (data, html = false) => html ? `<strong>${data.User.get('fullName')}</strong>(<i>${data.User.get('email')}</i>)` : `${data.User.get('fullName')}(${data.User.get('email')})`;
-export const createNotificationTaskTitle = (data, html = false) => html ? `<strong>${data.taskId}: ${data.title}</strong>` : `${data.taskId}: ${data.title}`;
+export const createNotificationUserName = (data, html = false) => html ? `< strong > ${data.User.get('fullName')} </strong>(<i>${data.User.get('email')}</i >)` : `${data.User.get('fullName')} (${data.User.get('email')})`;
+export const createNotificationTaskTitle = (data, html = false) => html ? `< strong > ${data.taskId}: ${data.title} </strong>` : `${data.taskId}: ${data.title}`;
 
 export const allNotificationMessages = {
   title: (data, multiple) => ({ //user, task(taskId, title), oldTitle, newTitle
