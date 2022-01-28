@@ -135,7 +135,7 @@ const queries = {
     //const checkUserWatch = new Stopwatch(true);
     const User = await checkResolver(req);
     const isAdmin = isUserAdmin(User);
-    const checkUserTime = checkUserWatch.stop();
+    const checkUserTime = 0; //checkUserWatch.stop();
     let taskWhere = [];
 
     //direct status filter beats Filter, currently Filter statuses are disabled
@@ -284,7 +284,7 @@ const queries = {
       })
     }
 
-    databaseTime = databaseWatch.stop()
+    databaseTime = 0;// databaseWatch.stop()
     const count = tasks.length > 0 ? (<any>tasks[0]).count : 0;
 
     return {
@@ -298,7 +298,7 @@ const queries = {
         pendingMaterials: isNaN(parseFloat((<any>totals).pendingMaterials)) ? 0 : parseFloat((<any>totals).pendingMaterials),
       },
       */
-      execTime: mainWatch.stop(),
+      execTime: 0,// mainWatch.stop(),
       secondaryTimes: [
         { source: 'User check', time: checkUserTime },
         { source: 'Database', time: databaseTime },

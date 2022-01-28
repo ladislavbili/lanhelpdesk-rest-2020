@@ -54,7 +54,6 @@ const queries = {
         return Folder;
       })
     }
-    //TODO: potencialne nevracia vsetkych pouzivatelov folderu
     return models.LanwikiFolder.findAll({
       order: [
         ['order', 'ASC'],
@@ -208,12 +207,9 @@ const mutations = {
     ) {
       throw CantManageFolderError;
     }
-    console.log(hasReplacement);
 
     if (hasReplacement) {
       const OriginalPages = <LanwikiPageInstance[]>await OriginalFolder.getLanwikiPages();
-      console.log(OriginalPages);
-
       await Promise.all(OriginalPages.map((OriginalPage) => OriginalPage.update({ LanwikiFolderId: newId })))
     }
     await OriginalFolder.destroy();

@@ -142,4 +142,9 @@ export function createCompaniesAssoc(models) {
   models.Company.hasMany(models.RepeatTemplate);
 
   models.Company.belongsToMany(models.ProjectGroup, { through: 'company_belongs_to_group' });
+
+  //CMDB
+  models.Company.hasOne(models.CMDBScheme);
+  models.Company.hasMany(models.CMDBManual);
+  models.Company.hasMany(models.CMDBItem);
 }

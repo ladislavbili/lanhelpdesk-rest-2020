@@ -1,3 +1,8 @@
+import { CMDBAddressMutations } from './entities/cmdbAddress';
+import { CMDBCategoryMutations } from './entities/cmdbCategory';
+import { CMDBItemMutations } from './entities/cmdbItem';
+import { CMDBSchemeMutations } from './entities/cmdbScheme';
+import { CMDBManualMutations } from './entities/cmdbManual';
 import { CommentMutations } from './entities/comment';
 import { CommentAttachmentMutations } from './entities/commentAttachment';
 import { CompanyMutations } from './entities/company';
@@ -41,6 +46,11 @@ import { WorkTripMutations } from './entities/workTrip';
 
 export default `
 type Mutation {
+  ${CMDBAddressMutations}
+  ${CMDBCategoryMutations}
+  ${CMDBItemMutations}
+  ${CMDBSchemeMutations}
+  ${CMDBManualMutations}
   ${CompanyMutations}
   ${CommentMutations}
   ${CommentAttachmentMutations}

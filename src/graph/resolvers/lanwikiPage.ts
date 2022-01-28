@@ -169,7 +169,6 @@ const queries = {
   },
 }
 
-//TODO: if folder archived cant edit add and delete
 const mutations = {
   addLanwikiPage: async (root, { folderId, tags, ...args }, { req }) => {
     const User = await checkResolver(req, ["lanwiki"]);

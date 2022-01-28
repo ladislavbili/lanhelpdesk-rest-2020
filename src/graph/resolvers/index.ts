@@ -37,6 +37,11 @@ import repeatTime from './repeatTime';
 import lanwikiFolder from './lanwikiFolder';
 import lanwikiTag from './lanwikiTag';
 import lanwikiPage from './lanwikiPage';
+import cmdbAddress from './cmdbAddress';
+import cmdbCategory from './cmdbCategory';
+import cmdbItem from './cmdbItem';
+import cmdbManual from './cmdbManual';
+import cmdbScheme from './cmdbScheme';
 
 const { PubSub } = require('apollo-server-express');
 export const pubsub = new PubSub();
@@ -85,6 +90,11 @@ export default {
     ...lanwikiFolder.queries,
     ...lanwikiTag.queries,
     ...lanwikiPage.queries,
+    ...cmdbAddress.queries,
+    ...cmdbCategory.queries,
+    ...cmdbItem.queries,
+    ...cmdbManual.queries,
+    ...cmdbScheme.queries,
   },
 
   Mutation: {
@@ -129,6 +139,11 @@ export default {
     ...lanwikiFolder.mutations,
     ...lanwikiTag.mutations,
     ...lanwikiPage.mutations,
+    ...cmdbAddress.mutations,
+    ...cmdbCategory.mutations,
+    ...cmdbItem.mutations,
+    ...cmdbManual.mutations,
+    ...cmdbScheme.mutations,
   },
   Subscription: {
     ...comment.subscriptions,
@@ -151,6 +166,9 @@ export default {
     ...lanwikiFolder.subscriptions,
     ...lanwikiTag.subscriptions,
     ...lanwikiPage.subscriptions,
+    ...cmdbCategory.subscriptions,
+    ...cmdbManual.subscriptions,
+    ...cmdbScheme.subscriptions,
   },
 
   ...comment.attributes,
@@ -193,4 +211,9 @@ export default {
   ...lanwikiFolder.attributes,
   ...lanwikiTag.attributes,
   ...lanwikiPage.attributes,
+  ...cmdbAddress.attributes,
+  ...cmdbCategory.attributes,
+  ...cmdbItem.attributes,
+  ...cmdbManual.attributes,
+  ...cmdbScheme.attributes,
 };

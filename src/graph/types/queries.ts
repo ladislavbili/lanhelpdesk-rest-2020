@@ -1,3 +1,8 @@
+import { CMDBAddressQueries } from './entities/cmdbAddress';
+import { CMDBCategoryQueries } from './entities/cmdbCategory';
+import { CMDBItemQueries } from './entities/cmdbItem';
+import { CMDBSchemeQueries } from './entities/cmdbScheme';
+import { CMDBManualQueries } from './entities/cmdbManual';
 import { CommentQueries } from './entities/comment';
 import { CommentAttachmentQueries } from './entities/commentAttachment';
 import { CompanyQueries } from './entities/company';
@@ -41,6 +46,11 @@ import { WorkTripQueries } from './entities/workTrip';
 
 export default `
 type Query {
+  ${CMDBAddressQueries}
+  ${CMDBCategoryQueries}
+  ${CMDBItemQueries}
+  ${CMDBSchemeQueries}
+  ${CMDBManualQueries}
   ${CommentQueries}
   ${CommentAttachmentQueries}
   ${CompanyQueries}

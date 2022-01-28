@@ -1,3 +1,8 @@
+import { CMDBAddress } from './entities/cmdbAddress';
+import { CMDBCategory } from './entities/cmdbCategory';
+import { CMDBItem } from './entities/cmdbItem';
+import { CMDBManual } from './entities/cmdbManual';
+import { CMDBScheme } from './entities/cmdbScheme';
 import { Comment } from './entities/comment';
 import { CommentAttachment } from './entities/commentAttachment';
 import { Company } from './entities/company';
@@ -42,6 +47,11 @@ import { UserNotification } from './entities/userNotification';
 import { WorkTrip } from './entities/workTrip';
 
 export default `
+${CMDBAddress}
+${CMDBCategory}
+${CMDBItem}
+${CMDBManual}
+${CMDBScheme}
 ${Comment}
 ${CommentAttachment}
 ${Company}

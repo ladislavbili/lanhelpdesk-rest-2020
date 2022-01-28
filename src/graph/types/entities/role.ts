@@ -24,6 +24,7 @@ const createAccessRights = (required) => {
     'tasklistPreferences',
     'customFilters',
     'lanwiki',
+    'cmdb',
   ].reduce((acc, right) => {
     return acc + `${right}: Boolean${(required ? '!' : '')}\n`;
   }, '')

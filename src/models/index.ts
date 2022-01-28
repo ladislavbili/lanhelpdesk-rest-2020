@@ -55,6 +55,12 @@ import defineLanwikiFolderRights, { createLanwikiFolderRightsAssoc } from './ins
 import defineLanwikiPages, { createLanwikiPagesAssoc } from './instances/lanwikiPage';
 import defineLanwikiTags, { createLanwikiTagsAssoc } from './instances/lanwikiTag';
 import defineLanwikiFiles, { createLanwikiFilesAssoc } from './instances/lanwikiFile';
+import defineCMDBAddressess, { createCMDBAddressesAssoc } from './instances/cmdbAddress';
+import defineCMDBCategories, { createCMDBCategoriesAssoc } from './instances/cmdbCategory';
+import defineCMDBFiles, { createCMDBFilesAssoc } from './instances/cmdbFile';
+import defineCMDBItems, { createCMDBItemsAssoc } from './instances/cmdbItem';
+import defineCMDBManuals, { createCMDBManualsAssoc } from './instances/cmdbManual';
+import defineCMDBSchemes, { createCMDBSchemesAssoc } from './instances/cmdbScheme';
 
 const modelToLog = '';
 
@@ -127,6 +133,12 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineLanwikiPages(sequelize);
   defineLanwikiTags(sequelize);
   defineLanwikiFiles(sequelize);
+  defineCMDBAddressess(sequelize);
+  defineCMDBCategories(sequelize);
+  defineCMDBFiles(sequelize);
+  defineCMDBItems(sequelize);
+  defineCMDBManuals(sequelize);
+  defineCMDBSchemes(sequelize);
 
   //ASSOCS
   createRolesAssoc(models);
@@ -183,6 +195,12 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createLanwikiPagesAssoc(models);
   createLanwikiTagsAssoc(models);
   createLanwikiFilesAssoc(models);
+  createCMDBAddressesAssoc(models);
+  createCMDBCategoriesAssoc(models);
+  createCMDBFilesAssoc(models);
+  createCMDBItemsAssoc(models);
+  createCMDBManualsAssoc(models);
+  createCMDBSchemesAssoc(models);
 
   //LOG FUNCTIONS
 

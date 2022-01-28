@@ -94,39 +94,34 @@ export const sendTaskNotificationsToUsers = async (FromUser, Task, notifications
       }
     }
   }).sort((notification1, notification2) => notification1.order < notification2.order ? -1 : 1);
-  if (assignedTosNotifications.some((notification) => notification === undefined)) {
-    console.log(`Found notification error.
-      ${assignedTosNotifications
-        .map((notification, index) => notification === undefined ? index : null)
-        .filter((notification) => notification !== null)
-        .map((index) => notifications.filter((notification) => !['assignedAsRequester'].includes(notification.type))[index].type).join(', ')}
-  `);
+  if (assignedTosNotifications.length > 0) {
+    assignedTos.forEach((User) => {
+      const mainNotification = assignedTosNotifications[0];
+      console.log(notifications);
+      console.log(mainNotification);
 
-    return;
-  }
-  assignedTos.forEach((User) => {
-    const mainNotification = assignedTosNotifications[0];
-    const assignedMessage = `
-  ${ mainNotification.messageHeader} <br>
-    ${
-      assignedTosNotifications.length > 1 ?
-        `${assignedTosNotifications.map((notification) => notification.topMessage).join(', ')} v úlohe:<br>` :
-        ``
-      }
-  ${ createNotificationTaskTitle(taskData, true)} <br>
-    Vykonal: ${ createNotificationUserName({ User: FromUser }, true)} <br>
+      const assignedMessage = `
+      ${ mainNotification.messageHeader} <br>
+      ${
+        assignedTosNotifications.length > 1 ?
+          `${assignedTosNotifications.map((notification) => notification.topMessage).join(', ')} v úlohe:<br>` :
+          ``
+        }
+      ${ createNotificationTaskTitle(taskData, true)} <br>
+      Vykonal: ${ createNotificationUserName({ User: FromUser }, true)} <br>
       Čas: ${ changeDate} <br><br>
-        ${ assignedTosNotifications.map((notification) => notification.message).join(`<br><br>`)}
-  `;
-    sendNotification(
-      FromUser,
-      User,
-      Task,
-      assignedMessage,
-      mainNotification.subject,
-      taskDeleted
-    );
-  });
+      ${ assignedTosNotifications.map((notification) => notification.message).join(`<br><br>`)}
+      `;
+      sendNotification(
+        FromUser,
+        User,
+        Task,
+        assignedMessage,
+        mainNotification.subject,
+        taskDeleted
+      );
+    });
+  }
   assignedUsers.filter((User) => User.get('id') !== FromUser.get('id')).forEach((User) => {
     const notification = allNotificationMessages.assignedMe({ ...taskData, User: FromUser, description: Task.get('description') });
     const assignedMessage = `

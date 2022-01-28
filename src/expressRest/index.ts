@@ -18,8 +18,11 @@ import {
   sendComment,
   sendEmail,
   uploadRepeatTemplateAttachments,
-  lwUploadTextImages,
   getLWFile,
+  lwUploadTextImages,
+  cmdbUploadScheme,
+  cmdbUploadTextImages,
+  getCMDBFile,
 } from './rest';
 import {
   useHttps,
@@ -53,8 +56,12 @@ export const startRest = () => {
   sendComment(app);
   sendEmail(app);
   uploadRepeatTemplateAttachments(app);
-  lwUploadTextImages(app);
   getLWFile(app);
+  lwUploadTextImages(app);
+  cmdbUploadScheme(app);
+  cmdbUploadTextImages(app);
+  getCMDBFile(app);
+
   let httpServer = null;
   if (useHttps) {
     const credentials = {
