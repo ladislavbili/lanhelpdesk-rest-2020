@@ -7,6 +7,8 @@ export interface CMDBItemInstance extends DefaultInstance {
   location: string;
   installDate: string;
   expireDate: string;
+  hardware: string;
+  serialNumber: string;
   description: string;
   backup: string;
   monitoring: string;
@@ -49,6 +51,16 @@ export default function defineCMDBItems(sequelize: Sequelize) {
         defaultValue: ""
       },
       monitoring: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        defaultValue: ""
+      },
+      hardware: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        defaultValue: ""
+      },
+      serialNumber: {
         type: DataTypes.TEXT,
         allowNull: false,
         defaultValue: ""

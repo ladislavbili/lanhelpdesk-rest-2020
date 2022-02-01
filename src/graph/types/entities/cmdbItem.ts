@@ -10,6 +10,8 @@ type CMDBItem {
   description: String!
   backup: String!
   monitoring: String!
+  hardware: String!
+  serialNumber: String!
 
   createdBy: BasicUser
   updatedBy: BasicUser
@@ -69,6 +71,8 @@ addCmdbItem(
   location: String!
   installDate: String
   expireDate: String
+  hardware: String!
+  serialNumber: String!
   description: String!
   backup: String!
   monitoring: String!
@@ -83,6 +87,8 @@ updateCmdbItem(
   location: String!
   installDate: String
   expireDate: String
+  hardware: String!
+  serialNumber: String!
   description: String!
   backup: String!
   monitoring: String!
