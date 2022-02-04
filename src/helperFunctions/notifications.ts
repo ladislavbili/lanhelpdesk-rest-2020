@@ -7,6 +7,7 @@ import {
 } from '@/models/instances';
 import {
   timestampToString,
+  replaceFromString,
 } from '@/helperFunctions';
 import {
   USER_NOTIFICATION_CHANGE
@@ -97,8 +98,8 @@ export const sendTaskNotificationsToUsers = async (FromUser, Task, notifications
   if (assignedTosNotifications.length > 0) {
     assignedTos.forEach((User) => {
       const mainNotification = assignedTosNotifications[0];
-      console.log(notifications);
-      console.log(mainNotification);
+      //console.log(notifications);
+      //console.log(mainNotification);
 
       const assignedMessage = `
       ${ mainNotification.messageHeader} <br>
@@ -178,12 +179,13 @@ export const sendNotification = async (FromUser, User, Task, message, subject, t
   pubsub.publish(USER_NOTIFICATION_CHANGE, { userNotificationsSubscription: User.get('id') });
 
   if (User.get('receiveNotifications')) {
-    sendEmail(
-      ``,
-      `${message} <br><br>
-    <strong><i>Správa z lanhelpdesk2021.lansystems.sk < /strong></i > <br>
+    const fullMessage = `${message} <br><br>
+      <strong><i>Správa z lanhelpdesk2021.lansystems.sk </strong></i> <br>
       <i>This is an automated message.If you don't wish to receive this kind of notification, please log in and change your profile setting.</i>
-        `,
+    `;
+    sendEmail(
+      replaceFromString(replaceFromString(fullMessage, ['<i>', '</i>', '<strong>', '</strong>'], ''), ['<br>'], '\n'),
+      fullMessage,
       `[${Task.get('id')}]${subject} `,
       User.get('email'),
       'LanHelpdesk notification'
@@ -191,8 +193,8 @@ export const sendNotification = async (FromUser, User, Task, message, subject, t
   }
 }
 
-export const createNotificationUserName = (data, html = false) => html ? `< strong > ${data.User.get('fullName')} </strong>(<i>${data.User.get('email')}</i >)` : `${data.User.get('fullName')} (${data.User.get('email')})`;
-export const createNotificationTaskTitle = (data, html = false) => html ? `< strong > ${data.taskId}: ${data.title} </strong>` : `${data.taskId}: ${data.title}`;
+export const createNotificationUserName = (data, html = false) => html ? `<strong> ${data.User.get('fullName')} </strong>(<i>${data.User.get('email')}</i>)` : `${data.User.get('fullName')} (${data.User.get('email')})`;
+export const createNotificationTaskTitle = (data, html = false) => html ? `<strong> ${data.taskId}: ${data.title} </strong>` : `${data.taskId}: ${data.title}`;
 
 export const allNotificationMessages = {
   title: (data, multiple) => ({ //user, task(taskId, title), oldTitle, newTitle

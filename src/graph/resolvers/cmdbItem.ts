@@ -127,6 +127,7 @@ const queries = {
     //includeFolder, rights and has right
     const response = <any>await models.CMDBItem.findAndCountAll({
       order: [<any>itemSort],
+      distinct: true,
       include: [
         {
           required: true,
@@ -172,6 +173,7 @@ const queries = {
       where: itemWhere,
       ...pagination,
     });
+
     const Items = <CMDBItemInstance[]>response.rows;
     const count = <number>response.count;
 

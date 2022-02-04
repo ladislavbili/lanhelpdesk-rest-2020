@@ -73,6 +73,7 @@ export {
 export {
   randomString,
   capitalizeFirstLetter,
+  replaceFromString,
 } from './stringManipulations';
 
 export {

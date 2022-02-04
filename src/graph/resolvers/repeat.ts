@@ -377,7 +377,7 @@ const mutations = {
     const ProjectAttributes = <ProjectAttributesInstance>Project.get('ProjectAttribute');
     const ProjectGroups = <ProjectGroupInstance[]>await Project.getProjectGroups({
       model: models.ProjectGroup,
-      attributes: ['id'],
+      attributes: ['id', 'admin', 'def'],
       include: [{ model: models.User, attributes: ['id'] }, { model: models.Company, attributes: ['id'], include: [{ model: models.User, attributes: ['id'] }] }, models.ProjectGroupRights]
     });
     //get users rights in the project
@@ -388,7 +388,10 @@ const mutations = {
     )).map((ProjectGroup) => ProjectGroup.get('ProjectGroupRight'));
 
     if ((<RoleInstance>User.get('Role')).get('level') === 0) {
-      userGroupRights = await mergeGroupRights(ProjectGroups.find((ProjectGroup) => ProjectGroup.get('admin') && ProjectGroup.get('def')).get('ProjectGroupRight'))
+      userGroupRights = await mergeGroupRights(
+        ProjectGroups.find((ProjectGroup) => (ProjectGroup.get('admin') && ProjectGroup.get('def')))
+          .get('ProjectGroupRight')
+      );
     } else if (UserProjectGroupRights.length === 0) {
       throw InsufficientProjectAccessError;
     } else {

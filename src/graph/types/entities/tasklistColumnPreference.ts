@@ -25,6 +25,7 @@ type TasklistColumnPreference{
   trips: Boolean!
   materialsWithoutDPH: Boolean!
   materialsWithDPH: Boolean!
+  repeat: Boolean!
   Project: Project
 }
 `
@@ -58,5 +59,6 @@ addOrUpdateTasklistColumnPreference(
   trips: Boolean
   materialsWithoutDPH: Boolean
   materialsWithDPH: Boolean
+  repeat: Boolean
 ): TasklistColumnPreference
 `

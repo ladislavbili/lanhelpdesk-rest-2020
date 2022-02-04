@@ -174,26 +174,6 @@ const queries = {
 
     const SQL = generateTasksSQL(userID, User.get('CompanyId'), isAdmin, taskWhere.join(' AND '), mainOrderBy, secondaryOrderBy, limit, (page - 1) * limit);
 
-    /*
-    const totalsSQL = generateWorkCountsSQL(userID, User.get('CompanyId'), isAdmin, taskWhere.join(' AND '));
-    let [responseTasks, totals] = await Promise.all([
-      sequelize.query(SQL, {
-        model: models.Task,
-        type: QueryTypes.SELECT,
-        nest: true,
-        raw: true,
-        mapToModel: true
-      }),
-      sequelize.query(totalsSQL, {
-        type: QueryTypes.SELECT,
-        nest: true,
-        raw: true,
-        mapToModel: false
-      })
-    ]);
-    totals = <any>totals[0];
-    */
-
     const responseTasks = await sequelize.query(SQL, {
       model: models.Task,
       type: QueryTypes.SELECT,
@@ -234,6 +214,7 @@ const queries = {
             Tags: InvoicedTask.Tags.id === null ? [] : [InvoicedTask.Tags],
             requester: InvoicedTask.requester.id === null ? null : InvoicedTask.requester,
             TaskType: { ...Task.TaskType, id: Task.InvoicedTask.taskTypeId, title: Task.InvoicedTask.taskTypeTitle },
+            Repeat: Task.Repeat.id === null ? null : Task.Repeat,
             Status: {
               ...Task.Status,
               id: InvoicedTask.statusId,
@@ -254,6 +235,7 @@ const queries = {
             ...Task,
             assignedTos: Task.assignedTos.id === null ? [] : [Task.assignedTos],
             Tags: Task.Tags.id === null ? [] : [Task.Tags],
+            Repeat: Task.Repeat.id === null ? null : Task.Repeat,
             subtasksQuantity: toFloatOrZero(Task.subtasksQuantity),
             approvedSubtasksQuantity: toFloatOrZero(Task.approvedSubtasksQuantity),
             pendingSubtasksQuantity: toFloatOrZero(Task.pendingSubtasksQuantity),

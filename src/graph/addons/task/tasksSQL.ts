@@ -491,6 +491,7 @@ export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy,
     ${createModelAttributes("requester", "requester", models.User)}
     ${generateFullNameSQL('requester')}
     ${createModelAttributes("Status", "Status", models.Status)}
+    ${createModelAttributes("Repeat", "Repeat", models.Repeat)}
 
     ${createModelAttributes("TaskType", "TaskType", models.TaskType)}
     ${createModelAttributes("InvoicedTask", "InvoicedTask", models.InvoicedTask)}
@@ -513,6 +514,7 @@ export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy,
     LEFT OUTER JOIN "milestone" AS "Milestone" ON "Task"."MilestoneId" = "Milestone"."id"
     LEFT OUTER JOIN "users" AS "requester" ON "Task"."requesterId" = "requester"."id"
     LEFT OUTER JOIN "statuses" AS "Status" ON "Task"."StatusId" = "Status"."id"
+    LEFT OUTER JOIN "repeat" AS "Repeat" ON "Task"."RepeatId" = "Repeat"."id"
     LEFT OUTER JOIN (
       "task_has_tags" AS "tagsFilter->task_has_tags" INNER JOIN "tags" AS "tagsFilter" ON "tagsFilter"."id" = "tagsFilter->task_has_tags"."TagId"
     ) ON "Task"."id" = "tagsFilter->task_has_tags"."TaskId"
