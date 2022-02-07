@@ -11,6 +11,7 @@ import {
 import checkResolver from './checkResolver';
 import {
   checkIfHasProjectRights,
+  convertSQLProjectGroupRightsToRights,
 } from '@/graph/addons/project';
 import {
   timestampToString
@@ -127,8 +128,26 @@ const queries = {
     ]);
 
     return [
-      ...(<ScheduledWorkInstance[]>responseScheduled1).map((scheduled) => ({ ...scheduled, WorkTrip: null })),
-      ...(<ScheduledWorkInstance[]>responseScheduled2).map((scheduled) => ({ ...scheduled, Subtask: null }))
+      ...(<ScheduledWorkInstance[]>responseScheduled1).map((scheduled) => (
+        {
+          ...scheduled,
+          Task: {
+            ...scheduled.Task,
+            rights: convertSQLProjectGroupRightsToRights(isAdmin ? scheduled.Task.Project.AdminProjectGroup.ProjectGroupRight : scheduled.Task.Project.ProjectGroups.ProjectGroupRight)
+          },
+          WorkTrip: null
+        }
+      )),
+      ...(<ScheduledWorkInstance[]>responseScheduled2).map((scheduled) => (
+        {
+          ...scheduled,
+          Task: {
+            ...scheduled.Task,
+            rights: convertSQLProjectGroupRightsToRights(isAdmin ? scheduled.Task.Project.AdminProjectGroup.ProjectGroupRight : scheduled.Task.Project.ProjectGroups.ProjectGroupRight)
+          },
+          Subtask: null
+        }
+      ))
     ];
   }
 }
@@ -138,7 +157,7 @@ const mutations = {
   addScheduledWork: async (root, { taskId, userId, ...newDates }, { req }) => {
     const User = await checkResolver(req);
     const dates = extractDatesFromObject(newDates, scheduledDates);
-    const { Task, groupRights } = await checkIfHasProjectRights(User, taskId, undefined, ['taskWorksWrite'], [{ right: 'assigned', action: 'edit' }]);
+    let { Task, groupRights } = await checkIfHasProjectRights(User, taskId, undefined, ['taskWorksWrite'], [{ right: 'assigned', action: 'edit' }]);
     if (Task.get('invoiced')) {
       throw CantEditInvoicedTaskError;
     }
@@ -157,7 +176,7 @@ const mutations = {
       throw AssignedToUserNotSolvingTheTask;
     }
     const order = allSubtasks.length;
-
+    Task.rights = <any>{ attributes: { status: { view: true } } };
     const Subtask = <SubtaskInstance>await models.Subtask.create({
       TaskId: taskId,
       TaskTypeId: Task.get('TaskTypeId'),

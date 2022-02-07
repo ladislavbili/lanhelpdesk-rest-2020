@@ -228,4 +228,5 @@ export const TaskSubscriptions = `
 tasksSubscription: Boolean
 taskAddSubscription: Int
 taskDeleteSubscription( taskId: Int! ): Int
+taskDndChangeSubscription( statusId: Int): [Int]
 `

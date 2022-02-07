@@ -98,6 +98,8 @@ import {
   TASK_HISTORY_CHANGE,
   TASK_DELETE,
   TASK_ADD,
+  REPEAT_CHANGE,
+  TASK_DND_CHANGE,
 } from '@/configs/subscriptions';
 import checkResolver from './checkResolver';
 import moment from 'moment';
@@ -185,6 +187,7 @@ const queries = {
     let databaseTime = 0;
     //const databaseWatch = new Stopwatch(true);
     let tasks = [];
+
     responseTasks.forEach((Task: any) => {
       const invoiced = Task.invoiced;
       const taskIndex = tasks.findIndex((task) => Task.id === task.id);
@@ -257,7 +260,6 @@ const queries = {
       })
     } else {
       tasks = tasks.map((Task) => {
-
         const Project = Task.Project;
         const Groups = Project.AdminProjectGroup;
         const GroupRight = Groups.ProjectGroupRight;
@@ -832,6 +834,7 @@ const mutations = {
         RepeatTemplate.setTags(tags),
       ])
       repeatEvent.emit('add', Repeat);
+      pubsub.publish(REPEAT_CHANGE, { repeatsSubscription: true });
       params = {
         ...params,
         RepeatId: Repeat.get('id')
@@ -863,6 +866,7 @@ const mutations = {
     }]);
     pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
     pubsub.publish(TASK_ADD, { taskAddSubscription: User.get('id') });
+    pubsub.publish(TASK_DND_CHANGE, { taskDndChangeSubscription: [params.StatusId] });
     NewTask.rights = userGroupRights;
     return NewTask;
   },
@@ -919,6 +923,7 @@ const mutations = {
 
     let taskChangeMessages = [];
     let notificationMessages = [];
+    const originalStatus = Task.get('StatusId');
     let assignedUsers = [];
     let unassignedUsers = [];
 
@@ -1306,6 +1311,8 @@ const mutations = {
     sendTaskNotificationsToUsers(User, NewTask, notificationMessages, false, assignedUsers, unassignedUsers);
     pubsub.publish(TASK_HISTORY_CHANGE, { taskHistorySubscription: NewTask.get('id') });
     pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
+    pubsub.publish(TASK_DND_CHANGE, { taskDndChangeSubscription: [originalStatus, NewTask.get('StatusId')] });
+
     return NewTask;
   },
 
@@ -1334,6 +1341,7 @@ const mutations = {
     await Task.destroy();
     pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
     pubsub.publish(TASK_DELETE, { taskDeleteSubscription: id });
+    pubsub.publish(TASK_DND_CHANGE, { taskDndChangeSubscription: [Task.get('StatusId')] });
     return Task;
   }
 }
@@ -1497,6 +1505,14 @@ const subscriptions = {
       () => pubsub.asyncIterator(TASK_DELETE),
       async ({ taskDeleteSubscription }, { taskId }, { userID }) => {
         return taskDeleteSubscription === taskId;
+      }
+    ),
+  },
+  taskDndChangeSubscription: {
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(TASK_DND_CHANGE),
+      async ({ taskDndChangeSubscription }, { statusId }, { userID }) => {
+        return taskDndChangeSubscription.includes(statusId) || statusId === null;
       }
     ),
   },

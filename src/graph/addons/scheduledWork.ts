@@ -72,21 +72,21 @@ export const createScheduledWorksSQL = (where, userId, companyId, isAdmin, ofSub
   ${createModelAttributes("Task", "Task", models.Task)}
   ${createModelAttributes("User", "User", models.User)}
   ${ generateFullNameSQL('User')}
-  ("Project->ProjectGroups->ProjectGroupRight"."assignedEdit" AND "Project->ProjectGroups->ProjectGroupRight"."taskWorksWrite" AND "Task"."invoiced" = false) AS "canEdit",
-  ${createModelAttributes("assignedTosFilter", "assignedTosFilter", models.User)}
-  ${createModelAttributes("assignedTosFilter->task_assignedTo", "assignedTosFilter.task_assignedTo", null, 'assignedTosTaskMapAttributes')}
-  ${createModelAttributes("Company", "Company", models.Company)}
-  ${createModelAttributes("requester", "requester", models.User)}
+  (
+    "Project->${isAdmin ? 'AdminProjectGroups' : 'ProjectGroups'}->ProjectGroupRight"."assignedEdit" AND
+    "Project->${isAdmin ? 'AdminProjectGroups' : 'ProjectGroups'}->ProjectGroupRight"."taskWorksWrite" AND "Task"."invoiced" = false
+  ) AS "canEdit",
   ${createModelAttributes("Task->Status", "Task.Status", models.Status)}
   "createdBy"."id" AS "createdBy.id",
-  "tagsFilter"."id" AS "tagsFilter.id",
   "TaskType"."id" AS "TaskType.id",
   "Project"."id" AS "Project.id",
-  ${createModelAttributes("Project->ProjectGroups", "Project.ProjectGroups", models.ProjectGroups)}
-  ${createModelAttributes("Project->ProjectGroups->ProjectGroupRight", "Project.ProjectGroups.ProjectGroupRight", models.ProjectGroupRights)}
-  "Project->ProjectGroups->Users"."id" AS "Project.ProjectGroups.Users.id",
-  ${createModelAttributes("Project->ProjectGroups->Companies", "Project.ProjectGroups.Companies", null, 'companyBelongsToGroupAttributes')}
-  ${removeLastComma(createModelAttributes("Project->ProjectGroups->Users->user_belongs_to_group", "Project.ProjectGroups.Users.user_belongs_to_group", null, 'userBelongsToGroupAttributes'))}
+  ${ isAdmin ?
+      `
+    ${createModelAttributes("Project->AdminProjectGroups->ProjectGroupRight", "Task.Project.AdminProjectGroup.ProjectGroupRight", models.ProjectGroupRights)}
+    ` :
+      ''
+    }
+  ${removeLastComma(createModelAttributes("Project->ProjectGroups->ProjectGroupRight", "Task.Project.ProjectGroups.ProjectGroupRight", models.ProjectGroupRights))}
 
   FROM "scheduled_work" AS "ScheduledWork"
   INNER JOIN ${ ofSubtask ? "subtasks" : "work_trips"} AS "${origin}" ON "ScheduledWork"."${origin}Id" = "${origin}"."id"
@@ -94,6 +94,16 @@ export const createScheduledWorksSQL = (where, userId, companyId, isAdmin, ofSub
   INNER JOIN "tasks" AS "Task" ON "${origin}"."TaskId" = "Task"."id"
   INNER JOIN "projects" AS "Project" ON "Task"."ProjectId" = "Project"."id"
   INNER JOIN "users" AS "User" ON "${origin}"."UserId" = "User"."id"
+  ${ isAdmin ?
+      `
+    INNER JOIN "project_group" AS "Project->AdminProjectGroups" ON
+    "Project"."id" = "Project->AdminProjectGroups"."ProjectId" AND
+    "Project->AdminProjectGroups"."admin" = true AND
+    "Project->AdminProjectGroups"."def" = true
+    INNER JOIN "project_group_rights" AS "Project->AdminProjectGroups->ProjectGroupRight" ON "Project->AdminProjectGroups"."id" = "Project->AdminProjectGroups->ProjectGroupRight"."ProjectGroupId"
+    ` :
+      ''
+    }
   LEFT OUTER JOIN "project_group" AS "Project->ProjectGroups" ON "Project"."id" = "Project->ProjectGroups"."ProjectId"
   LEFT OUTER JOIN "project_group_rights" AS "Project->ProjectGroups->ProjectGroupRight" ON "Project->ProjectGroups"."id" = "Project->ProjectGroups->ProjectGroupRight"."ProjectGroupId"
   LEFT OUTER JOIN(
