@@ -1213,15 +1213,15 @@ export const processProjectDataAdd = async (CurrentUser, Project, rights, args) 
   rights.assignedTo = rights.assigned;
   attributes.assignedTo = attributes.assigned;
 
-  allProjectAttributes.forEach((attribute) => {
-    args = applyFixedAttribute(args, attributes, rights, Project, CurrentUser, attribute);
+  allProjectAttributes.forEach(async (attribute) => {
+    args = await applyFixedAttribute(args, attributes, Project, CurrentUser, attribute);
     if (!attributes[attribute].fixed) {
       //check rights
-      args = applyUserRights(args, attributes, rights, attribute);
+      args = await applyUserRights(args, attributes, rights, Project, CurrentUser, attribute);
       //check if valid values
-      args = checkIfValidValue(args, attributes, rights, Project, CurrentUser, attribute);
+      args = await checkIfValidValue(args, attributes, Project, CurrentUser, attribute);
       //set required
-      args = applyRequiredAttribute(args, attributes, rights, Project, CurrentUser, attribute);
+      args = await applyRequiredAttribute(args, attributes, Project, CurrentUser, attribute);
     }
   });
   //check if ids exists
@@ -1230,18 +1230,29 @@ export const processProjectDataAdd = async (CurrentUser, Project, rights, args) 
 }
 
 export const processProjectDataEdit = async (CurrentUser, Project, rights, args, taskData) => {
-  const newProject = ![undefined, null].includes(args.project);
   //get rights and project attributes
+  let attributes = await Project.get('attributes');
+  rights.assignedTo = rights.assigned;
+  attributes.assignedTo = attributes.assigned;
 
-  //if project changed, apply all fixed attributes
-  //check fixed attributes, if project hasnt changed
-  //check rest of the attributes, if can change them if they have value, if not, set to task value
-  //check if all required attributes have value
-  return {};
+  allProjectAttributes.forEach(async (attribute) => {
+    args = await applyFixedAttribute(args, attributes, Project, CurrentUser, attribute, taskData);
+    if (!attributes[attribute].fixed) {
+      //check rights
+      args = await applyUserRights(args, attributes, rights, Project, CurrentUser, attribute, taskData);
+      //check if valid values
+      args = await checkIfValidValue(args, attributes, Project, CurrentUser, attribute, taskData);
+      //set required
+      args = await applyRequiredAttribute(args, attributes, Project, CurrentUser, attribute, taskData);
+    }
+  });
+  //check if ids exists
+  await checkIfAttributeValuesExists(args);
+  return args;
 }
 
 //step 1
-const applyFixedAttribute = async (args, attributes, rights, Project, User, name, data = null) => {
+const applyFixedAttribute = async (args, attributes, Project, User, name, data = null) => {
   //get new value, if same as task, set undefined
   const attribute = attributes[name];
   const value = args[name];
@@ -1318,7 +1329,7 @@ const applyFixedAttribute = async (args, attributes, rights, Project, User, name
       //no value - check if task has it
       //no value - set current user
       let company = null;
-      const projectUsers = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
+      const projectUsers = <any[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
         return [
           ...acc,
           ...(<UserInstance[]>ProjectGroup.get('Users')),
@@ -1391,7 +1402,7 @@ const applyFixedAttribute = async (args, attributes, rights, Project, User, name
 }
 
 //step 2
-const applyUserRights = async (args, attributes, rights, name, data = null) => {
+const applyUserRights = async (args, attributes, rights, Project, User, name, data = null) => {
   const attribute = attributes[name];
   const newTask = !data;
   const neededRight = newTask ? 'add' : 'edit';
@@ -1449,7 +1460,7 @@ const checkIfValidValue = async (args, attributes, Project, User, name, data = n
       break;
     }
     case 'tags': {
-      const acceptableTags = Project.get('tags')).map((Tag) => Tag.get('id'));
+      const acceptableTags = Project.get('tags').map((Tag) => Tag.get('id'));
       //if args value, filter to which can be (value exists only if can add or edit)
       if (value) {
         args[name] = value.filter((id) => acceptableTags.includes(id));
@@ -1553,7 +1564,7 @@ const checkIfValidValue = async (args, attributes, Project, User, name, data = n
 }
 
 //step 4
-const applyRequiredAttribute = (args, attributes, Project, User, name, data = null) => {
+const applyRequiredAttribute = async (args, attributes, Project, User, name, data = null) => {
   const attribute = attributes[name];
   const newTask = !data;
   const isRequiredByProject = newTask && attribute.required;
@@ -1666,7 +1677,7 @@ const applyRequiredAttribute = (args, attributes, Project, User, name, data = nu
       break;
     }
     case 'tags': {
-      const acceptableTags = Project.get('tags')).map((Tag) => Tag.get('id'));
+      const acceptableTags = Project.get('tags').map((Tag) => Tag.get('id'));
       //needs at least one
       if (isRequiredByProject) {
         //value is empty or length 0
@@ -1904,7 +1915,7 @@ const setUndefinedIfSameInData = (args, data, name) => {
 
     case 'startsAt':
     case 'deadline': {
-      if (!newTask && moment(data.get(name)).isSame(args[name])) {
+      if (moment(data.get(name)).isSame(args[name])) {
         args[name] = undefined;
       }
       break;
