@@ -1244,7 +1244,6 @@ export const processProjectDataEdit = async (CurrentUser, Project, rights, args,
 const applyFixedAttribute = async (args, attributes, rights, Project, User, name, data = null) => {
   //get new value, if same as task, set undefined
   const attribute = attributes[name];
-  const right = rights[name];
   const value = args[name];
   const newTask = !data;
   //if after set is same as tasks, set undefined, its not needed to be set
@@ -1253,8 +1252,7 @@ const applyFixedAttribute = async (args, attributes, rights, Project, User, name
     case 'assignedTo':
     case 'tags': {
       if (attribute.fixed) {
-        let values = attribute.value.map((value) => value.get('id'));
-        args[name] = values;
+        args[name] = attribute.value.map((value) => value.get('id'));
         args = setUndefinedIfSameInData(args, data, name);
       }
       break;
@@ -1323,12 +1321,13 @@ const applyFixedAttribute = async (args, attributes, rights, Project, User, name
       const projectUsers = <number[]>(<ProjectGroupInstance[]>Project.get('ProjectGroups')).reduce((acc, ProjectGroup) => {
         return [
           ...acc,
-          ...(<UserInstance[]>ProjectGroup.get('Users')).map((User) => User.get('id')),
+          ...(<UserInstance[]>ProjectGroup.get('Users')),
           ...(<UserInstance[]>ProjectGroup.get('Companies')).reduce((acc, Company) => {
-            return [...acc, ...(<UserInstance[]>Company.get('Users')).map((User) => User.get('id'))]
+            return [...acc, ...(<UserInstance[]>Company.get('Users'))]
           }, []),
         ];
       }, []);
+      const projectUsersIds = projectUsers.map((User) => User.get('id'));
       if (attribute.fixed) {
         if (attribute.value) {
           company = attribute.value.get('CompanyId');
@@ -1337,14 +1336,17 @@ const applyFixedAttribute = async (args, attributes, rights, Project, User, name
           !newTask &&
           data.get('requester') &&
           (
-            !Project.get('lockedRequester') || projectUsers.includes(data.get('requester').get('id'))
+            !Project.get('lockedRequester') || projectUsersIds.includes(data.get('requester').get('id'))
           )
         ) {
           args[name] = undefined;
           company = data.get('requester').get('CompanyId');
-        } else {
+        } else if (!Project.get('lockedRequester') || projectUsersIds.includes(User.get('id'))) {
           args[name] = User.get('id');
           company = User.get('CompanyId');
+        } else {
+          args[name] = projectUsers[0].get('id');
+          company = projectUsers[0].get('CompanyId');
         }
         args = setUndefinedIfSameInData(args, data, name);
       }
@@ -1355,17 +1357,17 @@ const applyFixedAttribute = async (args, attributes, rights, Project, User, name
           let companySet = false;
           if (args[name]) {
             const Requester = await models.User.findByPk(args[name]);
-            if ((!Project.get('lockedRequester') || projectUsers.includes(args[name])) && Requester) {
+            if ((!Project.get('lockedRequester') || projectUsersIds.includes(args[name])) && Requester) {
               args.company = Requester.get('CompanyId');
               companySet = true;
             }
           }
           if (!companySet) {
             const DataRequester = newTask ? null : data.get('requester');
-            if (DataRequester && (!Project.get('lockedRequester') || projectUsers.includes(DataRequester.get('id')))) {
+            if (DataRequester && (!Project.get('lockedRequester') || projectUsersIds.includes(DataRequester.get('id')))) {
               args.company = DataRequester.get('CompanyId');
             } else {
-              if (!Project.get('lockedRequester') || projectUsers.includes(User.get('id'))) {
+              if (!Project.get('lockedRequester') || projectUsersIds.includes(User.get('id'))) {
                 args.company = User.get('CompanyId');
                 args.requester = User.get('id');
               } else {
@@ -1490,7 +1492,6 @@ const checkIfValidValue = async (args, attributes, Project, User, name, data = n
       }
       args = setUndefinedIfSameInData(args, data, name);
       break;
-      break;
     }
     case 'requester': {
       //if args value and valid, skip
@@ -1569,7 +1570,7 @@ const applyRequiredAttribute = (args, attributes, Project, User, name, data = nu
           }, []),
         ];
       }, []);
-      if (!value) {
+      if ([null, undefined].includes(value)) {
         //if task OR project requires and no value
         if (!newTask && ![undefined, null].includes(dataValue) && (!Project.get('lockedRequester') || projectUsers.includes(dataValue.get('id')))) {
           //task still valid
@@ -1583,7 +1584,7 @@ const applyRequiredAttribute = (args, attributes, Project, User, name, data = nu
     }
     case 'status': {
       const validStatuses = Project.get('projectStatuses').map((Status) => Status.get('id'));
-      if (!value) {
+      if ([null, undefined].includes(value)) {
         //if task OR project requires and no value
         if (!newTask && ![undefined, null].includes(dataValue) && validStatuses.includes(dataValue.get('id'))) {
           //task still valid
@@ -1605,8 +1606,8 @@ const applyRequiredAttribute = (args, attributes, Project, User, name, data = nu
           }, []),
         ];
       }, []);
-      if (!value) {
-        //if task OR project requires and no value
+      if ([null, undefined].includes(value)) {
+        //if no value
         if (!newTask && ![undefined, null].includes(dataValue)) {
           //task still valid
           args[name] = undefined;
@@ -1622,15 +1623,13 @@ const applyRequiredAttribute = (args, attributes, Project, User, name, data = nu
     }
     case 'taskType': {
       //if args value and valid, skip
-      if (!value) {
-        if ([null, undefined].includes(value)) {
-          if (!newTask && ![undefined, null].includes(dataValue)) {
-            //if task has value, set undefined
-            args[name] = undefined;
-          } else {
-            //else set preset or empty
-            args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
-          }
+      if ([null, undefined].includes(value)) {
+        if (!newTask && ![undefined, null].includes(dataValue)) {
+          //if task has value, set undefined
+          args[name] = undefined;
+        } else {
+          //else set preset or empty
+          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
         }
       }
       break;
@@ -1651,10 +1650,6 @@ const applyRequiredAttribute = (args, attributes, Project, User, name, data = nu
       //needs at least one
       if (isRequiredByProject) {
         //value is empty or length 0
-        if (([null, undefined].includes(args[name]) || value.length === 0) && !newTask && ![undefined, null].includes(dataValue)) {
-          //filter task, must have at least one
-          args[name] = dataValue.map((User) => User.get('id')).filter((id) => assignableUserIds.includes(id));
-        }
         if ([null, undefined].includes(args[name]) || value.length === 0) {
           //set project default, must have at least one
           args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
@@ -1675,10 +1670,6 @@ const applyRequiredAttribute = (args, attributes, Project, User, name, data = nu
       //needs at least one
       if (isRequiredByProject) {
         //value is empty or length 0
-        if (([null, undefined].includes(args[name]) || value.length === 0) && !newTask && ![undefined, null].includes(dataValue)) {
-          //filter task, must have at least one
-          args[name] = dataValue.map((Tag) => Tag.get('id')).filter((id) => acceptableTags.includes(id));
-        }
         if ([null, undefined].includes(args[name]) || value.length === 0) {
           //set project default, must have at least one
           args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
@@ -1693,12 +1684,9 @@ const applyRequiredAttribute = (args, attributes, Project, User, name, data = nu
 
     case 'overtime':
     case 'pausal': {
-      //if args value and valid, skip
-      if ([null, undefined].includes(value)) {
-        if (!newTask) {
-          //if task has value, set undefined
-          args[name] = undefined;
-        } else {
+      if (isRequiredByProject) {
+        //if args value and valid, skip
+        if ([null, undefined].includes(value)) {
           //else set preset or empty
           args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
         }
@@ -1712,13 +1700,8 @@ const applyRequiredAttribute = (args, attributes, Project, User, name, data = nu
       if (isRequiredByProject) {
         //if args value and valid, skip
         if ([null, undefined].includes(value)) {
-          if (!newTask && ![undefined, null].includes(dataValue)) {
-            //if task has value, set undefined
-            args[name] = undefined;
-          } else {
-            //else set preset or empty
-            args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
-          }
+          //set preset or empty
+          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
           if (args[name] === null) {
             args[name] = moment().valueOf();
           }
@@ -1736,7 +1719,7 @@ const applyRequiredAttribute = (args, attributes, Project, User, name, data = nu
 //step 5
 const checkIfAttributeValuesExists = async (args) => {
   let promises = [];
-  allIDProjectAttributes.filter((name) => ![undefined, null].includes(args[name]) || (Array.isArray(args[name]) && args[name].length === 0)).forEach((name) => {
+  allIDProjectAttributes.filter((name) => ![undefined, null].includes(args[name]) || (Array.isArray(args[name]) && args[name].length > 0)).forEach((name) => {
     switch (name) {
       case 'requester': {
         promises.push(idDoesExistsCheck(args[name], models.User));
@@ -1823,7 +1806,7 @@ const setValuePresetOrEmpty = async (args, attribute, User, Project, data, name)
         args[name] = User.get('id');
       } else {
         //else set random project user
-        args[name] = projectUsers[0].get('id');
+        args[name] = projectUsers[0];
       }
       break;
     }
@@ -1895,6 +1878,7 @@ const setUndefinedIfSameInData = (args, data, name) => {
     case 'tags': {
       const dataValues = data.get(name === 'tags' ? 'tags' : 'assignedTos').map((value) => value.get('id'));
       if (
+        args[name] !== null &&
         dataValues.length === args[name].length &&
         dataValues.every((value) => args[name].includes(value))
       ) {
