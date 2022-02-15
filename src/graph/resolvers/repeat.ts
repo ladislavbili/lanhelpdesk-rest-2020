@@ -694,15 +694,6 @@ const mutations = {
     }
     const RepeatTemplate = <RepeatTemplateInstance>Repeat.get('RepeatTemplate');
 
-    //Figure out project and if can change project
-    let userGroupRights = null;
-    const requiredGroupRights = args.project !== undefined && args.project !== RepeatTemplate.get('ProjectId') ? ['taskProjectWrite'] : [];
-    const TestData1 = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), requiredGroupRights, [{ right: 'repeat', action: 'edit' }]);
-    userGroupRights = <any>TestData1.groupRights;
-    if (args.project !== undefined && args.project !== RepeatTemplate.get('ProjectId')) {
-      const TestData2 = await checkIfHasProjectRights(User, undefined, args.project, ['taskProjectWrite'], [{ right: 'repeat', action: 'edit' }]);
-      userGroupRights = <any>TestData2.groupRights;
-    }
 
     const project = args.project ? args.project : RepeatTemplate.get('ProjectId');
     let Project = <ProjectInstance>RepeatTemplate.get('Project');
@@ -730,6 +721,15 @@ const mutations = {
 
     const ProjectStatuses = <StatusInstance[]>Project.get('projectStatuses');
     const ProjectAttributes = <ProjectAttributesInstance>Project.get('ProjectAttribute');
+    //Figure out project and if can change project
+    let userGroupRights = null;
+    const requiredGroupRights = args.project !== undefined && args.project !== RepeatTemplate.get('ProjectId') ? ['taskProjectWrite'] : [];
+    const TestData1 = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), requiredGroupRights, [{ right: 'repeat', action: 'edit' }]);
+    userGroupRights = <any>TestData1.groupRights;
+    if (args.project !== undefined && args.project !== RepeatTemplate.get('ProjectId')) {
+      const TestData2 = await checkIfHasProjectRights(User, undefined, args.project, ['taskProjectWrite'], [{ right: 'repeat', action: 'edit' }]);
+      userGroupRights = <any>TestData2.groupRights;
+    }
 
     args = checkAndApplyFixedAndRequiredOnAttributes(await ProjectAttributes.get('attributes'), userGroupRights.attributes, args, User, ProjectStatuses, false, RepeatTemplate);
 
@@ -761,7 +761,7 @@ const mutations = {
 
 
     //Rights and project def
-    await checkIfCanEditTaskAttributes(User, Project.get('id'), args, ProjectStatuses, args.project ? null : RepeatTemplate);
+    await checkIfCanEditTaskAttributes(User, Project.get('id'), args, ProjectStatuses, RepeatTemplate);
 
     if (tags) {
       tags = tags.filter((tagID) => (<TagInstance[]>Project.get('tags')).some((Tag) => Tag.get('id') === tagID));

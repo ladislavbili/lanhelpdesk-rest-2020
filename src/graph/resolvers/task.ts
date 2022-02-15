@@ -927,17 +927,6 @@ const mutations = {
     let assignedUsers = [];
     let unassignedUsers = [];
 
-    //Figure out project and if can change project
-    let groupRights = null;
-    const requiredGroupRights = args.project !== undefined && args.project !== Task.get('ProjectId') ? ['taskProjectWrite'] : [];
-    const TestData1 = await checkIfHasProjectRights(User, undefined, Task.get('ProjectId'), requiredGroupRights, [], fromInvoice === true);
-    groupRights = <any>TestData1.groupRights;
-    if (args.project !== undefined && args.project !== Task.get('ProjectId')) {
-      const TestData2 = await checkIfHasProjectRights(User, undefined, args.project, ['taskProjectWrite'], [], fromInvoice === true);
-      groupRights = <any>TestData2.groupRights;
-    }
-
-
     const project = args.project ? args.project : Task.get('ProjectId');
     let Project = <ProjectInstance>Task.get('Project');
     let OriginalProject = <ProjectInstance>Task.get('Project');
@@ -969,6 +958,16 @@ const mutations = {
 
     const ProjectStatuses = <StatusInstance[]>Project.get('projectStatuses');
     const ProjectAttributes = <ProjectAttributesInstance>Project.get('ProjectAttribute');
+
+    //Figure out project and if can change project
+    let groupRights = null;
+    const requiredGroupRights = args.project !== undefined && args.project !== Task.get('ProjectId') ? ['taskProjectWrite'] : [];
+    const TestData1 = await checkIfHasProjectRights(User, undefined, Task.get('ProjectId'), requiredGroupRights, [], fromInvoice === true);
+    groupRights = <any>TestData1.groupRights;
+    if (args.project !== undefined && args.project !== Task.get('ProjectId')) {
+      const TestData2 = await checkIfHasProjectRights(User, undefined, args.project, ['taskProjectWrite'], [], fromInvoice === true);
+      groupRights = <any>TestData2.groupRights;
+    }
 
     args = checkAndApplyFixedAndRequiredOnAttributes(await ProjectAttributes.get('attributes'), groupRights.attributes, args, User, ProjectStatuses, false, Task);
 
@@ -1040,6 +1039,7 @@ const mutations = {
       NewAsssignedTo = <UserInstance[]>await models.User.findAll({ where: { id: assignedTos } });
       assignedUsers = NewAsssignedTo.filter((User1) => !Task.get('assignedTos').some((User2) => User1.get('id') === User2.get('id')));
     }
+
     await sequelize.transaction(async (transaction) => {
       if (project && project !== Task.get('ProjectId')) {
         taskChangeMessages.push(await createChangeMessage('Project', models.Project, 'Project', project, OriginalProject, 'title', Project));
@@ -1051,14 +1051,15 @@ const mutations = {
         if (Project.get('autoApproved') !== OriginalProject.get('autoApproved')) {
           const Metadata = <TaskMetadataInstance>Task.get('TaskMetadata');
           if (Project.get('autoApproved')) {
+
             Metadata.update({
-              subtasksApproved: Metadata.get('subtasksApproved') + Metadata.get('subtasksPending'),
+              subtasksApproved: parseFloat(Metadata.get('subtasksApproved').toString()) + parseFloat(Metadata.get('subtasksPending').toString()),
               subtasksPending: 0,
-              tripsApproved: Metadata.get('tripsApproved') + Metadata.get('tripsPending'),
+              tripsApproved: parseFloat(Metadata.get('tripsApproved').toString()) + parseFloat(Metadata.get('tripsPending').toString()),
               tripsPending: 0,
-              materialsApproved: Metadata.get('materialsApproved') + Metadata.get('materialsPending'),
+              materialsApproved: parseFloat(Metadata.get('materialsApproved').toString()) + parseFloat(Metadata.get('materialsPending').toString()),
               materialsPending: 0,
-              itemsApproved: Metadata.get('itemsApproved') + Metadata.get('itemsPending'),
+              itemsApproved: parseFloat(Metadata.get('itemsApproved').toString()) + parseFloat(Metadata.get('itemsPending').toString()),
               itemsPending: 0,
             }, { transaction })
           } else {
@@ -1066,7 +1067,7 @@ const mutations = {
               {
                 subtasksApproved: (<SubtaskInstance[]>Task.get('Subtasks')).reduce((acc, cur) => {
                   if (cur.approved) {
-                    return acc + cur.quantity;
+                    return acc + parseFloat(cur.quantity.toString());
                   }
                   return acc;
                 }, 0),
@@ -1074,11 +1075,11 @@ const mutations = {
                   if (cur.approved) {
                     return acc;
                   }
-                  return acc + cur.quantity;
+                  return acc + parseFloat(cur.quantity.toString());
                 }, 0),
                 tripsApproved: (<WorkTripInstance[]>Task.get('WorkTrips')).reduce((acc, cur) => {
                   if (cur.approved) {
-                    return acc + cur.quantity;
+                    return acc + parseFloat(cur.quantity.toString());
                   }
                   return acc;
                 }, 0),
@@ -1086,11 +1087,11 @@ const mutations = {
                   if (cur.approved) {
                     return acc;
                   }
-                  return acc + cur.quantity;
+                  return acc + parseFloat(cur.quantity.toString());
                 }, 0),
                 materialsApproved: (<MaterialInstance[]>Task.get('Materials')).reduce((acc, cur) => {
                   if (cur.approved) {
-                    return acc + cur.quantity;
+                    return acc + parseFloat(cur.quantity.toString());
                   }
                   return acc;
                 }, 0),
@@ -1098,7 +1099,7 @@ const mutations = {
                   if (cur.approved) {
                     return acc;
                   }
-                  return acc + cur.quantity;
+                  return acc + parseFloat(cur.quantity.toString());
                 }, 0),
               },
               { transaction }
@@ -1371,9 +1372,6 @@ const attributes = {
       return getModelAttribute(task, 'assignedTos');
     },
     async company(task) {
-      if (!task.rights || !task.rights.attributes.company.view) {
-        return null;
-      }
       return getModelAttribute(task, 'Company');
     },
     async createdBy(task) {
