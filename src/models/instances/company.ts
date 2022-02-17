@@ -144,7 +144,7 @@ export function createCompaniesAssoc(models) {
   models.Company.belongsToMany(models.ProjectGroup, { through: 'company_belongs_to_group' });
 
   //CMDB
-  models.Company.hasOne(models.CMDBScheme);
-  models.Company.hasMany(models.CMDBManual);
-  models.Company.hasMany(models.CMDBItem);
+  models.Company.hasOne(models.CMDBScheme, { onDelete: 'CASCADE' });
+  models.Company.hasMany(models.CMDBManual, { onDelete: 'CASCADE' });
+  models.Company.hasMany(models.CMDBItem, { onDelete: 'CASCADE' });
 }

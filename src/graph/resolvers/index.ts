@@ -44,7 +44,10 @@ import cmdbManual from './cmdbManual';
 import cmdbScheme from './cmdbScheme';
 
 const { PubSub } = require('apollo-server-express');
-export const pubsub = new PubSub();
+import { EventEmitter } from 'events';
+const biggerEventEmitter = new EventEmitter();
+biggerEventEmitter.setMaxListeners(30);
+export const pubsub = new PubSub({ eventEmitter: biggerEventEmitter });
 
 
 export default {

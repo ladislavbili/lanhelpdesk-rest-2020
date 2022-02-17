@@ -82,7 +82,7 @@ setAfterTaskCreate( afterTaskCreate: Int! ): User
 setTasklistLayout( tasklistLayout: Int! ): User
 setTaskLayout( taskLayout: Int! ): User
 updateProfile( username: String, email: String, name: String, surname: String, password: String, receiveNotifications: Boolean, signature: String, language: LanguageEnum ): UserData,
-deleteUser( id: Int!, taskPairs: [TaskPairInput]!, subtaskPairs: [SubtaskPairInput]!, workTripPairs: [WorkTripPairInput]! ): User
+deleteUser( id: Int!, newId: Int! ): User
 `
 
 export const UserSubscriptions = `

@@ -69,12 +69,15 @@ const mutations = {
     if (NewTaskType === null) {
       throw createDoesNoExistsError('Task type', newId);
     }
-    Promise.all([
-      models.Price.destroy({ where: { type: 'TaskType', TaskTypeId: id } }),
-      ...(<ProjectAttributesInstance[]>OldTaskType.get('defTaskType')).map((ProjectAttribute) => {
-        return ProjectAttribute.setDefTaskType(newId);
-      }),
-    ])
+    //update price, project attributes, task, repeat, subtasks
+    (<ProjectAttributesInstance[]>OldTaskType.get('defTaskType')).map((ProjectAttribute) => {
+      return ProjectAttribute.setDefTaskType(newId);
+    });
+    models.Price.destroy({ where: { type: 'TaskType', TaskTypeId: id } });
+    models.Task.update({ TaskTypeId: newId }, { where: { TaskTypeId: id, invoiced: false } });
+    models.RepeatTemplate.update({ TaskTypeId: newId }, { where: { TaskTypeId: id } });
+    models.Subtask.update({ TaskTypeId: newId }, { where: { TaskTypeId: id } });
+
     const allTasks = await OldTaskType.getTasks();
     const allSubtasks = await OldTaskType.getSubtasks();
     await Promise.all([

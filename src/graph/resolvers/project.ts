@@ -718,15 +718,17 @@ const mutations = {
       }
     })
 
+    const ProjectStatuses = <StatusInstance[]>Project.get('projectStatuses');
     //statuses
     deleteStatuses.forEach((statusID) => {
-      const Status = (<StatusInstance[]>Project.get('projectStatuses')).find((Status) => Status.get('id') === statusID);
+      const Status = ProjectStatuses.find((Status) => Status.get('id') === statusID);
       if (Status) {
         promises.push(Status.destroy());
       }
-    })
+    });
+
     updateStatuses.forEach((status) => {
-      const Status = (<StatusInstance[]>Project.get('projectStatuses')).find((Status) => Status.get('id') === status.id);
+      const Status = ProjectStatuses.find((Status) => Status.get('id') === status.id);
       if (Status) {
         promises.push(Status.update({
           title: status.title,
@@ -853,6 +855,37 @@ const mutations = {
     await Promise.all(promises);
     pubsub.publish(PROJECT_CHANGE, { projectsSubscription: true });
     pubsub.publish(PROJECT_GROUP_CHANGE, { projectGroupsSubscription: Project.get('id') });
+
+    //update deleted statuses
+    const allProjectStatuses = <StatusInstance[]>await Project.getProjectStatuses();
+    deleteStatuses.forEach((statusID) => {
+      const Status = ProjectStatuses.find((Status) => Status.get('id') === statusID);
+      if (Status) {
+        const action = Status.get('action');
+        let replacementStatus = allProjectStatuses.find((Status) => Status.action === action);
+        if (!replacementStatus) {
+          switch (action) {
+            case 'CloseInvalid': {
+              replacementStatus = allProjectStatuses.find((Status) => Status.action === 'CloseDate');
+              break;
+            }
+            case 'None':
+            case 'PendingDate': {
+              replacementStatus = allProjectStatuses.find((Status) => Status.action === 'IsOpen');
+              break;
+            }
+            default: {
+              replacementStatus = allProjectStatuses[0];
+              break;
+            }
+          }
+        }
+        //task, repeat, project
+        models.Task.update({ StatusId: replacementStatus.get('id') }, { where: { StatusId: Status.get('id'), invoiced: false } });
+        models.RepeatTemplate.update({ StatusId: replacementStatus.get('id') }, { where: { StatusId: Status.get('id') } });
+        models.ProjectAttributes.update({ StatusId: replacementStatus.get('id') }, { where: { StatusId: Status.get('id') } });
+      }
+    });
     return Project;
   },
 

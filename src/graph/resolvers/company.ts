@@ -272,17 +272,7 @@ const mutations = {
 
   deleteCompany: async (root, { id, newId }, { req }) => {
     await checkResolver(req, ["companies"]);
-    const OldCompany = await models.Company.findByPk(id,
-      {
-        include: [
-          //{ model: models.Project, as: 'defCompany' },
-          { model: models.Imap, required: false },
-          { model: models.User, required: false },
-          { model: models.Task, where: { invoiced: false }, required: false },
-          { model: models.RepeatTemplate, required: false },
-        ]
-      }
-    );
+    const OldCompany = await models.Company.findByPk(id);
     const NewCompany = await models.Company.findByPk(newId);
     if (OldCompany === null) {
       throw createDoesNoExistsError('Company', id);
@@ -295,13 +285,12 @@ const mutations = {
       throw CantDeleteDefCompanyError;
     }
 
-    let promises = [
-      ...(<UserInstance[]>OldCompany.get('Users')).map((user) => user.setCompany(newId)),
-      ...(<TaskInstance[]>OldCompany.get('Tasks')).map((task) => task.setCompany(newId)),
-      ...(<ImapInstance[]>OldCompany.get('Imaps')).map((imap) => imap.setCompany(newId)),
-      ...(<RepeatTemplateInstance[]>OldCompany.get('RepeatTemplates')).map((repeatTemplate) => repeatTemplate.setCompany(newId)),
-    ];
-    await Promise.all(promises);
+    //user, task, imap, repeat, project,
+    models.User.update({ CompanyId: newId }, { where: { CompanyId: id } });
+    models.Task.update({ CompanyId: newId }, { where: { CompanyId: id, invoiced: false } });
+    models.Imap.update({ CompanyId: newId }, { where: { CompanyId: id } });
+    models.RepeatTemplate.update({ CompanyId: newId }, { where: { CompanyId: id } });
+    models.ProjectAttributes.update({ CompanyId: newId }, { where: { CompanyId: id } });
     await OldCompany.destroy();
     pubsub.publish(COMPANY_CHANGE, { companiesSubscription: true });
     return OldCompany;

@@ -16,6 +16,7 @@ export interface ProjectInstance extends DefaultInstance {
   createProjectAttachment?: any;
   createProjectAttribute?: any;
 
+  getProjectStatuses?: any;
   getTasks?: any;
   getProjectAttribute?: any;
   getProjectGroups?: any;

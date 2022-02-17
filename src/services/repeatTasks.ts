@@ -147,6 +147,7 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
     pendingDate: RepeatTemplate.get('pendingDate'),
     pendingChangable: RepeatTemplate.get('pendingChangable'),
     statusChange: moment().valueOf(),
+    startsAt: moment().valueOf(),
     invoicedDate: null,
 
     TaskChanges: [{

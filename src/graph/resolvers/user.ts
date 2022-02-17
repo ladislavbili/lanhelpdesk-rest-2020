@@ -383,19 +383,22 @@ const mutations = {
   },
 
   //deleteUser( id: Int! ): User,
-  deleteUser: async (root, { id, taskPairs, subtaskPairs, workTripPairs }, { req, userID }) => {
+  deleteUser: async (root, { id, newId }, { req, userID }) => {
     const User = await checkResolver(req, ['users']);
     const TargetUser = <UserInstance>await models.User.findByPk(id,
       {
         include: [
           { model: models.Role },
-          { model: models.ProjectAttributes, as: 'defAssigned', include: [{ model: models.User, as: 'assigned' }] },
-          { model: models.ProjectAttributes, as: 'defRequester' },
         ]
       }
     );
     if (TargetUser === null) {
       throw createDoesNoExistsError('User');
+    }
+
+    const NewUser = await models.User.findByPk(newId);
+    if (NewUser === null) {
+      throw createDoesNoExistsError('Replacement user', newId);
     }
     //nesmie mazat rolu s nizsim alebo rovnym levelom ak nie je admin
     if ((<RoleInstance>User.get('Role')).get('level') >= (<RoleInstance>TargetUser.get('Role')).get('level') && (<RoleInstance>User.get('Role')).get('level') !== 0) {
@@ -414,41 +417,12 @@ const mutations = {
       }
     }
 
-    // TASK SUBTASK AND WORK TRIP CHECKS
-    await idsDoExistsCheck(
-      [
-        ...taskPairs.map((pair) => pair.requesterId),
-        ...subtaskPairs.map((pair) => pair.assignedId),
-        ...workTripPairs.map((pair) => pair.assignedId)
-      ],
-      models.User
-    );
-
-    const [tasks, subtasks, workTrips] = await Promise.all([
-      TargetUser.getRequesterTasks({ include: [{ model: models.Project }] }),
-      TargetUser.getSubtasks({ include: [{ model: models.Task, include: [{ model: models.User, as: 'assignedTos' }] }] }),
-      TargetUser.getWorkTrips({ include: [{ model: models.Task, include: [{ model: models.User, as: 'assignedTos' }] }] }),
-    ])
-    //Check is all pairs fit all tasks, subtasks and work trips, this also includes check that user IS the replaced person
-    const taskPairIds = taskPairs.map((taskPair) => taskPair.taskId);
-    if (tasks.length !== taskPairIds.length || !tasks.every((Task) => taskPairIds.includes(Task.get('id')))) {
-      throw NotEveryUsersTaskWasCoveredError;
-    }
-
-    const subtaskPairIds = subtaskPairs.map((subtaskPair) => subtaskPair.subtaskId);
-    if (subtasks.length !== subtaskPairIds.length || !subtasks.every((Subtask) => subtaskPairIds.includes(Subtask.get('id')))) {
-      throw NotEveryUsersSubtaskWasCoveredError;
-    }
-
-    const workTripPairIds = workTripPairs.map((workTripPair) => workTripPair.workTripId);
-    if (workTrips.length !== workTripPairIds.length || !workTrips.every((WorkTrip) => workTripPairIds.includes(WorkTrip.get('id')))) {
-      throw NotEveryUsersWorkTripWasCoveredError;
-    }
-
-    //Check if new user can be new value
-    await Promise.all(tasks.map((Task) => checkIfPairFitsTask(Task, taskPairs.find((taskPair) => taskPair.taskId === Task.get('id')).requesterId)));
-    await Promise.all(subtasks.map((Subtask) => checkIfPairFitsSubtask(Subtask, subtaskPairs.find((subtaskPair) => subtaskPair.subtaskId === Subtask.get('id')).assignedId)));
-    await Promise.all(workTrips.map((WorkTrip) => checkIfPairFitsWorkTrip(WorkTrip, workTripPairs.find((workTrip) => workTrip.workTripId === WorkTrip.get('id')).assignedId)));
+    //subtasks, worktrips, task - requester, repeat template, project attributes,
+    models.Subtask.update({ UserId: newId }, { where: { UserId: id, invoiced: false } });
+    models.WorkTrip.update({ UserId: newId }, { where: { UserId: id, invoiced: false } });
+    models.Task.update({ requesterId: newId }, { where: { requesterId: id, invoiced: false } });
+    models.RepeatTemplate.update({ requesterId: newId }, { where: { requesterId: id } });
+    models.ProjectAttributes.update({ requesterId: newId }, { where: { requesterId: id } });
 
     // DELETING AND UPDATING
     let promises = [
@@ -458,12 +432,6 @@ const mutations = {
         }
         return ProjectAttributes.removeAssignedOne(TargetUser.get('id'));
       }),
-      ...(<ProjectAttributesInstance[]>TargetUser.get('defRequester')).map((ProjectAttributes) => {
-        return ProjectAttributes.setDefRequester(null);
-      }),
-      ...taskPairs.map((taskPair) => tasks.find((Task) => Task.get('id') === taskPair.taskId).setRequester(taskPair.requesterId)),
-      ...subtaskPairs.map((subtaskPair) => subtasks.find((Subtask) => Subtask.get('id') === subtaskPair.subtaskId).setUser(subtaskPair.assignedId)),
-      ...workTripPairs.map((workTripPair) => workTrips.find((WorkTrip) => WorkTrip.get('id') === workTripPair.workTripId).setUser(workTripPair.assignedId))
     ]
 
     await Promise.all(promises);

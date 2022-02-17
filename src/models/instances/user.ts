@@ -125,7 +125,7 @@ export default function defineUsers(sequelize: Sequelize) {
 export function createUsersAssoc(models) {
   models.User.belongsTo(models.Role, { foreignKey: { allowNull: false } });
 
-  models.User.hasMany(models.Token);
+  models.User.hasMany(models.Token, { onDelete: 'CASCADE' });
 
   models.User.belongsTo(models.Company, { foreignKey: { allowNull: false } });
 
@@ -137,7 +137,7 @@ export function createUsersAssoc(models) {
 
   models.User.hasMany(models.ErrorMessage);
 
-  models.User.hasMany(models.UserNotification);
+  models.User.hasMany(models.UserNotification, { onDelete: 'CASCADE' });
 
   //FILTER
   models.User.hasMany(models.Filter, { as: 'filterCreatedBy' });

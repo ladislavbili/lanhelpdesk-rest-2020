@@ -633,587 +633,16 @@ export const canViewTask = (Task, User, groupRights, checkAdmin = false) => {
   )
 }
 
-export const checkAndApplyFixedAndRequiredOnAttributes = (projectAttributes, groupAttributeRights, args, User = null, statuses = [], newTask = true, taskData = null) => {
-  projectAttributes.assignedTo = projectAttributes.assigned;
-  groupAttributeRights.assignedTo = groupAttributeRights.assigned;
-  (['assignedTo', 'tags']).forEach((key) => {
-    if (projectAttributes[key].fixed && args[key]) {
-      let values = projectAttributes[key].value.map((value) => value.get('id'));
-      if (
-        values.length !== args[key].length ||
-        args[key].some((argValue) => !values.includes(argValue))
-      ) {
-        throw createProjectFixedAttributeError(key);
-      }
-    }
-  });
-
-  (['overtime', 'pausal']).forEach((key) => {
-    if (projectAttributes[key].fixed && args[key]) {
-      let value = projectAttributes[key].value;
-      if (value !== args[key]) {
-        throw createProjectFixedAttributeError(key);
-      }
-    }
-  });
-
-  (['taskType']).forEach((key) => {
-    if (projectAttributes[key].fixed && args[key]) {
-      let value = projectAttributes[key].value.get('id');
-      //if is fixed, it must fit
-      if (value !== args[key]) {
-        throw createProjectFixedAttributeError(key);
-      }
-    }
-  });
-
-  (['startsAt', 'deadline']).forEach((key) => {
-    if (projectAttributes[key].fixed && args[key]) {
-      let value = moment(projectAttributes[key].value);
-      //if is fixed, it must fit
-
-      if (value.isSame(parseInt(args[key]))) {
-        throw createProjectFixedAttributeError(key);
-      }
-    }
-  });
-  //ak je task novy ale ma hodnotu,
-  //ak je projektovy null, musi byt userov,
-  //ak projektovy nie je null, porovnaj ich
-
-  //ak je task edit ale ma hodnotu
-  //ak je projektovy null, musi byt nezmeneny - porovnaj s taskovym
-  //ak projektovy nie je null, porovnaj ich
-
-  if (projectAttributes.status.fixed && args.status) {
-    if (projectAttributes.status.value !== null) {
-      let value = projectAttributes.status.value.get('id');
-      //if is fixed, it must fit
-      if (value !== args.status) {
-        throw createProjectFixedAttributeError('status');
-      }
-    } else {
-      if (!newTask && taskData.status !== args.status) {
-        throw createProjectFixedAttributeError('status');
-      } else if (newTask) {
-        const status = statuses.find((status) => status.id === args.status);
-        if (!status || status.action !== 'IsNew') {
-          throw createProjectFixedAttributeError('status');
-        }
-      }
-    }
-  }
-
-  if (projectAttributes.company.fixed && args.company) {
-    if (projectAttributes.company.value !== null) {
-      let value = projectAttributes.company.value.get('id');
-      //if is fixed, it must fit
-      if (value !== args.company) {
-        throw createProjectFixedAttributeError('company');
-      }
-    } else {
-      if (newTask) {
-        if (User.get('CompanyId') !== args.company) {
-          throw createProjectFixedAttributeError('company');
-        }
-      } else {
-        if (taskData.company !== args.company) {
-          throw createProjectFixedAttributeError('company');
-        }
-      }
-    }
-  }
-
-  if (projectAttributes.requester.fixed && args.requester) {
-    if (projectAttributes.requester.value !== null) {
-      let value = projectAttributes.requester.value.get('id');
-      //if is fixed, it must fit
-      if (value !== args.requester) {
-        throw createProjectFixedAttributeError('requester');
-      }
-    } else {
-      if (newTask) {
-        if (User.get('id') !== args.requester) {
-          throw createProjectFixedAttributeError('requester');
-        }
-      } else {
-        if (taskData.requester !== args.requester) {
-          throw createProjectFixedAttributeError('requester');
-        }
-      }
-    }
-  }
-
-  //newTask
-  if (newTask) {
-    //if fixed set values
-    if (projectAttributes.company.fixed) {
-      if (projectAttributes.company.value === null) {
-        args.company = User.get('CompanyId');
-      } else {
-        args.company = projectAttributes.company.value.get('id');
-      }
-    }
-
-    if (projectAttributes.requester.fixed) {
-      if (projectAttributes.requester.value === null) {
-        args.requester = User.get('id');
-      } else {
-        args.requester = projectAttributes.requester.value.get('id');
-      }
-    }
-
-    if (projectAttributes.status.fixed) {
-      if (projectAttributes.status.value === null) {
-        const status = statuses.find((status) => status.action === 'IsNew');
-        args.status = status ? status.get('id') : null;
-      } else {
-        args.status = projectAttributes.status.value.get('id');
-      }
-    }
-
-    if (projectAttributes.assignedTo.fixed) {
-      if (projectAttributes.assignedTo.value.length === 0) {
-        if (groupAttributeRights.assignedTo.view) {
-          args.assignedTo = [User.get('id')];
-        } else {
-          args.assignedTo = [];
-        }
-      } else {
-        args.assignedTo = projectAttributes.assignedTo.value.map((User) => User.get('id'));
-      }
-    }
-
-    if (projectAttributes.tags.fixed) {
-      args.tags = projectAttributes.tags.value.map((Tag) => Tag.get('id'));
-    }
-
-    if (projectAttributes.taskType.fixed) {
-      args.taskType = projectAttributes.taskType.value.get('id');
-    }
-
-    if (projectAttributes.pausal.fixed) {
-      args.pausal = projectAttributes.pausal.value;
-    }
-
-    if (projectAttributes.overtime.fixed) {
-      args.overtime = projectAttributes.overtime.value;
-    }
-
-    //startsAt, deadline
-    if (projectAttributes.startsAt.fixed) {
-      args.startsAt = moment(projectAttributes.startsAt.value).valueOf();
-    }
-
-    if (projectAttributes.deadline.fixed) {
-      args.deadline = moment(projectAttributes.deadline.value).valueOf();
-    }
-
-    //if required and doesnt have values, throw error
-    ['assignedTo', 'tags'].forEach((attr) => {
-      if (groupAttributeRights[attr].required && ([undefined, null].includes(args[attr]) || args[attr].length === 0)) {
-        throw createProjectRequiredAttributeError(attr);
-      }
-    });
-
-    ['company', 'requester', 'status', 'taskType', 'pausal', 'overtime', 'startsAt', 'deadline'].forEach((attr) => {
-      if (groupAttributeRights[attr].required && [undefined, null].includes(args[attr])) {
-        throw createProjectRequiredAttributeError(attr);
-      }
-    });
-  } else {
-    //if edited, project changed and fixed, set it
-    if (projectAttributes.company.fixed) {
-      if (projectAttributes.company.value === null) {
-        if (taskData.get('requester')) {
-          //TODO: ak je zmeneny aj requester mame problem
-          args.company = taskData.get('requester').get('CompanyId');
-        }
-      } else {
-        args.company = projectAttributes.company.value.get('id');
-      }
-    }
-  }
-  return args;
-}
-
-//skontrolovat ci ma pravo na polia
-export const checkIfCanEditTaskAttributes = async (User, projectId, newAttrs, statuses, orgAttrs = null, ignoreAttributes = [], fromInvoice = false) => {
-  let groupRights = await getUserProjectRights(projectId, User, fromInvoice);
-
-  if (!groupRights) {
-    throw createCantEditTaskAttributeError('task itself');
-  }
-  const attributeRights = groupRights.attributes;
-  const ProjectAttributes = <ProjectAttributesInstance[]>await models.ProjectAttributes.findAll({ where: { ProjectId: projectId } });
-  const projectAttributes = <any>await ProjectAttributes[0].get('attributes');
-  const editingTask = orgAttrs !== null;
-
-  //attributes
-  //ak nemoze editovat assigned, bud je rovnaky ako v tasku, alebo def alebo fixed/user
-  if (!attributeRights.assigned.edit && (editingTask || !attributeRights.assigned.add) && ![undefined, null].includes(newAttrs.assignedTo) && !ignoreAttributes.includes('assignedTo')) {
-    if (
-      (
-        !editingTask &&
-        (
-          (projectAttributes.assigned.value.length > 0 && projectAttributes.assigned.value.length !== newAttrs.assignedTo.length) ||
-          !newAttrs.assignedTo.every((id) => projectAttributes.assigned.value.some((value) => value.get('id') === id))
-        )
-      ) ||
-      (
-        editingTask &&
-        (
-          orgAttrs.get('AssignedTos').length !== newAttrs.length ||
-          !orgAttrs.get('AssignedTos').map((User) => User.get('id')).every((id) => newAttrs.assignedTo.includes(id))
-        )
-      )
-    ) {
-      throw createCantEditTaskAttributeError('assignedTo');
-    }
-  }
-  if (!attributeRights.tags.edit && (editingTask || !attributeRights.tags.add) && ![undefined, null].includes(newAttrs.tags) && !ignoreAttributes.includes('tags')) {
-    if (
-      (
-        !editingTask &&
-        (
-          projectAttributes.tags.value.length !== newAttrs.tags.length ||
-          !newAttrs.tags.every((id) => projectAttributes.tags.value.some((value) => value.get('id') === id))
-        )
-      ) ||
-      (
-        editingTask &&
-        (
-          orgAttrs.get('Tags').length !== newAttrs.tags.length ||
-          !orgAttrs.get('Tags').map((Tag) => Tag.get('id')).every((id) => newAttrs.tags.includes(id))
-        )
-      )
-    ) {
-      throw createCantEditTaskAttributeError('tags');
-    }
-  }
-
-  if (!attributeRights.company.edit && (editingTask || !attributeRights.company.add) && ![undefined, null].includes(newAttrs.company) && !ignoreAttributes.includes('company')) {
-    if (
-      (
-        !editingTask &&
-        (
-          (projectAttributes.company.value === null && newAttrs.company !== User.get('CompanyId')) ||
-          (projectAttributes.company.value !== null && projectAttributes.company.value.get('id') !== newAttrs.company)
-        )
-      ) ||
-      (
-        editingTask &&
-        orgAttrs.get('CompanyId') !== newAttrs.company &&
-        (
-          !projectAttributes.company.fixed ||
-          projectAttributes.company.value !== null ||
-          newAttrs.company !== orgAttrs.get('requester').get('CompanyId')
-        )
-        //TODO: ak je zmeneny aj requester mame problem
-      )
-    ) {
-      throw createCantEditTaskAttributeError('company');
-    }
-  }
-  if (!attributeRights.requester.edit && (editingTask || !attributeRights.requester.add) && ![undefined, null].includes(newAttrs.requester) && !ignoreAttributes.includes('requester')) {
-    if (
-      (
-        !editingTask &&
-        (
-          (projectAttributes.requester.value === null && newAttrs.requester !== User.get('id')) ||
-          (projectAttributes.requester.value !== null && projectAttributes.requester.value.get('id') !== newAttrs.requester)
-        )
-      ) ||
-      (
-        editingTask &&
-        orgAttrs.get('RequesterId') !== newAttrs.requester
-      )
-    ) {
-      throw createCantEditTaskAttributeError('requester');
-    }
-  }
-  if (!attributeRights.status.edit && (editingTask || !attributeRights.status.add) && ![undefined, null].includes(newAttrs.status)) {
-    if (
-      (
-        !editingTask && (
-          (
-            projectAttributes.status.value === null &&
-            (
-              !statuses.find((status) => status.get('id') === newAttrs.status) ||
-              statuses.find((status) => status.get('id') === newAttrs.status).get('action') !== 'IsNew'
-            )
-          ) ||
-          (projectAttributes.status.value !== null && projectAttributes.status.value.get('id') !== newAttrs.status)
-        )
-      ) ||
-      (
-        editingTask &&
-        orgAttrs.get('StatusId') !== newAttrs.status
-      )
-    ) {
-      throw createCantEditTaskAttributeError('status');
-    }
-  }
-
-  if (!attributeRights.taskType.edit && (editingTask || !attributeRights.taskType.add) && ![undefined, null].includes(newAttrs.taskType) && !ignoreAttributes.includes('taskType')) {
-    if (
-      (
-        !editingTask &&
-        (
-          (projectAttributes.taskType.value === null && newAttrs.taskType !== null) ||
-          (projectAttributes.taskType.value !== null && projectAttributes.taskType.value.get('id') !== newAttrs.taskType)
-        )
-      ) ||
-      (
-        editingTask &&
-        orgAttrs.get('TaskTypeId') !== newAttrs.taskType
-      )
-    ) {
-      throw createCantEditTaskAttributeError('task type');
-    }
-  }
-
-  if (!attributeRights.overtime.edit && (editingTask || !attributeRights.overtime.add) && ![undefined, null].includes(newAttrs.overtime) && !ignoreAttributes.includes('overtime')) {
-    if (
-      (
-        !editingTask &&
-        projectAttributes.overtime.value !== null &&
-        projectAttributes.overtime.value !== newAttrs.overtime
-      ) ||
-      (
-        editingTask &&
-        orgAttrs.get('overtime') !== newAttrs.overtime
-      )
-    ) {
-      throw createCantEditTaskAttributeError('overtime');
-    }
-  }
-  if (!attributeRights.pausal.edit && (editingTask || !attributeRights.pausal.add) && ![undefined, null].includes(newAttrs.pausal) && !ignoreAttributes.includes('pausal')) {
-    if (
-      (
-        !editingTask &&
-        projectAttributes.pausal.value !== null &&
-        projectAttributes.pausal.value !== newAttrs.pausal
-      ) ||
-      (
-        editingTask &&
-        orgAttrs.get('pausal') !== newAttrs.pausal
-      )
-    ) {
-      throw createCantEditTaskAttributeError('pausal');
-    }
-  }
-
-  if (!attributeRights.repeat.edit && (editingTask || !attributeRights.repeat.add) && ![undefined, null].includes(newAttrs.repeat) && !ignoreAttributes.includes('repeat')) {
-    if (
-      (
-        !editingTask &&
-        newAttrs.repeat !== null
-      ) ||
-      (
-        editingTask &&
-        newAttrs.repeat === null &&
-        orgAttrs.get('Repeat') !== null
-      )
-    ) {
-      throw createCantEditTaskAttributeError('task type');
-    }
-  }
-
-  if (!attributeRights.startsAt.edit && (editingTask || !attributeRights.startsAt.add) && ![undefined, null].includes(newAttrs.startsAt) && !ignoreAttributes.includes('startsAt')) {
-    if (
-      (
-        !editingTask &&
-        !moment(projectAttributes.startsAt.value).isSame(parseInt(newAttrs.startsAt))
-      ) ||
-      (
-        editingTask &&
-        !moment(orgAttrs.get('startsAt')).isSame(parseInt(newAttrs.startsAt))
-      )
-    ) {
-      throw createCantEditTaskAttributeError('startsAt');
-    }
-  }
-
-  if (!attributeRights.deadline.edit && (editingTask || !attributeRights.deadline.add) && ![undefined, null].includes(newAttrs.deadline) && !ignoreAttributes.includes('deadline')) {
-    if (
-      (
-        !editingTask &&
-        !moment(projectAttributes.deadline.value).isSame(parseInt(newAttrs.deadline))
-      ) ||
-      (
-        editingTask &&
-        !moment(orgAttrs.get('deadline')).isSame(parseInt(newAttrs.deadline))
-      )
-    ) {
-      throw createCantEditTaskAttributeError('deadline');
-    }
-  }
-
-  if (!attributeRights.status.edit && (editingTask || !attributeRights.status.add) && ![undefined, null].includes(newAttrs.closeDate) && !ignoreAttributes.includes('closeDate')) {
-    if (
-      !editingTask ||
-      (
-        editingTask &&
-        !moment(orgAttrs.get('closeDate')).isSame(parseInt(newAttrs.closeDate))
-      )
-    ) {
-      throw createCantEditTaskAttributeError('closeDate');
-    }
-  }
-
-  if (!attributeRights.status.edit && (editingTask || !attributeRights.status.add) && ![undefined, null].includes(newAttrs.pendingDate) && !ignoreAttributes.includes('pendingDate')) {
-    if (
-      !editingTask ||
-      (
-        editingTask &&
-        !moment(orgAttrs.get('pendingDate')).isSame(parseInt(newAttrs.pendingDate))
-      )
-    ) {
-      throw createCantEditTaskAttributeError('pendingDate');
-    }
-  }
-
-  //OTHER ATTRIBUTES
-  [
-    {
-      key: 'title',
-      type: 'text',
-      right: editingTask ? 'taskTitleWrite' : 'addTask',
-    },
-    {
-      key: 'description',
-      type: 'text',
-      right: editingTask ? 'taskDescriptionWrite' : 'addTask',
-    },
-    {
-      key: 'project',
-      type: 'project',
-      right: editingTask ? 'taskProjectWrite' : 'addTask',
-      orgKey: 'ProjectId',
-    },
-    {
-      key: 'shortSubtasks',
-      type: 'array',
-      right: 'taskSubtasksWrite',
-      orgKey: 'ShortSubtasks',
-    },
-    {
-      key: 'subtasks',
-      type: 'array',
-      right: 'taskWorksWrite',
-      orgKey: 'Subtasks',
-    },
-    {
-      key: 'workTrips',
-      type: 'array',
-      right: 'taskWorksWrite',
-      orgKey: 'WorkTrips',
-    },
-    {
-      key: 'materials',
-      type: 'array',
-      right: 'taskMaterialsWrite',
-      orgKey: 'Material',
-    },
-  ].filter((check) => !ignoreAttributes.includes(check.key)).forEach((check) => {
-    switch (check.type) {
-      case 'text': {
-        if (
-          !groupRights.project[check.right] &&
-          newAttrs[check.key] &&
-          (
-            orgAttrs === null ||
-            orgAttrs.get(check.key) !== newAttrs[check.key]
-          )
-        ) {
-          throw createCantEditTaskAttributeError(check.key);
-        }
-        break;
-      }
-      case 'date': {
-        if (
-          !groupRights.project[check.right] &&
-          newAttrs[check.key] &&
-          (
-            orgAttrs === null ||
-            !moment(orgAttrs.get(check.key)).isSame(parseInt(newAttrs[check.key]))
-          )
-        ) {
-          throw createCantEditTaskAttributeError(check.key);
-        }
-        break;
-      }
-      case 'object': {
-        if (
-          !groupRights.project[check.right] &&
-          newAttrs[check.key] &&
-          (
-            orgAttrs === null ||
-            orgAttrs.get(check.orgKey) !== newAttrs[check.key]
-          )
-        ) {
-          throw createCantEditTaskAttributeError(check.key);
-        }
-        break;
-      }
-      case 'project': {
-        if (
-          !groupRights.project[check.right] &&
-          newAttrs[check.key] &&
-          orgAttrs !== null &&
-          orgAttrs.get(check.orgKey) !== newAttrs[check.key]
-        ) {
-          throw createCantEditTaskAttributeError(check.key);
-        }
-        break;
-      }
-      case 'boolean': {
-        if (
-          !groupRights.project[check.right] &&
-          newAttrs[check.key] !== undefined &&
-          newAttrs[check.key] !== null &&
-          (
-            orgAttrs === null ||
-            orgAttrs.get(check.key) === newAttrs[check.key]
-          )
-        ) {
-          throw createCantEditTaskAttributeError(check.key);
-        }
-        break;
-      }
-      case 'array': {
-        const ids = newAttrs[check.key] ? newAttrs[check.key].map((item) => item.id) : [];
-        if (
-          !groupRights.project[check.right] &&
-          newAttrs[check.key] &&
-          newAttrs[check.key].length !== 0 &&
-          (
-            newAttrs[check.key].length !== orgAttrs.get(check.orgKey).length ||
-            !orgAttrs.get(check.orgKey).every((Item) => ids.includes(Item.get('id')))
-          )
-        ) {
-          throw createCantEditTaskAttributeError(check.key);
-        }
-        break;
-      }
-      default: {
-        break;
-      }
-    }
-  })
-}
-
 const allProjectAttributes = ['requester', 'assignedTo', 'tags', 'overtime', 'pausal', 'taskType', 'startsAt', 'deadline', 'status', 'company'];
 const allIDProjectAttributes = ['requester', 'assignedTo', 'tags', 'taskType', 'status', 'company'];
 
 export const processProjectDataAdd = async (CurrentUser, Project, rights, args) => {
   //get rights and project attributes
-  let attributes = await Project.get('attributes');
+  let attributes = await Project.get('ProjectAttribute').get('attributes');
   rights.assignedTo = rights.assigned;
   attributes.assignedTo = attributes.assigned;
 
-  allProjectAttributes.forEach(async (attribute) => {
+  for (const attribute of allProjectAttributes) {
     args = await applyFixedAttribute(args, attributes, Project, CurrentUser, attribute);
     if (!attributes[attribute].fixed) {
       //check rights
@@ -1223,19 +652,20 @@ export const processProjectDataAdd = async (CurrentUser, Project, rights, args) 
       //set required
       args = await applyRequiredAttribute(args, attributes, Project, CurrentUser, attribute);
     }
-  });
+  }
+
   //check if ids exists
   await checkIfAttributeValuesExists(args);
   return args;
 }
 
-export const processProjectDataEdit = async (CurrentUser, Project, rights, args, taskData) => {
+export const processProjectDataEdit = async (CurrentUser, Project, rights, args, taskData, repeatAdd = false) => {
   //get rights and project attributes
-  let attributes = await Project.get('attributes');
+  let attributes = await Project.get('ProjectAttribute').get('attributes');
   rights.assignedTo = rights.assigned;
   attributes.assignedTo = attributes.assigned;
 
-  allProjectAttributes.forEach(async (attribute) => {
+  for (const attribute of allProjectAttributes) {
     args = await applyFixedAttribute(args, attributes, Project, CurrentUser, attribute, taskData);
     if (!attributes[attribute].fixed) {
       //check rights
@@ -1245,7 +675,11 @@ export const processProjectDataEdit = async (CurrentUser, Project, rights, args,
       //set required
       args = await applyRequiredAttribute(args, attributes, Project, CurrentUser, attribute, taskData);
     }
-  });
+    if (repeatAdd) {
+      args = setValueIfUndefined(args, taskData, attribute);
+    }
+  }
+
   //check if ids exists
   await checkIfAttributeValuesExists(args);
   return args;
@@ -1350,7 +784,7 @@ const applyFixedAttribute = async (args, attributes, Project, User, name, data =
             !Project.get('lockedRequester') || projectUsersIds.includes(data.get('requester').get('id'))
           )
         ) {
-          args[name] = undefined;
+          delete args[name];
           company = data.get('requester').get('CompanyId');
         } else if (!Project.get('lockedRequester') || projectUsersIds.includes(User.get('id'))) {
           args[name] = User.get('id');
@@ -1406,6 +840,7 @@ const applyUserRights = async (args, attributes, rights, Project, User, name, da
   const attribute = attributes[name];
   const newTask = !data;
   const neededRight = newTask ? 'add' : 'edit';
+
   const right = rights[name][neededRight];
   //if null must check
 
@@ -1416,7 +851,7 @@ const applyUserRights = async (args, attributes, rights, Project, User, name, da
 
   //if has task, set to undefined
   if (!newTask) {
-    args[name] = undefined;
+    delete args[name];
     return args;
   }
 
@@ -1451,10 +886,10 @@ const checkIfValidValue = async (args, attributes, Project, User, name, data = n
         args[name] = value.filter((id) => assignableUserIds.includes(id));
       } else if (!newTask && dataValue) {
         //if task has value, filter to which can be (value exists only if editing task)
-        args[name] = dataValue.filter((User) => assignableUserIds.includes(User.get('id')));
+        args[name] = dataValue.filter((User) => assignableUserIds.includes(User.get('id'))).map((User) => User.get('id'));
       } else {
         //else set preset or empty
-        args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+        args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
       }
       args = setUndefinedIfSameInData(args, data, name);
       break;
@@ -1466,10 +901,10 @@ const checkIfValidValue = async (args, attributes, Project, User, name, data = n
         args[name] = value.filter((id) => acceptableTags.includes(id));
       } else if (!newTask && dataValue) {
         //if task has value, filter to which can be (value exists only if editing task)
-        args[name] = dataValue.filter((Tag) => acceptableTags.includes(Tag.get('id')));
+        args[name] = dataValue.filter((Tag) => acceptableTags.includes(Tag.get('id'))).map((Tag) => Tag.get('id'));
       } else {
         //else set preset or empty
-        args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+        args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
       }
       args = setUndefinedIfSameInData(args, data, name);
       break;
@@ -1480,10 +915,10 @@ const checkIfValidValue = async (args, attributes, Project, User, name, data = n
       if (![true, false].includes(value)) {
         if (!newTask && [true, false].includes(dataValue)) {
           //if task has value, set undefined
-          args[name] = undefined;
+          delete args[name];
         } else {
           //else set preset or empty
-          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+          args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
         }
       }
       args = setUndefinedIfSameInData(args, data, name);
@@ -1495,10 +930,10 @@ const checkIfValidValue = async (args, attributes, Project, User, name, data = n
       if ([null, undefined].includes(value)) {
         if (!newTask && ![undefined, null].includes(dataValue) && validStatuses.includes(dataValue.get('id'))) {
           //if task has value, and is in the project statuses, set undefined
-          args[name] = undefined;
+          delete args[name];
         } else {
           //else set preset or empty
-          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+          args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
         }
       }
       args = setUndefinedIfSameInData(args, data, name);
@@ -1518,10 +953,10 @@ const checkIfValidValue = async (args, attributes, Project, User, name, data = n
         }, []);
         if (!newTask && ![undefined, null].includes(dataValue) && (!Project.get('lockedRequester') || projectUsers.includes(dataValue.get('id')))) {
           //if task has value, must be still valid, set undefined
-          args[name] = undefined;
+          delete args[name];
         } else {
           //else set preset or empty
-          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+          args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
         }
       }
       args = setUndefinedIfSameInData(args, data, name);
@@ -1533,10 +968,10 @@ const checkIfValidValue = async (args, attributes, Project, User, name, data = n
       if ([null, undefined].includes(value)) {
         if (!newTask && ![undefined, null].includes(dataValue)) {
           //if task has value, set undefined
-          args[name] = undefined;
+          delete args[name];
         } else {
           //else set preset or empty
-          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+          args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
         }
       }
       args = setUndefinedIfSameInData(args, data, name);
@@ -1548,10 +983,10 @@ const checkIfValidValue = async (args, attributes, Project, User, name, data = n
       if ([undefined].includes(value)) {
         if (!newTask && ![undefined].includes(dataValue)) {
           //if task has value, set undefined
-          args[name] = undefined;
+          delete args[name];
         } else {
           //else set preset or empty
-          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+          args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
         }
       }
       args = setUndefinedIfSameInData(args, data, name);
@@ -1585,10 +1020,10 @@ const applyRequiredAttribute = async (args, attributes, Project, User, name, dat
         //if task OR project requires and no value
         if (!newTask && ![undefined, null].includes(dataValue) && (!Project.get('lockedRequester') || projectUsers.includes(dataValue.get('id')))) {
           //task still valid
-          args[name] = undefined;
+          delete args[name];
         } else {
           //else set preset
-          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+          args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
         }
       }
       break;
@@ -1599,10 +1034,10 @@ const applyRequiredAttribute = async (args, attributes, Project, User, name, dat
         //if task OR project requires and no value
         if (!newTask && ![undefined, null].includes(dataValue) && validStatuses.includes(dataValue.get('id'))) {
           //task still valid
-          args[name] = undefined;
+          delete args[name];
         } else {
           //else set preset
-          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+          args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
         }
       }
       break;
@@ -1621,13 +1056,13 @@ const applyRequiredAttribute = async (args, attributes, Project, User, name, dat
         //if no value
         if (!newTask && ![undefined, null].includes(dataValue)) {
           //task still valid
-          args[name] = undefined;
+          delete args[name];
         } else if (!newTask && ![undefined, null].includes(getDataValue(data, 'requester')) && (!Project.get('lockedRequester') || projectUsers.includes(getDataValue(data, 'requester').get('id')))) {
           //task still valid
           args[name] = getDataValue(data, 'requester').get('CompanyId');
         } else {
           //else set preset
-          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+          args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
         }
       }
       break;
@@ -1637,10 +1072,10 @@ const applyRequiredAttribute = async (args, attributes, Project, User, name, dat
       if ([null, undefined].includes(value)) {
         if (!newTask && ![undefined, null].includes(dataValue)) {
           //if task has value, set undefined
-          args[name] = undefined;
+          delete args[name];
         } else {
           //else set preset or empty
-          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+          args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
         }
       }
       break;
@@ -1663,7 +1098,7 @@ const applyRequiredAttribute = async (args, attributes, Project, User, name, dat
         //value is empty or length 0
         if ([null, undefined].includes(args[name]) || value.length === 0) {
           //set project default, must have at least one
-          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+          args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
         }
         if (([null, undefined].includes(args[name]) || value.length === 0) && assignableUserIds.includes(User.get('id'))) {
           args[name] = [User.get('id')];
@@ -1683,7 +1118,7 @@ const applyRequiredAttribute = async (args, attributes, Project, User, name, dat
         //value is empty or length 0
         if ([null, undefined].includes(args[name]) || value.length === 0) {
           //set project default, must have at least one
-          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+          args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
         }
         if ([null, undefined].includes(args[name]) || value.length === 0) {
           //set first tag
@@ -1699,7 +1134,7 @@ const applyRequiredAttribute = async (args, attributes, Project, User, name, dat
         //if args value and valid, skip
         if ([null, undefined].includes(value)) {
           //else set preset or empty
-          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+          args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
         }
       }
       break;
@@ -1712,7 +1147,7 @@ const applyRequiredAttribute = async (args, attributes, Project, User, name, dat
         //if args value and valid, skip
         if ([null, undefined].includes(value)) {
           //set preset or empty
-          args[name] = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
+          args = await setValuePresetOrEmpty(args, attribute, User, Project, data, name);
           if (args[name] === null) {
             args[name] = moment().valueOf();
           }
@@ -1763,23 +1198,71 @@ const checkIfAttributeValuesExists = async (args) => {
   await Promise.all(promises);
 }
 
+//step 6 - repeat add only
+const setValueIfUndefined = (args, data, name) => {
+  if (args[name] !== undefined) {
+    return args;
+  }
+  const dataValue = getDataValue(data, name);
+
+  switch (name) {
+    case 'assignedTo':
+    case 'tags': {
+      args[name] = dataValue.map((item) => item.get('id'));
+      break;
+    }
+    case 'status':
+    case 'company':
+    case 'taskType':
+    case 'requester': {
+      args[name] = dataValue ? dataValue.get('id') : null;
+      break;
+    }
+    case 'startsAt':
+    case 'deadline': {
+      args[name] = dataValue ? moment(dataValue).valueOf() : null;
+      break;
+    }
+    case 'overtime':
+    case 'pausal': {
+      args[name] = dataValue === true;
+      break;
+    }
+    default:
+      break;
+  }
+  return args;
+}
+
 const getDataValue = (data, name) => {
   if (!data) {
     return null;
   }
-  if (name === 'assigned') {
-    return data.get('assignedTo');
+  switch (name) {
+    case 'assignedTo': {
+      return data.get('assignedTos');
+      break;
+    }
+    case 'taskType': {
+      return data.get('TaskType');
+      break;
+    }
+    case 'status': {
+      return data.get('Status');
+      break;
+    }
+    case 'company': {
+      return data.get('Company');
+      break;
+    }
+    case 'tags': {
+      return data.get('Tags');
+      break;
+    }
+    default:
+      break;
   }
-  if (name === 'taskType') {
-    return data.get('TaskType');
-  }
-  if (name === 'status') {
-    return data.get('Status');
-  }
-  if (name === 'company') {
-    return data.get('Company');
-  }
-  //tags, overtime, pausal, startsAt, deadline, requester
+  //overtime, pausal, startsAt, deadline, requester
   return data.get(name);
 }
 
@@ -1887,13 +1370,13 @@ const setUndefinedIfSameInData = (args, data, name) => {
   switch (name) {
     case 'assignedTo':
     case 'tags': {
-      const dataValues = data.get(name === 'tags' ? 'tags' : 'assignedTos').map((value) => value.get('id'));
+      const dataValues = data.get(name === 'tags' ? 'Tags' : 'assignedTos').map((value) => value.get('id'));
       if (
         args[name] !== null &&
         dataValues.length === args[name].length &&
         dataValues.every((value) => args[name].includes(value))
       ) {
-        args[name] = undefined;
+        delete args[name];
       }
       break;
     }
@@ -1901,14 +1384,14 @@ const setUndefinedIfSameInData = (args, data, name) => {
     case 'pausal':
     case 'overtime': {
       if (args[name] === data.get(name)) {
-        args[name] = undefined;
+        delete args[name];
       }
       break;
     }
 
     case 'taskType': {
       if (args[name] === data.get('TaskTypeId')) {
-        args[name] = undefined;
+        delete args[name];
       }
       break;
     }
@@ -1916,28 +1399,28 @@ const setUndefinedIfSameInData = (args, data, name) => {
     case 'startsAt':
     case 'deadline': {
       if (moment(data.get(name)).isSame(args[name])) {
-        args[name] = undefined;
+        delete args[name];
       }
       break;
     }
 
     case 'status': {
       if (args[name] === data.get('StatusId')) {
-        args[name] = undefined;
+        delete args[name];
       }
       break;
     }
 
     case 'company': {
       if (args[name] === data.get('CompanyId')) {
-        args[name] = undefined;
+        delete args[name];
       }
       break;
     }
 
     case 'requester': {
       if (args[name] === data.get('requesterId')) {
-        args[name] = undefined;
+        delete args[name];
       }
       break;
     }
