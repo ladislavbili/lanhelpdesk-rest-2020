@@ -89,6 +89,7 @@ export const checkIfHasProjectRights = async (User, taskId = undefined, projectI
   ) {
     return { User, Role, groupRights, Task };
   }
+
   addApolloError(
     'Project',
     InsufficientProjectAccessError,

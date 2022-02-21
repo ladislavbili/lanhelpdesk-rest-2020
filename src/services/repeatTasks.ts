@@ -2,7 +2,15 @@ import TriggerableTimer from '@/services/components/triggerableTimer';
 import { models } from '@/models';
 import moment from 'moment';
 import events from 'events';
-import { timestampToString, getMinutes, sendTaskNotificationsToUsers, logWithDate } from '@/helperFunctions';
+import {
+  timestampToString,
+  getMinutes,
+  sendTaskNotificationsToUsers,
+  logWithDate,
+  allNotificationMessages,
+  sendNotification,
+  createNotificationTaskTitle,
+} from '@/helperFunctions';
 import fs from 'fs';
 import {
   TaskInstance,
@@ -10,6 +18,7 @@ import {
   RepeatTimeInstance,
   RepeatTemplateInstance,
   RepeatTemplateAttachmentInstance,
+  ProjectAttributesInstance,
   UserInstance,
   TagInstance,
   ShortSubtaskInstance,
@@ -106,7 +115,10 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
             models.WorkTrip,
             models.Material,
             models.Tag,
-            models.Project,
+            {
+              model: models.Project,
+              include: [models.ProjectAttributes],
+            },
             {
               model: models.User,
               as: 'assignedTos'
@@ -134,6 +146,14 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
     await models.RepeatTime.update({ triggered: true }, { where: { id: repeatTimeId } });
   }
 
+  const attributes = <any>await (<ProjectAttributesInstance>Project.get('ProjectAttribute')).get('attributes');
+  let deadline = null;
+  if (attributes.deadline.fixed) {
+    deadline = parseInt(attributes.deadline.value);
+  } else if (RepeatTemplate.get('daysToDeadline')) {
+    deadline = moment().add(RepeatTemplate.get('daysToDeadline'), 'days').valueOf();
+  }
+
   let params = {
     //DIRECT PARAMS
     title: RepeatTemplate.get('title'),
@@ -142,7 +162,7 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
     overtime: RepeatTemplate.get('overtime'),
     pausal: RepeatTemplate.get('pausal'),
     //DATES
-    deadline: RepeatTemplate.get('deadline'),
+    deadline,
     closeDate: RepeatTemplate.get('closeDate'),
     pendingDate: RepeatTemplate.get('pendingDate'),
     pendingChangable: RepeatTemplate.get('pendingChangable'),
@@ -287,8 +307,45 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
       }
     })
 
-
-  sendTaskNotificationsToUsers(null, NewTask, [`Task was created by repeat.`]);
+  //send task creation message
+  const [assignedTos, requester] = await Promise.all([NewTask.getAssignedTos(), NewTask.getRequester()]);
+  const taskCreationNotification = allNotificationMessages.creation({
+    taskId: NewTask.get('id'),
+    title: NewTask.get('title'),
+    description: NewTask.get('description'),
+  });
+  if (assignedTos.every((User2) => User2.get('id') !== requester.get('id'))) {
+    sendNotification(
+      null,
+      requester,
+      NewTask,
+      `
+        ${taskCreationNotification.messageHeader}<br>
+        ${createNotificationTaskTitle(params, true)}<br>
+        Vykonal: Systém (opakovaná úloha)<br>
+        Čas: ${timestampToString(NewTask.get('createdAt').valueOf())}<br><br>
+        ${taskCreationNotification.message}
+        `,
+      taskCreationNotification.subject,
+      false
+    );
+  }
+  assignedTos.forEach((assignedTo) => {
+    sendNotification(
+      null,
+      assignedTo,
+      NewTask,
+      `
+        ${taskCreationNotification.messageHeader}<br>
+        ${createNotificationTaskTitle(params, true)}<br>
+        Vykonal: Systém (opakovaná úloha)<br>
+        Čas: ${timestampToString(NewTask.get('createdAt').valueOf())}<br><br>
+        ${taskCreationNotification.message}
+        `,
+      taskCreationNotification.subject,
+      false
+    );
+  });
   pubsub.publish(TASK_CHANGE, { tasksSubscription: true });
   return NewTask;
 }

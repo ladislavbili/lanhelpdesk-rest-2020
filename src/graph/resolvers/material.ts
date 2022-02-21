@@ -311,10 +311,9 @@ const mutations = {
     if (Material === null) {
       throw createDoesNoExistsError('Material', id);
     }
-    await checkIfHasProjectRights(SourceUser, undefined, (<RepeatTemplateInstance>Material.get('RepeatTemplate')).get('ProjectId'), ['vykazWrite'], [{ right: 'repeat', action: 'edit' }]);
+    await checkIfHasProjectRights(SourceUser, undefined, (<RepeatTemplateInstance>Material.get('RepeatTemplate')).get('ProjectId'), ['taskMaterialsWrite'], [{ right: 'repeat', action: 'edit' }]);
     return Material.destroy();
   },
-
 }
 
 const attributes = {

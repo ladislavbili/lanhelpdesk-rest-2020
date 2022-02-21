@@ -9,7 +9,7 @@ type RepeatTemplate {
   assignedTo: [BasicUser]!
   company: Company!
   createdBy: BasicUser
-  deadline: String
+  daysToDeadline: Int
   description: String!
   milestone: Milestone
   overtime: Boolean!
@@ -37,7 +37,7 @@ input RepeatTemplateAddInput {
   closeDate: String
   assignedTo: [Int]
   company: Int
-  deadline: String
+  daysToDeadline: Int
   description: String!
   milestone: Int
   overtime: Boolean!
@@ -55,13 +55,14 @@ input RepeatTemplateAddInput {
   workTrips: [WorkTripInput]
   materials: [MaterialInput]
 }
+
 input RepeatTemplateUpdateInput {
   title: String
   important: Boolean
   closeDate: String
   assignedTo: [Int]
   company: Int
-  deadline: String
+  daysToDeadline: Int
   description: String
   milestone: Int
   overtime: Boolean

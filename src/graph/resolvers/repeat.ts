@@ -58,7 +58,7 @@ import checkResolver from './checkResolver';
 import moment from 'moment';
 import { Op } from 'sequelize';
 import { generateRepeatSQL } from '../addons/repeat';
-const dateNames = ['deadline', 'pendingDate', 'closeDate'];
+const dateNames = ['pendingDate', 'closeDate'];
 import { REPEAT_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
 const { withFilter } = require('apollo-server-express');
@@ -426,6 +426,12 @@ const mutations = {
     } else {
       args = await processProjectDataAdd(User, Project, userGroupRights.attributes, args);
     }
+    if (args.daysToDeadline === undefined) {
+      args.daysToDeadline = 0;
+    }
+    if (userGroupRights.attributes.deadline.fixed) {
+      args.daysToDeadline = null;
+    }
 
     let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, subtasks, workTrips, materials, shortSubtasks, ...params } = args;
 
@@ -680,6 +686,9 @@ const mutations = {
     }
 
     args = await processProjectDataEdit(User, Project, userGroupRights.attributes, args, RepeatTemplate);
+    if (userGroupRights.attributes.deadline.fixed) {
+      args.daysToDeadline = null;
+    }
 
     let { assignedTo: assignedTos, company, milestone, requester, status, tags, taskType, ...params } = args;
     const dates = extractDatesFromObject(params, dateNames);
@@ -906,7 +915,7 @@ const mutations = {
     const User = await checkResolver(req);
 
     //Figure out project and if can create tasks and sees repeats
-    const { groupRights } = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), ['addTask'], [{ right: 'repeat', action: 'read' }]);
+    const { groupRights } = await checkIfHasProjectRights(User, undefined, RepeatTemplate.get('ProjectId'), ['addTask'], [{ right: 'repeat', action: 'view' }]);
 
     //check if can trigger repeat
     if (!(<AccessRightsInstance>(<RoleInstance>User.get('Role')).get('AccessRight')).get('tasklistCalendar') && !groupRights.project.tasklistKalendar) {

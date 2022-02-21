@@ -8,7 +8,7 @@ export interface RepeatTemplateInstance extends DefaultInstance {
   //tags
   //company - X
   //createdBy - X
-  deadline: number; // X
+  daysToDeadline: number; // X
   description: string; // X
   //milestone - ? X
   overtime: boolean; //X
@@ -57,9 +57,10 @@ export default function defineRepeatTemplates(sequelize: Sequelize) {
         type: DataTypes.DATE,
         allowNull: true,
       },
-      deadline: {
-        type: DataTypes.DATE,
+      daysToDeadline: {
+        type: DataTypes.INTEGER,
         allowNull: true,
+        defaultValue: 0,
       },
       description: {
         type: DataTypes.TEXT,
