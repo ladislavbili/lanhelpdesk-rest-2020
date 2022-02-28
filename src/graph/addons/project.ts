@@ -426,7 +426,7 @@ export const applyAttributeRightsRequirements = (groups, projectAttributes) => {
 }
 
 export const checkFixedAttributes = (projectAttributes) => {
-  taskAttributes.filter((taskAttribute) => taskAttribute.attribute !== 'repeat').forEach((taskAttribute) => {
+  taskAttributes.filter((taskAttribute) => !['repeat', 'pausal'].includes(taskAttribute.attribute)).forEach((taskAttribute) => {
     const attribute = projectAttributes[taskAttribute.attribute];
     if (
       attribute.fixed && (
@@ -439,6 +439,113 @@ export const checkFixedAttributes = (projectAttributes) => {
       throw new ApolloError(`In default values, ${taskAttribute.attribute} to is set to be fixed, but fixed value can\'t be empty.`, 'PROJECT_ATTRIBUTE_FIXED_INTEGRITY');
     }
   })
+}
+
+export const getTaskRepeatUpdate = (originalAttributes, newAttributes, Project) => {
+  let update = <any>{ direct: {}, set: {} };
+  let hasUpdate = false;
+  ['status', 'tags', 'assigned', 'requester', 'company', 'taskType', 'pausal', 'overtime', 'startsAt', 'deadline'].filter((attribute) => newAttributes[attribute].fixed).forEach((attribute) => {
+    switch (attribute) {
+      case 'status': {
+        if (
+          (originalAttributes.status.value === null && newAttributes.status.value !== null) ||
+          (originalAttributes.status.value !== null && newAttributes.status.value === null) ||
+          (originalAttributes.status.value !== null && newAttributes.status.value !== null && originalAttributes.status.value.get('id') !== newAttributes.status.value.get('id')) ||
+          !originalAttributes.status.fixed
+        ) {
+          if (newAttributes.status.value) {
+            update.direct.StatusId = newAttributes.status.value.get('id');
+          } else {
+            const Statuses = Project.get('projectStatuses');
+            const NewStatus = Statuses.find((Status) => Status.get('action') === 'IsNew');
+            if (NewStatus) {
+              update.direct.StatusId = NewStatus.get('id');
+            } else {
+              update.direct.StatusId = Statuses[0].get('id');
+            }
+          }
+          hasUpdate = true;
+        }
+        break;
+      }
+      case 'tags': {
+        if (
+          originalAttributes.tags.length !== newAttributes.tags.length ||
+          !originalAttributes.tags.value.every((Tag1) => newAttributes.tags.value.some((Tag2) => Tag1.get('id') === Tag2.get('id'))) ||
+          !originalAttributes.tags.fixed
+        ) {
+          update.set.tags = newAttributes.tags.map((Tag) => Tag.get('id'));
+          hasUpdate = true;
+        }
+        break;
+      }
+      case 'assigned': {
+        if (
+          originalAttributes.assigned.value.length !== newAttributes.assigned.value.length ||
+          !originalAttributes.assigned.value.every((User1) => newAttributes.assigned.value.some((User2) => User1.get('id') === User2.get('id'))) ||
+          !originalAttributes.assigned.fixed
+        ) {
+          update.set.assignedTo = newAttributes.assigned.value.map((User) => User.get('id'));
+          hasUpdate = true;
+        }
+        break;
+      }
+      case 'requester': {
+        if (newAttributes.requester.value !== null && (
+          originalAttributes.requester.value === null ||
+          originalAttributes.requester.value.get('id') !== newAttributes.requester.value.get('id') ||
+          !originalAttributes.requester.fixed
+        )) {
+          update.direct.requesterId = newAttributes.requester.value.get('id');
+          hasUpdate = true;
+        }
+        break;
+      }
+      case 'company': {
+        if (newAttributes.company.value !== null && (
+          originalAttributes.company.value === null ||
+          originalAttributes.company.value.get('id') !== newAttributes.company.value.get('id') ||
+          !originalAttributes.company.fixed
+        )) {
+          update.direct.CompanyId = newAttributes.company.value.get('id');
+          hasUpdate = true;
+        }
+        break;
+      }
+      case 'taskType': {
+        if (originalAttributes.taskType.value.get('id') !== newAttributes.taskType.value.get('id') || !originalAttributes.taskType.fixed) {
+          update.direct.TaskTypeId = newAttributes.taskType.value.get('id');
+          hasUpdate = true;
+        }
+        break;
+      }
+      case 'pausal':
+      case 'overtime': {
+        if (originalAttributes[attribute].value !== newAttributes[attribute].value || !originalAttributes[attribute].fixed) {
+          update.direct[attribute] = newAttributes[attribute].value === true;
+          hasUpdate = true;
+        }
+        break;
+      }
+      case 'startsAt':
+      case 'deadline': {
+        if (
+          newAttributes[attribute].value !== null && (
+            originalAttributes[attribute].value === null ||
+            !moment(originalAttributes[attribute].value).isSame(originalAttributes[attribute].value) ||
+            !originalAttributes[attribute].fixed
+          )
+        ) {
+          update.direct[attribute] = parseInt(newAttributes[attribute].value);
+        }
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  });
+  return hasUpdate ? update : null;
 }
 
 export const checkIfDefGroupsExists = (groups) => {
@@ -704,7 +811,23 @@ const applyFixedAttribute = async (args, attributes, Project, User, name, data =
       break;
     }
 
-    case 'pausal':
+    case 'pausal': {
+      if (attribute.fixed) {
+        if ([true, false].includes(attribute.value)) {
+          args[name] = attribute.value;
+        } else {
+          const Company = await models.Company.findByPk(args.company);
+          if (Company) {
+            args[name] = Company.get('monthly');
+          } else {
+            args[name] = !data ? attribute.value : data.get('Company').get('monthly');
+          }
+        }
+        args = setUndefinedIfSameInData(args, data, name);
+      }
+      break;
+    }
+
     case 'overtime': {
       if (attribute.fixed) {
         args[name] = attribute.value;

@@ -24,6 +24,7 @@ import {
   fixProjectFilters,
   postProcessFilters,
   mergeGroupRights,
+  getTaskRepeatUpdate,
 } from '@/graph/addons/project';
 import {
   ProjectInstance,
@@ -492,6 +493,13 @@ const mutations = {
 
     const Project = <ProjectInstance>await models.Project.findByPk(id, {
       include: [
+        {
+          model: models.Task,
+          where: {
+            invoiced: false,
+          },
+          required: false,
+        },
         models.ProjectAttributes,
         {
           model: models.ProjectGroup,
@@ -514,6 +522,7 @@ const mutations = {
     if (Project === null) {
       throw createDoesNoExistsError('Project', id);
     }
+    const originalAttributes = await ((<ProjectAttributesInstance>Project.get('ProjectAttribute')).get('attributes'));
     await checkIfHasProjectRights(User, undefined, id, ['projectWrite']);
 
     //applyAttributeRightsRequirements - fixne updated groups a add groups
@@ -886,6 +895,26 @@ const mutations = {
         models.ProjectAttributes.update({ StatusId: replacementStatus.get('id') }, { where: { StatusId: Status.get('id') } });
       }
     });
+    await Project.reload();
+    //get fixed attributes, compare and create update object
+    const newAttributes = await ((<ProjectAttributesInstance>Project.get('ProjectAttribute')).get('attributes'));
+    //prepare update for tasks and repeats, then update them all
+    const taskUpdate = getTaskRepeatUpdate(originalAttributes, newAttributes, Project);
+    if (taskUpdate !== null) {
+      if (Object.keys(taskUpdate.direct).length > 0) {
+        models.Task.update(taskUpdate.direct, { where: { ProjectId: Project.get('id'), invoiced: false } });
+        models.Repeat.update(taskUpdate.direct, { where: { ProjectId: Project.get('id') } });
+      }
+      Object.keys(taskUpdate.set).map((key) => {
+        if (key === 'assigned') {
+          (<TaskInstance[]>Project.get('Tasks')).forEach((Task) => Task.setAssignedTos(taskUpdate[key]));
+        } else {
+          (<TaskInstance[]>Project.get('Tasks')).forEach((Task) => Task.setTags(taskUpdate[key]));
+        }
+      })
+    }
+
+
     return Project;
   },
 

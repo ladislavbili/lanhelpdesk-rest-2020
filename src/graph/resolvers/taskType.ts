@@ -78,12 +78,6 @@ const mutations = {
     models.RepeatTemplate.update({ TaskTypeId: newId }, { where: { TaskTypeId: id } });
     models.Subtask.update({ TaskTypeId: newId }, { where: { TaskTypeId: id } });
 
-    const allTasks = await OldTaskType.getTasks();
-    const allSubtasks = await OldTaskType.getSubtasks();
-    await Promise.all([
-      ...allTasks.map((task) => task.setTaskType(newId)),
-      ...allTasks.map((subtask) => subtask.setTaskType(newId)),
-    ]);
     await OldTaskType.destroy();
     pubsub.publish(TASK_TYPE_CHANGE, { taskTypesSubscription: true });
     return OldTaskType;
