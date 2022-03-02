@@ -514,7 +514,7 @@ const queries = {
             taskWorkPausal: invoiced ? 0 : toFloatOrZero(workTrip.User.Company.taskWorkPausal),
             taskTripPausal: invoiced ? 0 : toFloatOrZero(workTrip.User.Company.taskTripPausal),
           },
-          TripType: invoiced ? { id: workTrip.invoicedTypeId, title: workTrip.invoicedTypeTitle } : workTrip.TaskType,
+          TripType: invoiced ? { id: workTrip.invoicedTypeId, title: workTrip.invoicedTypeTitle } : workTrip.TripType,
         },
         price: workTrip.invoicedPrice,
       })),
