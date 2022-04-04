@@ -22,8 +22,9 @@ input TaskRepeatInput{
 }
 
 enum EnumRepeatInterval{
-  week
+  hour
   day
+  week
   month
 }
 `

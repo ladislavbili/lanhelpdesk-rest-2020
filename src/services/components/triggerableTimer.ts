@@ -176,9 +176,9 @@ export default class TriggerableTimer {
     }
 
     if (this.alreadyTriggered) {
-      logWithDate(`waiting time ${this.timeLeft / minute} minutes.`);
+      logWithDate(`${this.repeatId} waiting time ${this.timeLeft / minute} minutes.`);
     } else {
-      logWithDate(`remaining time ${this.timeLeft / minute} minutes.`);
+      logWithDate(`${this.repeatId} remaining time ${this.timeLeft / minute} minutes.`);
     }
 
     let timer = this.getWaitTime();
@@ -186,7 +186,7 @@ export default class TriggerableTimer {
       let newTimeLeft = await this.getRemainingTime();
       //ak sa ma triggernut alebo delay sposobil ze timer je prekroceny, alebo je timer nepodstatny
       if (timer.shouldTrigger || newTimeLeft >= this.timeLeft) {
-        if (this.alreadyTriggered) {
+        if (!this.alreadyTriggered) {
           this.triggerFunctions.forEach((func) => func(this.repeatTimeId, this.originalTrigger));
         }
         this.restartAfterTimeout();
