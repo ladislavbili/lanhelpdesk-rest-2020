@@ -33,6 +33,7 @@ export const RepeatQueries = `
 repeats(
   projectId: Int,
   milestoneId: Int,
+  companyId: Int,
   active: Boolean,
   from: String,
   to: String,

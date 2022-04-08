@@ -65,7 +65,7 @@ const { withFilter } = require('apollo-server-express');
 const scheduledDateNames = ['from', 'to'];
 
 const queries = {
-  repeats: async (root, { projectId, milestoneId, active, ...rangeDates }, { req, userID }) => {
+  repeats: async (root, { projectId, milestoneId, companyId, active, ...rangeDates }, { req, userID }) => {
     const User = await checkResolver(req);
 
     let repeatWhere = <any>{};
@@ -79,6 +79,10 @@ const queries = {
       templateWhere = {
         ProjectId: projectId
       }
+    }
+
+    if (companyId) {
+      templateWhere.CompanyId = companyId;
     }
 
     const { from, to } = extractDatesFromObject(rangeDates, ['from', 'to'], false);

@@ -2,6 +2,8 @@ import defaultAttributes from './defaultAttributes';
 export const LanwikiPage = `
 type LanwikiPage {
   ${defaultAttributes}
+  createdBy: BasicUser
+  updatedBy: BasicUser
   title: String!
   body: String!
   folder: LanwikiFolder!

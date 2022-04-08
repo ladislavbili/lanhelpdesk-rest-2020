@@ -26,16 +26,16 @@ type CMDBManuals {
 `
 
 export const CMDBManualQueries = `
-cmdbManuals(companyId: Int!, order: EnumCMDBManualSort!, limit: Int, page: Int, stringFilter: CMDBManualStringFilterInput): CMDBManuals
+cmdbManuals(companyId: Int, order: EnumCMDBManualSort!, limit: Int, page: Int, stringFilter: CMDBManualStringFilterInput): CMDBManuals
 cmdbManual(id: Int!): CMDBManual
 `
 
 export const CMDBManualMutations = `
-addCmdbManual( title: String!, body: String!, companyId: Int! ): CMDBManual
+addCmdbManual( title: String!, body: String!, companyId: Int ): CMDBManual
 updateCmdbManual( id: Int!, title: String!, body: String!, deletedImages: [Int] ): CMDBManual
 deleteCmdbManual( id: Int! ): CMDBManual
 `
 
 export const CMDBManualSubscriptions = `
-  cmdbManualsSubscription(companyId: Int!): Int
+  cmdbManualsSubscription(companyId: Int): Int
 `

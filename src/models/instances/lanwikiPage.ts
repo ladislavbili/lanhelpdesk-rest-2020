@@ -37,4 +37,8 @@ export function createLanwikiPagesAssoc(models) {
   models.LanwikiPage.belongsToMany(models.LanwikiTag, { through: 'lanwiki_tag_in_page', as: { singular: 'lanwikiTagFilter', plural: 'lanwikiTagsFilter' } });
   models.LanwikiPage.belongsToMany(models.LanwikiTag, { through: 'lanwiki_tag_in_page' });
   models.LanwikiPage.hasMany(models.LanwikiFile, { onDelete: 'CASCADE' });
+
+  models.LanwikiPage.belongsTo(models.User, { as: 'createdBy' });
+  models.LanwikiPage.belongsTo(models.User, { as: 'updatedBy' });
+
 }

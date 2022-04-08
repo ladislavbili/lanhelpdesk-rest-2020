@@ -200,6 +200,8 @@ const mutations = {
     const LanwikiPage = <LanwikiPageInstance>await models.LanwikiPage.create({
       ...args,
       LanwikiFolderId: folderId,
+      createdById: User.get('id'),
+      updatedById: User.get('id'),
     });
     await LanwikiPage.setLanwikiTags(tags);
     LanwikiPage.isAdmin = isAdmin;
@@ -254,6 +256,7 @@ const mutations = {
     await OriginalPage.update({
       ...args,
       LanwikiFolderId: folderId ? folderId : OriginalPage.get('LanwikiFolderId'),
+      updatedById: User.get('id'),
     });
     if (tags) {
       await OriginalPage.setLanwikiTags(tags);
@@ -352,6 +355,12 @@ const attributes = {
     },
     async folder(page) {
       return getModelAttribute(page, 'LanwikiFolder');
+    },
+    async createdBy(page) {
+      return getModelAttribute(page, 'createdBy');
+    },
+    async updatedBy(page) {
+      return getModelAttribute(page, 'updatedBy');
     },
   },
 };

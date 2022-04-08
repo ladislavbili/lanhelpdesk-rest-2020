@@ -187,4 +187,7 @@ export function createUsersAssoc(models) {
 
   //LanWiki
   models.User.hasMany(models.LanwikiFolderRight, { as: { singular: "hasLanwikiFolderRight", plural: "hasLanwikiFolderRights" }, onDelete: 'CASCADE' });
+
+  models.User.hasMany(models.LanwikiPage, { as: 'createdLanwikiPage' });
+  models.User.hasMany(models.LanwikiPage, { as: 'updatedLanwikiPage' });
 }
