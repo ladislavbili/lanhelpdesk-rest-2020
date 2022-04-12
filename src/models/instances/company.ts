@@ -147,4 +147,6 @@ export function createCompaniesAssoc(models) {
   models.Company.hasOne(models.CMDBScheme, { onDelete: 'CASCADE' });
   models.Company.hasMany(models.CMDBManual, { onDelete: 'CASCADE' });
   models.Company.hasMany(models.CMDBItem, { onDelete: 'CASCADE' });
+
+  models.Company.hasMany(models.CMDBPassword, { onDelete: 'CASCADE' });
 }

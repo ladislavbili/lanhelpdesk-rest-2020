@@ -1,4 +1,5 @@
 import { CMDBCategorySubscriptions } from './entities/cmdbCategory';
+import { CMDBPasswordSubscriptions } from './entities/cmdbPassword';
 import { CMDBManualSubscriptions } from './entities/cmdbManual';
 import { CommentSubscriptions } from './entities/comment';
 import { CompanySubscriptions } from './entities/company';
@@ -24,6 +25,7 @@ import { UserNotificationSubscriptions } from './entities/userNotification';
 export default `
 type Subscription {
   ${CMDBCategorySubscriptions}
+  ${CMDBPasswordSubscriptions}
   ${CMDBManualSubscriptions}
   ${CommentSubscriptions}
   ${CompanySubscriptions}

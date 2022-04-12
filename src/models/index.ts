@@ -61,6 +61,7 @@ import defineCMDBFiles, { createCMDBFilesAssoc } from './instances/cmdbFile';
 import defineCMDBItems, { createCMDBItemsAssoc } from './instances/cmdbItem';
 import defineCMDBManuals, { createCMDBManualsAssoc } from './instances/cmdbManual';
 import defineCMDBSchemes, { createCMDBSchemesAssoc } from './instances/cmdbScheme';
+import defineCMDBPasswords, { createCMDBPasswordsAssoc } from './instances/cmdbPassword';
 
 const modelToLog = '';
 
@@ -139,6 +140,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineCMDBItems(sequelize);
   defineCMDBManuals(sequelize);
   defineCMDBSchemes(sequelize);
+  defineCMDBPasswords(sequelize);
 
   //ASSOCS
   createRolesAssoc(models);
@@ -201,6 +203,7 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createCMDBItemsAssoc(models);
   createCMDBManualsAssoc(models);
   createCMDBSchemesAssoc(models);
+  createCMDBPasswordsAssoc(models);
 
   //LOG FUNCTIONS
 

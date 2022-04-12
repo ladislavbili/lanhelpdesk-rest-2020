@@ -2,6 +2,7 @@ import { CMDBAddress } from './entities/cmdbAddress';
 import { CMDBCategory } from './entities/cmdbCategory';
 import { CMDBItem } from './entities/cmdbItem';
 import { CMDBManual } from './entities/cmdbManual';
+import { CMDBPassword } from './entities/cmdbPassword';
 import { CMDBScheme } from './entities/cmdbScheme';
 import { Comment } from './entities/comment';
 import { CommentAttachment } from './entities/commentAttachment';
@@ -51,6 +52,7 @@ ${CMDBAddress}
 ${CMDBCategory}
 ${CMDBItem}
 ${CMDBManual}
+${CMDBPassword}
 ${CMDBScheme}
 ${Comment}
 ${CommentAttachment}

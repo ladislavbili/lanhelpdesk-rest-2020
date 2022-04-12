@@ -42,6 +42,7 @@ import cmdbCategory from './cmdbCategory';
 import cmdbItem from './cmdbItem';
 import cmdbManual from './cmdbManual';
 import cmdbScheme from './cmdbScheme';
+import cmdbPassword from './cmdbPassword';
 
 const { PubSub } = require('apollo-server-express');
 import { EventEmitter } from 'events';
@@ -97,6 +98,7 @@ export default {
     ...cmdbCategory.queries,
     ...cmdbItem.queries,
     ...cmdbManual.queries,
+    ...cmdbPassword.queries,
     ...cmdbScheme.queries,
   },
 
@@ -146,6 +148,7 @@ export default {
     ...cmdbCategory.mutations,
     ...cmdbItem.mutations,
     ...cmdbManual.mutations,
+    ...cmdbPassword.mutations,
     ...cmdbScheme.mutations,
   },
   Subscription: {
@@ -171,6 +174,7 @@ export default {
     ...lanwikiPage.subscriptions,
     ...cmdbCategory.subscriptions,
     ...cmdbManual.subscriptions,
+    ...cmdbPassword.subscriptions,
     ...cmdbScheme.subscriptions,
   },
 
@@ -218,5 +222,6 @@ export default {
   ...cmdbCategory.attributes,
   ...cmdbItem.attributes,
   ...cmdbManual.attributes,
+  ...cmdbPassword.attributes,
   ...cmdbScheme.attributes,
 };

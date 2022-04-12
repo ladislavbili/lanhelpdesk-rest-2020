@@ -1,8 +1,9 @@
 import { CMDBAddressMutations } from './entities/cmdbAddress';
 import { CMDBCategoryMutations } from './entities/cmdbCategory';
 import { CMDBItemMutations } from './entities/cmdbItem';
-import { CMDBSchemeMutations } from './entities/cmdbScheme';
 import { CMDBManualMutations } from './entities/cmdbManual';
+import { CMDBPasswordMutations } from './entities/cmdbPassword';
+import { CMDBSchemeMutations } from './entities/cmdbScheme';
 import { CommentMutations } from './entities/comment';
 import { CommentAttachmentMutations } from './entities/commentAttachment';
 import { CompanyMutations } from './entities/company';
@@ -49,8 +50,9 @@ type Mutation {
   ${CMDBAddressMutations}
   ${CMDBCategoryMutations}
   ${CMDBItemMutations}
-  ${CMDBSchemeMutations}
   ${CMDBManualMutations}
+  ${CMDBPasswordMutations}
+  ${CMDBSchemeMutations}
   ${CompanyMutations}
   ${CommentMutations}
   ${CommentAttachmentMutations}

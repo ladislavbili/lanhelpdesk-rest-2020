@@ -1,8 +1,9 @@
 import { CMDBAddressQueries } from './entities/cmdbAddress';
 import { CMDBCategoryQueries } from './entities/cmdbCategory';
 import { CMDBItemQueries } from './entities/cmdbItem';
-import { CMDBSchemeQueries } from './entities/cmdbScheme';
 import { CMDBManualQueries } from './entities/cmdbManual';
+import { CMDBPasswordQueries } from './entities/cmdbPassword';
+import { CMDBSchemeQueries } from './entities/cmdbScheme';
 import { CommentQueries } from './entities/comment';
 import { CommentAttachmentQueries } from './entities/commentAttachment';
 import { CompanyQueries } from './entities/company';
@@ -49,8 +50,9 @@ type Query {
   ${CMDBAddressQueries}
   ${CMDBCategoryQueries}
   ${CMDBItemQueries}
-  ${CMDBSchemeQueries}
   ${CMDBManualQueries}
+  ${CMDBPasswordQueries}
+  ${CMDBSchemeQueries}
   ${CommentQueries}
   ${CommentAttachmentQueries}
   ${CompanyQueries}

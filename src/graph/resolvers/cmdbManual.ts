@@ -55,7 +55,23 @@ const queries = {
       }
     }
 
-    const response = await models.CMDBManual.findAndCountAll({ where: manualWhere, order: [<any>manualOrder], ...pagination, });
+    const response = await models.CMDBManual.findAndCountAll(
+      {
+        where: manualWhere,
+        order: [<any>manualOrder],
+        ...pagination,
+        include: [
+          {
+            model: models.User,
+            as: 'createdBy',
+          },
+          {
+            model: models.User,
+            as: 'changedBy',
+          },
+        ]
+      }
+    );
 
     return {
       count: <number>response.count,
