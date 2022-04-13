@@ -130,7 +130,7 @@ export default class TriggerableTimer {
         }
       });
       //2. resolve
-      if (RepeatTime) {
+      if (RepeatTime && RepeatTime.get('triggered')) {
         this.alreadyTriggered = true;
       } else {
         this.alreadyTriggered = false;

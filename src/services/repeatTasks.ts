@@ -70,9 +70,13 @@ async function updateRepeat(Repeat) {
   const { repeatEvery, repeatInterval, startsAt, active, id } = Repeat.get();
   if (active) {
     const timer = timers.find((existingTimer) => existingTimer.repeatId === id);
-    timer.stopTimer();
-    timer.setTimer(startsAt.valueOf(), getMinutes(repeatEvery, repeatInterval));
-    timer.restart();
+    if (timer){
+      timer.stopTimer();
+      timer.setTimer(startsAt.valueOf(), getMinutes(repeatEvery, repeatInterval));
+      timer.restart();
+    } else {
+      addRepeat(Repeat);
+    }
   } else {
     deleteRepeat(id);
   }
