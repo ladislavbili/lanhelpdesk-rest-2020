@@ -22,6 +22,7 @@ type CMDBItem {
   backupImages: [CMDBFile]!
   monitoringImages: [CMDBFile]!
   addresses: [CMDBAddress]!
+  passwords: [CMDBItemPassword]!
 }
 
 enum EnumCMDBItemSort {
@@ -77,6 +78,7 @@ addCmdbItem(
   backup: String!
   monitoring: String!
   addresses: [CMDBAddressInput]!
+  passwords: [CMDBItemPasswordInput]!
  ): CMDBItem
 updateCmdbItem(
   id: Int!

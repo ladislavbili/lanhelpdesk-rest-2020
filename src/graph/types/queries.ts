@@ -3,6 +3,7 @@ import { CMDBCategoryQueries } from './entities/cmdbCategory';
 import { CMDBItemQueries } from './entities/cmdbItem';
 import { CMDBManualQueries } from './entities/cmdbManual';
 import { CMDBPasswordQueries } from './entities/cmdbPassword';
+import { CMDBItemPasswordQueries } from './entities/cmdbItemPassword';
 import { CMDBSchemeQueries } from './entities/cmdbScheme';
 import { CommentQueries } from './entities/comment';
 import { CommentAttachmentQueries } from './entities/commentAttachment';
@@ -52,6 +53,7 @@ type Query {
   ${CMDBItemQueries}
   ${CMDBManualQueries}
   ${CMDBPasswordQueries}
+  ${CMDBItemPasswordQueries}
   ${CMDBSchemeQueries}
   ${CommentQueries}
   ${CommentAttachmentQueries}

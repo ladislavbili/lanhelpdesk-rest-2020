@@ -3,6 +3,7 @@ import { CMDBCategoryMutations } from './entities/cmdbCategory';
 import { CMDBItemMutations } from './entities/cmdbItem';
 import { CMDBManualMutations } from './entities/cmdbManual';
 import { CMDBPasswordMutations } from './entities/cmdbPassword';
+import { CMDBItemPasswordMutations } from './entities/cmdbItemPassword';
 import { CMDBSchemeMutations } from './entities/cmdbScheme';
 import { CommentMutations } from './entities/comment';
 import { CommentAttachmentMutations } from './entities/commentAttachment';
@@ -52,6 +53,7 @@ type Mutation {
   ${CMDBItemMutations}
   ${CMDBManualMutations}
   ${CMDBPasswordMutations}
+  ${CMDBItemPasswordMutations}
   ${CMDBSchemeMutations}
   ${CompanyMutations}
   ${CommentMutations}

@@ -3,6 +3,7 @@ import { CMDBCategory } from './entities/cmdbCategory';
 import { CMDBItem } from './entities/cmdbItem';
 import { CMDBManual } from './entities/cmdbManual';
 import { CMDBPassword } from './entities/cmdbPassword';
+import { CMDBItemPassword } from './entities/cmdbItemPassword';
 import { CMDBScheme } from './entities/cmdbScheme';
 import { Comment } from './entities/comment';
 import { CommentAttachment } from './entities/commentAttachment';
@@ -53,6 +54,7 @@ ${CMDBCategory}
 ${CMDBItem}
 ${CMDBManual}
 ${CMDBPassword}
+${CMDBItemPassword}
 ${CMDBScheme}
 ${Comment}
 ${CommentAttachment}

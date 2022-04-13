@@ -84,4 +84,5 @@ export function createCMDBItemsAssoc(models) {
   models.CMDBItem.hasMany(models.CMDBFile, { onDelete: 'CASCADE', foreignKey: 'descriptionFileId', as: { singular: 'descriptionFile', plural: 'descriptionFiles' } });
   models.CMDBItem.hasMany(models.CMDBFile, { onDelete: 'CASCADE', foreignKey: 'backupFileId', as: { singular: 'backupFile', plural: 'backupFiles' } });
   models.CMDBItem.hasMany(models.CMDBFile, { onDelete: 'CASCADE', foreignKey: 'monitoringFileId', as: { singular: 'monitoringFile', plural: 'monitoringFiles' } });
+  models.CMDBItem.hasMany(models.CMDBItemPassword);
 }

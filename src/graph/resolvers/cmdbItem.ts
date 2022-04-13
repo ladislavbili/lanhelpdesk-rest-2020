@@ -143,6 +143,7 @@ const queries = {
           model: models.CMDBAddress,
           as: 'CMDBAddresses',
         },
+        models.CMDBItemPassword,
         {
           required: ipsFilterRequired,
           model: models.CMDBAddress,
@@ -190,6 +191,7 @@ const queries = {
           model: models.CMDBAddress,
           as: 'CMDBAddresses',
         },
+        models.CMDBItemPassword,
         {
           model: models.User,
           as: 'createdBy',
@@ -220,7 +222,7 @@ const queries = {
 }
 
 const mutations = {
-  addCmdbItem: async (root, { companyId, categoryId, addresses, ...args }, { req }) => {
+  addCmdbItem: async (root, { companyId, categoryId, addresses, passwords, ...args }, { req }) => {
     const User = await checkResolver(req, ["cmdb"]);
     const dates = extractDatesFromObject(args, dateNames);
     await multipleIdDoesExistsCheck([{ id: companyId, model: models.Company }, { id: categoryId, model: models.CMDBCategory }]);
@@ -233,6 +235,7 @@ const mutations = {
         createdById: User.get('id'),
         changedById: User.get('id'),
         CMDBAddresses: addresses,
+        CMDBItemPasswords: passwords,
       },
       {
         include: [
@@ -240,6 +243,7 @@ const mutations = {
             model: models.CMDBAddress,
             as: 'CMDBAddresses',
           },
+          models.CMDBItemPassword,
         ],
       }
     );
@@ -368,6 +372,9 @@ const attributes = {
     },
     async addresses(item) {
       return getModelAttribute(item, 'CMDBAddresses');
+    },
+    async passwords(item) {
+      return getModelAttribute(item, 'CMDBItemPasswords');
     },
   },
 };
