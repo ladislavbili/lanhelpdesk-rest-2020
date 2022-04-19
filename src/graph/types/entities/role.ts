@@ -25,6 +25,7 @@ const createAccessRights = (required) => {
     'customFilters',
     'lanwiki',
     'cmdb',
+    'pass',
   ].reduce((acc, right) => {
     return acc + `${right}: Boolean${(required ? '!' : '')}\n`;
   }, '')

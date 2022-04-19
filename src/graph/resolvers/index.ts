@@ -44,6 +44,8 @@ import cmdbManual from './cmdbManual';
 import cmdbScheme from './cmdbScheme';
 import cmdbPassword from './cmdbPassword';
 import cmdbItemPassword from './cmdbItemPassword';
+import passEntry from './passEntry';
+import passFolder from './passFolder';
 
 const { PubSub } = require('apollo-server-express');
 import { EventEmitter } from 'events';
@@ -102,6 +104,8 @@ export default {
     ...cmdbPassword.queries,
     ...cmdbItemPassword.queries,
     ...cmdbScheme.queries,
+    ...passEntry.queries,
+    ...passFolder.queries,
   },
 
   Mutation: {
@@ -153,6 +157,8 @@ export default {
     ...cmdbPassword.mutations,
     ...cmdbItemPassword.mutations,
     ...cmdbScheme.mutations,
+    ...passEntry.mutations,
+    ...passFolder.mutations,
   },
   Subscription: {
     ...comment.subscriptions,
@@ -179,6 +185,8 @@ export default {
     ...cmdbManual.subscriptions,
     ...cmdbPassword.subscriptions,
     ...cmdbScheme.subscriptions,
+    ...passEntry.subscriptions,
+    ...passFolder.subscriptions,
   },
 
   ...comment.attributes,
@@ -228,4 +236,6 @@ export default {
   ...cmdbPassword.attributes,
   ...cmdbItemPassword.attributes,
   ...cmdbScheme.attributes,
+  ...passEntry.attributes,
+  ...passFolder.attributes,
 };

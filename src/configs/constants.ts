@@ -1,5 +1,5 @@
-export const testing = false;
-export const production = true;
+export const testing = true;
+export const production = false;
 export const port = testing ? 4000 : (production ? 8080 : 8081);
 
 const services = !testing;

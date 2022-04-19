@@ -18,6 +18,8 @@ import { LanwikiPageQueries } from './entities/lanwikiPage';
 import { LanwikiTagQueries } from './entities/lanwikiTag';
 import { MaterialQueries } from './entities/material';
 import { MilestoneQueries } from './entities/milestone';
+import { PassEntryQueries } from './entities/passEntry';
+import { PassFolderQueries } from './entities/passFolder';
 import { PricelistQueries } from './entities/pricelist';
 import { ProjectQueries } from './entities/project';
 import { ProjectAttachmentQueries } from './entities/projectAttachment';
@@ -68,6 +70,8 @@ type Query {
   ${LanwikiTagQueries}
   ${MaterialQueries}
   ${MilestoneQueries}
+  ${PassEntryQueries}
+  ${PassFolderQueries}
   ${PricelistQueries}
   ${ProjectQueries}
   ${ProjectAttachmentQueries}

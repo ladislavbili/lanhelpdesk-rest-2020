@@ -57,3 +57,6 @@ export { CMDBManualInstance } from './cmdbManual';
 export { CMDBSchemeInstance } from './cmdbScheme';
 export { CMDBPasswordInstance } from './cmdbPassword';
 export { CMDBItemPasswordInstance } from './cmdbItemPassword';
+export { PassEntryInstance } from './passEntry';
+export { PassFolderInstance } from './passFolder';
+export { PassFolderRightInstance } from './passFolderRight';

@@ -21,6 +21,8 @@ import { TaskTypeSubscriptions } from './entities/taskType';
 import { TripTypeSubscriptions } from './entities/tripType';
 import { UserSubscriptions } from './entities/user';
 import { UserNotificationSubscriptions } from './entities/userNotification';
+import { PassEntrySubscriptions } from './entities/passEntry';
+import { PassFolderSubscriptions } from './entities/passFolder';
 
 export default `
 type Subscription {
@@ -47,5 +49,7 @@ type Subscription {
   ${UserSubscriptions}
   ${UserNotificationSubscriptions}
   ${LanwikiPageSubscriptions}
+  ${PassFolderSubscriptions}
+  ${PassEntrySubscriptions}
 }
 `

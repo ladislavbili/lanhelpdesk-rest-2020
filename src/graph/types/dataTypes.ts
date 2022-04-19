@@ -19,6 +19,8 @@ import { LanwikiPage } from './entities/lanwikiPage';
 import { LanwikiTag } from './entities/lanwikiTag';
 import { Material } from './entities/material';
 import { Milestone } from './entities/milestone';
+import { PassEntry } from './entities/passEntry';
+import { PassFolder } from './entities/passFolder';
 import { Pricelist } from './entities/pricelist';
 import { Project } from './entities/project';
 import { ProjectAttributes } from './entities/projectAttributes';
@@ -70,6 +72,8 @@ ${LanwikiPage}
 ${LanwikiTag}
 ${Material}
 ${Milestone}
+${PassEntry}
+${PassFolder}
 ${Pricelist}
 ${Project}
 ${ProjectAttributes}

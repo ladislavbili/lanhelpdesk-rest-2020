@@ -64,6 +64,10 @@ import defineCMDBSchemes, { createCMDBSchemesAssoc } from './instances/cmdbSchem
 import defineCMDBPasswords, { createCMDBPasswordsAssoc } from './instances/cmdbPassword';
 import defineCMDBItemPasswords, { createCMDBItemPasswordsAssoc } from './instances/cmdbItemPassword';
 
+import definePassEntries, { createPassEntriesAssoc } from './instances/passEntry';
+import definePassFolders, { createPassFoldersAssoc } from './instances/passFolder';
+import definePassFolderRights, { createPassFolderRightsAssoc } from './instances/passFolderRight';
+
 const modelToLog = '';
 
 /*
@@ -143,6 +147,9 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   defineCMDBSchemes(sequelize);
   defineCMDBPasswords(sequelize);
   defineCMDBItemPasswords(sequelize);
+  definePassEntries(sequelize);
+  definePassFolders(sequelize);
+  definePassFolderRights(sequelize);
 
   //ASSOCS
   createRolesAssoc(models);
@@ -207,6 +214,9 @@ export const updateModels = (ignoreUpdating: Boolean) => {
   createCMDBSchemesAssoc(models);
   createCMDBPasswordsAssoc(models);
   createCMDBItemPasswordsAssoc(models);
+  createPassEntriesAssoc(models);
+  createPassFoldersAssoc(models);
+  createPassFolderRightsAssoc(models);
 
   //LOG FUNCTIONS
 

@@ -97,7 +97,7 @@ function defaultUsers(roleId, companyId) {
 function createFullRights() {
   let rights = {};
   ['login', 'testSections', 'mailViaComment', 'vykazy', 'publicFilters', 'addProjects', 'viewVykaz', 'viewRozpocet', 'viewErrors', 'viewInternal',
-    'users', 'companies', 'pausals', 'projects', 'statuses', 'units', 'prices', 'suppliers', 'tags', 'invoices', 'roles', 'taskTypes', 'tripTypes', 'imaps', 'smtps', 'tasklistLayout', 'tasklistCalendar', 'tasklistPreferences', 'customFilters', 'lanwiki'].forEach((right) => rights[right] = true)
+    'users', 'companies', 'pausals', 'projects', 'statuses', 'units', 'prices', 'suppliers', 'tags', 'invoices', 'roles', 'taskTypes', 'tripTypes', 'imaps', 'smtps', 'tasklistLayout', 'tasklistCalendar', 'tasklistPreferences', 'customFilters', 'lanwiki', 'cmdb', 'pass'].forEach((right) => rights[right] = true)
   return rights;
 }
 

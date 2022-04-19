@@ -18,6 +18,8 @@ import { LanwikiPageMutations } from './entities/lanwikiPage';
 import { LanwikiTagMutations } from './entities/lanwikiTag';
 import { MaterialMutations } from './entities/material';
 import { MilestoneMutations } from './entities/milestone';
+import { PassEntryMutations } from './entities/passEntry';
+import { PassFolderMutations } from './entities/passFolder';
 import { PricelistMutations } from './entities/pricelist';
 import { ProjectMutations } from './entities/project';
 import { ProjectAttachmentMutations } from './entities/projectAttachment';
@@ -68,6 +70,8 @@ type Mutation {
   ${LanwikiTagMutations}
   ${MaterialMutations}
   ${MilestoneMutations}
+  ${PassEntryMutations}
+  ${PassFolderMutations}
   ${PricelistMutations}
   ${ProjectMutations}
   ${ProjectAttachmentMutations}
