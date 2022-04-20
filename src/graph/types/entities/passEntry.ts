@@ -8,6 +8,7 @@ type PassEntry {
   url: String!
   expireDate: String
   note: String!
+  myRights: PassFolderRight!
   createdBy: BasicUser
   updatedBy: BasicUser
 }

@@ -39,7 +39,7 @@ const queries = {
     }
 
     let pagination = <any>{};
-    let passwordWhere = <any>{ };
+    let passwordWhere = <any>{};
     if (limit && page) {
       pagination = {
         offset: limit * (page - 1),
@@ -54,7 +54,7 @@ const queries = {
         }
       }
     }
-    if (folderId){
+    if (folderId) {
       passwordWhere = {
         ...passwordWhere,
         PassFolderId: folderId
@@ -136,6 +136,36 @@ const mutations = {
 
 const attributes = {
   PassEntry: {
+    async myRights(entry, body, { req, userID }) {
+      if (entry.isAdmin) {
+        return fullFolderRights;
+      }
+      let Folder = <PassFolderInstance>entry.get('PassFolder');
+      if (!Folder) {
+        Folder = <PassFolderInstance>await entry.getPassFolder({
+          include: [{
+            model: models.PassFolderRight,
+            where: {
+              userId: userID,
+              active: true,
+            },
+          }]
+        });
+      }
+      let FolderRights = <PassFolderRightInstance[]>Folder.get('PassFolderRights');
+      if (!FolderRights) {
+        FolderRights = await <PassFolderRightInstance[]>Folder.getPassFolderRights({
+          where: {
+            userId: userID,
+            active: true,
+          },
+        });
+      }
+      if (FolderRights.length === 0 || !FolderRights[0].get('write')) {
+        return noFolderRights;
+      }
+      return FolderRights[0];
+    },
     async createdBy(password) {
       return getModelAttribute(password, 'createdBy');
     },
