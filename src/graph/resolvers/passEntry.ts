@@ -39,7 +39,7 @@ const queries = {
     }
 
     let pagination = <any>{};
-    let passwordWhere = <any>{ PassFolderId: folderId };
+    let passwordWhere = <any>{ };
     if (limit && page) {
       pagination = {
         offset: limit * (page - 1),
@@ -52,6 +52,12 @@ const queries = {
           ...passwordWhere,
           title: { [Op.like]: `%${stringFilter.title}%` },
         }
+      }
+    }
+    if (folderId){
+      passwordWhere = {
+        ...passwordWhere,
+        PassFolderId: folderId
       }
     }
 
@@ -144,7 +150,7 @@ const subscriptions = {
     subscribe: withFilter(
       () => pubsub.asyncIterator(PASS_ENTRIES_CHANGE),
       async ({ passEntriesSubscription }, { folderId }) => {
-        return passEntriesSubscription === folderId;
+        return passEntriesSubscription === folderId || folderId === null;
       }
     ),
   },

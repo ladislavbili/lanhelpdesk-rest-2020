@@ -28,7 +28,8 @@ const fullFolderRights = {
 };
 
 const queries = {
-  passFolders: async (root, { req }) => {
+  passFolders: async (root, args, { req }) => {
+
     const User = await checkResolver(req, ['pass']);
     const isAdmin = isUserAdmin(User);
     const where = <any>{};
