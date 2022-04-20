@@ -5,6 +5,8 @@ import { models } from '@/models';
 import fs from 'fs';
 import {
   PassEntryInstance,
+  PassFolderInstance,
+  PassFolderRightInstance,
 } from '@/models/instances';
 import { Op } from 'sequelize';
 import checkResolver from './checkResolver';
