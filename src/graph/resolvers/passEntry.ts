@@ -19,6 +19,20 @@ import {
   PASS_ENTRIES_CHANGE,
 } from '@/configs/subscriptions';
 
+const fullFolderRights = {
+  active: true,
+  read: true,
+  write: true,
+  manage: true,
+};
+
+const noFolderRights = {
+  active: false,
+  read: false,
+  write: false,
+  manage: false,
+};
+
 const queries = {
   passEntries: async (root, { folderId, order, limit, page, stringFilter }, { req }) => {
     const User = await checkResolver(req, ['pass']);
