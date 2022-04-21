@@ -9,7 +9,7 @@ export interface PassEntryInstance extends DefaultInstance {
   expireDate: number;
   note: string;
 
-  getPassFolder?:any;
+  getPassFolder?: any;
 }
 
 export default function definePassEntries(sequelize: Sequelize) {
@@ -42,6 +42,11 @@ export default function definePassEntries(sequelize: Sequelize) {
         type: DataTypes.TEXT,
         allowNull: false,
         defaultValue: ""
+      },
+      isPrivate: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
       },
     },
     {

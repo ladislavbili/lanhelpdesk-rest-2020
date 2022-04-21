@@ -55,7 +55,12 @@ const queries = {
     }
 
     let pagination = <any>{};
-    let passwordWhere = <any>{};
+    let passwordWhere = <any>{
+      [Op.or]: [
+        { isPrivate: false },
+        { createdById: User.get('id') },
+      ]
+    };
     if (limit && page) {
       pagination = {
         offset: limit * (page - 1),

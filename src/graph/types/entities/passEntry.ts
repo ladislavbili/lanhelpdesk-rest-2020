@@ -9,6 +9,7 @@ type PassEntry {
   expireDate: String
   note: String!
   myRights: PassFolderRight!
+  isPrivate: Boolean!
   createdBy: BasicUser
   updatedBy: BasicUser
 }
@@ -37,6 +38,7 @@ passEntry(id: Int!): PassEntry
 export const PassEntryMutations = `
 addPassEntry(
   folderId: Int
+  isPrivate: Boolean
   title: String!
   login: String!
   password: String!
@@ -46,6 +48,7 @@ addPassEntry(
 ): PassEntry
 updatePassEntry(
   id: Int!
+  isPrivate: Boolean
   title: String
   login: String
   password: String
