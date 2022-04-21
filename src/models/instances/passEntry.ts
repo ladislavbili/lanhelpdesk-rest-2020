@@ -8,6 +8,8 @@ export interface PassEntryInstance extends DefaultInstance {
   url: string;
   expireDate: number;
   note: string;
+
+  getPassFolder?:any;
 }
 
 export default function definePassEntries(sequelize: Sequelize) {
@@ -51,7 +53,7 @@ export default function definePassEntries(sequelize: Sequelize) {
 }
 
 export function createPassEntriesAssoc(models) {
-  models.PassEntry.belongsTo(models.Company);
+  models.PassEntry.belongsTo(models.PassFolder);
   models.PassEntry.belongsTo(models.User, { as: 'createdBy' });
   models.PassEntry.belongsTo(models.User, { as: 'changedBy' });
 }
