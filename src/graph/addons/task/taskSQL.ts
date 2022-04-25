@@ -97,20 +97,20 @@ export const generateTaskAttachmentsSQL = (taskId) => {
   `.replace(/"/g, '`');
 }
 
-export const generateTagsSQL = (taskId) => {
+export const generateTagsSQL = (taskIds) => {
   return `
   SELECT *
   FROM "tags" AS "Tags"
-  INNER JOIN "task_has_tags" ON "task_has_tags"."TagId" = "Tags"."id" AND "task_has_tags"."TaskId" = ${taskId}
+  INNER JOIN "task_has_tags" ON "task_has_tags"."TagId" = "Tags"."id" AND "task_has_tags"."TaskId" IN (${taskIds.toString()})
   `.replace(/"/g, '`');
 }
 
-export const generateAssignedTosSQL = (taskId) => {
+export const generateAssignedTosSQL = (taskIds) => {
   return `
   SELECT *,
   CONCAT( "assignedTos"."name", ' ' , "assignedTos"."surname" ) as fullName
   FROM "users" AS "assignedTos"
-  INNER JOIN "task_assignedTo" ON "task_assignedTo"."UserId" = "assignedTos"."id" AND "task_assignedTo"."TaskId" = ${taskId}
+  INNER JOIN "task_assignedTo" ON "task_assignedTo"."UserId" = "assignedTos"."id" AND "task_assignedTo"."TaskId" IN (${taskIds.toString()})
   `.replace(/"/g, '`');
 }
 

@@ -118,7 +118,7 @@ export function createRepeatTemplatesAssoc(models) {
 
   models.RepeatTemplate.belongsTo(models.TaskType);
 
-  models.RepeatTemplate.belongsTo(models.Repeat);
+  models.RepeatTemplate.belongsTo(models.Repeat, { onDelete: 'CASCADE' });
 
   models.RepeatTemplate.hasMany(models.ShortSubtask, { onDelete: 'CASCADE' });
 

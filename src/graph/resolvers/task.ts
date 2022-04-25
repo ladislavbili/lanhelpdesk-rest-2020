@@ -183,6 +183,27 @@ const queries = {
       raw: true,
       mapToModel: true
     });
+    /*
+    let [
+      responseAssignedTos,
+      responseTags,
+    ] = await Promise.all([
+      sequelize.query(generateAssignedTosSQL(responseTasks.map((Task: TaskInstance) => Task.id)), {
+        model: models.User,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+      sequelize.query(generateTagsSQL(responseTasks.map((Task: TaskInstance) => Task.id)), {
+        model: models.Tag,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+    ]);
+    */
 
     let databaseTime = 0;
     //const databaseWatch = new Stopwatch(true);
@@ -328,14 +349,14 @@ const queries = {
         raw: true,
         mapToModel: true
       }),
-      sequelize.query(generateAssignedTosSQL(id), {
+      sequelize.query(generateAssignedTosSQL([id]), {
         model: models.User,
         type: QueryTypes.SELECT,
         nest: true,
         raw: true,
         mapToModel: true
       }),
-      sequelize.query(generateTagsSQL(id), {
+      sequelize.query(generateTagsSQL([id]), {
         model: models.Tag,
         type: QueryTypes.SELECT,
         nest: true,

@@ -44,6 +44,8 @@ import {
   ProjectGroupRightsInstance,
   UserInstance,
   CompanyInstance,
+  RepeatTemplateInstance,
+  RepeatInstance,
 } from '@/models/instances';
 import { PROJECT_CHANGE, PROJECT_GROUP_CHANGE } from '@/configs/subscriptions';
 import { pubsub } from './index';
@@ -922,8 +924,12 @@ const mutations = {
     const User = await checkResolver(req);
     const Project = await models.Project.findByPk(id, {
       include: [
-        { model: models.Task },
-        { model: models.Imap },
+        models.Task,
+        models.Imap,
+        {
+          model: models.RepeatTemplate,
+          include: [models.Repeat]
+        },
         {
           model: models.Filter,
           as: 'filterOfProjects',
@@ -942,10 +948,12 @@ const mutations = {
     ) {
       await checkIfHasProjectRights(User, undefined, id, ['projectEdit']);
     }
-    const Tasks = <TaskInstance[]>await Project.get('Tasks');
-    const Imaps = <ImapInstance[]>await Project.get('Imaps');
-    const Filters = <FilterInstance[]>await Project.get('filterOfProjects');
+    const Tasks = <TaskInstance[]>Project.get('Tasks');
+    const Imaps = <ImapInstance[]>Project.get('Imaps');
+    const Filters = <FilterInstance[]>Project.get('filterOfProjects');
+    const RepeatTemplates = <RepeatTemplateInstance[]>Project.get('RepeatTemplates');
     await Promise.all(Filters.filter((Filter) => Filter.get('ofProject')).map((Filter) => Filter.destroy()));
+    await Promise.all((<RepeatInstance[]>RepeatTemplates.map((RepeatTemplate) => RepeatTemplate.get('Repeat'))).map((Repeats) => Repeats.destroy()));
     await Promise.all(Imaps.map((Imap) => Imap.setProject(newId)));
     await Project.destroy();
     pubsub.publish(PROJECT_CHANGE, { projectsSubscription: true });
