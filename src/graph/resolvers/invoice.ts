@@ -667,14 +667,14 @@ const mutations = {
               surname: task.requester.surname,
               fullName: task.requester.fullName,
             },
-            createdBy: {
+            createdBy: task.createdBy.id ? {
               userId: task.createdBy.id,
               username: task.createdBy.username,
               email: task.createdBy.email,
               name: task.createdBy.name,
               surname: task.createdBy.surname,
               fullName: task.createdBy.fullName,
-            },
+            } : null,
             InvoicedTaskTags: (<TagInstance[]>task.Task.get('Tags')).map((Tag) => ({
               tagId: Tag.get('id'),
               title: Tag.get('title'),

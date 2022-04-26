@@ -89,6 +89,8 @@ import {
   addStatusFilter,
   addInvoicedFilter,
   getTasksWantedData,
+  generateInvoicedAssignedTosSQL,
+  generateInvoicedTagsSQL,
 } from '@/graph/addons/task';
 import { repeatEvent } from '@/services/repeatTasks';
 import { pubsub } from './index';
@@ -126,7 +128,7 @@ const createBasicSort = (taskName, milestoneSort) => {
 
 const queries = {
   tasks: async (root, { projectId, milestoneId, filter, sort, milestoneSort, search, stringFilter, limit, page, statuses, invoiced }, { req, userID }, info) => {
-    const wantedData = getTasksWantedData(filter, sort, milestoneSort, stringFilter, info);
+    //const wantedData = getTasksWantedData(filter, sort, milestoneSort, stringFilter, info);
     //INFO: to continue optimalisation, first rewrite WHERE to use IDs instead of objectID
     //INFO: then rewrite get data according to wantedData
 
@@ -174,7 +176,16 @@ const queries = {
       page = 1;
     }
 
-    const SQL = generateTasksSQL(userID, User.get('CompanyId'), isAdmin, taskWhere.join(' AND '), mainOrderBy, secondaryOrderBy, limit, (page - 1) * limit);
+    const SQL = generateTasksSQL(
+      userID,
+      User.get('CompanyId'),
+      isAdmin,
+      taskWhere.join(' AND '),
+      mainOrderBy,
+      secondaryOrderBy,
+      limit,
+      (page - 1) * limit
+    );
 
     const responseTasks = await sequelize.query(SQL, {
       model: models.Task,
@@ -183,27 +194,45 @@ const queries = {
       raw: true,
       mapToModel: true
     });
-    /*
+
+    const responseTaskIds = filterUnique(responseTasks.map((Task: TaskInstance) => Task.id));
+    const responseInvoicedTaskIds = filterUnique(responseTasks.filter((Task: any) => Task.invoiced && Task.InvoicedTask.id !== null).map((Task: any) => Task.InvoicedTask.id));
+
     let [
       responseAssignedTos,
       responseTags,
+      responseInvoicedAssignedTos,
+      responseInvoicedTags,
     ] = await Promise.all([
-      sequelize.query(generateAssignedTosSQL(responseTasks.map((Task: TaskInstance) => Task.id)), {
+      sequelize.query(generateAssignedTosSQL(responseTaskIds), {
         model: models.User,
         type: QueryTypes.SELECT,
         nest: true,
         raw: true,
         mapToModel: true
       }),
-      sequelize.query(generateTagsSQL(responseTasks.map((Task: TaskInstance) => Task.id)), {
+      sequelize.query(generateTagsSQL(responseTaskIds), {
         model: models.Tag,
         type: QueryTypes.SELECT,
         nest: true,
         raw: true,
         mapToModel: true
       }),
+      sequelize.query(generateInvoicedAssignedTosSQL(responseInvoicedTaskIds), {
+        model: models.InvoicedTaskUser,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
+      sequelize.query(generateInvoicedTagsSQL(responseInvoicedTaskIds), {
+        model: models.InvoicedTaskTag,
+        type: QueryTypes.SELECT,
+        nest: true,
+        raw: true,
+        mapToModel: true
+      }),
     ]);
-    */
 
     let databaseTime = 0;
     //const databaseWatch = new Stopwatch(true);
@@ -212,30 +241,13 @@ const queries = {
     responseTasks.forEach((Task: any) => {
       const invoiced = Task.invoiced;
       const taskIndex = tasks.findIndex((task) => Task.id === task.id);
-      if (taskIndex !== -1) {
-        if (invoiced) {
-          const InvoicedTask = Task.InvoicedTask;
-          if (Task.assignedTos.id !== null && tasks[taskIndex].assignedTos.every((assignedTo) => assignedTo.id !== InvoicedTask.assignedTos.id)) {
-            tasks[taskIndex].assignedTos.push(InvoicedTask.assignedTos);
-          }
-          if (Task.Tags.id !== null && tasks[taskIndex].Tags.every((Tag) => Tag.id !== InvoicedTask.Tags.id)) {
-            tasks[taskIndex].Tags.push(InvoicedTask.Tags);
-          }
-        } else {
-          if (Task.assignedTos.id !== null && tasks[taskIndex].assignedTos.every((assignedTo) => assignedTo.id !== Task.assignedTos.id)) {
-            tasks[taskIndex].assignedTos.push(Task.assignedTos);
-          }
-          if (Task.Tags.id !== null && tasks[taskIndex].Tags.every((Tag) => Tag.id !== Task.Tags.id)) {
-            tasks[taskIndex].Tags.push(Task.Tags);
-          }
-        }
-      } else {
+      if (taskIndex === -1) {
         if (invoiced) {
           const InvoicedTask = Task.InvoicedTask;
           tasks.push({
             ...Task,
-            assignedTos: InvoicedTask.assignedTos.id === null ? [] : [InvoicedTask.assignedTos],
-            Tags: InvoicedTask.Tags.id === null ? [] : [InvoicedTask.Tags],
+            assignedTos: responseInvoicedAssignedTos.filter((responseAssignedTo: any) => responseAssignedTo.InvoicedTaskId === InvoicedTask.id),
+            Tags: responseInvoicedTags.filter((responseTag: any) => responseTag.InvoicedTaskId === InvoicedTask.id),
             requester: InvoicedTask.requester.id === null ? null : InvoicedTask.requester,
             TaskType: { ...Task.TaskType, id: Task.InvoicedTask.taskTypeId, title: Task.InvoicedTask.taskTypeTitle },
             Repeat: Task.Repeat.id === null ? null : Task.Repeat,
@@ -257,8 +269,8 @@ const queries = {
         } else {
           tasks.push({
             ...Task,
-            assignedTos: Task.assignedTos.id === null ? [] : [Task.assignedTos],
-            Tags: Task.Tags.id === null ? [] : [Task.Tags],
+            assignedTos: responseAssignedTos.filter((responseAssignedTo: any) => responseAssignedTo.TaskId === Task.id),
+            Tags: responseTags.filter((responseTag: any) => responseTag.TaskId === Task.id),
             Repeat: Task.Repeat.id === null ? null : Task.Repeat,
             subtasksQuantity: toFloatOrZero(Task.subtasksQuantity),
             approvedSubtasksQuantity: toFloatOrZero(Task.approvedSubtasksQuantity),

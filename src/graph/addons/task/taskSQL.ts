@@ -99,7 +99,8 @@ export const generateTaskAttachmentsSQL = (taskId) => {
 
 export const generateTagsSQL = (taskIds) => {
   return `
-  SELECT *
+  SELECT *,
+  "task_has_tags"."TaskId" as "TaskId"
   FROM "tags" AS "Tags"
   INNER JOIN "task_has_tags" ON "task_has_tags"."TagId" = "Tags"."id" AND "task_has_tags"."TaskId" IN (${taskIds.toString()})
   `.replace(/"/g, '`');
@@ -108,7 +109,8 @@ export const generateTagsSQL = (taskIds) => {
 export const generateAssignedTosSQL = (taskIds) => {
   return `
   SELECT *,
-  CONCAT( "assignedTos"."name", ' ' , "assignedTos"."surname" ) as fullName
+  CONCAT( "assignedTos"."name", ' ' , "assignedTos"."surname" ) as fullName,
+  "task_assignedTo"."TaskId" as "TaskId"
   FROM "users" AS "assignedTos"
   INNER JOIN "task_assignedTo" ON "task_assignedTo"."UserId" = "assignedTos"."id" AND "task_assignedTo"."TaskId" IN (${taskIds.toString()})
   `.replace(/"/g, '`');
