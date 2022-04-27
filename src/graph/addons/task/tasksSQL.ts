@@ -156,6 +156,14 @@ export const generateTasksSQL = (userId, companyId, isAdmin, where, mainOrderBy,
 }
 
 export const generateInvoicedAssignedTosSQL = (invoicedTaskIds) => {
+  if (invoicedTaskIds.length === 0) {
+    return `
+    SELECT *
+    FROM "invoiced_task_users" AS "assignedTos"
+    WHERE false
+    `.replace(/"/g, '`');
+  }
+
   return `
   SELECT *,
   "assignedTos"."assignedToId" as "InvoicedTaskId"
@@ -165,6 +173,14 @@ export const generateInvoicedAssignedTosSQL = (invoicedTaskIds) => {
 }
 
 export const generateInvoicedTagsSQL = (invoicedTaskIds) => {
+  if (invoicedTaskIds.length === 0) {
+    return `
+    SELECT *
+    FROM "invoiced_task_tags" AS "Tags"
+    WHERE false
+    `.replace(/"/g, '`');
+  }
+
   return `
   SELECT *
   FROM "invoiced_task_tags" AS "Tags"

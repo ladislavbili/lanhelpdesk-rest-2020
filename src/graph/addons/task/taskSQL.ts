@@ -98,6 +98,13 @@ export const generateTaskAttachmentsSQL = (taskId) => {
 }
 
 export const generateTagsSQL = (taskIds) => {
+  if (taskIds.length === 0) {
+    return `
+    SELECT *
+    FROM "tags" AS "Tags"
+    WHERE false
+    `.replace(/"/g, '`');
+  }
   return `
   SELECT *,
   "task_has_tags"."TaskId" as "TaskId"
@@ -107,6 +114,13 @@ export const generateTagsSQL = (taskIds) => {
 }
 
 export const generateAssignedTosSQL = (taskIds) => {
+  if (taskIds.length === 0) {
+    return `
+    SELECT *
+    FROM "users" AS "assignedTos"
+    WHERE false
+    `.replace(/"/g, '`');
+  }
   return `
   SELECT *,
   CONCAT( "assignedTos"."name", ' ' , "assignedTos"."surname" ) as fullName,
