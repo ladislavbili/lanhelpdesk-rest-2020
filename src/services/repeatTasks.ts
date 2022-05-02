@@ -70,7 +70,7 @@ async function updateRepeat(Repeat) {
   const { repeatEvery, repeatInterval, startsAt, active, id } = Repeat.get();
   if (active) {
     const timer = timers.find((existingTimer) => existingTimer.repeatId === id);
-    if (timer){
+    if (timer) {
       timer.stopTimer();
       timer.setTimer(startsAt.valueOf(), getMinutes(repeatEvery, repeatInterval));
       timer.restart();
@@ -232,7 +232,7 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
     TaskMetadata: {
       subtasksApproved: (<SubtaskInstance[]>RepeatTemplate.get('Subtasks')).reduce((acc, cur) => {
         if (cur.approved || Project.get('autoApproved')) {
-          return acc + cur.quantity;
+          return acc + parseFloat(cur.quantity.toString());
         }
         return acc;
       }, 0),
@@ -240,11 +240,11 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
         if (cur.approved || Project.get('autoApproved')) {
           return acc;
         }
-        return acc + cur.quantity;
+        return acc + parseFloat(cur.quantity.toString());
       }, 0),
       tripsApproved: (<WorkTripInstance[]>RepeatTemplate.get('WorkTrips')).reduce((acc, cur) => {
         if (cur.approved || Project.get('autoApproved')) {
-          return acc + cur.quantity;
+          return acc + parseFloat(cur.quantity.toString());
         }
         return acc;
       }, 0),
@@ -252,11 +252,11 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
         if (cur.approved || Project.get('autoApproved')) {
           return acc;
         }
-        return acc + cur.quantity;
+        return acc + parseFloat(cur.quantity.toString());
       }, 0),
       materialsApproved: (<MaterialInstance[]>RepeatTemplate.get('Materials')).reduce((acc, cur) => {
         if (cur.approved || Project.get('autoApproved')) {
-          return acc + cur.quantity;
+          return acc + parseFloat(cur.quantity.toString());
         }
         return acc;
       }, 0),
@@ -264,7 +264,7 @@ export async function addTask(id, repeatTimeId, originalTrigger, manualTrigger =
         if (cur.approved || Project.get('autoApproved')) {
           return acc;
         }
-        return acc + cur.quantity;
+        return acc + parseFloat(cur.quantity.toString());
       }, 0),
     }
   }
