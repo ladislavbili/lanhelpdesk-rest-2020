@@ -175,7 +175,7 @@ export const generateAgentInvoiceSQL = (fromDate, toDate, statusActions, invoice
         "InvoicedTask"."statusAction" IN ( ${sqlStatusActions} )
       INNER JOIN "invoiced_task_users" AS "InvoicedTask->requester" ON "InvoicedTask->requester"."requesterId" = "InvoicedTask"."id"
       INNER JOIN "invoiced_task_users" AS "InvoicedTask->assignedTos" ON "InvoicedTask->assignedTos"."assignedToId" = "InvoicedTask"."id"
-      INNER JOIN "invoiced_task_users" AS "InvoicedTask->createdBy" ON "InvoicedTask->createdBy"."createdById" = "InvoicedTask"."id"
+      LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->createdBy" ON "InvoicedTask->createdBy"."createdById" = "InvoicedTask"."id"
       ` :
       `
       INNER JOIN "task_types" AS "TaskType" ON "TaskType"."id" = "Task"."TaskTypeId"

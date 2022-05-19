@@ -42,7 +42,7 @@ export const generateInvoiceSQL = (fromDate, toDate, companyId) => {
     INNER JOIN "invoiced_tasks" AS "InvoicedTask" ON "InvoicedTask"."TaskId" = "Task"."id"
     INNER JOIN "invoiced_task_users" AS "InvoicedTask->requester" ON "InvoicedTask->requester"."requesterId" = "InvoicedTask"."id"
     INNER JOIN "invoiced_task_users" AS "InvoicedTask->assignedTos" ON "InvoicedTask->assignedTos"."assignedToId" = "InvoicedTask"."id"
-    INNER JOIN "invoiced_task_users" AS "InvoicedTask->createdBy" ON "InvoicedTask->createdBy"."createdById" = "InvoicedTask"."id"
+    LEFT OUTER JOIN "invoiced_task_users" AS "InvoicedTask->createdBy" ON "InvoicedTask->createdBy"."createdById" = "InvoicedTask"."id"
     LEFT OUTER JOIN "subtasks" AS "Subtask" ON "Subtask"."TaskId" = "Task"."id"
     LEFT OUTER JOIN "work_trips" AS "WorkTrip" ON "WorkTrip"."TaskId" = "Task"."id"
     LEFT OUTER JOIN "materials" AS "Material" ON "Material"."TaskId" = "Task"."id"
