@@ -686,10 +686,10 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
           break;
         }
         case 'status': case 'company': case 'taskType': case 'milestone': {
-          where.push(`
+          where.push(`(
             "${capitalizeFirstLetter(filterItem.key)}"."title" LIKE '%${filterItem.value}%' OR
             ${invoicedStringFilterMap[filterItem.key]} LIKE '%${filterItem.value}%'
-            `);
+            )`);
           break;
         }
         case 'project': {
@@ -731,10 +731,10 @@ export const stringFilterToTaskWhereSQL = (search, stringFilter) => {
           break;
         }
         case 'tags': {
-          where.push(`
+          where.push(`(
             "tagsFilter"."title" LIKE '%${filterItem.value}%' OR
             "InvoicedTask->Tags"."title" LIKE '%${filterItem.value}%'
-            `);
+            )`);
           break;
         }
         default: {
