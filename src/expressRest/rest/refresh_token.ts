@@ -30,7 +30,9 @@ export function refreshToken(app) {
     //send new data
     const Token = await models.Token.findOne({ where: { key: userData.loginKey, UserId: userData.id } })
     let expiresAt = moment().add(7, 'd').valueOf();
-    await Token.update({ expiresAt });
+    if (Token) {
+      await Token.update({ expiresAt });
+    }
 
     res.cookie(
       'jid',
