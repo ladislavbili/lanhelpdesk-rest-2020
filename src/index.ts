@@ -15,4 +15,5 @@ updateModels(ignoreUpdating).then(async () => {
   }
   startRest();
   startServices();
+  //addDefaultDatabaseData();
 });
